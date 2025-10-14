@@ -13,6 +13,7 @@ import { Result } from "../../../../../shared/domain/result";
 import { OutboxRepository } from "src/modules/booking/infrastructure/persistance/outbox/outbox.repository";
 import { DataSource } from "typeorm";
 import { ReservationRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation.repository";
+import { InventoryFacade } from "src/modules/inventory/inventory.facade";
 
 /**
  * Create Reservation Command Handler (Use Case)
@@ -31,7 +32,8 @@ export class CreateReservationHandler
     private readonly reservationRepository: ReservationRepository,
     private readonly availabilityChecker: AvailabilityCheckerService,
     private readonly outboxRepository: OutboxRepository,
-    private readonly dataSource: DataSource // For transactions // In real implementation, inject InventoryFacade to get total inventory // For now, we'll hardcode for demonstration
+    private readonly dataSource: DataSource, // For transactions // In real implementation, inject InventoryFacade to get total inventory // For now, we'll hardcode for demonstration
+    private readonly inventoryFacade: InventoryFacade
   ) {}
 
   async execute(command: CreateReservationCommand): Promise<string> {
@@ -48,8 +50,9 @@ export class CreateReservationHandler
     const timeRange = timeRangeResult.value;
 
     // 2. Check availability (domain service)
-    // TODO: Get totalInventory from Inventory module
-    const totalInventory = 10; // Placeholder
+    const totalInventory = await this.inventoryFacade.getTotalCapacity(
+      command.equipmentTypeId
+    );
 
     const isAvailable = await this.availabilityChecker.checkAvailability({
       equipmentTypeId: command.equipmentTypeId,

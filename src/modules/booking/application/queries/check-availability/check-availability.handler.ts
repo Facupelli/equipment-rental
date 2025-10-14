@@ -3,6 +3,7 @@ import { BadRequestException } from "@nestjs/common";
 import { CheckAvailabilityQuery } from "./check-availability.query";
 import { TimeRange } from "../../../domain/value-objects/time-range.vo";
 import { AvailabilityCheckerService } from "../../../domain/services/availability-checker.service";
+import { InventoryFacade } from "src/modules/inventory/inventory.facade";
 
 interface AvailabilityResult {
   isAvailable: boolean;
@@ -24,9 +25,9 @@ export class CheckAvailabilityHandler
   implements IQueryHandler<CheckAvailabilityQuery, AvailabilityResult>
 {
   constructor(
-    private readonly availabilityChecker: AvailabilityCheckerService
-  ) // TODO: Inject InventoryFacade to get total inventory
-  {}
+    private readonly availabilityChecker: AvailabilityCheckerService,
+    private readonly inventoryFacade: InventoryFacade // TODO: Inject InventoryFacade to get total inventory
+  ) {}
 
   async execute(query: CheckAvailabilityQuery): Promise<AvailabilityResult> {
     // 1. Create time range value object
@@ -42,8 +43,9 @@ export class CheckAvailabilityHandler
     const timeRange = timeRangeResult.value;
 
     // 2. Get detailed availability info
-    // TODO: Get totalInventory from Inventory module
-    const totalInventory = 10; // Placeholder
+    const totalInventory = await this.inventoryFacade.getTotalCapacity(
+      query.equipmentTypeId
+    );
 
     const availabilityDetails =
       await this.availabilityChecker.getAvailabilityDetails({

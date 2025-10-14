@@ -9,12 +9,16 @@ import { EventEmitterModule } from "@nestjs/event-emitter";
 import { DatabaseModule } from "./shared/infrastructure/database/database.module";
 import { BookingModule } from "./modules/booking/booking.module";
 import { CatalogModule } from "./modules/catalog/catalog.module";
+import { InventoryModule } from "./modules/inventory/inventory.module";
+import configuration, { envSchema } from "./common/config/configuration";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ".env",
+      load: [configuration],
+      validate: (env) => envSchema.parse(env),
     }),
 
     // Event system (for inter-module communication)
@@ -25,6 +29,7 @@ import { CatalogModule } from "./modules/catalog/catalog.module";
 
     // Business Capabilities
     BookingModule,
+    InventoryModule,
     CatalogModule,
   ],
   controllers: [AppController],

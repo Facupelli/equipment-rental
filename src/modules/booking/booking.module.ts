@@ -18,6 +18,7 @@ import { ReservationRepository } from "./infrastructure/persistance/typeorm/rese
 import { BookingFacade } from "./booking.facade";
 import { OutboxRepository } from "./infrastructure/persistance/outbox/outbox.repository";
 import { OutboxSchema } from "./infrastructure/persistance/outbox/outbox.schema";
+import { InventoryModule } from "../inventory/inventory.module";
 
 const CommandHandlers = [CreateReservationHandler];
 
@@ -47,6 +48,8 @@ const EventHandlers = [
   imports: [
     CqrsModule,
     TypeOrmModule.forFeature([ReservationSchema, OutboxSchema]),
+    // Dependencies
+    InventoryModule,
   ],
   controllers: [BookingController],
   providers: [
