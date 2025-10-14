@@ -1,49 +1,22 @@
 import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 import { TypeOrmModule } from "@nestjs/typeorm";
-
-// Presentation
 import { BookingController } from "./presentation/booking.controller";
-
-// Application (Use Cases)
 import { CreateReservationHandler } from "./application/commands/create-reservation/create-reservation.handler";
 import { CheckAvailabilityHandler } from "./application/queries/check-availability/check-availability.handler";
-
-// Domain Services
 import { AvailabilityCheckerService } from "./domain/services/availability-checker.service";
-
-// Infrastructure
 import { ReservationSchema } from "./infrastructure/persistance/typeorm/reservation.schema";
 import { ReservationRepository } from "./infrastructure/persistance/typeorm/reservation.repository";
 import { BookingFacade } from "./booking.facade";
 import { OutboxRepository } from "./infrastructure/persistance/outbox/outbox.repository";
 import { OutboxSchema } from "./infrastructure/persistance/outbox/outbox.schema";
 import { InventoryModule } from "../inventory/inventory.module";
+import { ConfirmReservationHandler } from "./application/commands/confirm-reservation/confirm-reservation.handler";
 
-const CommandHandlers = [CreateReservationHandler];
-
+const CommandHandlers = [CreateReservationHandler, ConfirmReservationHandler];
 const QueryHandlers = [CheckAvailabilityHandler];
+const EventHandlers = [];
 
-// Event Handlers (for reacting to other modules' events)
-const EventHandlers = [
-  // Add event handlers here (e.g., PaymentCompletedHandler)
-];
-
-/**
- * Booking Module (Clean Architecture)
- *
- * Organization:
- * - Domain: Core business logic (entities, value objects, interfaces)
- * - Application: Use cases (commands, queries, event handlers)
- * - Infrastructure: Technical implementations (repositories, adapters)
- * - Presentation: API layer (controllers)
- *
- * Dependency Rule:
- * Domain ← Application ← Infrastructure
- * Domain ← Application ← Presentation
- *
- * Domain has NO dependencies on outer layers!
- */
 @Module({
   imports: [
     CqrsModule,

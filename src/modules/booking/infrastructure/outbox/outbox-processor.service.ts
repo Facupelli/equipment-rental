@@ -3,7 +3,6 @@ import { EventBus } from "@nestjs/cqrs";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { OutboxRepository } from "../persistance/outbox/outbox.repository";
 import { ReservationCreatedEvent } from "../../domain/events/reservation-created.event";
-import { ReservationConfirmedEvent } from "../../domain/events/reservation-confirmed.event";
 
 /**
  * Outbox Processor (Background Job)
@@ -72,16 +71,16 @@ export class OutboxProcessorService {
           payload.quantity
         );
 
-      case "ReservationConfirmed":
-        return new ReservationConfirmedEvent(
-          payload.reservationId,
-          payload.customerId,
-          payload.equipmentTypeId,
-          new Date(payload.startDateTime),
-          new Date(payload.endDateTime),
-          payload.quantity,
-          payload.quotedPrice
-        );
+      // case "ReservationConfirmed":
+      //   return new ReservationConfirmedEvent(
+      //     payload.reservationId,
+      //     payload.customerId,
+      //     payload.equipmentTypeId,
+      //     new Date(payload.startDateTime),
+      //     new Date(payload.endDateTime),
+      //     payload.quantity,
+      //     payload.quotedPrice
+      //   );
 
       default:
         throw new Error(`Unknown event type: ${eventType}`);

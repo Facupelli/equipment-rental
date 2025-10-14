@@ -4,6 +4,8 @@ import { Injectable } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateReservationCommand } from "./application/commands/create-reservation/create-reservation.command";
 import { CheckAvailabilityQuery } from "./application/queries/check-availability/check-availability.query";
+import { ConfirmReservationCommand } from "./application/commands/confirm-reservation/confirm-reservation.command";
+import { ReservationId } from "./domain/value-objects/reservation-id.vo";
 
 /**
  * Booking Facade (Anti-Corruption Layer)
@@ -75,8 +77,13 @@ export class BookingFacade {
     );
   }
 
-  // Add more public methods as needed
-  // - confirmReservation(reservationId: string)
-  // - cancelReservation(reservationId: string, reason?: string)
-  // - getReservation(reservationId: string)
+  /**
+   * Confirm a pending reservation.
+   * This transitions the status to CONFIRMED and publishes ReservationConfirmedEvent.
+   */
+  async confirmReservation(reservationId: ReservationId): Promise<void> {
+    return this.commandBus.execute(
+      new ConfirmReservationCommand(reservationId)
+    );
+  }
 }

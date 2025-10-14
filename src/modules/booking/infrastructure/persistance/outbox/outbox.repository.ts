@@ -13,7 +13,7 @@ export class OutboxRepository {
   /**
    * Add event to outbox (called within same transaction as domain operation)
    */
-  async addEvent(eventType: string, payload: any): Promise<void> {
+  async save(eventType: string, payload: any): Promise<void> {
     const outboxMessage = this.repository.create({
       event_type: eventType,
       payload,

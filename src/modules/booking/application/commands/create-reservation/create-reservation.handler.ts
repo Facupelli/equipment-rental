@@ -90,7 +90,7 @@ export class CreateReservationHandler
       await this.reservationRepository.save(reservation);
 
       // Add event to outbox (same transaction!)
-      await this.outboxRepository.addEvent("ReservationCreated", {
+      await this.outboxRepository.save("ReservationCreated", {
         reservationId: reservation.id.value,
         customerId: reservation.customerId,
         equipmentTypeId: reservation.equipmentTypeId,

@@ -116,13 +116,12 @@ export class Reservation extends Entity<ReservationId> {
 
   // Business methods
 
-  public confirm(price: number): Result<void> {
+  public confirm(): Result<void> {
     if (this.props.status !== ReservationStatus.PENDING) {
       return Result.fail("Can only confirm pending reservations");
     }
 
     this.props.status = ReservationStatus.CONFIRMED;
-    this.props.quotedPrice = price;
     this.props.updatedAt = new Date();
 
     return Result.ok(undefined);

@@ -6,12 +6,11 @@ import { EquipmentItemSchema } from "./infrastructure/persistence/typeorm/equipm
 import { RegisterEquipmentHandler } from "./application/commands/register-equipment/register-equipment.handler";
 import { GetTotalCapacityHandler } from "./application/queries/get-total-capacity/get-total-capacity.handler";
 import { EquipmentItemRepository } from "./infrastructure/persistence/typeorm/equipment-item.repository";
+import { ReservationConfirmedHandler } from "./application/event-handlers/reservation-confirmed.handler";
 
 const CommandHandlers = [RegisterEquipmentHandler];
-
 const QueryHandlers = [GetTotalCapacityHandler];
-
-const EventHandlers = [];
+const EventHandlers = [ReservationConfirmedHandler];
 
 @Module({
   imports: [CqrsModule, TypeOrmModule.forFeature([EquipmentItemSchema])],
