@@ -1,7 +1,7 @@
 // src/modules/booking/domain/entities/reservation.entity.ts
 
-import { Entity } from "../../../../shared/domain/base-entity";
-import { Result } from "../../../../shared/domain/result";
+import { Entity } from "src/shared/domain/base-entity";
+import { Result } from "src/shared/domain/result";
 import { ReservationId } from "../value-objects/reservation-id.vo";
 import { TimeRange } from "../value-objects/time-range.vo";
 

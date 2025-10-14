@@ -1,8 +1,8 @@
 export class Result<T, E = string> {
   private constructor(
     private readonly _isSuccess: boolean,
-    private readonly _value?: T,
-    private readonly _error?: E
+    private readonly _value?: T | undefined,
+    private readonly _error?: E | undefined
   ) {}
 
   public get isSuccess(): boolean {
@@ -27,24 +27,24 @@ export class Result<T, E = string> {
     return this._error as E;
   }
 
-  public static ok<T>(value: T): Result<T> {
-    return new Result<T>(true, value);
+  public static ok<T, E = string>(value: T): Result<T, E> {
+    return new Result<T, E>(true, value);
   }
 
-  public static fail<E = string>(error: E): Result<never, E> {
-    return new Result<never, E>(false, undefined, error);
+  public static fail<T = never, E = string>(error: E): Result<T, E> {
+    return new Result<T, E>(false, undefined, error);
   }
 
   public map<U>(fn: (value: T) => U): Result<U, E> {
     if (this.isFailure) {
-      return Result.fail(this._error as E);
+      return Result.fail<U, E>(this._error as E);
     }
-    return Result.ok(fn(this._value as T));
+    return Result.ok<U, E>(fn(this._value as T));
   }
 
   public flatMap<U>(fn: (value: T) => Result<U, E>): Result<U, E> {
     if (this.isFailure) {
-      return Result.fail(this._error as E);
+      return Result.fail<U, E>(this._error as E);
     }
     return fn(this._value as T);
   }

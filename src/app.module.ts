@@ -8,6 +8,7 @@ import { ConfigModule } from "@nestjs/config";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { DatabaseModule } from "./shared/infrastructure/database/database.module";
 import { BookingModule } from "./modules/booking/booking.module";
+import { CatalogModule } from "./modules/catalog/catalog.module";
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { BookingModule } from "./modules/booking/booking.module";
 
     // Business Capabilities
     BookingModule,
+    CatalogModule,
   ],
   controllers: [AppController],
   providers: [

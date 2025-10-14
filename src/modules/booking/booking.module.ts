@@ -16,6 +16,8 @@ import { AvailabilityCheckerService } from "./domain/services/availability-check
 import { ReservationSchema } from "./infrastructure/persistance/typeorm/reservation.schema";
 import { ReservationRepository } from "./infrastructure/persistance/typeorm/reservation.repository";
 import { BookingFacade } from "./booking.facade";
+import { OutboxRepository } from "./infrastructure/persistance/outbox/outbox.repository";
+import { OutboxSchema } from "./infrastructure/persistance/outbox/outbox.schema";
 
 const CommandHandlers = [CreateReservationHandler];
 
@@ -42,9 +44,16 @@ const EventHandlers = [
  * Domain has NO dependencies on outer layers!
  */
 @Module({
-  imports: [CqrsModule, TypeOrmModule.forFeature([ReservationSchema])],
+  imports: [
+    CqrsModule,
+    TypeOrmModule.forFeature([ReservationSchema, OutboxSchema]),
+  ],
   controllers: [BookingController],
   providers: [
+    // Outbox pattern
+    OutboxRepository,
+
+    BookingFacade,
     // Domain Services
     AvailabilityCheckerService,
 

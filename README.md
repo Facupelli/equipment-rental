@@ -161,6 +161,54 @@ The existing code suggests several missing functionalities hinted at in the `Boo
 
 ## By using this structured Spec-Driven approach, you are ensuring that subsequent implementations are guided by your established architectural plan (CQS, modularity, Clean Architecture, and low-cost asynchronous evolution).
 
+---
+
+### Catalog Module
+
+# Catalog Capability Specification
+
+The Catalog Module is responsible for maintaining the taxonomy and descriptive details of rentable equipment (equipment types, categories, and technical specifications). It acts as the system's authoritative source for _what_ can be rented.
+
+### 1. Specify Phase: User Journeys and Outcomes (The "What" and "Why")
+
+| User Journey                | Intent & Description                                                                                                                             | Outcomes & Success Criteria                                                                                                                      |
+| :-------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Browsing/Search**         | A potential customer needs to navigate equipment via categories and search for specific item descriptions or specs.                              | **Success:** System returns clean, paginated lists of `EquipmentType` data, filterable by descriptive attributes (e.g., power rating, category). |
+| **Display Details**         | The system needs the full descriptive content (marketing text, technical specifications) for a given equipment type ID to render a product page. | **Success:** A fast, safe Query returns all necessary descriptive attributes for the display layer.                                              |
+| **Type Definition (Admin)** | An administrator needs to define a new equipment type (e.g., "Heavy Duty Forklift") and assign its technical specifications and category.        | **Success:** A new `EquipmentType` entity is persisted with all required metadata. This is a state-changing operation (Command).                 |
+| **Category Management**     | An administrator needs to create, rename, and manage the hierarchy of categories (e.g., "Construction Tools" > "Excavators").                    | **Success:** Category entities and relationships are correctly persisted, ensuring searchable hierarchy.                                         |
+
+### 2. Plan Phase: Technical Architecture and Constraints (The "How")
+
+The Catalog module's design will prioritize **read performance** and maintain its isolation from volatile inventory/booking data by adhering to the principles of CQS and modularity.
+
+| Component            | Technical Implementation Detail                                                                                                                                                                                                                                                                                        | Architectural Principle                    |
+| :------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------- |
+| **Model Separation** | The core entity is **`EquipmentType`** (Name, Description, Category, Specs). This is split from the Booking module's **`Reservation`** and the Inventory module's **`EquipmentItem`** (which tracks serial numbers).                                                                                                   | Model by Capabilities / Split Mega-Models. |
+| **CQS Emphasis**     | This module will contain far more **Queries** than Commands, leveraging the **Benefit of Explicitness**. Read models may be intentionally simpler or even directly optimized (e.g., using specific ORM views) to support fast searching, leveraging the option CQS provides to optimize reads independently of writes. | Command-Query Separation (CQS).            |
+| **Public Interface** | The **`CatalogFacade`** will be the public interface, exposing read methods like `searchEquipmentTypes` and `getEquipmentTypeDetails`.                                                                                                                                                                                 | Loose Coupling / Facade Pattern.           |
+| **Integration**      | Communication with the Catalog module will typically be **synchronous request-response**. The Booking Module and Inventory Module will use the Catalog module's IDs (the `equipmentTypeId`) but will rely on the `CatalogFacade` to retrieve human-readable names or descriptions as needed.                           | Start Synchronous / Match Current Needs.   |
+| **Abstractions**     | The repository implementation (e.g., `EquipmentTypeRepository`) will likely be injected directly into its handlers. Repository interfaces will only be introduced if the complexity or number of consumers justifies the abstraction.                                                                                  | Avoid Useless Abstractions.                |
+| **Data Structure**   | `EquipmentType` will likely contain embedded technical specifications (e.g., as JSON/JSONB data) since this data is descriptive and should be retrieved quickly with the type definition.                                                                                                                              | Optimizing Read Path.                      |
+
+### 3. Tasks Phase: Breaking Down the Work (Catalog Module)
+
+These tasks define the necessary work to establish the Catalog capability, focusing first on the foundational entities and their corresponding CQS operations.
+
+| Task ID     | Description of Work Chunk                                                                                                         | Type (C/Q)      | Rationale                                                         |
+| :---------- | :-------------------------------------------------------------------------------------------------------------------------------- | :-------------- | :---------------------------------------------------------------- |
+| **CAT-001** | Define the **Catalog Capability** boundary, setting up the module structure, `CatalogFacade`, and necessary infrastructure files. | Architecture    | Establishing the modular structure.                               |
+| **CAT-002** | Implement the `Category` Domain Entity (Name, Parent Category ID, Description).                                                   | Domain          | Modeling the taxonomy layer.                                      |
+| **CAT-003** | Implement **`CreateCategoryCommand`** and its Handler.                                                                            | Command (Write) | Enables administrative setup of equipment hierarchies.            |
+| **CAT-004** | Implement **`GetCategoriesQuery`** and its Handler.                                                                               | Query (Read)    | Necessary for navigation and filtering interfaces.                |
+| **CAT-005** | Implement the **`EquipmentType`** Domain Entity (Name, Description, `CategoryId`, Technical Specifications/Specs [Value Object]). | Domain          | Modeling the core descriptive unit.                               |
+| **CAT-006** | Implement **`CreateEquipmentTypeCommand`** and its Handler (ensuring the Category ID is valid).                                   | Command (Write) | Enables the addition of new rentable products.                    |
+| **CAT-007** | Implement **`GetEquipmentTypeDetailsQuery`** and its Handler.                                                                     | Query (Read)    | Used by product pages and other modules needing descriptive data. |
+| **CAT-008** | Implement **`SearchEquipmentTypesQuery`** and its Handler (supporting basic text search and filtering by Category ID).            | Query (Read)    | Core customer-facing functionality.                               |
+| **CAT-009** | Implement **`UpdateEquipmentSpecsCommand`** and its Handler.                                                                      | Command (Write) | Allows modification of descriptive data after creation.           |
+
+---
+
 ### Inventory Module
 
 ## I. Inventory Module: Specify Phase (What and Why)

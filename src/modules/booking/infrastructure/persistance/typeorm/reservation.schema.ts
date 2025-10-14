@@ -1,17 +1,12 @@
 import {
-  Entity,
   Column,
-  PrimaryColumn,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
   Index,
+  PrimaryColumn,
+  UpdateDateColumn,
 } from "typeorm";
 
-/**
- * This is NOT the domain entity!
- * This is the database representation (persistence model)
- * We map between this and the domain entity in the repository
- */
 @Entity({ schema: "booking", name: "reservation" })
 @Index(["equipment_type_id", "start_datetime", "end_datetime"])
 @Index(["customer_id", "created_at"])
