@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { IReservationRepository } from "../../../domain/repositories/reservation.repository.interface";
 import {
   Reservation,
   ReservationStatus,
@@ -19,7 +18,8 @@ import { ReservationSchema } from "./reservation.schema";
  * - Hide TypeORM details from domain layer
  */
 @Injectable()
-export class ReservationRepository implements IReservationRepository {
+// export class ReservationRepository implements IReservationRepository {
+export class ReservationRepository {
   constructor(
     @InjectRepository(ReservationSchema)
     private readonly repository: Repository<ReservationSchema>

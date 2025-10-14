@@ -13,7 +13,6 @@ import { CheckAvailabilityHandler } from "./application/queries/check-availabili
 import { AvailabilityCheckerService } from "./domain/services/availability-checker.service";
 
 // Infrastructure
-import { RESERVATION_REPOSITORY } from "./domain/repositories/reservation.repository.interface";
 import { ReservationSchema } from "./infrastructure/persistance/typeorm/reservation.schema";
 import { ReservationRepository } from "./infrastructure/persistance/typeorm/reservation.repository";
 import { BookingFacade } from "./booking.facade";
@@ -55,10 +54,11 @@ const EventHandlers = [
     ...EventHandlers,
 
     // Infrastructure Layer (Repository)
-    {
-      provide: RESERVATION_REPOSITORY,
-      useClass: ReservationRepository,
-    },
+    // {
+    //   provide: RESERVATION_REPOSITORY,
+    //   useClass: ReservationRepository,
+    // },
+    ReservationRepository,
   ],
   exports: [
     // Export facade for other modules to use

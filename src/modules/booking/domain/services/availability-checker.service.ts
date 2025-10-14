@@ -1,10 +1,7 @@
 import { Injectable, Inject } from "@nestjs/common";
-import {
-  IReservationRepository,
-  RESERVATION_REPOSITORY,
-} from "../repositories/reservation.repository.interface";
 import { ReservationStatus } from "../entities/reservation.entity";
 import { TimeRange } from "../value-objects/time-range.vo";
+import { ReservationRepository } from "../../infrastructure/persistance/typeorm/reservation.repository";
 
 interface AvailabilityCheckParams {
   equipmentTypeId: string;
@@ -29,10 +26,7 @@ interface ReservationEvent {
  */
 @Injectable()
 export class AvailabilityCheckerService {
-  constructor(
-    @Inject(RESERVATION_REPOSITORY)
-    private readonly reservationRepository: IReservationRepository
-  ) {}
+  constructor(private readonly reservationRepository: ReservationRepository) {}
 
   /**
    * Check if equipment is available for the requested time range and quantity

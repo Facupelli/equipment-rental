@@ -12,6 +12,7 @@ import { ReservationCreatedEvent } from "../../../domain/events/reservation-crea
 import { Result } from "../../../../../shared/domain/result";
 import { OutboxRepository } from "src/modules/booking/infrastructure/persistance/outbox/outbox.repository";
 import { DataSource } from "typeorm";
+import { ReservationRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation.repository";
 
 /**
  * Create Reservation Command Handler (Use Case)
@@ -27,8 +28,7 @@ export class CreateReservationHandler
   implements ICommandHandler<CreateReservationCommand, string>
 {
   constructor(
-    @Inject(RESERVATION_REPOSITORY)
-    private readonly reservationRepository: IReservationRepository,
+    private readonly reservationRepository: ReservationRepository,
     private readonly availabilityChecker: AvailabilityCheckerService,
     private readonly outboxRepository: OutboxRepository,
     private readonly dataSource: DataSource // For transactions // In real implementation, inject InventoryFacade to get total inventory // For now, we'll hardcode for demonstration
