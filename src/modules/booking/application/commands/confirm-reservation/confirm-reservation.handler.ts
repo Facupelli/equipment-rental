@@ -18,25 +18,22 @@ export class ConfirmReservationHandler
 	async execute(command: ConfirmReservationCommand): Promise<void> {
 		const { reservationId } = command;
 
-		// Find the reservation
 		const reservationOrder =
 			await this.reservationOrderRepository.findById(reservationId);
+
 		if (!reservationOrder) {
 			throw new NotFoundException(`Reservation ${reservationId} not found`);
 		}
 
-		// Confirm the reservation (business rule enforced in entity)
 		try {
 			reservationOrder.confirm();
 		} catch (error) {
 			throw new BadRequestException(error.message);
 		}
 
-		// Persist with outbox pattern (single transaction)
 		await this.dataSource.transaction(async (manager) => {
 			await this.reservationOrderRepository.save(reservationOrder);
 
-			// Publish ReservationConfirmedEvent
 			const outboxEntry = manager.create(OutboxSchema, {
 				id: uuidv4(),
 				eventType: "ReservationConfirmed",

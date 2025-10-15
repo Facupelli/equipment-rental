@@ -1,9 +1,9 @@
-import { QueryHandler, IQueryHandler } from "@nestjs/cqrs";
 import { BadRequestException } from "@nestjs/common";
-import { CheckAvailabilityQuery } from "./check-availability.query";
-import { AvailabilityCheckerService } from "../../../domain/services/availability-checker.service";
-import { InventoryFacade } from "src/modules/inventory/inventory.facade";
+import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+import type { InventoryFacade } from "src/modules/inventory/inventory.facade";
 import { validateDateRange } from "src/shared/utils/date-range.utils";
+import type { AvailabilityCheckerService } from "../../../domain/services/availability-checker.service";
+import { CheckAvailabilityQuery } from "./check-availability.query";
 
 /**
  * Check Availability Query Handler (Use Case)
@@ -13,36 +13,36 @@ import { validateDateRange } from "src/shared/utils/date-range.utils";
  */
 @QueryHandler(CheckAvailabilityQuery)
 export class CheckAvailabilityHandler
-  implements IQueryHandler<CheckAvailabilityQuery, any>
+	implements IQueryHandler<CheckAvailabilityQuery, any>
 {
-  constructor(
-    private readonly availabilityChecker: AvailabilityCheckerService,
-    private readonly inventoryFacade: InventoryFacade
-  ) {}
+	constructor(
+		private readonly availabilityChecker: AvailabilityCheckerService,
+		private readonly inventoryFacade: InventoryFacade,
+	) {}
 
-  async execute(query: CheckAvailabilityQuery) {
-    try {
-      validateDateRange(query.startDateTime, query.endDateTime);
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
+	async execute(query: CheckAvailabilityQuery) {
+		try {
+			validateDateRange(query.startDateTime, query.endDateTime);
+		} catch (error) {
+			throw new BadRequestException(error.message);
+		}
 
-    // 2. Get detailed availability info
-    const totalInventory = await this.inventoryFacade.getTotalCapacity(
-      query.equipmentTypeId
-    );
+		// 2. Get detailed availability info
+		const totalInventory = await this.inventoryFacade.getTotalCapacity(
+			query.equipmentTypeId,
+		);
 
-    const availabilityDetails =
-      await this.availabilityChecker.checkAvailability({
-        equipmentTypeId: query.equipmentTypeId,
-        endDateTime: query.endDateTime,
-        startDateTime: query.startDateTime,
-        quantity: query.quantity,
-        totalInventory,
-        // TODO
-        bufferDays: 0,
-      });
+		const availabilityDetails =
+			await this.availabilityChecker.checkAvailability({
+				equipmentTypeId: query.equipmentTypeId,
+				endDate: query.endDateTime,
+				startDate: query.startDateTime,
+				quantity: query.quantity,
+				totalInventory,
+				// TODO
+				bufferDays: 0,
+			});
 
-    return availabilityDetails;
-  }
+		return availabilityDetails;
+	}
 }
