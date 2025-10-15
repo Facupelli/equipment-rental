@@ -6,8 +6,8 @@ import { CreateCategoryHandler } from "./application/commands/create-category/cr
 import { CreateEquipmentTypeHandler } from "./application/commands/create-equipment-type/create-equipment-type.handler";
 import { GetCategoriesHandler } from "./application/queries/get-categories/get-categories.handler";
 import { CqrsModule } from "@nestjs/cqrs";
-import { CategorySchema } from "./infrastructure/persistence/typeorm/category.schema";
-import { EquipmentTypeSchema } from "./infrastructure/persistence/typeorm/equipment-type.schema";
+import { CategoryEntity } from "./infrastructure/persistence/typeorm/category.entity";
+import { EquipmentTypeEntity } from "./infrastructure/persistence/typeorm/equipment-type.entity";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 const CommandHandlers = [CreateCategoryHandler, CreateEquipmentTypeHandler];
@@ -19,7 +19,7 @@ const EventHandlers = [];
 @Module({
   imports: [
     CqrsModule,
-    TypeOrmModule.forFeature([CategorySchema, EquipmentTypeSchema]),
+    TypeOrmModule.forFeature([CategoryEntity, EquipmentTypeEntity]),
   ],
   providers: [
     CatalogFacade,

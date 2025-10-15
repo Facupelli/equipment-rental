@@ -10,7 +10,7 @@ import { validateDateRange } from "src/shared/utils/date-range.utils";
 import {
   ReservationOrder,
   ReservationOrderStatus,
-} from "src/modules/booking/domain/entities/reservation-order.entity";
+} from "src/modules/booking/domain/models/reservation-order.model";
 import { v4 as uuidv4 } from "uuid";
 
 /**
@@ -64,16 +64,13 @@ export class CreateReservationHandler
     }
 
     // 3. Create reservation entity (domain logic)
-    const reservationOrder = new ReservationOrder({
-      id: uuidv4(),
-      customerId: command.customerId,
-      status: ReservationOrderStatus.Pending,
-      startDatetime: command.startDateTime,
-      endDatetime: command.endDateTime,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      items: [],
-    });
+    const reservationOrder = new ReservationOrder(
+      uuidv4(),
+      command.customerId,
+      [],
+      ReservationOrderStatus.Pending,
+      new Date()
+    );
 
     // 4. Save reservation + outbox message in SINGLE TRANSACTION
     // This is the key to the outbox pattern!
@@ -85,8 +82,6 @@ export class CreateReservationHandler
       await this.outboxRepository.save("ReservationCreated", {
         reservationId: reservationOrder.id,
         customerId: reservationOrder.customerId,
-        startDateTime: reservationOrder.startDatetime,
-        endDateTime: reservationOrder.endDatetime,
       });
     });
 

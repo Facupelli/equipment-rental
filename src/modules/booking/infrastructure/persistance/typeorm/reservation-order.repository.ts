@@ -1,22 +1,22 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ReservationOrderSchema } from "./reservation-order.schema";
 import { Repository } from "typeorm";
 import {
   BLOCKING_ORDER_STATUSES,
   ReservationOrder,
-} from "src/modules/booking/domain/entities/reservation-order.entity";
+} from "src/modules/booking/domain/models/reservation-order.model";
 import { ReservationOrderMapper } from "./reservation.mappers";
+import { ReservationOrderEntity } from "./reservation-order.entity";
 
 @Injectable()
 export class ReservationOrderRepository {
   constructor(
-    @InjectRepository(ReservationOrderSchema)
-    private readonly repository: Repository<ReservationOrderSchema>
+    @InjectRepository(ReservationOrderEntity)
+    private readonly repository: Repository<ReservationOrderEntity>
   ) {}
 
   async save(reservationOrder: ReservationOrder): Promise<void> {
-    const schema = ReservationOrderMapper.toSchema(reservationOrder);
+    const schema = ReservationOrderMapper.toEntity(reservationOrder);
     await this.repository.save(schema);
   }
 
@@ -72,7 +72,7 @@ export class ReservationOrderRepository {
       where: { id },
     });
 
-    return schema ? ReservationOrderMapper.toEntity(schema) : null;
+    return schema ? ReservationOrderMapper.toDomain(schema) : null;
   }
 
   /**

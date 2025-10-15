@@ -1,4 +1,4 @@
-import type { ReservationOrderStatus } from "src/modules/booking/domain/entities/reservation-order.entity";
+import type { ReservationOrderStatus } from "src/modules/booking/domain/models/reservation-order.model";
 import {
   Column,
   CreateDateColumn,
@@ -8,12 +8,12 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from "typeorm";
-import type { ReservationOrderItemSchema } from "./reservation-order-item.schema";
+import type { ReservationOrderItemEntity } from "./reservation-order-item.entity";
 
 @Entity({ schema: "booking", name: "reservation_order" })
 @Index(["customer_id"])
 @Index(["start_datetime", "end_datetime"])
-export class ReservationOrderSchema {
+export class ReservationOrderEntity {
   @PrimaryColumn("uuid")
   id: string;
 
@@ -23,12 +23,6 @@ export class ReservationOrderSchema {
   @Column("varchar", { length: 20 })
   status: ReservationOrderStatus;
 
-  @Column("timestamp")
-  start_datetime: Date;
-
-  @Column("timestamp")
-  end_datetime: Date;
-
   @CreateDateColumn()
   created_at: Date;
 
@@ -36,8 +30,8 @@ export class ReservationOrderSchema {
   updated_at: Date;
 
   @OneToMany(
-    "ReservationOrderItemSchema",
-    (item: ReservationOrderItemSchema) => item.order
+    "ReservationOrderItemEntity",
+    (item: ReservationOrderItemEntity) => item.order
   )
-  items: ReservationOrderItemSchema[];
+  items: ReservationOrderItemEntity[];
 }

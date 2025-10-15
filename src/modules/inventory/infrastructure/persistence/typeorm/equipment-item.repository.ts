@@ -5,12 +5,12 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, EntityManager } from "typeorm";
 import {
   EquipmentItemMapper,
-  EquipmentItemSchema,
-} from "./equipment-item.schema";
+  EquipmentItemEntity,
+} from "./equipment-item.entity";
 import {
   EquipmentItem,
   EquipmentStatus,
-} from "src/modules/inventory/domain/entities/equipment-item.entity";
+} from "src/modules/inventory/domain/models/equipment-item.model";
 
 /**
  * Repository: EquipmentItem
@@ -23,8 +23,8 @@ export class EquipmentItemRepository {
   private readonly logger = new Logger(EquipmentItemRepository.name);
 
   constructor(
-    @InjectRepository(EquipmentItemSchema)
-    private readonly repository: Repository<EquipmentItemSchema>
+    @InjectRepository(EquipmentItemEntity)
+    private readonly repository: Repository<EquipmentItemEntity>
   ) {}
 
   /**
@@ -41,7 +41,7 @@ export class EquipmentItemRepository {
     manager?: EntityManager
   ): Promise<EquipmentItem[]> {
     const repo = manager
-      ? manager.getRepository(EquipmentItemSchema)
+      ? manager.getRepository(EquipmentItemEntity)
       : this.repository;
 
     const schemas = await repo.find({
@@ -55,7 +55,7 @@ export class EquipmentItemRepository {
       },
     });
 
-    return schemas.map(EquipmentItemMapper.toEntity);
+    return schemas.map(EquipmentItemMapper.toDomain);
   }
 
   /**
@@ -66,16 +66,12 @@ export class EquipmentItemRepository {
     manager?: EntityManager
   ): Promise<EquipmentItem[]> {
     const repo = manager
-      ? manager.getRepository(EquipmentItemSchema)
+      ? manager.getRepository(EquipmentItemEntity)
       : this.repository;
 
-    const schemas = await repo.find({
-      where: {
-        status: EquipmentStatus.Rented,
-      },
-    });
+    const schemas = await repo.find({});
 
-    return schemas.map(EquipmentItemMapper.toEntity);
+    return schemas.map(EquipmentItemMapper.toDomain);
   }
 
   async existsSerial(serialNumber: string): Promise<boolean> {
@@ -89,10 +85,10 @@ export class EquipmentItemRepository {
    */
   async save(item: EquipmentItem, manager?: EntityManager): Promise<void> {
     const repo = manager
-      ? manager.getRepository(EquipmentItemSchema)
+      ? manager.getRepository(EquipmentItemEntity)
       : this.repository;
 
-    const schema = EquipmentItemMapper.toSchema(item);
+    const schema = EquipmentItemMapper.toEntity(item);
 
     try {
       await repo.save(schema);
@@ -109,14 +105,14 @@ export class EquipmentItemRepository {
    * Batch save multiple items (used by allocation handler)
    */
   async saveMany(
-    items: EquipmentItemSchema[],
+    items: EquipmentItemEntity[],
     manager?: EntityManager
   ): Promise<void> {
     const repo = manager
-      ? manager.getRepository(EquipmentItemSchema)
+      ? manager.getRepository(EquipmentItemEntity)
       : this.repository;
 
-    const schemas = items.map(EquipmentItemMapper.toSchema);
+    const schemas = items.map(EquipmentItemMapper.toEntity);
     await repo.save(schemas);
   }
 
@@ -128,7 +124,7 @@ export class EquipmentItemRepository {
     manager?: EntityManager
   ): Promise<number> {
     const repo = manager
-      ? manager.getRepository(EquipmentItemSchema)
+      ? manager.getRepository(EquipmentItemEntity)
       : this.repository;
 
     return repo.count({

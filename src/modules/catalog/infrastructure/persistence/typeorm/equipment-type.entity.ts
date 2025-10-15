@@ -1,8 +1,8 @@
-import { EquipmentType } from "src/modules/catalog/domain/entities/equipment-type.entity";
+import { EquipmentType } from "src/modules/catalog/domain/models/equipment-type.model";
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
 @Entity("catalog_equipment_types")
-export class EquipmentTypeSchema {
+export class EquipmentTypeEntity {
   @PrimaryColumn("uuid")
   id: string;
 
@@ -20,7 +20,7 @@ export class EquipmentTypeSchema {
 }
 
 export const EquipmentTypeMapper = {
-  toEntity(schema: EquipmentTypeSchema): EquipmentType {
+  toDomain(schema: EquipmentTypeEntity): EquipmentType {
     return new EquipmentType({
       id: schema.id,
       name: schema.name,
@@ -30,8 +30,8 @@ export const EquipmentTypeMapper = {
     });
   },
 
-  toSchema(entity: EquipmentType): EquipmentTypeSchema {
-    const schema = new EquipmentTypeSchema();
+  toEntity(entity: EquipmentType): EquipmentTypeEntity {
+    const schema = new EquipmentTypeEntity();
     schema.id = entity.id;
     schema.name = entity.name;
     schema.description = entity.description;

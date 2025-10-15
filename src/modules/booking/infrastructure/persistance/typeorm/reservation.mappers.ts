@@ -1,65 +1,76 @@
-import { ReservationOrderItem } from "src/modules/booking/domain/entities/reservation-order-item.entity";
-import { ReservationOrderSchema } from "./reservation-order.schema";
-import { ReservationOrder } from "src/modules/booking/domain/entities/reservation-order.entity";
-import { ReservationOrderItemSchema } from "./reservation-order-item.schema";
+import { Allocation } from "src/modules/booking/domain/models/allocation.model";
+import { AllocationEntity } from "./allocation.entity";
+import { ReservationOrder } from "src/modules/booking/domain/models/reservation-order.model";
+import { ReservationOrderEntity } from "./reservation-order.entity";
+import { ReservationOrderItem } from "src/modules/booking/domain/models/reservation-order-item.model";
+import { ReservationOrderItemEntity } from "./reservation-order-item.entity";
 
 export const ReservationOrderMapper = {
-  toEntity(schema: ReservationOrderSchema): ReservationOrder {
-    return new ReservationOrder({
-      id: schema.id,
-      customerId: schema.customer_id,
-      status: schema.status,
-      startDatetime: schema.start_datetime,
-      endDatetime: schema.end_datetime,
-      createdAt: schema.created_at,
-      updatedAt: schema.updated_at,
-      items:
-        schema.items?.map((item) =>
-          ReservationOrderItemMapper.toEntity(item)
-        ) || [],
-    });
+  toDomain(entity: ReservationOrderEntity): ReservationOrder {
+    return new ReservationOrder(
+      entity.id,
+      entity.customer_id,
+      entity.items?.map((item) => ReservationOrderItemMapper.toDomain(item)) ??
+        [],
+      entity.status,
+      entity.created_at
+    );
   },
 
-  toSchema(entity: ReservationOrder): ReservationOrderSchema {
-    const schema = new ReservationOrderSchema();
-    schema.id = entity.id;
-    schema.customer_id = entity.customerId;
-    schema.status = entity.status;
-    schema.start_datetime = entity.startDatetime;
-    schema.end_datetime = entity.endDatetime;
-    schema.created_at = entity.createdAt;
-    schema.updated_at = entity.updatedAt;
+  toEntity(model: ReservationOrder): ReservationOrderEntity {
+    const entity = new ReservationOrderEntity();
+    entity.id = model.id;
+    entity.customer_id = model.customerId;
+    entity.status = model.status;
+    entity.created_at = model.createdAt;
+    entity.updated_at = new Date();
 
-    if (entity.items) {
-      schema.items = entity.items.map((item) =>
-        ReservationOrderItemMapper.toSchema(item)
-      );
-    }
+    entity.items = model.items.map((item) =>
+      ReservationOrderItemMapper.toEntity(item)
+    );
 
-    return schema;
+    return entity;
   },
 };
 
 export const ReservationOrderItemMapper = {
-  toEntity(schema: ReservationOrderItemSchema): ReservationOrderItem {
-    return new ReservationOrderItem({
-      id: schema.id,
-      orderId: schema.order_id,
-      itemId: schema.item_id,
-      quantity: schema.quantity,
-      createdAt: schema.created_at,
-      updatedAt: schema.updated_at,
-    });
+  toDomain(entity: ReservationOrderItemEntity): ReservationOrderItem {
+    return new ReservationOrderItem(
+      entity.id,
+      entity.item_id,
+      entity.quantity,
+      entity.allocations?.map((a) => AllocationMapper.toDomain(a)) ?? []
+    );
   },
 
-  toSchema(entity: ReservationOrderItem): ReservationOrderItemSchema {
-    const schema = new ReservationOrderItemSchema();
-    schema.id = entity.id;
-    schema.order_id = entity.orderId;
-    schema.item_id = entity.itemId;
-    schema.quantity = entity.quantity;
-    schema.created_at = entity.createdAt;
-    schema.updated_at = entity.updatedAt;
-    return schema;
+  toEntity(model: ReservationOrderItem): ReservationOrderItemEntity {
+    const entity = new ReservationOrderItemEntity();
+    entity.id = model.id;
+    entity.item_id = model.equipmentId;
+    entity.quantity = model.quantity;
+    entity.allocations = model.allocations.map((a) =>
+      AllocationMapper.toEntity(a)
+    );
+    return entity;
+  },
+};
+
+export const AllocationMapper = {
+  toDomain(entity: AllocationEntity): Allocation {
+    return new Allocation(
+      entity.id,
+      entity.item_id,
+      entity.start_date,
+      entity.end_date
+    );
+  },
+
+  toEntity(model: Allocation): AllocationEntity {
+    const entity = new AllocationEntity();
+    entity.id = model.id;
+    entity.item_id = model.equipmentUnitId;
+    entity.start_date = model.startDate;
+    entity.end_date = model.endDate;
+    return entity;
   },
 };

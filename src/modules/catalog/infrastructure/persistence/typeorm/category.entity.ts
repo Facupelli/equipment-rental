@@ -1,8 +1,8 @@
-import { Category } from "src/modules/catalog/domain/entities/category.entity";
+import { Category } from "src/modules/catalog/domain/models/category.model";
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
 @Entity("catalog_categories")
-export class CategorySchema {
+export class CategoryEntity {
   @PrimaryColumn("uuid")
   id: string;
 
@@ -14,7 +14,7 @@ export class CategorySchema {
 }
 
 export const CategoryMapper = {
-  toEntity(schema: CategorySchema): Category {
+  toDomain(schema: CategoryEntity): Category {
     return new Category({
       id: schema.id,
       name: schema.name,
@@ -22,8 +22,8 @@ export const CategoryMapper = {
     });
   },
 
-  toSchema(entity: Category): CategorySchema {
-    const schema = new CategorySchema();
+  toEntity(entity: Category): CategoryEntity {
+    const schema = new CategoryEntity();
     schema.id = entity.id;
     schema.name = entity.name;
     schema.description = entity.description;

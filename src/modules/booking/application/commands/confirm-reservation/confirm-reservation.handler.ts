@@ -43,8 +43,6 @@ export class ConfirmReservationHandler
         eventType: "ReservationConfirmed",
         payload: JSON.stringify({
           reservationId: reservationOrder.id,
-          startDate: reservationOrder.startDatetime,
-          endDate: reservationOrder.endDatetime,
           confirmedAt: new Date(),
         }),
         createdAt: new Date(),

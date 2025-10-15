@@ -81,7 +81,6 @@ export class ReservationConfirmedHandler
           try {
             // Domain method enforces business rules
             // item.markAsRented(event.reservationId, event.endTime);
-            item.markAsRented();
           } catch (error) {
             this.logger.error(
               `Failed to allocate item ${item.serialNumber}: ${error.message}`

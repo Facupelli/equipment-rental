@@ -10,10 +10,10 @@ import {
 import {
   EquipmentItem,
   EquipmentStatus,
-} from "src/modules/inventory/domain/entities/equipment-item.entity";
+} from "src/modules/inventory/domain/models/equipment-item.model";
 
 @Entity("inventory_equipment_items")
-export class EquipmentItemSchema {
+export class EquipmentItemEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
@@ -45,7 +45,7 @@ export class EquipmentItemSchema {
 }
 
 export const EquipmentItemMapper = {
-  toEntity(schema: EquipmentItemSchema): EquipmentItem {
+  toDomain(schema: EquipmentItemEntity): EquipmentItem {
     return new EquipmentItem({
       id: schema.id,
       equipmentTypeId: schema.equipmentTypeId,
@@ -57,8 +57,8 @@ export const EquipmentItemMapper = {
     });
   },
 
-  toSchema(entity: EquipmentItem): EquipmentItemSchema {
-    const schema = new EquipmentItemSchema();
+  toEntity(entity: EquipmentItem): EquipmentItemEntity {
+    const schema = new EquipmentItemEntity();
     schema.id = entity.id;
     schema.equipmentTypeId = entity.equipmentTypeId;
     schema.serialNumber = entity.serialNumber;

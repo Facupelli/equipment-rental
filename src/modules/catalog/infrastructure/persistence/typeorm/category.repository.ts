@@ -1,24 +1,24 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { CategoryMapper, CategorySchema } from "./category.schema";
+import { CategoryMapper, CategoryEntity } from "./category.entity";
 import { Repository } from "typeorm";
-import { Category } from "src/modules/catalog/domain/entities/category.entity";
+import { Category } from "src/modules/catalog/domain/models/category.model";
 
 @Injectable()
 export class CategoryRepository {
   constructor(
-    @InjectRepository(CategorySchema)
-    private readonly repository: Repository<CategorySchema>
+    @InjectRepository(CategoryEntity)
+    private readonly repository: Repository<CategoryEntity>
   ) {}
 
-  async save(category: CategorySchema): Promise<void> {
-    const schema = CategoryMapper.toSchema(category);
+  async save(category: CategoryEntity): Promise<void> {
+    const schema = CategoryMapper.toEntity(category);
     await this.repository.save(schema);
   }
 
   async findById(id: string): Promise<Category | null> {
     const raw = await this.repository.findOneBy({ id });
-    return raw ? CategoryMapper.toEntity(raw) : null;
+    return raw ? CategoryMapper.toDomain(raw) : null;
   }
 
   async exists(id: string): Promise<boolean> {
@@ -27,6 +27,6 @@ export class CategoryRepository {
 
   async findAll(): Promise<Category[]> {
     const raws = await this.repository.find({ order: { name: "ASC" } });
-    return raws.map(CategoryMapper.toEntity);
+    return raws.map(CategoryMapper.toDomain);
   }
 }

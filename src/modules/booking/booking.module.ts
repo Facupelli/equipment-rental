@@ -10,8 +10,8 @@ import { OutboxRepository } from "./infrastructure/persistance/outbox/outbox.rep
 import { OutboxSchema } from "./infrastructure/persistance/outbox/outbox.schema";
 import { InventoryModule } from "../inventory/inventory.module";
 import { ConfirmReservationHandler } from "./application/commands/confirm-reservation/confirm-reservation.handler";
-import { ReservationOrderSchema } from "./infrastructure/persistance/typeorm/reservation-order.schema";
-import { ReservationOrderItemSchema } from "./infrastructure/persistance/typeorm/reservation-order-item.schema";
+import { ReservationOrderEntity } from "./infrastructure/persistance/typeorm/reservation-order.entity";
+import { ReservationOrderItemEntity } from "./infrastructure/persistance/typeorm/reservation-order-item.entity";
 import { ReservationOrderRepository } from "./infrastructure/persistance/typeorm/reservation-order.repository";
 import { ReservationOrderItemRepository } from "./infrastructure/persistance/typeorm/reservation-order-item.repository";
 
@@ -23,8 +23,8 @@ const EventHandlers = [];
   imports: [
     CqrsModule,
     TypeOrmModule.forFeature([
-      ReservationOrderSchema,
-      ReservationOrderItemSchema,
+      ReservationOrderEntity,
+      ReservationOrderItemEntity,
       OutboxSchema,
     ]),
     // Dependencies

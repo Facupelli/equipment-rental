@@ -1,6 +1,6 @@
 export enum EquipmentStatus {
   Available = "AVAILABLE",
-  Rented = "RENTED",
+  Lost = "LOST",
   Maintenance = "MAINTENANCE",
   Retired = "RETIRED",
 }
@@ -22,19 +22,8 @@ export class EquipmentItem {
     return this.status === EquipmentStatus.Available;
   }
 
-  isRented(): boolean {
-    return this.status === EquipmentStatus.Rented;
-  }
-
   canBeRented(): boolean {
     return this.status === EquipmentStatus.Available;
-  }
-
-  markAsRented(): void {
-    if (!this.canBeRented()) {
-      throw new Error(`Cannot rent equipment with status: ${this.status}`);
-    }
-    this.status = EquipmentStatus.Rented;
   }
 
   markAsAvailable(): void {

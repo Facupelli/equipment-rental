@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   EquipmentItem,
   EquipmentStatus,
-} from "src/modules/inventory/domain/entities/equipment-item.entity";
+} from "src/modules/inventory/domain/models/equipment-item.model";
 import { EquipmentItemRepository } from "src/modules/inventory/infrastructure/persistence/typeorm/equipment-item.repository";
 
 @CommandHandler(RegisterEquipmentCommand)
