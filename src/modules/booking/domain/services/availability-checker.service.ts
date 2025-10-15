@@ -1,57 +1,35 @@
 import { Injectable } from "@nestjs/common";
-import { ReservationOrderRepository } from "../../infrastructure/persistance/typeorm/reservation-order.repository";
+import type { AllocationRepository } from "../../infrastructure/persistance/typeorm/allocation.repository";
 
 interface AvailabilityCheckParams {
-  equipmentTypeId: string;
-  startDateTime: Date;
-  endDateTime: Date;
-  quantity: number;
-  totalInventory: number;
-  bufferDays: number;
+	equipmentTypeId: string;
+	startDate: Date;
+	endDate: Date;
+	quantity: number;
+	totalInventory: number;
+	bufferDays: number;
 }
 
-/**
- * Domain Service: Availability Checker
- *
- * Encapsulates the complex algorithm for checking equipment availability
- * Uses interval decomposition (sweep line algorithm) to find peak concurrent usage
- *
- * Time complexity: O(n log n) where n = number of overlapping reservations
- */
 @Injectable()
 export class AvailabilityCheckerService {
-  constructor(
-    private readonly reservationOrderRepository: ReservationOrderRepository
-  ) {}
+	constructor(private readonly allocationRepository: AllocationRepository) {}
 
-  /**
-   * Check if equipment is available for the requested time range and quantity
-   */
-  async checkAvailability(params: AvailabilityCheckParams) {
-    const {
-      equipmentTypeId,
-      bufferDays,
-      startDateTime,
-      endDateTime,
-      quantity,
-      totalInventory,
-    } = params;
+	async checkAvailability(
+		params: AvailabilityCheckParams,
+	): Promise<string[] | null> {
+		const availableItemIds =
+			await this.allocationRepository.getAvailableItemsForDateRange(
+				params.equipmentTypeId,
+				params.startDate,
+				params.endDate,
+			);
 
-    const bookedCount =
-      await this.reservationOrderRepository.getBookedItemsCount(
-        equipmentTypeId,
-        startDateTime,
-        endDateTime,
-        bufferDays
-      );
+		const validItemIds = availableItemIds.slice(0, params.totalInventory);
 
-    // Calculate available capacity
-    const availableCapacity = Math.max(0, totalInventory - bookedCount);
+		if (validItemIds.length >= params.quantity) {
+			return validItemIds.slice(0, params.quantity);
+		}
 
-    return {
-      totalInventory,
-      bookedCount,
-      availableCapacity,
-    };
-  }
+		return null;
+	}
 }
