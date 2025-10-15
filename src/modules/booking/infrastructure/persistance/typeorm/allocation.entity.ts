@@ -7,8 +7,8 @@ import {
 } from "typeorm";
 import { ReservationOrderItemEntity } from "./reservation-order-item.entity";
 
-@Entity({ name: "allocations" })
-@Index(["itemId", "startDate", "endDate"])
+@Entity({ schema: "booking", name: "allocations" })
+@Index(["item_id", "start_date", "end_date"])
 export class AllocationEntity {
   @PrimaryGeneratedColumn("uuid", { name: "allocation_id" })
   id: string;

@@ -12,7 +12,6 @@ import { AllocationEntity } from "./allocation.entity";
 
 @Entity({ schema: "booking", name: "reservation_order_item" })
 @Index(["item_id"])
-@Index(["order_id"])
 export class ReservationOrderItemEntity {
   @PrimaryColumn("uuid")
   id: string;

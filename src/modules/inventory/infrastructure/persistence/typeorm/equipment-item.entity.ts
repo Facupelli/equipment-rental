@@ -12,7 +12,7 @@ import {
   EquipmentStatus,
 } from "src/modules/inventory/domain/models/equipment-item.model";
 
-@Entity("inventory_equipment_items")
+@Entity({ schema: "inventory", name: "equipment_items" })
 export class EquipmentItemEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;

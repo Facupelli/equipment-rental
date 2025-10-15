@@ -1,7 +1,7 @@
 import { Category } from "src/modules/catalog/domain/models/category.model";
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
-@Entity("catalog_categories")
+@Entity({ schema: "catalog", name: "categories" })
 export class CategoryEntity {
   @PrimaryColumn("uuid")
   id: string;

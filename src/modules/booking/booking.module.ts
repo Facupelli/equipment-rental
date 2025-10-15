@@ -14,6 +14,7 @@ import { ReservationOrderEntity } from "./infrastructure/persistance/typeorm/res
 import { ReservationOrderItemEntity } from "./infrastructure/persistance/typeorm/reservation-order-item.entity";
 import { ReservationOrderRepository } from "./infrastructure/persistance/typeorm/reservation-order.repository";
 import { ReservationOrderItemRepository } from "./infrastructure/persistance/typeorm/reservation-order-item.repository";
+import { AllocationEntity } from "./infrastructure/persistance/typeorm/allocation.entity";
 
 const CommandHandlers = [CreateReservationHandler, ConfirmReservationHandler];
 const QueryHandlers = [CheckAvailabilityHandler];
@@ -25,6 +26,7 @@ const EventHandlers = [];
     TypeOrmModule.forFeature([
       ReservationOrderEntity,
       ReservationOrderItemEntity,
+      AllocationEntity,
       OutboxSchema,
     ]),
     // Dependencies
