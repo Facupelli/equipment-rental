@@ -1,38 +1,32 @@
 import { Category } from "src/modules/catalog/domain/entities/category.entity";
-import { CategoryId } from "src/modules/catalog/domain/value-objects/category-id.vo";
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
 @Entity("catalog_categories")
 export class CategorySchema {
   @PrimaryColumn("uuid")
-  id!: string;
+  id: string;
 
   @Column({ length: 120 })
-  name!: string;
+  name: string;
 
   @Column({ type: "text", nullable: true })
-  description!: string;
-
-  @Column({ type: "uuid", nullable: true })
-  parentId!: string | null;
+  description: string;
 }
 
 export const CategoryMapper = {
-  toDomain(raw: CategorySchema): Category {
-    return Category.create(
-      CategoryId.fromString(raw.id),
-      raw.name,
-      raw.description,
-      raw.parentId ? CategoryId.fromString(raw.parentId) : null
-    );
+  toEntity(schema: CategorySchema): Category {
+    return new Category({
+      id: schema.id,
+      name: schema.name,
+      description: schema.description,
+    });
   },
 
-  toPersistence(entity: Category): CategorySchema {
-    return {
-      id: entity.id,
-      name: entity.name,
-      description: entity.description,
-      parentId: entity.parentId?.value ?? null,
-    };
+  toSchema(entity: Category): CategorySchema {
+    const schema = new CategorySchema();
+    schema.id = entity.id;
+    schema.name = entity.name;
+    schema.description = entity.description;
+    return schema;
   },
 };

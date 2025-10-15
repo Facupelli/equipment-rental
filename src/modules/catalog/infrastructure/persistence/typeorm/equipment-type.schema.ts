@@ -1,6 +1,4 @@
 import { EquipmentType } from "src/modules/catalog/domain/entities/equipment-type.entity";
-import { CategoryId } from "src/modules/catalog/domain/value-objects/category-id.vo";
-import { EquipmentTypeId } from "src/modules/catalog/domain/value-objects/equipment-type-id.vo";
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
 @Entity("catalog_equipment_types")
@@ -16,24 +14,29 @@ export class EquipmentTypeSchema {
 
   @Column("uuid")
   categoryId: string;
+
+  @Column({ type: "int", default: 0 })
+  bufferDays: number;
 }
 
 export const EquipmentTypeMapper = {
-  toDomain(raw: EquipmentTypeSchema): EquipmentType {
-    return EquipmentType.create(
-      EquipmentTypeId.fromString(raw.id),
-      raw.name,
-      raw.description,
-      CategoryId.fromString(raw.categoryId)
-    );
+  toEntity(schema: EquipmentTypeSchema): EquipmentType {
+    return new EquipmentType({
+      id: schema.id,
+      name: schema.name,
+      description: schema.description,
+      categoryId: schema.categoryId,
+      bufferDays: schema.bufferDays,
+    });
   },
 
-  toPersistence(entity: EquipmentType): EquipmentTypeSchema {
-    return {
-      id: entity.id,
-      name: entity.name,
-      description: entity.description,
-      categoryId: entity.categoryId.value,
-    };
+  toSchema(entity: EquipmentType): EquipmentTypeSchema {
+    const schema = new EquipmentTypeSchema();
+    schema.id = entity.id;
+    schema.name = entity.name;
+    schema.description = entity.description;
+    schema.categoryId = entity.categoryId;
+    schema.bufferDays = entity.bufferDays;
+    return schema;
   },
 };

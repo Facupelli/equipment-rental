@@ -3,14 +3,14 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { ZodSerializerInterceptor, ZodValidationPipe } from "nestjs-zod";
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
-import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
+import { HttpExceptionFilter } from "./shared/filters/http-exception.filter";
 import { ConfigModule } from "@nestjs/config";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { DatabaseModule } from "./shared/infrastructure/database/database.module";
 import { BookingModule } from "./modules/booking/booking.module";
 import { CatalogModule } from "./modules/catalog/catalog.module";
 import { InventoryModule } from "./modules/inventory/inventory.module";
-import configuration, { envSchema } from "./common/config/configuration";
+import configuration, { envSchema } from "./shared/config/configuration";
 
 @Module({
   imports: [

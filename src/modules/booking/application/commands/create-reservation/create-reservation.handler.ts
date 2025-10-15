@@ -1,19 +1,17 @@
-import { CommandHandler, ICommandHandler, EventBus } from "@nestjs/cqrs";
-import { Inject, BadRequestException, ConflictException } from "@nestjs/common";
+import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
+import { BadRequestException, ConflictException } from "@nestjs/common";
 import { CreateReservationCommand } from "./create-reservation.command";
-import {
-  IReservationRepository,
-  RESERVATION_REPOSITORY,
-} from "../../../domain/repositories/reservation.repository.interface";
-import { Reservation } from "../../../domain/entities/reservation.entity";
-import { TimeRange } from "../../../domain/value-objects/time-range.vo";
 import { AvailabilityCheckerService } from "../../../domain/services/availability-checker.service";
-import { ReservationCreatedEvent } from "../../../domain/events/reservation-created.event";
-import { Result } from "../../../../../shared/domain/result";
 import { OutboxRepository } from "src/modules/booking/infrastructure/persistance/outbox/outbox.repository";
 import { DataSource } from "typeorm";
-import { ReservationRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation.repository";
 import { InventoryFacade } from "src/modules/inventory/inventory.facade";
+import { ReservationOrderRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation-order.repository";
+import { validateDateRange } from "src/shared/utils/date-range.utils";
+import {
+  ReservationOrder,
+  ReservationOrderStatus,
+} from "src/modules/booking/domain/entities/reservation-order.entity";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Create Reservation Command Handler (Use Case)
@@ -29,7 +27,7 @@ export class CreateReservationHandler
   implements ICommandHandler<CreateReservationCommand, string>
 {
   constructor(
-    private readonly reservationRepository: ReservationRepository,
+    private readonly reservationOrderRepository: ReservationOrderRepository,
     private readonly availabilityChecker: AvailabilityCheckerService,
     private readonly outboxRepository: OutboxRepository,
     private readonly dataSource: DataSource, // For transactions // In real implementation, inject InventoryFacade to get total inventory // For now, we'll hardcode for demonstration
@@ -38,16 +36,11 @@ export class CreateReservationHandler
 
   async execute(command: CreateReservationCommand): Promise<string> {
     // 1. Create time range value object
-    const timeRangeResult = TimeRange.create(
-      command.startDateTime,
-      command.endDateTime
-    );
-
-    if (timeRangeResult.isFailure) {
-      throw new BadRequestException(timeRangeResult.error);
+    try {
+      validateDateRange(command.startDateTime, command.endDateTime);
+    } catch (error) {
+      throw new BadRequestException(error.message);
     }
-
-    const timeRange = timeRangeResult.value;
 
     // 2. Check availability (domain service)
     const totalInventory = await this.inventoryFacade.getTotalCapacity(
@@ -56,9 +49,12 @@ export class CreateReservationHandler
 
     const isAvailable = await this.availabilityChecker.checkAvailability({
       equipmentTypeId: command.equipmentTypeId,
-      timeRange,
+      startDateTime: command.startDateTime,
+      endDateTime: command.endDateTime,
       quantity: command.quantity,
       totalInventory,
+      // TODO
+      bufferDays: 0,
     });
 
     if (!isAvailable) {
@@ -68,41 +64,35 @@ export class CreateReservationHandler
     }
 
     // 3. Create reservation entity (domain logic)
-    const reservationResult = Reservation.create({
+    const reservationOrder = new ReservationOrder({
+      id: uuidv4(),
       customerId: command.customerId,
-      equipmentTypeId: command.equipmentTypeId,
-      timeRange,
-      quantity: command.quantity,
-      status: "pending" as any, // Will be enum
-      notes: command.notes,
+      status: ReservationOrderStatus.Pending,
+      startDatetime: command.startDateTime,
+      endDatetime: command.endDateTime,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      items: [],
     });
-
-    if (reservationResult.isFailure) {
-      throw new BadRequestException(reservationResult.error);
-    }
-
-    const reservation = reservationResult.value;
 
     // 4. Save reservation + outbox message in SINGLE TRANSACTION
     // This is the key to the outbox pattern!
     await this.dataSource.transaction(async (manager) => {
       // Save reservation
-      await this.reservationRepository.save(reservation);
+      await this.reservationOrderRepository.save(reservationOrder);
 
       // Add event to outbox (same transaction!)
       await this.outboxRepository.save("ReservationCreated", {
-        reservationId: reservation.id.value,
-        customerId: reservation.customerId,
-        equipmentTypeId: reservation.equipmentTypeId,
-        startDateTime: reservation.startDateTime.toISOString(),
-        endDateTime: reservation.endDateTime.toISOString(),
-        quantity: reservation.quantity,
+        reservationId: reservationOrder.id,
+        customerId: reservationOrder.customerId,
+        startDateTime: reservationOrder.startDatetime,
+        endDateTime: reservationOrder.endDatetime,
       });
     });
 
     // Background worker will process the outbox and publish events
     // Other modules will react asynchronously!
 
-    return reservation.id.value;
+    return reservationOrder.id;
   }
 }

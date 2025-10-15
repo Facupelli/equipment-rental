@@ -6,8 +6,6 @@ import {
 } from "./equipment-type.schema";
 import { Repository } from "typeorm";
 import { EquipmentType } from "src/modules/catalog/domain/entities/equipment-type.entity";
-import { EquipmentTypeId } from "src/modules/catalog/domain/value-objects/equipment-type-id.vo";
-import { CategoryId } from "src/modules/catalog/domain/value-objects/category-id.vo";
 
 @Injectable()
 export class EquipmentTypeRepository {
@@ -17,17 +15,17 @@ export class EquipmentTypeRepository {
   ) {}
 
   async save(type: EquipmentType): Promise<void> {
-    await this.repository.save(EquipmentTypeMapper.toPersistence(type));
+    await this.repository.save(EquipmentTypeMapper.toSchema(type));
   }
 
   /* ---------- read ---------- */
-  async findById(id: EquipmentTypeId): Promise<EquipmentType | null> {
-    const raw = await this.repository.findOneBy({ id: id.value });
-    return raw ? EquipmentTypeMapper.toDomain(raw) : null;
+  async findById(id: string): Promise<EquipmentType | null> {
+    const raw = await this.repository.findOneBy({ id });
+    return raw ? EquipmentTypeMapper.toEntity(raw) : null;
   }
 
-  async findByCategoryId(categoryId: CategoryId): Promise<EquipmentType[]> {
-    const raws = await this.repository.findBy({ categoryId: categoryId.value });
-    return raws.map(EquipmentTypeMapper.toDomain);
+  async findByCategoryId(categoryId: string): Promise<EquipmentType[]> {
+    const raws = await this.repository.findBy({ categoryId });
+    return raws.map(EquipmentTypeMapper.toEntity);
   }
 }

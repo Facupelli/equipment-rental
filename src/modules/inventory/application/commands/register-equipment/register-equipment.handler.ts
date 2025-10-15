@@ -2,7 +2,10 @@ import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { RegisterEquipmentCommand } from "./register-equipment.command";
 import { ConflictException, BadRequestException } from "@nestjs/common";
 import { v4 as uuidv4 } from "uuid";
-import { EquipmentItem } from "src/modules/inventory/domain/entities/equipment-item.entity";
+import {
+  EquipmentItem,
+  EquipmentStatus,
+} from "src/modules/inventory/domain/entities/equipment-item.entity";
 import { EquipmentItemRepository } from "src/modules/inventory/infrastructure/persistence/typeorm/equipment-item.repository";
 
 @CommandHandler(RegisterEquipmentCommand)
@@ -29,6 +32,7 @@ export class RegisterEquipmentHandler
     const existing = await this.equipmentItemRepository.existsSerial(
       serialNumber
     );
+
     if (existing) {
       throw new ConflictException(
         `Equipment with serial number ${serialNumber} already exists`
@@ -36,11 +40,15 @@ export class RegisterEquipmentHandler
     }
 
     // Create new equipment item
-    const equipmentItem = EquipmentItem.create(
-      uuidv4(),
+    const equipmentItem = new EquipmentItem({
+      id: uuidv4(),
       equipmentTypeId,
-      serialNumber.trim()
-    );
+      serialNumber: serialNumber.trim(),
+      status: EquipmentStatus.Available, // Default status
+      version: 0, // Initial version for optimistic locking
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
     // Persist
     await this.equipmentItemRepository.save(equipmentItem);

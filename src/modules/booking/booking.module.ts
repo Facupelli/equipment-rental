@@ -5,13 +5,15 @@ import { BookingController } from "./presentation/booking.controller";
 import { CreateReservationHandler } from "./application/commands/create-reservation/create-reservation.handler";
 import { CheckAvailabilityHandler } from "./application/queries/check-availability/check-availability.handler";
 import { AvailabilityCheckerService } from "./domain/services/availability-checker.service";
-import { ReservationSchema } from "./infrastructure/persistance/typeorm/reservation.schema";
-import { ReservationRepository } from "./infrastructure/persistance/typeorm/reservation.repository";
 import { BookingFacade } from "./booking.facade";
 import { OutboxRepository } from "./infrastructure/persistance/outbox/outbox.repository";
 import { OutboxSchema } from "./infrastructure/persistance/outbox/outbox.schema";
 import { InventoryModule } from "../inventory/inventory.module";
 import { ConfirmReservationHandler } from "./application/commands/confirm-reservation/confirm-reservation.handler";
+import { ReservationOrderSchema } from "./infrastructure/persistance/typeorm/reservation-order.schema";
+import { ReservationOrderItemSchema } from "./infrastructure/persistance/typeorm/reservation-order-item.schema";
+import { ReservationOrderRepository } from "./infrastructure/persistance/typeorm/reservation-order.repository";
+import { ReservationOrderItemRepository } from "./infrastructure/persistance/typeorm/reservation-order-item.repository";
 
 const CommandHandlers = [CreateReservationHandler, ConfirmReservationHandler];
 const QueryHandlers = [CheckAvailabilityHandler];
@@ -20,7 +22,11 @@ const EventHandlers = [];
 @Module({
   imports: [
     CqrsModule,
-    TypeOrmModule.forFeature([ReservationSchema, OutboxSchema]),
+    TypeOrmModule.forFeature([
+      ReservationOrderSchema,
+      ReservationOrderItemSchema,
+      OutboxSchema,
+    ]),
     // Dependencies
     InventoryModule,
   ],
@@ -43,7 +49,8 @@ const EventHandlers = [];
     //   provide: RESERVATION_REPOSITORY,
     //   useClass: ReservationRepository,
     // },
-    ReservationRepository,
+    ReservationOrderRepository,
+    ReservationOrderItemRepository,
   ],
   exports: [
     // Export facade for other modules to use

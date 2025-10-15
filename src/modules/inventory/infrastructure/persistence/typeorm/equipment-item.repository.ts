@@ -3,12 +3,14 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, EntityManager } from "typeorm";
-import { EquipmentItemSchema } from "./equipment-item.schema";
+import {
+  EquipmentItemMapper,
+  EquipmentItemSchema,
+} from "./equipment-item.schema";
 import {
   EquipmentItem,
   EquipmentStatus,
 } from "src/modules/inventory/domain/entities/equipment-item.entity";
-import { ReservationId } from "src/modules/booking/domain/value-objects/reservation-id.vo";
 
 /**
  * Repository: EquipmentItem
@@ -53,14 +55,14 @@ export class EquipmentItemRepository {
       },
     });
 
-    return schemas.map(this.toDomain);
+    return schemas.map(EquipmentItemMapper.toEntity);
   }
 
   /**
    * Find items already allocated to a specific reservation (for idempotency)
    */
   async findByReservationId(
-    reservationId: ReservationId,
+    reservationId: string,
     manager?: EntityManager
   ): Promise<EquipmentItem[]> {
     const repo = manager
@@ -69,12 +71,11 @@ export class EquipmentItemRepository {
 
     const schemas = await repo.find({
       where: {
-        allocatedToReservationId: reservationId,
-        status: EquipmentStatus.Allocated,
+        status: EquipmentStatus.Rented,
       },
     });
 
-    return schemas.map(this.toDomain);
+    return schemas.map(EquipmentItemMapper.toEntity);
   }
 
   async existsSerial(serialNumber: string): Promise<boolean> {
@@ -91,7 +92,7 @@ export class EquipmentItemRepository {
       ? manager.getRepository(EquipmentItemSchema)
       : this.repository;
 
-    const schema = this.toSchema(item);
+    const schema = EquipmentItemMapper.toSchema(item);
 
     try {
       await repo.save(schema);
@@ -108,14 +109,14 @@ export class EquipmentItemRepository {
    * Batch save multiple items (used by allocation handler)
    */
   async saveMany(
-    items: EquipmentItem[],
+    items: EquipmentItemSchema[],
     manager?: EntityManager
   ): Promise<void> {
     const repo = manager
       ? manager.getRepository(EquipmentItemSchema)
       : this.repository;
 
-    const schemas = items.map(this.toSchema);
+    const schemas = items.map(EquipmentItemMapper.toSchema);
     await repo.save(schemas);
   }
 
@@ -136,39 +137,5 @@ export class EquipmentItemRepository {
         status: EquipmentStatus.Available,
       },
     });
-  }
-
-  // --- Mapping Methods ---
-
-  private toDomain(schema: EquipmentItemSchema): EquipmentItem {
-    const item = new EquipmentItem({
-      id: schema.id,
-      equipmentTypeId: schema.equipmentTypeId,
-      serialNumber: schema.serialNumber,
-      status: schema.status,
-    });
-
-    // Restore allocation state
-    item.allocatedToReservationId = schema.allocatedToReservationId;
-    item.allocatedUntil = schema.allocatedUntil;
-    item.version = schema.version;
-    item.createdAt = schema.createdAt;
-    item.updatedAt = schema.updatedAt;
-
-    return item;
-  }
-
-  private toSchema(item: EquipmentItem): EquipmentItemSchema {
-    const schema = new EquipmentItemSchema();
-    schema.id = item.id;
-    schema.equipmentTypeId = item.equipmentTypeId;
-    schema.serialNumber = item.serialNumber;
-    schema.status = item.status;
-    schema.allocatedToReservationId = item.allocatedToReservationId;
-    schema.allocatedUntil = item.allocatedUntil;
-    schema.version = item.version;
-    schema.createdAt = item.createdAt;
-    schema.updatedAt = item.updatedAt;
-    return schema;
   }
 }

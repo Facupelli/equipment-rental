@@ -7,8 +7,10 @@ import {
   UpdateDateColumn,
   VersionColumn,
 } from "typeorm";
-import { EquipmentStatus } from "src/modules/inventory/domain/entities/equipment-item.entity";
-import { ReservationId } from "src/modules/booking/domain/value-objects/reservation-id.vo";
+import {
+  EquipmentItem,
+  EquipmentStatus,
+} from "src/modules/inventory/domain/entities/equipment-item.entity";
 
 @Entity("inventory_equipment_items")
 export class EquipmentItemSchema {
@@ -17,7 +19,7 @@ export class EquipmentItemSchema {
 
   @Index()
   @Column("uuid")
-  equipmentTypeId: string; // FK to catalog.equipment_types.id (no DB FK needed yet)
+  equipmentTypeId: string;
 
   @Column({ type: "varchar", length: 120, unique: true })
   serialNumber: string;
@@ -29,20 +31,8 @@ export class EquipmentItemSchema {
   })
   status: EquipmentStatus;
 
-  @Column({
-    name: "allocated_to_reservation_id",
-    type: "uuid",
-    nullable: true,
-  })
-  allocatedToReservationId: ReservationId | null;
-
-  @Column({ name: "allocated_until", type: "timestamp", nullable: true })
-  allocatedUntil: Date | null;
-
   /**
    * Optimistic Locking: Automatically incremented on each update
-   * When updating, TypeORM adds: WHERE version = X
-   * If another transaction updated first, affected rows = 0, throws error
    */
   @VersionColumn()
   version: number;
@@ -53,3 +43,29 @@ export class EquipmentItemSchema {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
 }
+
+export const EquipmentItemMapper = {
+  toEntity(schema: EquipmentItemSchema): EquipmentItem {
+    return new EquipmentItem({
+      id: schema.id,
+      equipmentTypeId: schema.equipmentTypeId,
+      serialNumber: schema.serialNumber,
+      status: schema.status,
+      version: schema.version,
+      createdAt: schema.createdAt,
+      updatedAt: schema.updatedAt,
+    });
+  },
+
+  toSchema(entity: EquipmentItem): EquipmentItemSchema {
+    const schema = new EquipmentItemSchema();
+    schema.id = entity.id;
+    schema.equipmentTypeId = entity.equipmentTypeId;
+    schema.serialNumber = entity.serialNumber;
+    schema.status = entity.status;
+    schema.version = entity.version;
+    schema.createdAt = entity.createdAt;
+    schema.updatedAt = entity.updatedAt;
+    return schema;
+  },
+};

@@ -1,5 +1,4 @@
 import { BaseDomainEvent } from "src/shared/domain/domain-event";
-import { ReservationId } from "../../value-objects/reservation-id.vo";
 
 /**
  * Domain Event: ReservationConfirmed
@@ -11,7 +10,7 @@ import { ReservationId } from "../../value-objects/reservation-id.vo";
  * and represents a firm commitment that requires downstream actions (e.g., physical asset allocation).
  */
 export class ReservationConfirmedEvent extends BaseDomainEvent {
-  public readonly reservationId: ReservationId;
+  public readonly reservationId: string;
   public readonly equipmentTypeId: string;
   public readonly quantity: number;
   public readonly startTime: Date;
@@ -19,7 +18,7 @@ export class ReservationConfirmedEvent extends BaseDomainEvent {
   public readonly customerId: string;
 
   constructor(params: {
-    reservationId: ReservationId;
+    reservationId: string;
     equipmentTypeId: string;
     quantity: number;
     startTime: Date;

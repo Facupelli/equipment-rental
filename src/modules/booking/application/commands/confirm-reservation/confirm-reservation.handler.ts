@@ -4,14 +4,14 @@ import { DataSource } from "typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { v4 as uuidv4 } from "uuid";
 import { OutboxSchema } from "src/modules/booking/infrastructure/persistance/outbox/outbox.schema";
-import { ReservationRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation.repository";
+import { ReservationOrderRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation-order.repository";
 
 @CommandHandler(ConfirmReservationCommand)
 export class ConfirmReservationHandler
   implements ICommandHandler<ConfirmReservationCommand, void>
 {
   constructor(
-    private readonly reservationRepository: ReservationRepository,
+    private readonly reservationOrderRepository: ReservationOrderRepository,
     private readonly dataSource: DataSource
   ) {}
 
@@ -19,34 +19,32 @@ export class ConfirmReservationHandler
     const { reservationId } = command;
 
     // Find the reservation
-    const reservation = await this.reservationRepository.findById(
+    const reservationOrder = await this.reservationOrderRepository.findById(
       reservationId
     );
-    if (!reservation) {
+    if (!reservationOrder) {
       throw new NotFoundException(`Reservation ${reservationId} not found`);
     }
 
     // Confirm the reservation (business rule enforced in entity)
     try {
-      reservation.confirm();
+      reservationOrder.confirm();
     } catch (error) {
       throw new BadRequestException(error.message);
     }
 
     // Persist with outbox pattern (single transaction)
     await this.dataSource.transaction(async (manager) => {
-      await this.reservationRepository.save(reservation);
+      await this.reservationOrderRepository.save(reservationOrder);
 
       // Publish ReservationConfirmedEvent
       const outboxEntry = manager.create(OutboxSchema, {
         id: uuidv4(),
         eventType: "ReservationConfirmed",
         payload: JSON.stringify({
-          reservationId: reservation.id,
-          equipmentTypeId: reservation.equipmentTypeId,
-          quantity: reservation.quantity,
-          startDate: reservation.timeRange.start,
-          endDate: reservation.timeRange.end,
+          reservationId: reservationOrder.id,
+          startDate: reservationOrder.startDatetime,
+          endDate: reservationOrder.endDatetime,
           confirmedAt: new Date(),
         }),
         createdAt: new Date(),
