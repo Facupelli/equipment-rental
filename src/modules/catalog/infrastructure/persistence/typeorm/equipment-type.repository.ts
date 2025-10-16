@@ -14,10 +14,9 @@ export class EquipmentTypeRepository {
     private readonly repository: Repository<EquipmentTypeEntity>
   ) {}
 
-	async save(type: EquipmentType): Promise<EquipmentType> {
+	async save(type: EquipmentType): Promise<void> {
 		const entity = EquipmentTypeMapper.toEntity(type);
-		const saved = await this.repository.save(entity);
-		return EquipmentTypeMapper.toDomain(saved);
+		await this.repository.save(entity);
 	}
 
 	async findById(id: string): Promise<EquipmentType | null> {

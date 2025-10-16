@@ -49,10 +49,9 @@ export class EquipmentItemRepository {
 		return this.repository.exists({ where: { serialNumber } });
 	}
 
-	async save(item: EquipmentItem, ): Promise<EquipmentItem> {
+	async save(item: EquipmentItem, ): Promise<void> {
 		const schema = EquipmentItemMapper.toEntity(item);
-		const saved =	await this.repository.save(schema);
-		return EquipmentItemMapper.toDomain(saved);
+		await this.repository.save(schema);
 	}
 
 	async saveMany(

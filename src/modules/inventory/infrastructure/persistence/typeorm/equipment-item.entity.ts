@@ -7,14 +7,14 @@ import {
 	CreateDateColumn,
 	Entity,
 	Index,
-	PrimaryGeneratedColumn,
+	PrimaryColumn,
 	UpdateDateColumn,
 	VersionColumn,
 } from "typeorm";
 
 @Entity({ schema: "inventory", name: "equipment_items" })
 export class EquipmentItemEntity {
-	@PrimaryGeneratedColumn("uuid")
+	@PrimaryColumn("uuid")
 	id: string;
 
 	@Index()

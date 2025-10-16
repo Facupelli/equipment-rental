@@ -1,9 +1,9 @@
 import { EquipmentType } from "src/modules/catalog/domain/models/equipment-type.model";
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryColumn } from "typeorm";
 
 @Entity({ schema: "catalog", name: "equipment_types" })
 export class EquipmentTypeEntity {
-	@PrimaryGeneratedColumn("uuid")
+	@PrimaryColumn("uuid")
 	id: string;
 
 	@Column()

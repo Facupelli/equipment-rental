@@ -6,17 +6,18 @@ import {
 } from "src/modules/inventory/domain/models/equipment-item.model";
 // biome-ignore lint: /style/useImportType
 import { EquipmentItemRepository } from "src/modules/inventory/infrastructure/persistence/typeorm/equipment-item.repository";
+import { v4 as uuidv4 } from "uuid";
 import { RegisterEquipmentCommand } from "./register-equipment.command";
 
 @CommandHandler(RegisterEquipmentCommand)
 export class RegisterEquipmentHandler
-	implements ICommandHandler<RegisterEquipmentCommand, EquipmentItem>
+	implements ICommandHandler<RegisterEquipmentCommand, string>
 {
 	constructor(
 		private readonly equipmentItemRepository: EquipmentItemRepository,
 	) {}
 
-	async execute(command: RegisterEquipmentCommand): Promise<EquipmentItem> {
+	async execute(command: RegisterEquipmentCommand): Promise<string> {
 		const { equipmentTypeId, serialNumber } = command;
 
 		const existing =
@@ -29,12 +30,14 @@ export class RegisterEquipmentHandler
 		}
 
 		const equipmentItem = new EquipmentItem({
+			id: uuidv4(),
 			equipmentTypeId,
 			serialNumber,
 			status: EquipmentStatus.Available,
 			version: 0,
 		});
 
-		return await this.equipmentItemRepository.save(equipmentItem);
+		await this.equipmentItemRepository.save(equipmentItem);
+		return equipmentItem.id;
 	}
 }
