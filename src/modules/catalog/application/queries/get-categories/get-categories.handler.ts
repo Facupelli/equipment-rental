@@ -1,6 +1,6 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { Category } from "src/modules/catalog/domain/models/category.model";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import { CategoryRepository } from "src/modules/catalog/infrastructure/persistence/typeorm/category.repository";
 import { GetCategoriesQuery } from "./get-categories.query";
 

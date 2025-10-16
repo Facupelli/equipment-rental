@@ -6,17 +6,17 @@ import {
 	ReservationOrderStatus,
 } from "src/modules/booking/domain/models/reservation-order.model";
 import { ReservationOrderItem } from "src/modules/booking/domain/models/reservation-order-item.model";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import { OutboxRepository } from "src/modules/booking/infrastructure/persistance/outbox/outbox.repository";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import { ReservationOrderRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation-order.repository";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import { InventoryFacade } from "src/modules/inventory/inventory.facade";
 import { validateDateRange } from "src/shared/utils/date-range.utils";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import { DataSource } from "typeorm";
 import { v4 as uuidv4 } from "uuid";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import { AvailabilityCheckerService } from "../../../domain/services/availability-checker.service";
 import { CreateReservationCommand } from "./create-reservation.command";
 

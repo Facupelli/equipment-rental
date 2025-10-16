@@ -1,9 +1,9 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { OutboxSchema } from "src/modules/booking/infrastructure/persistance/outbox/outbox.schema";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import { ReservationOrderRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation-order.repository";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import { DataSource } from "typeorm";
 import { v4 as uuidv4 } from "uuid";
 import { ConfirmReservationCommand } from "./confirm-reservation.command";

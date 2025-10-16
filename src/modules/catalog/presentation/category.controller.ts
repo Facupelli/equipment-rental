@@ -23,11 +23,11 @@ export class CategoryController {
   async createCategory(
     @Body() dto: CreateCategoryDto
   ): Promise<string> {
-    const categoryId = await this.commandBus.execute(new CreateCategoryCommand(
+    const category = await this.commandBus.execute(new CreateCategoryCommand(
       dto.name,
       dto.description,
     ));
 
-    return categoryId;
+    return category;
   }
 }

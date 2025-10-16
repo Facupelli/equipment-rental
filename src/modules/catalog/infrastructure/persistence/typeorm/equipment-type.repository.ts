@@ -14,8 +14,10 @@ export class EquipmentTypeRepository {
     private readonly repository: Repository<EquipmentTypeEntity>
   ) {}
 
-	async save(type: EquipmentType): Promise<void> {
-		await this.repository.save(EquipmentTypeMapper.toEntity(type));
+	async save(type: EquipmentType): Promise<EquipmentType> {
+		const entity = EquipmentTypeMapper.toEntity(type);
+		const saved = await this.repository.save(entity);
+		return EquipmentTypeMapper.toDomain(saved);
 	}
 
 	async findById(id: string): Promise<EquipmentType | null> {
@@ -25,6 +27,11 @@ export class EquipmentTypeRepository {
 
 	async findByCategoryId(categoryId: string): Promise<EquipmentType[]> {
 		const entities = await this.repository.findBy({ categoryId });
+		return entities.map(EquipmentTypeMapper.toDomain);
+	}
+
+	async findAll(): Promise<EquipmentType[]> {
+		const entities = await this.repository.find();
 		return entities.map(EquipmentTypeMapper.toDomain);
 	}
 }

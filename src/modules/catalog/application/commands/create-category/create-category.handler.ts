@@ -1,6 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { Category } from "src/modules/catalog/domain/models/category.model";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import { CategoryRepository } from "src/modules/catalog/infrastructure/persistence/typeorm/category.repository";
 import { CreateCategoryCommand } from "./create-category.command";
 
