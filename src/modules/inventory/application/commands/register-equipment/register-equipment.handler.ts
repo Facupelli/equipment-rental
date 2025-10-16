@@ -1,58 +1,40 @@
-import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
-import { RegisterEquipmentCommand } from "./register-equipment.command";
-import { ConflictException, BadRequestException } from "@nestjs/common";
-import { v4 as uuidv4 } from "uuid";
+import { ConflictException } from "@nestjs/common";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import {
-  EquipmentItem,
-  EquipmentStatus,
+	EquipmentItem,
+	EquipmentStatus,
 } from "src/modules/inventory/domain/models/equipment-item.model";
+// biome-ignore lint: /style/useImportType
 import { EquipmentItemRepository } from "src/modules/inventory/infrastructure/persistence/typeorm/equipment-item.repository";
+import { RegisterEquipmentCommand } from "./register-equipment.command";
 
 @CommandHandler(RegisterEquipmentCommand)
 export class RegisterEquipmentHandler
-  implements ICommandHandler<RegisterEquipmentCommand, string>
+	implements ICommandHandler<RegisterEquipmentCommand, EquipmentItem>
 {
-  constructor(
-    private readonly equipmentItemRepository: EquipmentItemRepository
-  ) {}
+	constructor(
+		private readonly equipmentItemRepository: EquipmentItemRepository,
+	) {}
 
-  async execute(command: RegisterEquipmentCommand): Promise<string> {
-    const { equipmentTypeId, serialNumber } = command;
+	async execute(command: RegisterEquipmentCommand): Promise<EquipmentItem> {
+		const { equipmentTypeId, serialNumber } = command;
 
-    if (!equipmentTypeId || !serialNumber) {
-      throw new BadRequestException(
-        "Equipment type ID and serial number are required"
-      );
-    }
+		const existing =
+			await this.equipmentItemRepository.existsSerial(serialNumber);
 
-    if (serialNumber.trim().length === 0) {
-      throw new BadRequestException("Serial number cannot be empty");
-    }
+		if (existing) {
+			throw new ConflictException(
+				`Equipment with serial number ${serialNumber} already exists`,
+			);
+		}
 
-    const existing = await this.equipmentItemRepository.existsSerial(
-      serialNumber
-    );
+		const equipmentItem = new EquipmentItem({
+			equipmentTypeId,
+			serialNumber,
+			status: EquipmentStatus.Available,
+			version: 0,
+		});
 
-    if (existing) {
-      throw new ConflictException(
-        `Equipment with serial number ${serialNumber} already exists`
-      );
-    }
-
-    // Create new equipment item
-    const equipmentItem = new EquipmentItem({
-      id: uuidv4(),
-      equipmentTypeId,
-      serialNumber: serialNumber.trim(),
-      status: EquipmentStatus.Available, // Default status
-      version: 0, // Initial version for optimistic locking
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    // Persist
-    await this.equipmentItemRepository.save(equipmentItem);
-
-    return equipmentItem.id;
-  }
+		return await this.equipmentItemRepository.save(equipmentItem);
+	}
 }

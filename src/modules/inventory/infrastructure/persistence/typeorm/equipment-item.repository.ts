@@ -49,18 +49,10 @@ export class EquipmentItemRepository {
 		return this.repository.exists({ where: { serialNumber } });
 	}
 
-	async save(item: EquipmentItem, ): Promise<void> {
+	async save(item: EquipmentItem, ): Promise<EquipmentItem> {
 		const schema = EquipmentItemMapper.toEntity(item);
-
-		try {
-			await this.repository.save(schema);
-		} catch (error) {
-			// TypeORM throws OptimisticLockVersionMismatchError on version conflict
-			this.logger.error(
-				`Failed to save equipment item ${item.id}: ${error.message}`,
-			);
-			throw error;
-		}
+		const saved =	await this.repository.save(schema);
+		return EquipmentItemMapper.toDomain(saved);
 	}
 
 	async saveMany(
