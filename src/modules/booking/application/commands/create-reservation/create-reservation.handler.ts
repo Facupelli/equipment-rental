@@ -7,11 +7,11 @@ import {
 } from "src/modules/booking/domain/models/reservation-order.model";
 import { ReservationOrderItem } from "src/modules/booking/domain/models/reservation-order-item.model";
 // biome-ignore lint: /style/useImportType
-import { OutboxRepository } from "src/modules/booking/infrastructure/persistance/outbox/outbox.repository";
-// biome-ignore lint: /style/useImportType
 import { ReservationOrderRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation-order.repository";
 // biome-ignore lint: /style/useImportType
 import { InventoryFacade } from "src/modules/inventory/inventory.facade";
+// biome-ignore lint: /style/useImportType
+import { OutboxService } from "src/modules/outbox/application/outbox.service";
 import { validateDateRange } from "src/shared/utils/date-range.utils";
 // biome-ignore lint: /style/useImportType
 import { DataSource } from "typeorm";
@@ -27,7 +27,7 @@ export class CreateReservationHandler
 	constructor(
 		private readonly reservationOrderRepository: ReservationOrderRepository,
 		private readonly availabilityChecker: AvailabilityCheckerService,
-		private readonly outboxRepository: OutboxRepository,
+		private readonly outboxService: OutboxService,
 		private readonly dataSource: DataSource,
 		private readonly inventoryFacade: InventoryFacade,
 	) {}
@@ -87,10 +87,14 @@ export class CreateReservationHandler
 		await this.dataSource.transaction(async (manager) => {
 			await this.reservationOrderRepository.save(reservationOrder);
 
-			await this.outboxRepository.save("ReservationCreated", {
-				reservationId: reservationOrder.id,
-				customerId: reservationOrder.customerId,
-			});
+			await this.outboxService.publishEvent(
+				"ReservationCreated",
+				{
+					reservationId: reservationOrder.id,
+					customerId: reservationOrder.customerId,
+				},
+				manager,
+			);
 		});
 
 		return reservationOrder.id;

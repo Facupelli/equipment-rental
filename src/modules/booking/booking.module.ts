@@ -2,13 +2,12 @@ import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { InventoryModule } from "../inventory/inventory.module";
+import { OutboxModule } from "../outbox/outbox.module";
 import { ConfirmReservationHandler } from "./application/commands/confirm-reservation/confirm-reservation.handler";
 import { CreateReservationHandler } from "./application/commands/create-reservation/create-reservation.handler";
 import { CheckAvailabilityHandler } from "./application/queries/check-availability/check-availability.handler";
 import { BookingFacade } from "./booking.facade";
 import { AvailabilityCheckerService } from "./domain/services/availability-checker.service";
-import { OutboxRepository } from "./infrastructure/persistance/outbox/outbox.repository";
-import { OutboxSchema } from "./infrastructure/persistance/outbox/outbox.schema";
 import { AllocationEntity } from "./infrastructure/persistance/typeorm/allocation.entity";
 import { AllocationRepository } from "./infrastructure/persistance/typeorm/allocation.repository";
 import { ReservationOrderEntity } from "./infrastructure/persistance/typeorm/reservation-order.entity";
@@ -28,16 +27,13 @@ const EventHandlers = [];
 			ReservationOrderEntity,
 			ReservationOrderItemEntity,
 			AllocationEntity,
-			OutboxSchema,
 		]),
 		// Dependencies
+		OutboxModule,
 		InventoryModule,
 	],
 	controllers: [BookingController],
 	providers: [
-		// Outbox pattern
-		OutboxRepository,
-
 		BookingFacade,
 		// Domain Services
 		AvailabilityCheckerService,
