@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import type { AllocationRepository } from "../../infrastructure/persistance/typeorm/allocation.repository";
+// biome-ignore lint:reason
+import { AllocationRepository } from "../../infrastructure/persistance/typeorm/allocation.repository";
 
 interface AvailabilityCheckParams {
 	equipmentTypeId: string;

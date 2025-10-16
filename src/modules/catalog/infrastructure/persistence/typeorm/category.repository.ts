@@ -11,9 +11,9 @@ export class CategoryRepository {
     private readonly repository: Repository<CategoryEntity>
   ) {}
 
-	async save(category: CategoryEntity): Promise<void> {
+	async save(category: Category): Promise<Category> {
 		const entity = CategoryMapper.toEntity(category);
-		await this.repository.save(entity);
+		return await this.repository.save(entity);
 	}
 
 	async findById(id: string): Promise<Category | null> {

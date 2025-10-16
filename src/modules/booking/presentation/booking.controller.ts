@@ -1,24 +1,22 @@
 // src/modules/booking/presentation/booking.controller.ts
 
 import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Query,
-  HttpCode,
-  HttpStatus,
+	Body,
+	Controller,
+	Get,
+	HttpCode,
+	HttpStatus,
+	Post,
+	Query,
 } from "@nestjs/common";
-import { CommandBus, QueryBus } from "@nestjs/cqrs";
-import {
-  CreateReservationDto,
-  ReservationResponseDto,
-} from "../application/commands/create-reservation/create-reservation.dto";
-import {
-  CheckAvailabilityDto,
-  AvailabilityResponseDto,
-} from "../application/queries/check-availability/check-availability.dto";
+// biome-ignore lint:reason
+import  { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateReservationCommand } from "../application/commands/create-reservation/create-reservation.command";
+import type { CreateReservationDto } from "../application/commands/create-reservation/create-reservation.dto";
+import type {
+	AvailabilityResponseDto,
+	CheckAvailabilityDto,
+} from "../application/queries/check-availability/check-availability.dto";
 import { CheckAvailabilityQuery } from "../application/queries/check-availability/check-availability.query";
 
 /**
@@ -32,16 +30,16 @@ import { CheckAvailabilityQuery } from "../application/queries/check-availabilit
  */
 @Controller("bookings")
 export class BookingController {
-  constructor(
-    private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus
-  ) {}
+	constructor(
+		private readonly commandBus: CommandBus,
+		private readonly queryBus: QueryBus,
+	) {}
 
-  /**
-   * Check if equipment is available
-   * GET /bookings/availability?equipmentTypeId=...&startDateTime=...&endDateTime=...&quantity=...
-   */
-  @Get("availability")
+	/**
+	 * Check if equipment is available
+	 * GET /bookings/availability?equipmentTypeId=...&startDateTime=...&endDateTime=...&quantity=...
+	 */
+	@Get("availability")
   @HttpCode(HttpStatus.OK)
   async checkAvailability(
     @Query() query: CheckAvailabilityDto
@@ -64,11 +62,11 @@ export class BookingController {
     };
   }
 
-  /**
-   * Create a new reservation
-   * POST /bookings
-   */
-  @Post()
+	/**
+	 * Create a new reservation
+	 * POST /bookings
+	 */
+	@Post()
   @HttpCode(HttpStatus.CREATED)
   async createReservation(
     @Body() dto: CreateReservationDto
@@ -87,9 +85,9 @@ export class BookingController {
     return { reservationId };
   }
 
-  // TODO: Add more endpoints
-  // - GET /bookings/:id (get reservation details)
-  // - GET /bookings (list reservations)
-  // - POST /bookings/:id/confirm (confirm reservation)
-  // - POST /bookings/:id/cancel (cancel reservation)
+	// TODO: Add more endpoints
+	// - GET /bookings/:id (get reservation details)
+	// - GET /bookings (list reservations)
+	// - POST /bookings/:id/confirm (confirm reservation)
+	// - POST /bookings/:id/cancel (cancel reservation)
 }

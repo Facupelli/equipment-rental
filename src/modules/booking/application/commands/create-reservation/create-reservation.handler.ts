@@ -6,13 +6,18 @@ import {
 	ReservationOrderStatus,
 } from "src/modules/booking/domain/models/reservation-order.model";
 import { ReservationOrderItem } from "src/modules/booking/domain/models/reservation-order-item.model";
-import type { OutboxRepository } from "src/modules/booking/infrastructure/persistance/outbox/outbox.repository";
-import type { ReservationOrderRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation-order.repository";
-import type { InventoryFacade } from "src/modules/inventory/inventory.facade";
+// biome-ignore lint:reason
+import { OutboxRepository } from "src/modules/booking/infrastructure/persistance/outbox/outbox.repository";
+// biome-ignore lint:reason
+import { ReservationOrderRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation-order.repository";
+// biome-ignore lint:reason
+import { InventoryFacade } from "src/modules/inventory/inventory.facade";
 import { validateDateRange } from "src/shared/utils/date-range.utils";
-import type { DataSource } from "typeorm";
+// biome-ignore lint:reason
+import { DataSource } from "typeorm";
 import { v4 as uuidv4 } from "uuid";
-import type { AvailabilityCheckerService } from "../../../domain/services/availability-checker.service";
+// biome-ignore lint:reason
+import { AvailabilityCheckerService } from "../../../domain/services/availability-checker.service";
 import { CreateReservationCommand } from "./create-reservation.command";
 
 @CommandHandler(CreateReservationCommand)

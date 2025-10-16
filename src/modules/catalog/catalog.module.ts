@@ -1,14 +1,15 @@
 import { Module } from "@nestjs/common";
-import { CatalogFacade } from "./catalog.facade";
-import { CategoryRepository } from "./infrastructure/persistence/typeorm/category.repository";
-import { EquipmentTypeRepository } from "./infrastructure/persistence/typeorm/equipment-type.repository";
+import { CqrsModule } from "@nestjs/cqrs";
+import { TypeOrmModule } from "@nestjs/typeorm";
 import { CreateCategoryHandler } from "./application/commands/create-category/create-category.handler";
 import { CreateEquipmentTypeHandler } from "./application/commands/create-equipment-type/create-equipment-type.handler";
 import { GetCategoriesHandler } from "./application/queries/get-categories/get-categories.handler";
-import { CqrsModule } from "@nestjs/cqrs";
+import { CatalogFacade } from "./catalog.facade";
 import { CategoryEntity } from "./infrastructure/persistence/typeorm/category.entity";
+import { CategoryRepository } from "./infrastructure/persistence/typeorm/category.repository";
 import { EquipmentTypeEntity } from "./infrastructure/persistence/typeorm/equipment-type.entity";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { EquipmentTypeRepository } from "./infrastructure/persistence/typeorm/equipment-type.repository";
+import { CategoryController } from "./presentation/category.controller";
 
 const CommandHandlers = [CreateCategoryHandler, CreateEquipmentTypeHandler];
 
@@ -17,21 +18,22 @@ const QueryHandlers = [GetCategoriesHandler];
 const EventHandlers = [];
 
 @Module({
-  imports: [
-    CqrsModule,
-    TypeOrmModule.forFeature([CategoryEntity, EquipmentTypeEntity]),
-  ],
-  providers: [
-    CatalogFacade,
-    // Application
-    ...CommandHandlers,
-    ...QueryHandlers,
-    ...EventHandlers,
+	imports: [
+		CqrsModule,
+		TypeOrmModule.forFeature([CategoryEntity, EquipmentTypeEntity]),
+	],
+	controllers: [CategoryController],
+	providers: [
+		CatalogFacade,
+		// Application
+		...CommandHandlers,
+		...QueryHandlers,
+		...EventHandlers,
 
-    // Infrastructure
-    CategoryRepository,
-    EquipmentTypeRepository,
-  ],
-  exports: [CatalogFacade],
+		// Infrastructure
+		CategoryRepository,
+		EquipmentTypeRepository,
+	],
+	exports: [CatalogFacade],
 })
 export class CatalogModule {}

@@ -1,8 +1,10 @@
 import { BadRequestException } from "@nestjs/common";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
-import type { InventoryFacade } from "src/modules/inventory/inventory.facade";
+// biome-ignore lint:reason
+import { InventoryFacade } from "src/modules/inventory/inventory.facade";
 import { validateDateRange } from "src/shared/utils/date-range.utils";
-import type { AvailabilityCheckerService } from "../../../domain/services/availability-checker.service";
+// biome-ignore lint:reason
+import { AvailabilityCheckerService } from "../../../domain/services/availability-checker.service";
 import { CheckAvailabilityQuery } from "./check-availability.query";
 
 /**

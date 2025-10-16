@@ -1,19 +1,17 @@
-import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+import type { Category } from "src/modules/catalog/domain/models/category.model";
+// biome-ignore lint:reason
+import { CategoryRepository } from "src/modules/catalog/infrastructure/persistence/typeorm/category.repository";
 import { GetCategoriesQuery } from "./get-categories.query";
-
-interface CateogiresResult {
-  categories: string[];
-}
 
 @QueryHandler(GetCategoriesQuery)
 export class GetCategoriesHandler
-  implements IQueryHandler<GetCategoriesQuery, CateogiresResult>
+	implements IQueryHandler<GetCategoriesQuery, Category[]>
 {
-  constructor() {}
+	constructor(private readonly categoryRepository: CategoryRepository) {}
 
-  async execute(): Promise<CateogiresResult> {
-    return {
-      categories: ["test"],
-    };
-  }
+	async execute(): Promise<Category[]> {
+		const categories = await this.categoryRepository.findAll();
+		return categories;
+	}
 }
