@@ -1,28 +1,36 @@
 import { Injectable } from "@nestjs/common";
 // biome-ignore lint: /style/useImportType
-import { DataSource, EntityManager } from "typeorm";
+import { TransactionContext } from "src/shared/infrastructure/database/transaction-context";
+// biome-ignore lint: /style/useImportType
+import { DataSource, type Repository } from "typeorm";
 import { OutboxEventEntity } from "../infrastructure/persistence/outbox-event.entity";
 
 @Injectable()
 export class OutboxService {
-	constructor(private readonly dataSource: DataSource) {}
+	private readonly repository: Repository<OutboxEventEntity>;
 
-	async publishEvent(
+	constructor(
+		private readonly dataSource: DataSource,
+		private readonly txContext: TransactionContext,
+	) {
+		this.repository = this.dataSource.getRepository(OutboxEventEntity);
+	}
+
+	async saveEvent(
 		eventType: string,
 		payload: any,
-		manager?: EntityManager,
 		aggregateId?: string,
 	): Promise<void> {
-		const repository = (manager ?? this.dataSource.manager).getRepository(
-			OutboxEventEntity,
-		);
+		const manager =
+			this.txContext.getEntityManager() ?? this.dataSource.manager;
+		const repo = manager.getRepository(OutboxEventEntity);
 
-		const event = repository.create({
-			eventType,
+		const event = repo.create({
+			event_type: eventType,
 			payload,
-			aggregateId,
+			aggregate_id: aggregateId,
 		});
 
-		await repository.save(event);
+		await repo.save(event);
 	}
 }

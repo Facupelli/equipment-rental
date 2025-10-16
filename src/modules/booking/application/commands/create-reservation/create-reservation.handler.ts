@@ -12,9 +12,9 @@ import { ReservationOrderRepository } from "src/modules/booking/infrastructure/p
 import { InventoryFacade } from "src/modules/inventory/inventory.facade";
 // biome-ignore lint: /style/useImportType
 import { OutboxService } from "src/modules/outbox/application/outbox.service";
-import { validateDateRange } from "src/shared/utils/date-range.utils";
 // biome-ignore lint: /style/useImportType
-import { DataSource } from "typeorm";
+import { UnitOfWork } from "src/shared/infrastructure/database/unit-of-work.service";
+import { validateDateRange } from "src/shared/utils/date-range.utils";
 import { v4 as uuidv4 } from "uuid";
 // biome-ignore lint: /style/useImportType
 import { AvailabilityCheckerService } from "../../../domain/services/availability-checker.service";
@@ -28,8 +28,8 @@ export class CreateReservationHandler
 		private readonly reservationOrderRepository: ReservationOrderRepository,
 		private readonly availabilityChecker: AvailabilityCheckerService,
 		private readonly outboxService: OutboxService,
-		private readonly dataSource: DataSource,
 		private readonly inventoryFacade: InventoryFacade,
+		private readonly unitOfWork: UnitOfWork,
 	) {}
 
 	async execute(command: CreateReservationCommand): Promise<string> {
@@ -43,6 +43,8 @@ export class CreateReservationHandler
 			command.equipmentTypeId,
 		);
 
+		console.log({ totalInventory });
+
 		const itemIds = await this.availabilityChecker.checkAvailability({
 			equipmentTypeId: command.equipmentTypeId,
 			startDate: command.startDateTime,
@@ -52,6 +54,8 @@ export class CreateReservationHandler
 			// TODO
 			bufferDays: 0,
 		});
+
+		console.log({ itemIds });
 
 		if (!itemIds || itemIds.length === 0) {
 			throw new ConflictException(
@@ -69,12 +73,16 @@ export class CreateReservationHandler
 				),
 		);
 
+		console.log({ allocations });
+
 		const reservationOrderItem = new ReservationOrderItem(
 			uuidv4(),
 			command.equipmentTypeId,
 			command.quantity,
 			allocations,
 		);
+
+		console.log({ reservationOrderItem });
 
 		const reservationOrder = new ReservationOrder(
 			uuidv4(),
@@ -84,17 +92,15 @@ export class CreateReservationHandler
 			new Date(),
 		);
 
-		await this.dataSource.transaction(async (manager) => {
+		console.log({ reservationOrder });
+
+		await this.unitOfWork.execute(async () => {
 			await this.reservationOrderRepository.save(reservationOrder);
 
-			await this.outboxService.publishEvent(
-				"ReservationCreated",
-				{
-					reservationId: reservationOrder.id,
-					customerId: reservationOrder.customerId,
-				},
-				manager,
-			);
+			await this.outboxService.saveEvent("ReservationCreated", {
+				reservationId: reservationOrder.id,
+				customerId: reservationOrder.customerId,
+			});
 		});
 
 		return reservationOrder.id;

@@ -1,5 +1,3 @@
-// src/modules/booking/presentation/booking.controller.ts
-
 import {
 	Body,
 	Controller,
@@ -28,8 +26,8 @@ import { CheckAvailabilityQuery } from "../application/queries/check-availabilit
  *
  * Does NOT contain business logic!
  */
-@Controller("bookings")
-export class BookingController {
+@Controller("reservations")
+export class ReservationController {
 	constructor(
 		private readonly commandBus: CommandBus,
 		private readonly queryBus: QueryBus,
@@ -75,8 +73,8 @@ export class BookingController {
       new CreateReservationCommand(
         dto.customerId,
         dto.equipmentTypeId,
-        dto.startDateTime,
-        dto.endDateTime,
+        dto.startDate,
+        dto.endDate,
         dto.quantity,
         dto.notes
       )

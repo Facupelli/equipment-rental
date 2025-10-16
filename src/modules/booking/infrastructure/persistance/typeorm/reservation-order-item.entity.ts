@@ -32,7 +32,7 @@ export class ReservationOrderItemEntity {
 
 	@OneToMany(
 		() => AllocationEntity,
-		(allocation) => allocation.orderItem,
+		(allocation) => allocation.order_item,
 		{
 			cascade: true,
 		},

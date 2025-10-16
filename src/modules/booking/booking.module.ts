@@ -14,7 +14,7 @@ import { ReservationOrderEntity } from "./infrastructure/persistance/typeorm/res
 import { ReservationOrderRepository } from "./infrastructure/persistance/typeorm/reservation-order.repository";
 import { ReservationOrderItemEntity } from "./infrastructure/persistance/typeorm/reservation-order-item.entity";
 import { ReservationOrderItemRepository } from "./infrastructure/persistance/typeorm/reservation-order-item.repository";
-import { BookingController } from "./presentation/booking.controller";
+import { ReservationController } from "./presentation/reservation.controller";
 
 const CommandHandlers = [CreateReservationHandler, ConfirmReservationHandler];
 const QueryHandlers = [CheckAvailabilityHandler];
@@ -32,7 +32,7 @@ const EventHandlers = [];
 		OutboxModule,
 		InventoryModule,
 	],
-	controllers: [BookingController],
+	controllers: [ReservationController],
 	providers: [
 		BookingFacade,
 		// Domain Services

@@ -1,3 +1,5 @@
+// biome-ignore lint:reason
+import { EquipmentItemEntity } from "src/modules/inventory/infrastructure/persistence/typeorm/equipment-item.entity";
 import {
 	Column,
 	Entity,
@@ -5,7 +7,8 @@ import {
 	ManyToOne,
 	PrimaryGeneratedColumn,
 } from "typeorm";
-import type { ReservationOrderItemEntity } from "./reservation-order-item.entity";
+// biome-ignore lint:reason
+import { ReservationOrderItemEntity } from "./reservation-order-item.entity";
 
 @Entity({ schema: "booking", name: "allocations" })
 @Index(["item_id", "start_date", "end_date"])
@@ -20,7 +23,7 @@ export class AllocationEntity {
 			onDelete: "CASCADE",
 		},
 	)
-	orderItem: ReservationOrderItemEntity;
+	order_item: ReservationOrderItemEntity;
 
 	@Column({ type: "uuid", name: "item_id" })
 	item_id: string;
@@ -30,4 +33,10 @@ export class AllocationEntity {
 
 	@Column({ type: "date", name: "end_date" })
 	end_date: Date;
+
+	@ManyToOne(
+		"EquipmentItemEntity",
+		(item: EquipmentItemEntity) => item.allocations,
+	)
+	equipment_item: EquipmentItemEntity;
 }

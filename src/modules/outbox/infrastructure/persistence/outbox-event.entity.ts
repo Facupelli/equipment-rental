@@ -5,23 +5,23 @@ import {
 	PrimaryGeneratedColumn,
 } from "typeorm";
 
-@Entity("outbox")
+@Entity({ schema: "outbox", name: "outbox_events" })
 export class OutboxEventEntity {
 	@PrimaryGeneratedColumn("uuid")
 	id: string;
 
 	@Column()
-	eventType: string;
+	event_type: string;
 
 	@Column({ nullable: true })
-	aggregateId?: string;
+	aggregate_id?: string;
 
 	@Column({ type: "jsonb" })
 	payload: Record<string, any>;
 
 	@CreateDateColumn()
-	createdAt: Date;
+	created_at: Date;
 
 	@Column({ type: "timestamp", nullable: true })
-	publishedAt?: Date;
+	published_at?: Date;
 }

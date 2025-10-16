@@ -50,23 +50,19 @@ export class AllocationRepository {
 		startDate: Date,
 		endDate: Date,
 	): Promise<string[]> {
-		const items = await this.repository
-			.createQueryBuilder()
-			.select("item.id")
-			.from("inventory.equipment_items", "item")
-			.leftJoin(
-				"booking.allocations",
-				"allocation",
-				`allocation.item_id = item.id 
-         AND allocation.start_date <= :endDate 
-         AND allocation.end_date >= :startDate`,
-				{ endDate, startDate },
-			)
-			.where("item.equipment_type_id = :equipmentTypeId", { equipmentTypeId })
-			.andWhere("allocation.allocation_id IS NULL")
-			.getRawMany();
+			const result = await this.repository.query(`
+		SELECT DISTINCT item.id
+		FROM inventory.equipment_items item
+		LEFT JOIN booking.allocations allocation ON (
+			allocation.item_id = item.id
+			AND allocation.start_date <= $3
+			AND allocation.end_date >= $2
+		)
+		WHERE item.equipment_type_id = $1
+		AND allocation.allocation_id IS NULL
+	`, [equipmentTypeId, startDate, endDate]);
 
-		return items.map((row) => row.item_id);
+		return result.map((row) => row.id);
 	}
 
 	/**

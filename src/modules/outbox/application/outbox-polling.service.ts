@@ -3,7 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { EventBus } from "@nestjs/cqrs";
 import { Cron, CronExpression } from "@nestjs/schedule";
 // biome-ignore lint: /style/useImportType
-import { DataSource } from "typeorm";
+import { DataSource, IsNull } from "typeorm";
 import { OutboxEvent } from "../domain/models/outbox-event.model";
 import { OutboxEventEntity } from "../infrastructure/persistence/outbox-event.entity";
 
@@ -18,36 +18,43 @@ export class OutboxPollingService {
 
 	@Cron(CronExpression.EVERY_5_SECONDS)
 	async processOutbox(): Promise<void> {
-		const manager = this.dataSource.manager;
+		const queryRunner = this.dataSource.createQueryRunner();
+		await queryRunner.connect();
+		await queryRunner.startTransaction();
 
-		const events = await manager.find(OutboxEventEntity, {
-			where: { publishedAt: null },
-			order: { createdAt: "ASC" },
+		const events = await queryRunner.manager.find(OutboxEventEntity, {
+			where: { published_at: IsNull() },
+			order: { created_at: "ASC" },
 		});
 
-		if (events.length === 0) return;
+		if (events.length === 0) {
+			await queryRunner.release();
+			return;
+		}
 
 		this.logger.log(`Processing ${events.length} outbox events...`);
 
 		for (const event of events) {
 			try {
 				const outboxEvent = new OutboxEvent(
-					event.eventType,
+					event.event_type,
 					event.payload,
-					event.aggregateId,
-					event.createdAt,
+					event.aggregate_id,
+					event.created_at,
 				);
 
 				this.eventBus.publish(outboxEvent);
 
-				await manager.update(
+				await queryRunner.manager.update(
 					OutboxEventEntity,
 					{ id: event.id },
-					{ publishedAt: new Date() },
+					{ published_at: new Date() },
 				);
 			} catch (err) {
 				this.logger.error(`Failed to process event ${event.id}`, err);
 			}
 		}
+
+		await queryRunner.commitTransaction();
 	}
 }

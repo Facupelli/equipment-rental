@@ -28,7 +28,7 @@ export class EquipmentItemRepository {
 	}
 
 	async existsSerial(serialNumber: string): Promise<boolean> {
-		return this.repository.exists({ where: { serialNumber } });
+		return this.repository.exists({ where: { serial_number: serialNumber } });
 	}
 
 	async save(item: EquipmentItem): Promise<void> {

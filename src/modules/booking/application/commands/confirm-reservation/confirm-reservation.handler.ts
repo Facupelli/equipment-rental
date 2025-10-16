@@ -37,14 +37,10 @@ export class ConfirmReservationHandler
 		await this.dataSource.transaction(async (manager) => {
 			await this.reservationOrderRepository.save(reservationOrder);
 
-			await this.outboxService.publishEvent(
-				"ReservationConfirmed",
-				{
-					reservationId: reservationOrder.id,
-					confirmedAt: new Date(),
-				},
-				manager,
-			);
+			await this.outboxService.saveEvent("ReservationConfirmed", {
+				reservationId: reservationOrder.id,
+				confirmedAt: new Date(),
+			});
 		});
 	}
 }

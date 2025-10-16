@@ -1,3 +1,5 @@
+// biome-ignore lint:reason
+import { AllocationEntity } from "src/modules/booking/infrastructure/persistance/typeorm/allocation.entity";
 import {
 	EquipmentItem,
 	EquipmentStatus,
@@ -7,6 +9,7 @@ import {
 	CreateDateColumn,
 	Entity,
 	Index,
+	OneToMany,
 	PrimaryColumn,
 	UpdateDateColumn,
 	VersionColumn,
@@ -19,10 +22,10 @@ export class EquipmentItemEntity {
 
 	@Index()
 	@Column("uuid")
-	equipmentTypeId: string;
+	equipment_type_id: string;
 
 	@Column({ type: "varchar", length: 120, unique: true })
-	serialNumber: string;
+	serial_number: string;
 
 	@Column({
 		type: "enum",
@@ -38,34 +41,40 @@ export class EquipmentItemEntity {
 	version: number;
 
 	@CreateDateColumn({ name: "created_at" })
-	createdAt: Date;
+	created_at: Date;
 
 	@UpdateDateColumn({ name: "updated_at" })
-	updatedAt: Date;
+	updated_at: Date;
+
+	@OneToMany(
+		"AllocationEntity",
+		(allocation: AllocationEntity) => allocation.equipment_item,
+	)
+	allocations: AllocationEntity[];
 }
 
 export const EquipmentItemMapper = {
 	toDomain(schema: EquipmentItemEntity): EquipmentItem {
 		return new EquipmentItem({
 			id: schema.id,
-			equipmentTypeId: schema.equipmentTypeId,
-			serialNumber: schema.serialNumber,
+			equipmentTypeId: schema.equipment_type_id,
+			serialNumber: schema.serial_number,
 			status: schema.status,
 			version: schema.version,
-			createdAt: schema.createdAt,
-			updatedAt: schema.updatedAt,
+			createdAt: schema.created_at,
+			updatedAt: schema.updated_at,
 		});
 	},
 
 	toEntity(entity: EquipmentItem): EquipmentItemEntity {
 		const schema = new EquipmentItemEntity();
 		schema.id = entity.id;
-		schema.equipmentTypeId = entity.equipmentTypeId;
-		schema.serialNumber = entity.serialNumber;
+		schema.equipment_type_id = entity.equipmentTypeId;
+		schema.serial_number = entity.serialNumber;
 		schema.status = entity.status;
 		schema.version = entity.version;
-		schema.createdAt = entity.createdAt;
-		schema.updatedAt = entity.updatedAt;
+		schema.created_at = entity.createdAt;
+		schema.updated_at = entity.updatedAt;
 		return schema;
 	},
 };
