@@ -1,10 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import {
-	type EquipmentItem,
-	EquipmentStatus,
-} from "src/modules/inventory/domain/models/equipment-item.model";
-import type {  Repository } from "typeorm";
+import type { EquipmentItem } from "src/modules/inventory/domain/models/equipment-item.model";
+import type { Repository } from "typeorm";
 import {
 	EquipmentItemEntity,
 	EquipmentItemMapper,
@@ -12,64 +9,30 @@ import {
 
 @Injectable()
 export class EquipmentItemRepository {
-	private readonly logger = new Logger(EquipmentItemRepository.name);
 
 	constructor(
     @InjectRepository(EquipmentItemEntity)
     private readonly repository: Repository<EquipmentItemEntity>
   ) {}
 
-
-	async findAvailableByType(
+	async findByEquipmentTypeId(
 		equipmentTypeId: string,
-		quantity: number,
 	): Promise<EquipmentItem[]> {
-		const schemas = await this.repository.find({
-			where: {
-				equipmentTypeId,
-				status: EquipmentStatus.Available,
-			},
-			take: quantity,
-			order: {
-				createdAt: "ASC", // FIFO: allocate oldest items first
-			},
-		});
+		const equipmentItems = await this.repository
+			.createQueryBuilder("item")
+			.where("item.equipmentTypeId = :equipmentTypeId", { equipmentTypeId })
+			.orderBy("item.createdAt", "DESC")
+			.getMany();
 
-		return schemas.map(EquipmentItemMapper.toDomain);
-	}
-
-	async findByReservationId(
-		reservationId: string,
-	): Promise<EquipmentItem[]> {
-		const schemas = await this.repository.find({});
-		return schemas.map(EquipmentItemMapper.toDomain);
+		return equipmentItems.map(EquipmentItemMapper.toDomain)
 	}
 
 	async existsSerial(serialNumber: string): Promise<boolean> {
 		return this.repository.exists({ where: { serialNumber } });
 	}
 
-	async save(item: EquipmentItem, ): Promise<void> {
+	async save(item: EquipmentItem): Promise<void> {
 		const schema = EquipmentItemMapper.toEntity(item);
 		await this.repository.save(schema);
-	}
-
-	async saveMany(
-		items: EquipmentItemEntity[],
-	): Promise<void> {
-		const entities = items.map(EquipmentItemMapper.toEntity);
-		await this.repository.save(entities);
-	}
-
-	async countAvailableByType(
-		equipmentTypeId: string,
-	): Promise<number> {
-		
-		return this.repository.count({
-			where: {
-				equipmentTypeId,
-				status: EquipmentStatus.Available,
-			},
-		});
 	}
 }

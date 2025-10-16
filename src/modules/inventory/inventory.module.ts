@@ -3,6 +3,7 @@ import { CqrsModule } from "@nestjs/cqrs";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { RegisterEquipmentHandler } from "./application/commands/register-equipment/register-equipment.handler";
 import { ReservationConfirmedHandler } from "./application/event-handlers/reservation-confirmed.handler";
+import { GetEquipmentItemsByTypeHandler } from "./application/queries/get-items-by-type/get-items-by-type.handler";
 import { GetTotalCapacityHandler } from "./application/queries/get-total-capacity/get-total-capacity.handler";
 import { EquipmentItemEntity } from "./infrastructure/persistence/typeorm/equipment-item.entity";
 import { EquipmentItemRepository } from "./infrastructure/persistence/typeorm/equipment-item.repository";
@@ -10,7 +11,7 @@ import { InventoryFacade } from "./inventory.facade";
 import { EquipmentItemController } from "./presentation/equipment-item.controller";
 
 const CommandHandlers = [RegisterEquipmentHandler];
-const QueryHandlers = [GetTotalCapacityHandler];
+const QueryHandlers = [GetTotalCapacityHandler, GetEquipmentItemsByTypeHandler];
 const EventHandlers = [ReservationConfirmedHandler];
 
 @Module({
