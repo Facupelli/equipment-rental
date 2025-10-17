@@ -84,22 +84,6 @@ We explicitly **avoid useless abstractions**. Abstractions are complex and often
 
 ---
 
-## 5. Project Specifications (Spec-Driven Development)
-
-As established by the SDD methodology, the development proceeds in phases: Specify, Plan, Tasks, and Implement. The structure below will hold the resulting specifications and plans for each capability.
-
-### A. Booking Capability Specification
-
-_(This section would contain the detailed Specification and Plan generated in the previous steps for the Booking Module, including the definition of Commands, Queries, and Events like `ReservationCreatedEvent`.)_
-
-### B. Inventory Capability Specification
-
-_(This section will contain the detailed Specification and Plan for the Inventory Module, including its capacity Query, asset registration Commands, and its need to consume events from Booking, defined by subsequent SDD steps.)_
-
-### C. Future Capability Specifications (Placeholder)
-
-_(Future modules like Pricing, Payment, and Logistics will be specified here before implementation, defining their boundaries and internal CQS structure.)_
-
 ### Booking Module
 
 ## 1. Specify Phase: Defining the User Journey ("What" and "Why")
@@ -143,26 +127,6 @@ The technical plan should explicitly address how your commands and queries opera
 
 ---
 
-## 3. Tasks Phase: Breaking Down the Work
-
-The Tasks phase takes the refined specification and plan and breaks them into small, reviewable chunks that can be implemented and tested in isolation. Since you have only implemented the initial creation and availability check, the next tasks should focus on the remaining reservation lifecycle:
-
-### A. Next Required Tasks for Booking Capability
-
-The existing code suggests several missing functionalities hinted at in the `BookingFacade` and `Reservation` entity.
-
-| Task ID     | Description of Work Chunk                                                                                                                                                                                      | Type (Command/Query) | Related Specification                                                   |
-| :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------- | :---------------------------------------------------------------------- |
-| **BKG-001** | Implement the **Confirm Reservation** Command. This task involves validating the reservation status (must be `PENDING`) and transitioning the status to `CONFIRMED`.                                           | Command (Write)      | Required for finalizing a booking after payment is processed.           |
-| **BKG-002** | Implement the **Confirm Reservation** Command Handler. This handler must execute the confirmation logic (BKG-001), update the database status, and persist the **`ReservationConfirmed`** event to the outbox. | Command Handler      | Ensures transactional consistency for status update and event delivery. |
-| **BKG-003** | Implement the **Cancel Reservation** Command. This task allows a customer to cancel a booking only if the status is `PENDING` or `CONFIRMED`.                                                                  | Command (Write)      | Required for managing customer cancellations.                           |
-| **BKG-004** | Implement the **Get Reservation Details** Query. This retrieves the full details of a specific reservation by ID.                                                                                              | Query (Read)         | Required for the customer/admin interface to view current bookings.     |
-| **BKG-005** | Update the **`ReservationRepository`** to include `findById` implementation that maps the schema to the domain entity for the query handler (BKG-004).                                                         | Infrastructure       | Ensures the Query Handler can safely access the required read data.     |
-
-## By using this structured Spec-Driven approach, you are ensuring that subsequent implementations are guided by your established architectural plan (CQS, modularity, Clean Architecture, and low-cost asynchronous evolution).
-
----
-
 ### Catalog Module
 
 # Catalog Capability Specification
@@ -190,22 +154,6 @@ The Catalog module's design will prioritize **read performance** and maintain it
 | **Integration**      | Communication with the Catalog module will typically be **synchronous request-response**. The Booking Module and Inventory Module will use the Catalog module's IDs (the `equipmentTypeId`) but will rely on the `CatalogFacade` to retrieve human-readable names or descriptions as needed.                           | Start Synchronous / Match Current Needs.   |
 | **Abstractions**     | The repository implementation (e.g., `EquipmentTypeRepository`) will likely be injected directly into its handlers. Repository interfaces will only be introduced if the complexity or number of consumers justifies the abstraction.                                                                                  | Avoid Useless Abstractions.                |
 | **Data Structure**   | `EquipmentType` will likely contain embedded technical specifications (e.g., as JSON/JSONB data) since this data is descriptive and should be retrieved quickly with the type definition.                                                                                                                              | Optimizing Read Path.                      |
-
-### 3. Tasks Phase: Breaking Down the Work (Catalog Module)
-
-These tasks define the necessary work to establish the Catalog capability, focusing first on the foundational entities and their corresponding CQS operations.
-
-| Task ID     | Description of Work Chunk                                                                                                         | Type (C/Q)      | Rationale                                                         |
-| :---------- | :-------------------------------------------------------------------------------------------------------------------------------- | :-------------- | :---------------------------------------------------------------- |
-| **CAT-001** | Define the **Catalog Capability** boundary, setting up the module structure, `CatalogFacade`, and necessary infrastructure files. | Architecture    | Establishing the modular structure.                               |
-| **CAT-002** | Implement the `Category` Domain Entity (Name, Parent Category ID, Description).                                                   | Domain          | Modeling the taxonomy layer.                                      |
-| **CAT-003** | Implement **`CreateCategoryCommand`** and its Handler.                                                                            | Command (Write) | Enables administrative setup of equipment hierarchies.            |
-| **CAT-004** | Implement **`GetCategoriesQuery`** and its Handler.                                                                               | Query (Read)    | Necessary for navigation and filtering interfaces.                |
-| **CAT-005** | Implement the **`EquipmentType`** Domain Entity (Name, Description, `CategoryId`, Technical Specifications/Specs [Value Object]). | Domain          | Modeling the core descriptive unit.                               |
-| **CAT-006** | Implement **`CreateEquipmentTypeCommand`** and its Handler (ensuring the Category ID is valid).                                   | Command (Write) | Enables the addition of new rentable products.                    |
-| **CAT-007** | Implement **`GetEquipmentTypeDetailsQuery`** and its Handler.                                                                     | Query (Read)    | Used by product pages and other modules needing descriptive data. |
-| **CAT-008** | Implement **`SearchEquipmentTypesQuery`** and its Handler (supporting basic text search and filtering by Category ID).            | Query (Read)    | Core customer-facing functionality.                               |
-| **CAT-009** | Implement **`UpdateEquipmentSpecsCommand`** and its Handler.                                                                      | Command (Write) | Allows modification of descriptive data after creation.           |
 
 ---
 
@@ -244,16 +192,3 @@ We will adhere to the established architectural constraints: modular monolith st
 | **Query**         | `GetTotalCapacityQuery`                     | Used by the Booking Module to check constraints.                                                                                              |
 | **Command**       | `RegisterEquipmentCommand`                  | Used by admins to add new assets.                                                                                                             |
 | **Event Handler** | `ReservationConfirmedHandler`               | Consumes `ReservationConfirmedEvent` to change the status of specific `EquipmentItem`s from `Available` to `Allocated` for the rental period. |
-
-## III. Tasks Phase: Breaking Down the Work
-
-Based on the need to integrate with the existing Booking module and manage the core assets, here are the concrete, small, and reviewable chunks of work for the Inventory module:
-
-| Task ID     | Description of Work Chunk                                                                                                                                                                                                                                                     | Type (C/Q/H)    | Rationale                                                                                               |
-| :---------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------- | :------------------------------------------------------------------------------------------------------ |
-| **INV-001** | Define the **Inventory Management Capability** boundary, setting up the basic module structure (`InventoryModule`, `InventoryFacade`).                                                                                                                                        | Architecture    | Establishing the modular structure.                                                                     |
-| **INV-002** | Implement the `EquipmentItem` Domain Entity (containing `equipmentTypeId`, `serialNumber`, and `status`).                                                                                                                                                                     | Domain          | Modeling based on capability.                                                                           |
-| **INV-003** | Implement the **`RegisterEquipmentCommand`** and its Handler (CQS Write Path). This persists a new `EquipmentItem` to the database.                                                                                                                                           | Command (Write) | Core asset creation functionality.                                                                      |
-| **INV-004** | Implement the **`GetTotalCapacityQuery`** and its Handler (CQS Read Path). This queries the total number of equipment items available for a specific type.                                                                                                                    | Query (Read)    | Provides the data required by Booking (replacing the hardcoded `10`).                                   |
-| **INV-005** | Update the Booking Module: **Inject `InventoryFacade`** into `CheckAvailabilityHandler` and `CreateReservationHandler` to call `InventoryFacade.getTotalCapacity()` instead of using the placeholder value (`totalInventory = 10`).                                           | Integration     | Completes the necessary synchronous connection between the capabilities.                                |
-| **INV-006** | Implement the **`ReservationConfirmedHandler`** (Event Handler). This handler consumes the **`ReservationConfirmedEvent`** published by the Booking module (asynchronously) and executes the logic to mark specific equipment items as **`Allocated`** for the rental period. | Event Handler   | Implements the asynchronous workflow handoff using the already established database-as-a-queue pattern. |
