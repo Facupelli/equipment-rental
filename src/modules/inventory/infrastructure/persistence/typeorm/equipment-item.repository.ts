@@ -20,8 +20,8 @@ export class EquipmentItemRepository {
 	): Promise<EquipmentItem[]> {
 		const equipmentItems = await this.repository
 			.createQueryBuilder("item")
-			.where("item.equipmentTypeId = :equipmentTypeId", { equipmentTypeId })
-			.orderBy("item.createdAt", "DESC")
+			.where("item.equipment_type_id = :equipmentTypeId", { equipmentTypeId })
+			.orderBy("item.created_at", "DESC")
 			.getMany();
 
 		return equipmentItems.map(EquipmentItemMapper.toDomain)
