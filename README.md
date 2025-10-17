@@ -1,4 +1,4 @@
-# High-Level Design Document: Equipment Rental Service
+# Equipment Rental System
 
 ## Introduction
 
