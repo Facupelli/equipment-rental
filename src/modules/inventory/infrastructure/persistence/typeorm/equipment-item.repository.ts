@@ -31,6 +31,16 @@ export class EquipmentItemRepository {
 		return this.repository.exists({ where: { serial_number: serialNumber } });
 	}
 
+	async getTotalEquipmentByTypeId(equipmentTypeId: string): Promise<number> {
+		const result = await this.repository.createQueryBuilder()
+			.select("COUNT(DISTINCT item.id)", "count")
+			.from("inventory.equipment_items", "item")
+			.where("item.equipment_type_id = :equipmentTypeId", { equipmentTypeId })
+			.getRawOne();
+
+		return parseInt(result.count, 10);
+	}
+
 	async save(item: EquipmentItem): Promise<void> {
 		const schema = EquipmentItemMapper.toEntity(item);
 		await this.repository.save(schema);

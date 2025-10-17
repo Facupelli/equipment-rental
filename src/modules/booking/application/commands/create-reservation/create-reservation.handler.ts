@@ -73,16 +73,12 @@ export class CreateReservationHandler
 				),
 		);
 
-		console.log({ allocations });
-
 		const reservationOrderItem = new ReservationOrderItem(
 			uuidv4(),
 			command.equipmentTypeId,
 			command.quantity,
 			allocations,
 		);
-
-		console.log({ reservationOrderItem });
 
 		const reservationOrder = new ReservationOrder(
 			uuidv4(),
@@ -91,8 +87,6 @@ export class CreateReservationHandler
 			ReservationOrderStatus.Pending,
 			new Date(),
 		);
-
-		console.log({ reservationOrder });
 
 		await this.unitOfWork.execute(async () => {
 			await this.reservationOrderRepository.save(reservationOrder);

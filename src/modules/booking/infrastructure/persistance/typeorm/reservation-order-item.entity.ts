@@ -34,7 +34,7 @@ export class ReservationOrderItemEntity {
 		() => AllocationEntity,
 		(allocation) => allocation.order_item,
 		{
-			cascade: true,
+			cascade: ["insert", "update"],
 		},
 	)
 	allocations: AllocationEntity[];

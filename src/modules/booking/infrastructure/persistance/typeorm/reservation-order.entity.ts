@@ -32,6 +32,9 @@ export class ReservationOrderEntity {
 	@OneToMany(
 		"ReservationOrderItemEntity",
 		(item: ReservationOrderItemEntity) => item.order,
+		{
+			cascade: ["insert", "update"],
+		},
 	)
 	items: ReservationOrderItemEntity[];
 }

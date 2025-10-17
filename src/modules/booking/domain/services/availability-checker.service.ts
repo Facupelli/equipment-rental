@@ -25,6 +25,8 @@ export class AvailabilityCheckerService {
 				params.endDate,
 			);
 
+		console.log({ availableItemIds });
+
 		const validItemIds = availableItemIds.slice(0, params.totalInventory);
 
 		if (validItemIds.length >= params.quantity) {
