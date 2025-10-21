@@ -17,7 +17,7 @@ export class ReservationOrderEntity {
 	@PrimaryColumn("uuid")
 	id: string;
 
-	@Column("varchar")
+	@Column("uuid")
 	customer_id: string;
 
 	@Column("varchar", { length: 20 })

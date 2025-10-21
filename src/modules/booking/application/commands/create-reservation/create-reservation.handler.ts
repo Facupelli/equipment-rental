@@ -9,6 +9,8 @@ import { ReservationOrderItem } from "src/modules/booking/domain/models/reservat
 // biome-ignore lint: /style/useImportType
 import { ReservationOrderRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation-order.repository";
 // biome-ignore lint: /style/useImportType
+import { CustomerFacade } from "src/modules/customer/customer.facade";
+// biome-ignore lint: /style/useImportType
 import { InventoryFacade } from "src/modules/inventory/inventory.facade";
 // biome-ignore lint: /style/useImportType
 import { OutboxService } from "src/modules/outbox/application/outbox.service";
@@ -29,10 +31,18 @@ export class CreateReservationHandler
 		private readonly availabilityChecker: AvailabilityCheckerService,
 		private readonly outboxService: OutboxService,
 		private readonly inventoryFacade: InventoryFacade,
+		private readonly customerFacade: CustomerFacade,
 		private readonly unitOfWork: UnitOfWork,
 	) {}
 
 	async execute(command: CreateReservationCommand): Promise<string> {
+		const customerExists = await this.customerFacade.exists(command.customerId);
+		if (!customerExists) {
+			throw new BadRequestException(
+				`Customer with ID ${command.customerId} not found`,
+			);
+		}
+
 		try {
 			validateDateRange(command.startDateTime, command.endDateTime);
 		} catch (error) {

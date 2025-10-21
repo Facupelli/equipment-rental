@@ -1,5 +1,5 @@
-import { IQuery } from "@nestjs/cqrs";
+import type { IQuery } from "@nestjs/cqrs";
 
 export class GetTotalCapacityQuery implements IQuery {
-  constructor(public readonly equipmentTypeId: string) {}
+	constructor(public readonly equipmentTypeId: string) {}
 }
