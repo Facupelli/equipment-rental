@@ -8,7 +8,7 @@ interface CalculateQuoteInput {
 	equipmentTypeId: string;
 	startDate: Date;
 	endDate: Date;
-	quantity?: number; //  defaults to 1
+	quantity: number;
 	customerId?: string;
 	promoCode?: string;
 }

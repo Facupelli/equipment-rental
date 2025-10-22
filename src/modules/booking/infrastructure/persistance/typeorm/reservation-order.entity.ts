@@ -23,6 +23,9 @@ export class ReservationOrderEntity {
 	@Column("varchar", { length: 20 })
 	status: ReservationOrderStatus;
 
+	@Column("int")
+	total_amount_cents: number;
+
 	@CreateDateColumn()
 	created_at: Date;
 

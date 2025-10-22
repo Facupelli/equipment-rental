@@ -209,8 +209,6 @@ A line item in an order representing a specific equipment type, quantity, and re
 | `id` | UUID | Unique identifier for the item | Primary Key, Auto-generated |
 | `equipmentTypeId` | UUID | Reference to equipment type in Catalog module | Required, Indexed |
 | `quantity` | Integer | Number of units being rented | Required, Must be > 0 |
-| `rentalStartDate` | Timestamp | When the rental period begins | Required |
-| `rentalEndDate` | Timestamp | When the rental period ends | Required, Must be > rentalStartDate |
 | `unitPriceCents` | Integer | Price for ONE unit for the rental period (from Quote), stored as cents | Required, Must be non-negative |
 | `subtotalCents` | Integer | Total for this line item (unitPrice × quantity), stored as cents | Required, Calculated field |
 | `priceQuote` | JSON | Complete Quote object from Pricing module (immutable snapshot) | Required, JSONB column |
@@ -224,8 +222,6 @@ A line item in an order representing a specific equipment type, quantity, and re
 - **Allocation Constraint:** The number of allocations must equal quantity (enforced by domain logic)
 
 **Critical Design Decision: Date Consistency**
-
-**Constraint:** All allocations for an item MUST have the same `start_date` and `end_date` (equal to item's `rentalStartDate` and `rentalEndDate`).
 
 **Rationale:**
 1. **Pricing Simplicity:** The Pricing module calculates one quote per equipment type per time period. Multiple periods would require multiple quotes.

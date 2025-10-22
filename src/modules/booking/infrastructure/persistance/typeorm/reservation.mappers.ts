@@ -13,6 +13,7 @@ export const ReservationOrderMapper = {
 			entity.items?.map((item) => ReservationOrderItemMapper.toDomain(item)) ??
 				[],
 			entity.status,
+			entity.total_amount_cents,
 			entity.created_at,
 		);
 	},
@@ -22,6 +23,7 @@ export const ReservationOrderMapper = {
 		entity.id = model.id;
 		entity.customer_id = model.customerId;
 		entity.status = model.status;
+		entity.total_amount_cents = model.totalAmountCents;
 		entity.created_at = model.createdAt;
 		entity.updated_at = new Date();
 
@@ -39,6 +41,7 @@ export const ReservationOrderItemMapper = {
 			entity.id,
 			entity.equipment_type_id,
 			entity.quantity,
+			entity.price_quote,
 			entity.allocations?.map((a) => AllocationMapper.toDomain(a)) ?? [],
 		);
 	},
@@ -48,6 +51,7 @@ export const ReservationOrderItemMapper = {
 		entity.id = model.id;
 		entity.equipment_type_id = model.equipmentId;
 		entity.quantity = model.quantity;
+		entity.price_quote = model.priceQuote;
 		entity.allocations = model.allocations.map((a) =>
 			AllocationMapper.toEntity(a),
 		);

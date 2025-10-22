@@ -82,6 +82,7 @@ export class CreateReservationHandler
 			endDate: command.endDateTime,
 			customerId: command.customerId,
 			promoCode: command.promoCode,
+			quantity: command.quantity,
 		});
 
 		const allocations = itemIds.map(
@@ -98,6 +99,7 @@ export class CreateReservationHandler
 			uuidv4(),
 			command.equipmentTypeId,
 			command.quantity,
+			quote,
 			allocations,
 		);
 
@@ -106,6 +108,7 @@ export class CreateReservationHandler
 			command.customerId,
 			[reservationOrderItem],
 			ReservationOrderStatus.Pending,
+			quote.total.amount,
 			new Date(),
 		);
 

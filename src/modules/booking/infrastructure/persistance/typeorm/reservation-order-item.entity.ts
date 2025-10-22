@@ -1,3 +1,4 @@
+import type { Quote } from "src/modules/pricing/domain/value-objects/quote";
 import {
 	Column,
 	Entity,
@@ -21,6 +22,9 @@ export class ReservationOrderItemEntity {
 
 	@Column("int")
 	quantity: number;
+
+	@Column("jsonb")
+	price_quote: Quote;
 
 	@ManyToOne(
 		"ReservationOrderEntity",

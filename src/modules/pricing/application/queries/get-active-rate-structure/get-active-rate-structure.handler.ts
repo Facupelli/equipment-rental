@@ -13,11 +13,10 @@ export class GetActiveRateStructureHandler
 	async execute(
 		query: GetActiveRateStructureQuery,
 	): Promise<RateStructure | null> {
-		const rateStructure =
-			await this.rateStructureRepo.findActiveByEquipmentType(
-				query.equipmentTypeId,
-				query.date,
-			);
+		const rateStructure = await this.rateStructureRepo.findActiveRateForDate(
+			query.equipmentTypeId,
+			query.date,
+		);
 
 		return rateStructure;
 	}
