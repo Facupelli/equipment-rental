@@ -2,8 +2,10 @@ import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 // biome-ignore lint:reason
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { RegisterEquipmentCommand } from "../application/commands/register-equipment/register-equipment.command";
-import type { RegisterEquipmentDto } from "../application/commands/register-equipment/register-equipment.dto";
-import type { GetItemsByTypeDto } from "../application/queries/get-items-by-type/get-items-by-type.dto";
+// biome-ignore lint: /style/useImportType
+import  { RegisterEquipmentDto } from "../application/commands/register-equipment/register-equipment.dto";
+// biome-ignore lint: /style/useImportType
+import  { GetItemsByTypeDto } from "../application/queries/get-items-by-type/get-items-by-type.dto";
 import { GetEquipmentItemsByTypeQuery } from "../application/queries/get-items-by-type/get-items-by-type.query";
 
 @Controller("equipment-items")

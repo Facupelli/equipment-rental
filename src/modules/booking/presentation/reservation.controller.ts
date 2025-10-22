@@ -7,11 +7,13 @@ import {
 	Post,
 	Query,
 } from "@nestjs/common";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import  { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateReservationCommand } from "../application/commands/create-reservation/create-reservation.command";
-import type { CreateReservationDto } from "../application/commands/create-reservation/create-reservation.dto";
-import type {
+// biome-ignore lint: /style/useImportType
+import  { CreateReservationDto } from "../application/commands/create-reservation/create-reservation.dto";
+// biome-ignore lint: /style/useImportType
+import  {
 	AvailabilityResponseDto,
 	CheckAvailabilityDto,
 } from "../application/queries/check-availability/check-availability.dto";

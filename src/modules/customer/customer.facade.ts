@@ -3,18 +3,15 @@ import { Injectable } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { GetCustomerByIdQuery } from "./application/queries/get-customer-by-id.query";
 import type { Customer } from "./domain/models/customer.model";
-// biome-ignore lint: /style/useImportType
-import { CustomerRepository } from "./infrastructure/persistence/typeorm/customer.repository";
 
 @Injectable()
 export class CustomerFacade {
-	constructor(
-		private readonly queryBus: QueryBus,
-		private readonly customerRepository: CustomerRepository,
-	) {}
+	constructor(private readonly queryBus: QueryBus) {}
 
 	async exists(customerId: string): Promise<boolean> {
-		const customer = await this.customerRepository.findById(customerId);
+		const customer = await this.queryBus.execute(
+			new GetCustomerByIdQuery(customerId),
+		);
 		return customer !== null;
 	}
 

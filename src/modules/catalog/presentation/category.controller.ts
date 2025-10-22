@@ -2,7 +2,8 @@ import { Body, Controller, Get, Post } from "@nestjs/common";
 // biome-ignore lint:reason
 import  { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateCategoryCommand } from "../application/commands/create-category/create-category.command";
-import type { CreateCategoryDto } from "../application/commands/create-category/create-category.dto";
+// biome-ignore lint:reason
+import { CreateCategoryDto } from "../application/commands/create-category/create-category.dto";
 import { GetCategoriesQuery } from "../application/queries/get-categories/get-categories.query";
 
 @Controller("categories")

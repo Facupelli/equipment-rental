@@ -140,42 +140,139 @@ We explicitly **avoid useless abstractions**. Abstractions are complex and often
 
 ## 1. Specify Phase: Defining the User Journey ("What" and "Why")
 
-The Specify phase focuses on the user experience, the outcomes that matter, and _what_ the system should accomplish, regardless of the technical stack.
+The Booking Module is responsible for managing equipment rental reservations through a multi-item order system. It coordinates availability checking, order creation, and physical asset allocation.
 
 ### A. High-Level Booking Capability Specification
 
-| Aspect                                 | Description (User/Business Intent)                                                                                                                                        | Outcomes and Success Criteria                                                                                                                                                |
-| :------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Capability Goal**                    | To allow customers to reliably check the availability of specific equipment types and create reservations for those items, priced hourly or daily.                        | **Success:** A confirmed reservation is created only if inventory and time constraints are met. **Failure:** Clear error messages detailing unavailability or invalid input. |
-| **User Journey: Availability Check**   | A potential customer needs to know quickly if an equipment type is available for their desired time range (start/end date/time) and quantity.                             | The system must return a clear boolean flag (`isAvailable`) and the remaining capacity. This must be a **safe read operation** with no side effects (a Query).               |
-| **User Journey: Reservation Creation** | Once satisfied with availability, the customer requests to create a firm reservation, providing customer details and rental specifics.                                    | The system accepts the request (a Command), validates input (e.g., start date is in the future, end date is after start date), reserves inventory, and persists the data.    |
-| **Architectural Output**               | Upon successful reservation, an explicit, immutable event (`ReservationCreated`) must be generated to notify other capabilities (e.g., Payment, Inventory, Notification). | This event generation should be guaranteed, even if downstream systems are slow, by using a mechanism like the Outbox Pattern.                                               |
+| Aspect | Description (User/Business Intent) | Outcomes and Success Criteria |
+|:-------|:-----------------------------------|:-----------------------------|
+| **Capability Goal** | To allow customers to create multi-item rental orders, verify availability for each item, calculate accurate pricing, and track physical equipment allocations. | **Success:** A confirmed order is created only if all items have sufficient inventory and valid pricing. Each item is allocated to specific physical equipment instances. **Failure:** Clear error messages detailing unavailability, invalid input, or pricing issues. |
+| **User Journey: Availability Check** | A potential customer needs to know if multiple equipment types are available for their desired quantities and time ranges. | The system must return availability status for EACH requested item. This is a **safe read operation** with no side effects (a Query). |
+| **User Journey: Multi-Item Order Creation** | A customer requests to create an order containing multiple equipment types, each with specified quantities and rental periods. | The system validates all items, calculates individual pricing, allocates physical equipment, and persists the complete order atomically. |
+| **User Journey: Order Status Tracking** | Customers and staff need to view order status (Pending, Confirmed, Active, Completed, Cancelled) and see which physical equipment is allocated. | The system provides queries to retrieve order details including item breakdowns, allocations, and pricing snapshots. |
+| **Architectural Output** | Upon successful order confirmation, explicit events (`OrderCreated`, `OrderItemConfirmed`) must be generated to notify other modules (Payment, Inventory, Notification). | Event generation is guaranteed via the Outbox Pattern, ensuring reliable cross-module communication. |
 
 ---
 
 ## 2. Plan Phase: Defining the Technical Architecture ("How")
 
-The Plan phase translates the specification into technical decisions, integrating your architectural constraints, standards, and chosen technologies. Since you have a strong foundation, the Plan will document your chosen methods for optionality and implementation.
+The Booking Module manages a three-level entity hierarchy: Orders contain Items which have Allocations.
 
-### A. Core Architectural Constraints (User Defined)
+### A. Core Architectural Constraints
 
-| Constraint                 | Detail based on Architecture Theory                                                                                                   | Implementation Evidence in Sources                                                                                                                                                                                                                      |
-| :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Boundary/Module**        | The module is defined by the **Booking Capability**, preventing a single mega-model for complex entities like "Equipment" or "Order". | The `BookingModule` handles reservation logic and availability. Other related capabilities (Inventory, Pricing) are implied to be separate, indicated by placeholders for external facades (e.g., `TODO: Get totalInventory from Inventory module`).    |
-| **Internal Structure**     | Uses **Clean Architecture** (Domain, Application, Infrastructure).                                                                    | The module is structured with Domain Services (`AvailabilityCheckerService`), Application Layer (Commands/Queries/Handlers), and Infrastructure (TypeORM Repositories). The Domain layer defines the rules (e.g., `Reservation` entity business rules). |
-| **Separation of Concerns** | Uses **Command-Query Separation (CQS)** to separate state-changing operations (Writes/Commands) from data retrieval (Reads/Queries).  | **Commands:** `CreateReservationCommand`. **Queries:** `CheckAvailabilityQuery`.                                                                                                                                                                        |
-| **Evolution/Optionality**  | Architectural evolution is enabled by planting seeds for **asynchronous movement**.                                                   | The system uses the **Outbox Pattern** via the database as a queue, ensuring transactional consistency between saving the reservation and firing the event. A background service (`OutboxProcessorService`) processes these events.                     |
+| Constraint | Detail based on Architecture Theory | Implementation Evidence |
+|:-----------|:-----------------------------------|:------------------------|
+| **Boundary/Module** | The module is defined by the **Booking Capability**: managing rental orders and equipment allocation lifecycle. | The `BookingModule` handles order creation, confirmation, and cancellation. It coordinates with Pricing (for quotes) and Inventory (for availability/allocation) but owns the order state. |
+| **Internal Structure** | Uses **Clean Architecture** (Domain, Application, Infrastructure) with aggregate roots for transactional consistency. | The `ReservationOrder` is the aggregate root, containing `ReservationOrderItem` entities and `Allocation` entities. All changes happen through the aggregate root. |
+| **Separation of Concerns** | Uses **Command-Query Separation (CQS)** to separate state-changing operations from data retrieval. | **Commands:** `CreateOrderCommand`, `ConfirmOrderCommand`, `CancelOrderCommand`. **Queries:** `CheckMultiItemAvailabilityQuery`, `GetOrderDetailsQuery`. |
+| **Evolution/Optionality** | Architectural evolution is enabled by planting seeds for **asynchronous movement** between modules. | The system uses the **Outbox Pattern** to emit domain events after order state changes, ensuring transactional consistency and enabling eventual consistency with Inventory and Payment modules. |
 
-### B. Technical Implementation Details (Booking Module)
+---
 
-The technical plan should explicitly address how your commands and queries operate, given the constraints of a high-availability booking system:
+### B. Domain Model: Three-Level Hierarchy
 
-| Component                   | Responsibility                                  | Technical Details                                                                                                                                                                                                                                                         |
-| :-------------------------- | :---------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Read Path (Query)**       | `CheckAvailabilityQuery`                        | This is a pure read operation. It relies on the `AvailabilityCheckerService`, which queries overlapping reservations (only `PENDING` or `CONFIRMED` statuses) using optimized database queries and calculating peak usage via a sweep line algorithm.                     |
-| **Write Path (Command)**    | `CreateReservationCommand`                      | The command handler orchestrates the full workflow: validation, availability check, entity creation, and persistence. If validation fails (e.g., invalid time range), it returns a `BadRequestException`. If inventory is insufficient, it returns a `ConflictException`. |
-| **Data Consistency**        | Guaranteeing event delivery after state change. | The `CreateReservationHandler` uses a **single transaction** (`dataSource.transaction`) to save the `Reservation` and create the `Outbox` record simultaneously.                                                                                                          |
-| **Interface for Consumers** | Hiding internal structure.                      | The **`BookingFacade`** acts as the only public interface for other modules, exposing clear methods like `checkAvailability` and `createReservation`.                                                                                                                     |
+#### 1. ReservationOrder (Aggregate Root)
+
+The top-level entity representing a customer's complete rental order.
+
+| Attribute | Type | Description | Constraints |
+|:----------|:-----|:------------|:------------|
+| `id` | UUID | Unique identifier for the order | Primary Key, Auto-generated |
+| `customerId` | UUID | Reference to customer in Customer Identity module | Required, Indexed |
+| `status` | Enum | Order lifecycle state: `PENDING`, `CONFIRMED`, `ACTIVE`, `COMPLETED`, `CANCELLED` | Required, Indexed, Default: `PENDING` |
+| `totalAmountCents` | Integer | Total cost for entire order (sum of item subtotals + order-level adjustments), stored as cents | Required, Must be non-negative |
+| `currency` | String | ISO 4217 currency code | Required, Default: 'USD', Max length: 3 |
+| `taxAmountCents` | Integer | Total tax applied to order, stored as cents | Required, Default: 0 |
+| `discountSummary` | JSON | Order-level discounts (e.g., "spend $500, get 10% off") | Optional, JSONB column |
+| `items` | Array<ReservationOrderItem> | Collection of equipment items in this order | Required, Cascade operations |
+| `createdAt` | Timestamp | When the order was created | Auto-generated |
+| `updatedAt` | Timestamp | Last modification timestamp | Auto-generated |
+
+**Design Rationale:**
+- **Aggregate Root:** All modifications to items and allocations must go through the order (enforces consistency)
+- **Status Workflow:** `PENDING` (created, awaiting payment) → `CONFIRMED` (paid, equipment allocated) → `ACTIVE` (rental period started) → `COMPLETED` (equipment returned) or `CANCELLED`
+- **Pricing Storage:** Order stores aggregate amounts only; detailed breakdowns live in items
+
+**Business Rules Enforced by Aggregate:**
+- Cannot confirm an order unless ALL items have sufficient available inventory
+- Cannot cancel an order in `ACTIVE` or `COMPLETED` status
+- Total amount must equal sum of item subtotals (validated on save)
+
+---
+
+#### 2. ReservationOrderItem (Entity within Aggregate)
+
+A line item in an order representing a specific equipment type, quantity, and rental period.
+
+| Attribute | Type | Description | Constraints |
+|:----------|:-----|:------------|:------------|
+| `id` | UUID | Unique identifier for the item | Primary Key, Auto-generated |
+| `equipmentTypeId` | UUID | Reference to equipment type in Catalog module | Required, Indexed |
+| `quantity` | Integer | Number of units being rented | Required, Must be > 0 |
+| `rentalStartDate` | Timestamp | When the rental period begins | Required |
+| `rentalEndDate` | Timestamp | When the rental period ends | Required, Must be > rentalStartDate |
+| `unitPriceCents` | Integer | Price for ONE unit for the rental period (from Quote), stored as cents | Required, Must be non-negative |
+| `subtotalCents` | Integer | Total for this line item (unitPrice × quantity), stored as cents | Required, Calculated field |
+| `priceQuote` | JSON | Complete Quote object from Pricing module (immutable snapshot) | Required, JSONB column |
+| `promoCodeUsed` | String | Promotional code applied (if any) | Optional, Max length: 50 |
+| `allocations` | Array<Allocation> | Physical equipment assignments for this item | Required, Cascade operations |
+
+**Design Rationale:**
+- **Date Storage at Item Level:** Rental period is stored here (not just in allocations) because pricing depends on duration
+- **Quantity Support:** A single item can represent multiple units of the same equipment type
+- **Price Snapshot:** The `priceQuote` JSONB column preserves the exact pricing calculation from the Pricing module at order creation time
+- **Allocation Constraint:** The number of allocations must equal quantity (enforced by domain logic)
+
+**Critical Design Decision: Date Consistency**
+
+**Constraint:** All allocations for an item MUST have the same `start_date` and `end_date` (equal to item's `rentalStartDate` and `rentalEndDate`).
+
+**Rationale:**
+1. **Pricing Simplicity:** The Pricing module calculates one quote per equipment type per time period. Multiple periods would require multiple quotes.
+2. **Common Use Case:** Most rentals are "equipment set for duration X" (e.g., "3 forklifts from Jan 15-17").
+3. **Clear Contract:** One item = one quote = one rental period.
+
+**Enforced By:**
+- Application layer validation (CreateOrderHandler checks allocation dates match item dates)
+- Optional: Database CHECK constraint (see migration notes in schema artifact)
+
+**Future Evolution:** If business needs require per-allocation pricing (e.g., rent equipment A for 2 days, equipment B for 3 days in same order), pricing logic would move to allocation level and item subtotal becomes SUM(allocation costs).
+
+---
+
+#### 3. Allocation (Entity within Aggregate)
+
+Maps a specific physical equipment item to a reservation order item.
+
+| Attribute | Type | Description | Constraints |
+|:----------|:-----|:------------|:------------|
+| `id` | UUID | Unique identifier for the allocation | Primary Key, Auto-generated |
+| `itemId` | UUID | Reference to parent ReservationOrderItem | Required, Indexed |
+| `equipmentItemId` | UUID | Reference to physical equipment in Inventory module | Required |
+| `startDate` | Timestamp | Allocation start (inherited from parent item) | Required, Must equal item.rentalStartDate |
+| `endDate` | Timestamp | Allocation end (inherited from parent item) | Required, Must equal item.rentalEndDate |
+
+**Design Rationale:**
+- **Physical Tracking:** Allocations answer "which specific forklift (#1234) is allocated to this order?"
+- **No Pricing Here:** Pricing is a commercial concern (item level), allocations are operational tracking
+- **Date Inheritance:** Dates are copied from parent item for query convenience but must remain consistent
+
+**Business Rules:**
+- Cannot allocate the same physical equipment to overlapping time periods
+- Cannot allocate equipment that is in `MAINTENANCE` or `RETIRED` status (validated against Inventory module)
+- Allocations are created when order is confirmed (not at order creation time)
+
+---
+
+**Key Architectural Points:**
+
+1. **Quote is for 1 Unit:** `PricingFacade.calculateQuote()` always prices a single unit. Item subtotal = `unitPrice × quantity`.
+
+2. **Immutable Price Snapshot:** The `priceQuote` JSON preserves exact calculation. If rates change tomorrow, existing orders retain original pricing.
+
+3. **Transaction Boundary:** Order creation and event emission happen atomically (single DB transaction).
+
+4. **Error Translation:** Pricing module's `NotFoundException` becomes Booking's `BadRequestException` with domain-appropriate message.
 
 ---
 
@@ -401,4 +498,249 @@ The CRM module's design prioritizes **event-driven reactivity** and **read model
 - **Customer Identity** changes when a customer updates their profile (rare).
 - **CRM** changes with every business transaction (frequent).
 - Separating these concerns allows independent optimization, scaling, and evolution.
+```
+
+---
+
+# Pricing Module Documentation
+
+## 1. Specify Phase: Defining the User Journey ("What" and "Why")
+
+The Pricing Module is responsible for calculating rental costs and managing the rate structures that govern how equipment rentals are priced. It answers the fundamental question: "How much will this rental cost?"
+
+### A. High-Level Pricing Capability Specification
+
+| Aspect                                           | Description (User/Business Intent)                                                                                                                           | Outcomes and Success Criteria                                                                                                                                                                                                                                       |
+| :----------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Capability Goal**                              | To provide accurate, consistent pricing calculations for equipment rentals based on equipment type, rental duration, and customer eligibility for discounts. | **Success:** A quote is generated with clear breakdown (subtotal, discounts, tax, total) that reflects current rate structures and applicable discounts. **Failure:** Clear validation errors for invalid inputs (e.g., negative duration, unknown equipment type). |
+| **User Journey: Quote Generation (Pre-Booking)** | A customer (or sales representative) needs to know the cost of renting specific equipment for a given time period before committing to a reservation.        | The system provides a fast, deterministic quote calculation with no side effects. This is a **pure read operation** (Query). The quote shows: base rate × duration, applicable discounts, taxes, and final total.                                                   |
+| **User Journey: Rate Management (Admin)**        | Business administrators need to define and update rate structures for different equipment types (hourly rates, daily rates, minimum charges).                | The system validates rate inputs (positive values, logical relationships like daily rate < hourly rate × 24), persists the structures, and immediately applies them to new quote calculations. This is a state-changing Command operation.                          |
+| **User Journey: Discount Application**           | The system must automatically apply eligible discounts to quotes based on customer loyalty tier, promotional codes, or volume-based rules.                   | Discounts are applied transparently during calculation. The quote breakdown shows which discounts were applied and their impact on the final price.                                                                                                                 |
+| **User Journey: Price Consistency**              | When a reservation is created, the price calculated at that moment must be preserved, even if rates change later.                                            | Pricing provides a quote; the Booking module stores that quote as an immutable snapshot. Pricing does not store per-reservation pricing history.                                                                                                                    |
+| **Integration Output**                           | Pricing calculations must be fast enough to support real-time quote generation in the user interface without blocking.                                       | Target: Quote calculation completes in <100ms for standard complexity (single equipment type, 1-2 discounts). Complex calculations (multiple items, promotional stacking) may take longer but must remain sub-second.                                               |
+
+---
+
+## 2. Plan Phase: Defining the Technical Architecture ("How")
+
+The Pricing module is designed as a **synchronous, stateless calculation service** with minimal dependencies. It is intentionally kept simple to avoid premature complexity while planting seeds for future evolution (dynamic pricing, multi-currency, external tax APIs).
+
+### A. Core Architectural Constraints
+
+| Constraint                           | Detail based on Architecture Theory                                                                                                                                                                                     | Implementation Approach                                                                                                                                                                                                                              |
+| :----------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Boundary/Module**                  | The module is defined by the **Pricing Capability**: calculating rental costs and managing rate structures. It does NOT own payment processing, invoicing, or reservation state.                                        | The `PricingModule` is standalone with clear dependencies: reads from Catalog (equipment type details) and CRM (loyalty status) but never writes to them. Other modules (Booking) call Pricing synchronously before creating reservations.           |
+| **Internal Structure**               | Uses **Clean Architecture** (Domain, Application, Infrastructure) with emphasis on pure calculation logic in the domain layer.                                                                                          | Domain layer contains pricing rules (`RateStructure`, `DiscountRule`, `Quote` value objects). Application layer contains CQS handlers (`CalculateQuoteQuery`, `CreateRateStructureCommand`). Infrastructure layer uses TypeORM for rate persistence. |
+| **Separation of Concerns**           | Uses **Command-Query Separation (CQS)** with heavy emphasis on the **Query path** since the primary use case is quote calculation (read-heavy).                                                                         | **Commands:** `CreateRateStructureCommand`, `UpdateRateStructureCommand`, `CreateDiscountRuleCommand`. **Queries:** `CalculateQuoteQuery`, `GetRateStructureQuery`, `GetApplicableDiscountsQuery`.                                                   |
+| **Integration Pattern**              | Other modules interact with Pricing **synchronously** via the `PricingFacade`. Pricing does NOT consume events from other modules in the initial implementation.                                                        | The Booking module calls `pricingFacade.calculateQuote()` before creating a reservation. This is a simple request-response pattern. No async event-driven flows initially (matches "Start Synchronous / Match Current Needs").                       |
+| **Statelessness**                    | Pricing calculations are **stateless** and **deterministic**: same inputs always produce the same output at a given point in time (rate structures are time-versioned but calculations don't store state per customer). | Pricing does NOT track "what quote did we give customer X on Tuesday?". That's Booking's responsibility (stores price snapshot in `Reservation`). Pricing only stores rate structures and discount rules (configuration data).                       |
+| **No Event Consumption (Initially)** | Pricing does not react to events from other modules in v1. It is a pure calculation service called on-demand.                                                                                                           | Future evolution: If analytics needs emerge (e.g., "track discount usage"), Pricing can emit `QuoteCalculatedEvent` or `DiscountAppliedEvent` via the Outbox pattern, but these are additive changes.                                                |
+| **Dependencies**                     | Pricing depends on Catalog (equipment type metadata) and CRM (customer loyalty status) for calculations, but these are **read-only synchronous queries**.                                                               | Pricing calls `CatalogFacade.getEquipmentTypeDetails(equipmentTypeId)` and `CRMFacade.getCustomerLoyaltyStatus(customerId)` during quote calculation. These are fast lookups that don't involve complex business logic.                              |
+
+---
+
+### B. Technical Implementation Details (Pricing Module)
+
+| Component                    | Responsibility                                                             | Technical Details                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| :--------------------------- | :------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Read Path (Queries)**      | `CalculateQuoteQuery`, `GetRateStructureQuery`                             | The primary query is `CalculateQuoteQuery`, which takes `{ equipmentTypeId, startDate, endDate, customerId?, promoCode? }` and returns a `Quote` DTO with: `subtotal`, `discounts[]`, `taxAmount`, `total`. This is a pure calculation with no database writes.                                                                                                                                                                                                                                                                                                                                                        |
+| **Calculation Flow**         | Multi-step calculation pipeline.                                           | 1. **Fetch Rate Structure**: Query `RateStructureRepository` for the equipment type's current rates (hourly, daily, minimum charge). 2. **Calculate Duration**: Compute rental duration in hours/days from `startDate` and `endDate`. 3. **Apply Base Rate**: Choose hourly vs. daily rate based on duration (e.g., if >24 hours, use daily rate). 4. **Apply Discounts**: Query applicable discount rules (loyalty tier, promo code) and apply in order of precedence. 5. **Calculate Tax**: Apply tax percentage (future: integrate with external tax API). 6. **Return Quote**: Structured DTO with full breakdown. |
+| **Write Path (Commands)**    | `CreateRateStructureCommand`, `UpdateRateStructureCommand`                 | Commands validate input (positive rates, logical relationships like `dailyRate <= hourlyRate * 24 * 0.8` for typical discount), persist to `RateStructure` entity, and optionally emit `RateStructureChangedEvent` for audit/analytics (future).                                                                                                                                                                                                                                                                                                                                                                       |
+| **Discount Rules Engine**    | Determining which discounts apply and in what order.                       | Discount rules are stored as entities (`DiscountRule`) with: `type` (loyalty, promo, volume), `eligibilityCriteria` (e.g., "Gold tier"), `discountPercentage`, `validFrom`, `validUntil`. The calculation engine queries applicable rules and applies them sequentially (future: support stacking limits).                                                                                                                                                                                                                                                                                                             |
+| **Data Integrity**           | Ensuring rate structures are always valid.                                 | The `RateStructure` entity enforces business rules: rates must be positive, daily rate should be less than 24× hourly rate (warning, not error), equipment type must exist in Catalog (validated during command execution).                                                                                                                                                                                                                                                                                                                                                                                            |
+| **Interface for Consumers**  | Hiding internal calculation complexity.                                    | The **`PricingFacade`** exposes: `calculateQuote(input): Promise<Quote>`, `getRateStructure(equipmentTypeId): Promise<RateStructure>`, `createRateStructure(command): Promise<string>`, `updateRateStructure(command): Promise<void>`.                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Future: External Tax API** | Integrating with services like Avalara for complex tax jurisdiction rules. | A `TaxCalculationService` interface can be introduced with implementations: `SimpleTaxCalculator` (flat percentage) and `AvalaraTaxCalculator` (external API). The facade remains unchanged; the implementation is swapped via DI.                                                                                                                                                                                                                                                                                                                                                                                     |
+| **Future: Dynamic Pricing**  | Supporting surge pricing, seasonal rates, or ML-based pricing.             | Introduce a `PricingStrategy` interface with implementations: `StandardStrategy`, `SeasonalStrategy`, `SurgePricingStrategy`. The `CalculateQuoteHandler` selects the strategy based on configuration or feature flags.                                                                                                                                                                                                                                                                                                                                                                                                |
+
+---
+
+### C. Core Domain Models
+
+#### 1. RateStructure (Entity)
+
+The `RateStructure` entity defines the pricing rules for a specific equipment type.
+
+| Attribute         | Type                         | Description                                                        | Constraints                                             |
+| :---------------- | :--------------------------- | :----------------------------------------------------------------- | :------------------------------------------------------ |
+| `id`              | UUID (string)                | Unique identifier for the rate structure.                          | Primary Key, Auto-generated                             |
+| `equipmentTypeId` | UUID (string)                | Foreign key reference to the equipment type in the Catalog module. | Required, Indexed                                       |
+| `hourlyRate`      | Decimal (Money Value Object) | Cost per hour of rental.                                           | Required, Must be positive                              |
+| `dailyRate`       | Decimal (Money Value Object) | Cost per day (24-hour period) of rental.                           | Required, Must be positive, Should be < hourlyRate × 24 |
+| `minimumCharge`   | Decimal (Money Value Object) | Minimum charge regardless of duration (e.g., 4-hour minimum).      | Optional, Defaults to 0                                 |
+| `taxPercentage`   | Decimal                      | Tax rate applied to the subtotal (e.g., 0.08 for 8% sales tax).    | Required, Range: 0-1                                    |
+| `effectiveFrom`   | Timestamp                    | When this rate structure becomes active.                           | Required                                                |
+| `effectiveTo`     | Timestamp (nullable)         | When this rate structure expires (null = indefinite).              | Optional                                                |
+| `createdAt`       | Timestamp                    | Audit field: when the rate was created.                            | Auto-generated                                          |
+| `updatedAt`       | Timestamp                    | Audit field: last modification timestamp.                          | Auto-generated                                          |
+
+**Design Rationale:**
+
+- **Time-Versioned Rates**: The `effectiveFrom` and `effectiveTo` fields allow for scheduled rate changes (e.g., "new rates start January 1st"). The query logic fetches the rate structure valid at the requested rental start date.
+- **Hourly vs. Daily Optimization**: For long rentals (e.g., 5 days), using the daily rate (5 × dailyRate) should be cheaper than hourly (120 hours × hourlyRate). The calculation engine automatically chooses the cheaper option.
+- **Money Value Object**: Rates are stored as `Decimal` (not `float`) to avoid floating-point precision errors. Future: wrap in a `Money` value object that includes currency.
+
+---
+
+#### 2. DiscountRule (Entity)
+
+The `DiscountRule` entity defines conditions under which discounts are applied.
+
+| Attribute             | Type                                    | Description                                                                                 | Constraints                 |
+| :-------------------- | :-------------------------------------- | :------------------------------------------------------------------------------------------ | :-------------------------- |
+| `id`                  | UUID (string)                           | Unique identifier for the discount rule.                                                    | Primary Key, Auto-generated |
+| `name`                | String                                  | Human-readable name (e.g., "Gold Loyalty Discount", "SUMMER2025 Promo").                    | Required, Max length 255    |
+| `type`                | Enum (Loyalty, Promo, Volume, Seasonal) | Category of discount for organizational purposes.                                           | Required                    |
+| `discountPercentage`  | Decimal                                 | Percentage reduction (e.g., 0.15 for 15% off).                                              | Required, Range: 0-1        |
+| `eligibilityCriteria` | JSON                                    | Structured criteria (e.g., `{ "loyaltyTier": "Gold" }` or `{ "promoCode": "SUMMER2025" }`). | Required                    |
+| `validFrom`           | Timestamp                               | When this discount becomes active.                                                          | Required                    |
+| `validUntil`          | Timestamp                               | When this discount expires.                                                                 | Required                    |
+| `isActive`            | Boolean                                 | Admin flag to enable/disable without deleting.                                              | Default: true               |
+| `stackable`           | Boolean                                 | Whether this discount can be combined with others.                                          | Default: false              |
+| `priority`            | Integer                                 | Order in which discounts are applied (lower number = higher priority).                      | Default: 100                |
+
+**Design Rationale:**
+
+- **Flexible Eligibility**: The `eligibilityCriteria` JSON field allows for diverse rules without database schema changes. Examples: `{ "loyaltyTier": "Gold" }`, `{ "minRentalDays": 7 }`, `{ "equipmentCategory": "Heavy Machinery" }`.
+- **Stacking Control**: Most businesses don't allow stacking (e.g., can't combine loyalty discount with promo code). The `stackable` flag makes this explicit. If `stackable = false`, only the best single discount is applied.
+- **Priority-Based Application**: When multiple discounts are eligible and stackable, they're applied in `priority` order (e.g., loyalty discount first, then promo code).
+
+---
+
+#### 3. Quote (Value Object)
+
+The `Quote` is a **value object** (not an entity) representing the calculated price breakdown. It is returned by the `CalculateQuoteQuery` and embedded in the `Reservation` entity by the Booking module.
+
+| Attribute                | Type                | Description                                             |
+| :----------------------- | :------------------ | :------------------------------------------------------ |
+| `equipmentTypeId`        | UUID (string)       | The equipment being priced.                             |
+| `startDate`              | Timestamp           | Rental start time.                                      |
+| `endDate`                | Timestamp           | Rental end time.                                        |
+| `durationHours`          | Integer             | Calculated rental duration in hours.                    |
+| `baseRate`               | Decimal             | The rate used (hourly or daily).                        |
+| `subtotal`               | Decimal             | Base calculation before discounts (rate × duration).    |
+| `discountsApplied`       | Array<DiscountLine> | List of discounts with: `{ name, percentage, amount }`. |
+| `totalDiscount`          | Decimal             | Sum of all discount amounts.                            |
+| `subtotalAfterDiscounts` | Decimal             | Subtotal minus total discount.                          |
+| `taxAmount`              | Decimal             | Calculated tax on the discounted subtotal.              |
+| `total`                  | Decimal             | Final amount: subtotalAfterDiscounts + taxAmount.       |
+| `calculatedAt`           | Timestamp           | When this quote was generated (for audit purposes).     |
+
+**Design Rationale:**
+
+- **Immutable Snapshot**: Once a `Quote` is calculated, it doesn't change. The Booking module stores this quote in the `Reservation` entity as a JSON or embedded value object.
+- **Transparency**: The breakdown shows exactly how the final price was reached (rate × duration, each discount, tax). This is critical for customer trust and dispute resolution.
+- **No Database Storage in Pricing Module**: Pricing doesn't save quotes. If the Booking module calls `calculateQuote()` twice with the same inputs, it gets the same result (deterministic), but Pricing has no record of the first call.
+
+---
+
+### E. Key Architectural Decisions
+
+#### 1. Why Pricing is Synchronous (Not Event-Driven)
+
+**Decision:** Pricing is called synchronously by the Booking module, not via asynchronous events.
+
+**Rationale:**
+
+- **Pre-Commitment Calculation**: Pricing happens **before** a reservation is created. The user needs to see the price to decide whether to proceed.
+- **Fast Response Required**: Users expect real-time pricing in the UI (<100ms). Asynchronous event processing would introduce unacceptable latency.
+- **No State Change**: Calculating a quote doesn't change system state. There's no need for eventual consistency or transactional guarantees.
+
+**Future Evolution:** If pricing becomes slow (e.g., calling external APIs for dynamic pricing), we can introduce caching or pre-computed rate tables, but the synchronous interface remains.
+
+---
+
+#### 2. Why Pricing Doesn't Store Quote History
+
+**Decision:** Pricing calculates quotes on-demand but doesn't persist them. The Booking module stores the quote as part of the `Reservation` entity.
+
+**Rationale:**
+
+- **Single Responsibility**: Pricing's job is calculation, not storage. Storing per-customer quote history would mix concerns (analytics/audit trail).
+- **Storage Belongs to Consumer**: The Booking module needs the price to create a reservation, so it naturally owns the persistence of that price snapshot.
+- **Avoid Data Duplication**: If both Pricing and Booking stored quotes, we'd have synchronization problems (which one is the source of truth?).
+
+**Future Evolution:** If analytics needs emerge ("what quotes did we generate last month?"), introduce a **separate Analytics module** that consumes `QuoteCalculatedEvent` (emitted by Pricing via Outbox) and builds read-optimized projections. Pricing remains calculation-only.
+
+---
+
+#### 3. Discount Precedence and Stacking
+
+**Decision:** Discounts have a `priority` field and a `stackable` flag to control application order and combination.
+
+**Rationale:**
+
+- **Business Rule Complexity**: Some discounts should combine (e.g., loyalty + volume), others shouldn't (loyalty + promo code = choose best).
+- **Explicit Control**: Making precedence explicit prevents ambiguous "which discount applies first?" scenarios.
+- **Deterministic Results**: Same inputs always produce the same discount application order.
+
+**Default Behavior (v1):**
+
+1. Query all eligible discount rules (matching `eligibilityCriteria`, within `validFrom`/`validUntil`).
+2. Filter out inactive rules (`isActive = false`).
+3. If multiple rules are eligible:
+   - If any have `stackable = false`, apply only the single best discount (highest percentage).
+   - If all have `stackable = true`, apply in `priority` order (lowest number first).
+4. Calculate cumulative discount amount.
+
+**Future Enhancement:** Support complex stacking policies (e.g., "max 2 discounts", "loyalty + seasonal only").
+
+---
+
+### F. Data Flow: Quote Calculation Workflow
+
+Let me trace the complete flow when the Booking module requests a quote:
+
+```
+┌─────────────────────────────────────────────┐
+│  Booking Module (CreateReservationHandler)  │
+└──────┬──────────────────────────────────────┘
+       │ pricingFacade.calculateQuote({...})
+       ↓
+┌─────────────────────────────────────────────┐
+│  Pricing Module (PricingFacade)              │
+│  └─ Delegates to CalculateQuoteHandler       │
+└──────┬──────────────────────────────────────┘
+       │
+       ↓
+┌─────────────────────────────────────────────┐
+│  CalculateQuoteHandler (Application Layer)   │
+│  ├─ 1. Validate Input                        │
+│  │    ├─ Start date < end date?              │
+│  │    └─ Dates in future?                    │
+│  ├─ 2. Get Equipment Type Details            │
+│  │    └─ catalogFacade.getEquipmentTypeDetails() │
+│  ├─ 3. Get Rate Structure                    │
+│  │    └─ rateStructureRepo.findActiveRate()  │ ← Queries by equipmentTypeId, effectiveDate = startDate
+│  ├─ 4. Calculate Duration                    │
+│  │    └─ durationHours = (end - start) / 3600 │
+│  ├─ 5. Apply Base Rate                       │
+│  │    ├─ If durationHours <= 24:             │
+│  │    │   subtotal = hourlyRate × durationHours │
+│  │    └─ Else:                                │
+│  │        durationDays = durationHours / 24   │
+│  │        subtotal = min(                     │
+│  │          hourlyRate × durationHours,       │
+│  │          dailyRate × durationDays          │
+│  │        )                                   │
+│  ├─ 6. Get Applicable Discounts              │
+│  │    ├─ If customerId provided:             │
+│  │    │   └─ crmFacade.getCustomerLoyaltyStatus() │
+│  │    ├─ If promoCode provided:              │
+│  │    │   └─ discountRuleRepo.findByCode()   │
+│  │    └─ Query volume/seasonal rules          │
+│  ├─ 7. Apply Discounts                       │
+│  │    └─ Execute precedence/stacking logic    │
+│  ├─ 8. Calculate Tax                         │
+│  │    └─ taxAmount = subtotalAfterDiscounts × taxPercentage │
+│  └─ 9. Build Quote VO                        │
+│       └─ Return fully populated Quote object  │
+└──────┬──────────────────────────────────────┘
+       │ Quote DTO
+       ↓
+┌─────────────────────────────────────────────┐
+│  Booking Module (continues...)               │
+│  ├─ Store quote.total in Reservation         │
+│  ├─ Store quote breakdown as JSON            │
+│  └─ Proceed with reservation creation        │
+└─────────────────────────────────────────────┘
 ```

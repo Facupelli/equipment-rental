@@ -15,6 +15,8 @@ import { InventoryFacade } from "src/modules/inventory/inventory.facade";
 // biome-ignore lint: /style/useImportType
 import { OutboxService } from "src/modules/outbox/application/outbox.service";
 // biome-ignore lint: /style/useImportType
+import { PricingFacade } from "src/modules/pricing/pricing.facade";
+// biome-ignore lint: /style/useImportType
 import { UnitOfWork } from "src/shared/infrastructure/database/unit-of-work.service";
 import { validateDateRange } from "src/shared/utils/date-range.utils";
 import { v4 as uuidv4 } from "uuid";
@@ -32,6 +34,7 @@ export class CreateReservationHandler
 		private readonly outboxService: OutboxService,
 		private readonly inventoryFacade: InventoryFacade,
 		private readonly customerFacade: CustomerFacade,
+		private readonly pricingFacade: PricingFacade,
 		private readonly unitOfWork: UnitOfWork,
 	) {}
 
@@ -72,6 +75,14 @@ export class CreateReservationHandler
 				"Equipment not available for the requested time range",
 			);
 		}
+
+		const quote = await this.pricingFacade.calculateQuote({
+			equipmentTypeId: command.equipmentTypeId,
+			startDate: command.startDateTime,
+			endDate: command.endDateTime,
+			customerId: command.customerId,
+			promoCode: command.promoCode,
+		});
 
 		const allocations = itemIds.map(
 			(itemId) =>

@@ -9,6 +9,7 @@ import { BookingModule } from "./modules/booking/booking.module";
 import { CatalogModule } from "./modules/catalog/catalog.module";
 import { CustomerModule } from "./modules/customer/customer.module";
 import { InventoryModule } from "./modules/inventory/inventory.module";
+import { PricingModule } from "./modules/pricing/pricing.module";
 import configuration, { envSchema } from "./shared/config/configuration";
 import { HttpExceptionFilter } from "./shared/filters/http-exception.filter";
 import { DatabaseModule } from "./shared/infrastructure/database/database.module";
@@ -33,6 +34,7 @@ import { DatabaseModule } from "./shared/infrastructure/database/database.module
 		InventoryModule,
 		CatalogModule,
 		CustomerModule,
+		PricingModule,
 	],
 	controllers: [AppController],
 	providers: [

@@ -1,9 +1,11 @@
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
-// biome-ignore lint:reason
+// biome-ignore lint: /style/useImportType
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { RegisterCustomerCommand } from "../application/commands/register-customer.command";
-import type { RegisterCustomerDto } from "../application/commands/register-customer.dto";
-import type { GetCustomerByIdDto } from "../application/queries/get-customer-by-id.dto";
+// biome-ignore lint: /style/useImportType
+import  { RegisterCustomerDto } from "../application/commands/register-customer.dto";
+// biome-ignore lint: /style/useImportType
+import  { GetCustomerByIdDto } from "../application/queries/get-customer-by-id.dto";
 import { GetCustomerByIdQuery } from "../application/queries/get-customer-by-id.query";
 import type { Customer } from "../domain/models/customer.model";
 
