@@ -1,76 +1,92 @@
-export enum CustomerStatus {
+export enum UserStatus {
 	ACTIVE = "ACTIVE",
 	SUSPENDED = "SUSPENDED",
 }
 
-export interface CreateCustomerProps {
+export interface CreateUserProps {
 	id: string;
 	name: string;
 	email: string;
 	phone: string;
+	passwordHash: string;
 }
 
-export class Customer {
+export class User {
 	private _id: string;
 	private _name: string;
 	private _email: string;
 	private _phone: string;
-	private _status: CustomerStatus;
+	private _passwordHash: string;
+	private _status: UserStatus;
 	private _registeredAt: Date;
+	private _lastLoginAt: Date | null;
 
 	private constructor(
 		id: string,
 		name: string,
 		email: string,
 		phone: string,
-		status: CustomerStatus,
+		passwordHash: string,
+		status: UserStatus,
 		registeredAt: Date,
+		lastLoginAt: Date | null = null,
 	) {
 		this._id = id;
 		this._name = name;
 		this._email = email;
 		this._phone = phone;
+		this._passwordHash = passwordHash;
 		this._status = status;
 		this._registeredAt = registeredAt;
+		this._lastLoginAt = lastLoginAt;
 	}
 
-	public static create(props: CreateCustomerProps): Customer {
+	public static create(props: CreateUserProps): User {
 		if (!props.name?.trim()) {
-			throw new Error("Customer name is required");
+			throw new Error("User name is required");
 		}
-		if (!Customer.isValidEmail(props.email)) {
+		if (!User.isValidEmail(props.email)) {
 			throw new Error("Invalid email format");
 		}
-		if (!Customer.isValidPhone(props.phone)) {
+		if (!User.isValidPhone(props.phone)) {
 			throw new Error("Invalid phone format");
 		}
+		if (!props.passwordHash) {
+			throw new Error("Password hash is required");
+		}
 
-		return new Customer(
+		return new User(
 			props.id,
 			props.name.trim(),
 			props.email.trim().toLowerCase(),
 			props.phone.trim(),
-			CustomerStatus.ACTIVE,
+			props.passwordHash,
+			UserStatus.ACTIVE,
 			new Date(),
+			null,
 		);
 	}
 
 	public suspend(): void {
-		if (this._status === CustomerStatus.SUSPENDED) {
-			throw new Error("Customer is already suspended");
+		if (this._status === UserStatus.SUSPENDED) {
+			throw new Error("User is already suspended");
 		}
-		this._status = CustomerStatus.SUSPENDED;
+		this._status = UserStatus.SUSPENDED;
 	}
 
 	public activate(): void {
-		if (this._status === CustomerStatus.ACTIVE) {
-			throw new Error("Customer is already active");
+		if (this._status === UserStatus.ACTIVE) {
+			throw new Error("User is already active");
 		}
-		this._status = CustomerStatus.ACTIVE;
+		this._status = UserStatus.ACTIVE;
 	}
 
 	public isSuspended(): boolean {
-		return this._status === CustomerStatus.SUSPENDED;
+		return this._status === UserStatus.SUSPENDED;
+	}
+
+	public recordLogin(): void {
+		this._lastLoginAt = new Date();
 	}
 
 	get id(): string {
@@ -89,12 +105,20 @@ export class Customer {
 		return this._phone;
 	}
 
-	get status(): CustomerStatus {
+	get status(): UserStatus {
 		return this._status;
 	}
 
 	get registeredAt(): Date {
 		return this._registeredAt;
+	}
+
+	get lastLoginAt(): Date | null {
+		return this._lastLoginAt;
+	}
+
+	get passwordHash(): string {
+		return this._passwordHash;
 	}
 
 	private static isValidEmail(email: string): boolean {

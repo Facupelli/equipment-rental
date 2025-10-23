@@ -9,13 +9,13 @@ import { ReservationOrderItem } from "src/modules/booking/domain/models/reservat
 // biome-ignore lint: /style/useImportType
 import { ReservationOrderRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation-order.repository";
 // biome-ignore lint: /style/useImportType
-import { CustomerFacade } from "src/modules/customer/customer.facade";
-// biome-ignore lint: /style/useImportType
 import { InventoryFacade } from "src/modules/inventory/inventory.facade";
 // biome-ignore lint: /style/useImportType
 import { OutboxService } from "src/modules/outbox/application/outbox.service";
 // biome-ignore lint: /style/useImportType
 import { PricingFacade } from "src/modules/pricing/pricing.facade";
+// biome-ignore lint: /style/useImportType
+import { UserFacade } from "src/modules/user/user.facade";
 // biome-ignore lint: /style/useImportType
 import { UnitOfWork } from "src/shared/infrastructure/database/unit-of-work.service";
 import { validateDateRange } from "src/shared/utils/date-range.utils";
@@ -33,14 +33,14 @@ export class CreateReservationHandler
 		private readonly availabilityChecker: AvailabilityCheckerService,
 		private readonly outboxService: OutboxService,
 		private readonly inventoryFacade: InventoryFacade,
-		private readonly customerFacade: CustomerFacade,
+		private readonly userFacade: UserFacade,
 		private readonly pricingFacade: PricingFacade,
 		private readonly unitOfWork: UnitOfWork,
 	) {}
 
 	async execute(command: CreateReservationCommand): Promise<string> {
-		const customerExists = await this.customerFacade.exists(command.customerId);
-		if (!customerExists) {
+		const userExists = await this.userFacade.exists(command.customerId);
+		if (!userExists) {
 			throw new BadRequestException(
 				`Customer with ID ${command.customerId} not found`,
 			);

@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { CustomerModule } from "../customer/customer.module";
 import { InventoryModule } from "../inventory/inventory.module";
 import { OutboxModule } from "../outbox/outbox.module";
 import { PricingModule } from "../pricing/pricing.module";
+import { UserModule } from "../user/user.module";
 import { ConfirmReservationHandler } from "./application/commands/confirm-reservation/confirm-reservation.handler";
 import { CreateReservationHandler } from "./application/commands/create-reservation/create-reservation.handler";
 import { CheckAvailabilityHandler } from "./application/queries/check-availability/check-availability.handler";
@@ -33,7 +33,7 @@ const EventHandlers = [];
 		// Dependencies
 		OutboxModule,
 		InventoryModule,
-		CustomerModule,
+		UserModule,
 		PricingModule,
 	],
 	controllers: [ReservationController],
