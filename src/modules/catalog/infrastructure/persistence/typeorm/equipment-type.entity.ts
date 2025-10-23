@@ -17,6 +17,9 @@ export class EquipmentTypeEntity {
 
 	@Column({ type: "int", default: 0 })
 	bufferDays: number;
+
+	@Column("timestamptz", { default: () => "CURRENT_TIMESTAMP" })
+	created_at: Date;
 }
 
 export const EquipmentTypeMapper = {
@@ -27,6 +30,7 @@ export const EquipmentTypeMapper = {
 			description: schema.description,
 			categoryId: schema.categoryId,
 			bufferDays: schema.bufferDays,
+			createdAt: schema.created_at,
 		});
 	},
 
@@ -37,6 +41,7 @@ export const EquipmentTypeMapper = {
 		schema.description = entity.description;
 		schema.categoryId = entity.categoryId;
 		schema.bufferDays = entity.bufferDays;
+		schema.created_at = entity.createdAt;
 		return schema;
 	},
 };
