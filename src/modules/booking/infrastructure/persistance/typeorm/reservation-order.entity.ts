@@ -13,6 +13,7 @@ import type { ReservationOrderItemEntity } from "./reservation-order-item.entity
 @Entity({ schema: "booking", name: "reservation_order" })
 @Index(["customer_id"])
 @Index(["status"])
+@Index(["customer_id", "status", "created_at"])
 export class ReservationOrderEntity {
 	@PrimaryColumn("uuid")
 	id: string;

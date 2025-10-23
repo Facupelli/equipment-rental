@@ -15,7 +15,7 @@ import { CheckAvailabilityQuery } from "./check-availability.query";
  */
 @QueryHandler(CheckAvailabilityQuery)
 export class CheckAvailabilityHandler
-	implements IQueryHandler<CheckAvailabilityQuery, any>
+	implements IQueryHandler<CheckAvailabilityQuery, string[]>
 {
 	constructor(
 		private readonly availabilityChecker: AvailabilityCheckerService,

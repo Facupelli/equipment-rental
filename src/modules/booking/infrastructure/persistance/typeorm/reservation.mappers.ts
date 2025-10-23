@@ -5,12 +5,12 @@ import { AllocationEntity } from "./allocation.entity";
 import { ReservationOrderEntity } from "./reservation-order.entity";
 import { ReservationOrderItemEntity } from "./reservation-order-item.entity";
 
-export const ReservationOrderMapper = {
+export const reservationOrderMapper = {
 	toDomain(entity: ReservationOrderEntity): ReservationOrder {
 		return new ReservationOrder(
 			entity.id,
 			entity.customer_id,
-			entity.items?.map((item) => ReservationOrderItemMapper.toDomain(item)) ??
+			entity.items?.map((item) => reservationOrderItemMapper.toDomain(item)) ??
 				[],
 			entity.status,
 			entity.total_amount_cents,
@@ -28,21 +28,21 @@ export const ReservationOrderMapper = {
 		entity.updated_at = new Date();
 
 		entity.items = model.items.map((item) =>
-			ReservationOrderItemMapper.toEntity(item),
+			reservationOrderItemMapper.toEntity(item),
 		);
 
 		return entity;
 	},
 };
 
-export const ReservationOrderItemMapper = {
+export const reservationOrderItemMapper = {
 	toDomain(entity: ReservationOrderItemEntity): ReservationOrderItem {
 		return new ReservationOrderItem(
 			entity.id,
 			entity.equipment_type_id,
 			entity.quantity,
 			entity.price_quote,
-			entity.allocations?.map((a) => AllocationMapper.toDomain(a)) ?? [],
+			entity.allocations?.map((a) => allocationMapper.toDomain(a)) ?? [],
 		);
 	},
 
@@ -53,13 +53,13 @@ export const ReservationOrderItemMapper = {
 		entity.quantity = model.quantity;
 		entity.price_quote = model.priceQuote;
 		entity.allocations = model.allocations.map((a) =>
-			AllocationMapper.toEntity(a),
+			allocationMapper.toEntity(a),
 		);
 		return entity;
 	},
 };
 
-export const AllocationMapper = {
+export const allocationMapper = {
 	toDomain(entity: AllocationEntity): Allocation {
 		return new Allocation(
 			entity.id,

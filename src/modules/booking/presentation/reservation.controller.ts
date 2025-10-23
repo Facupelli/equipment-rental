@@ -4,30 +4,29 @@ import {
 	Get,
 	HttpCode,
 	HttpStatus,
+	Param,
 	Post,
 	Query,
 } from "@nestjs/common";
 // biome-ignore lint: /style/useImportType
-import  { CommandBus, QueryBus } from "@nestjs/cqrs";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateReservationCommand } from "../application/commands/create-reservation/create-reservation.command";
 // biome-ignore lint: /style/useImportType
-import  { CreateReservationDto } from "../application/commands/create-reservation/create-reservation.dto";
+import { CreateReservationDto } from "../application/commands/create-reservation/create-reservation.dto";
 // biome-ignore lint: /style/useImportType
-import  {
+import {
 	AvailabilityResponseDto,
 	CheckAvailabilityDto,
 } from "../application/queries/check-availability/check-availability.dto";
 import { CheckAvailabilityQuery } from "../application/queries/check-availability/check-availability.query";
+// biome-ignore lint: /style/useImportType
+import { GetCustomerBookingsDto } from "../application/queries/get-customer-bookings/get-customer-bookings.dto";
+import { GetCustomerBookingsQuery } from "../application/queries/get-customer-bookings/get-customer-bookings.query";
+// biome-ignore lint: /style/useImportType
+import  { GetDetailByIdDto } from "../application/queries/get-detail-by-id/get-detail-by-id.dto";
+import { GetDetailByIdQuery } from "../application/queries/get-detail-by-id/get-detail-by-id.query";
+import type { ReservationOrder } from "../domain/models/reservation-order.model";
 
-/**
- * Responsibilities:
- * - Handle HTTP requests
- * - Validate input (via Zod DTOs)
- * - Dispatch commands/queries to application layer
- * - Return HTTP responses
- *
- * Does NOT contain business logic!
- */
 @Controller("reservations")
 export class ReservationController {
 	constructor(
@@ -35,10 +34,6 @@ export class ReservationController {
 		private readonly queryBus: QueryBus,
 	) {}
 
-	/**
-	 * Check if equipment is available
-	 * GET /bookings/availability?equipmentTypeId=...&startDateTime=...&endDateTime=...&quantity=...
-	 */
 	@Get("availability")
   @HttpCode(HttpStatus.OK)
   async checkAvailability(
@@ -62,10 +57,28 @@ export class ReservationController {
     };
   }
 
-	/**
-	 * Create a new reservation
-	 * POST /bookings
-	 */
+	@Get()
+  async getCustomerBookings(
+    @Query() query: GetCustomerBookingsDto
+  ): Promise<ReservationOrder[]> {
+    const orders = await this.queryBus.execute(
+      new GetCustomerBookingsQuery(query.customerId)
+    );
+
+    return orders
+  }
+
+	@Get(":orderId")
+  async getDetailById(
+    @Param() params: GetDetailByIdDto
+  ): Promise<ReservationOrder> {
+    const order = await this.queryBus.execute(
+      new GetDetailByIdQuery(params.orderId)
+    );
+
+    return order
+  }
+
 	@Post()
   @HttpCode(HttpStatus.CREATED)
   async createReservation(
@@ -84,10 +97,4 @@ export class ReservationController {
 
     return { reservationId };
   }
-
-	// TODO: Add more endpoints
-	// - GET /bookings/:id (get reservation details)
-	// - GET /bookings (list reservations)
-	// - POST /bookings/:id/confirm (confirm reservation)
-	// - POST /bookings/:id/cancel (cancel reservation)
 }
