@@ -2,14 +2,14 @@ import type { Money } from "../value-objects/money";
 
 export class RateStructure {
 	constructor(
-		readonly id: string,
-		readonly equipmentTypeId: string,
-		readonly hourlyRate: Money,
-		readonly dailyRate: Money,
-		readonly minimumCharge: Money,
-		readonly taxPercentage: number,
-		readonly effectiveFrom: Date,
-		readonly effectiveTo?: Date,
+		public readonly id: string,
+		public readonly equipmentTypeId: string,
+		public readonly hourlyRate: Money,
+		public readonly dailyRate: Money,
+		public readonly minimumCharge: Money,
+		public readonly taxPercentage: number,
+		public readonly effectiveFrom: Date,
+		public readonly effectiveTo?: Date,
 	) {
 		if (hourlyRate.isNegative() || dailyRate.isNegative()) {
 			throw new Error("Rates must be positive");
@@ -17,6 +17,50 @@ export class RateStructure {
 		if (taxPercentage < 0 || taxPercentage > 1) {
 			throw new Error("Tax percentage must be between 0 and 1");
 		}
+	}
+
+	static create(
+		id: string,
+		equipmentTypeId: string,
+		hourlyRate: Money,
+		dailyRate: Money,
+		minimumCharge: Money,
+		taxPercentage: number,
+		effectiveFrom: Date,
+		effectiveTo?: Date,
+	): RateStructure {
+		return new RateStructure(
+			id,
+			equipmentTypeId,
+			hourlyRate,
+			dailyRate,
+			minimumCharge,
+			taxPercentage,
+			effectiveFrom,
+			effectiveTo,
+		);
+	}
+
+	static reconstitute(
+		id: string,
+		equipmentTypeId: string,
+		hourlyRate: Money,
+		dailyRate: Money,
+		minimumCharge: Money,
+		taxPercentage: number,
+		effectiveFrom: Date,
+		effectiveTo?: Date,
+	): RateStructure {
+		return new RateStructure(
+			id,
+			equipmentTypeId,
+			hourlyRate,
+			dailyRate,
+			minimumCharge,
+			taxPercentage,
+			effectiveFrom,
+			effectiveTo,
+		);
 	}
 
 	isEffectiveAt(date: Date): boolean {

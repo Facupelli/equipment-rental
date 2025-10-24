@@ -38,7 +38,7 @@ export class RateStructureEntity {
 
 export const rateStructureMapper = {
 	toDomain(entity: RateStructureEntity): RateStructure {
-		return new RateStructure(
+		return RateStructure.reconstitute(
 			entity.id,
 			entity.equipment_type_id,
 			new Money(Number(entity.hourly_rate)),
