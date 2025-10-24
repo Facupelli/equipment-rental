@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import type { FindInRangeResponseDTO } from "src/modules/booking/application/queries/find-in-range/find-in-range.dto";
 import type {
 	ReservationOrder,
 	ReservationOrderStatus,
@@ -10,6 +11,7 @@ import { BaseRepository } from "src/shared/infrastructure/persistence/base-repos
 import { DataSource } from "typeorm";
 import { reservationOrderMapper } from "./reservation.mappers";
 import { ReservationOrderEntity } from "./reservation-order.entity";
+import { ReservationOrderItemEntity } from "./reservation-order-item.entity";
 
 @Injectable()
 export class ReservationOrderRepository extends BaseRepository<ReservationOrderEntity> {
@@ -97,5 +99,36 @@ export class ReservationOrderRepository extends BaseRepository<ReservationOrderE
 
 		const entities = await queryBuilder.getMany();
 		return entities.map((entity) => reservationOrderMapper.toDomain(entity));
+	}
+
+	async findInRange(options: {
+		rangeStart: Date;
+		rangeEnd: Date;
+		statuses: ReservationOrderStatus[];
+	}): Promise<FindInRangeResponseDTO[]> {
+		const { rangeStart, rangeEnd, statuses } = options;
+
+		const entities = await this.dataSource
+			.createQueryBuilder(ReservationOrderItemEntity, "roi")
+			.innerJoin("roi.order", "order")
+			.innerJoin("roi.allocations", "alloc")
+			.select([
+				'order.id AS "orderId"',
+				'roi.id AS "itemId"',
+				'roi.equipment_type_id AS "equipmentTypeId"',
+				'roi.quantity AS "quantity"',
+				'order.customer_id AS "customerId"',
+				'order.status AS "status"',
+				'MIN(alloc.start_date) AS "startDate"',
+				'MAX(alloc.end_date) AS "endDate"',
+			])
+			.where("order.status IN (:...statuses)", { statuses })
+			.andWhere("alloc.start_date <= :rangeEnd", { rangeEnd })
+			.andWhere("alloc.end_date >= :rangeStart", { rangeStart })
+			.groupBy("order.id")
+			.addGroupBy("roi.id")
+			.getRawMany<FindInRangeResponseDTO>();
+
+		return entities;
 	}
 }

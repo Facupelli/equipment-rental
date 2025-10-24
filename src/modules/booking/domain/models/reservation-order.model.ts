@@ -8,11 +8,11 @@ export enum ReservationOrderStatus {
 	Cancelled = "Cancelled",
 }
 
-export const BLOCKING_ORDER_STATUSES = [
+export const ACTIVE_STATUSES = [
 	ReservationOrderStatus.Pending,
 	ReservationOrderStatus.Confirmed,
 	ReservationOrderStatus.InProgress,
-];
+] as const;
 
 export class ReservationOrder {
 	constructor(

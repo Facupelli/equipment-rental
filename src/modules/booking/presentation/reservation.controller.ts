@@ -20,10 +20,16 @@ import {
 } from "../application/queries/check-availability/check-availability.dto";
 import { CheckAvailabilityQuery } from "../application/queries/check-availability/check-availability.query";
 // biome-ignore lint: /style/useImportType
+import  {
+	FindInRangeDto,
+	FindInRangeResponseDTO,
+} from "../application/queries/find-in-range/find-in-range.dto";
+import { FindInRangeQuery } from "../application/queries/find-in-range/find-in-range.query";
+// biome-ignore lint: /style/useImportType
 import { GetCustomerBookingsDto } from "../application/queries/get-customer-bookings/get-customer-bookings.dto";
 import { GetCustomerBookingsQuery } from "../application/queries/get-customer-bookings/get-customer-bookings.query";
 // biome-ignore lint: /style/useImportType
-import  { GetDetailByIdDto } from "../application/queries/get-detail-by-id/get-detail-by-id.dto";
+import { GetDetailByIdDto } from "../application/queries/get-detail-by-id/get-detail-by-id.dto";
 import { GetDetailByIdQuery } from "../application/queries/get-detail-by-id/get-detail-by-id.query";
 import type { ReservationOrder } from "../domain/models/reservation-order.model";
 
@@ -57,15 +63,26 @@ export class ReservationController {
     };
   }
 
-	@Get()
+	@Get("calendar")
+  async getAllBookings(
+    @Query() query: FindInRangeDto
+  ): Promise<FindInRangeResponseDTO[]> {
+    const bookings = await this.queryBus.execute(
+      new FindInRangeQuery(query.startDate, query.endDate, query.statuses)
+    );
+
+    return bookings
+  }
+
+	@Get("customer")
   async getCustomerBookings(
     @Query() query: GetCustomerBookingsDto
   ): Promise<ReservationOrder[]> {
-    const orders = await this.queryBus.execute(
+    const bookings = await this.queryBus.execute(
       new GetCustomerBookingsQuery(query.customerId)
     );
 
-    return orders
+    return bookings
   }
 
 	@Get(":orderId")

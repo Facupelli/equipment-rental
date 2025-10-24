@@ -8,6 +8,7 @@ import { UserModule } from "../user/user.module";
 import { ConfirmReservationHandler } from "./application/commands/confirm-reservation/confirm-reservation.handler";
 import { CreateReservationHandler } from "./application/commands/create-reservation/create-reservation.handler";
 import { CheckAvailabilityHandler } from "./application/queries/check-availability/check-availability.handler";
+import { FindInRangeHanlder } from "./application/queries/find-in-range/find-in-range.handler";
 import { GetCustomerBookingsHandler } from "./application/queries/get-customer-bookings/get-customer-bookings.handler";
 import { GetDetailByIdHandler } from "./application/queries/get-detail-by-id/get-detail-by-id.handler";
 import { BookingFacade } from "./booking.facade";
@@ -23,6 +24,7 @@ import { ReservationController } from "./presentation/reservation.controller";
 const CommandHandlers = [CreateReservationHandler, ConfirmReservationHandler];
 const QueryHandlers = [
 	CheckAvailabilityHandler,
+	FindInRangeHanlder,
 	GetCustomerBookingsHandler,
 	GetDetailByIdHandler,
 ];
