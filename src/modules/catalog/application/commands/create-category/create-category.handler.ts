@@ -12,11 +12,11 @@ export class CreateCategoryHandler
 	constructor(private readonly categoryRepository: CategoryRepository) {}
 
 	async execute(command: CreateCategoryCommand): Promise<string> {
-		const category = new Category({
-			id: uuidv4(),
-			name: command.name,
-			description: command.description,
-		});
+		const category = Category.create(
+			uuidv4(),
+			command.name,
+			command.description,
+		);
 
 		await this.categoryRepository.save(category);
 		return category.id;

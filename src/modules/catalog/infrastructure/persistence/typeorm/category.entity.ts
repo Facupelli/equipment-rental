@@ -15,11 +15,7 @@ export class CategoryEntity {
 
 export const CategoryMapper = {
 	toDomain(schema: CategoryEntity): Category {
-		return new Category({
-			id: schema.id,
-			name: schema.name,
-			description: schema.description,
-		});
+		return Category.reconstitute(schema.id, schema.name, schema.description);
 	},
 
 	toEntity(entity: Category): CategoryEntity {
