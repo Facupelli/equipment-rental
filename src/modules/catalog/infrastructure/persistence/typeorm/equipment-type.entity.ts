@@ -12,6 +12,12 @@ export class EquipmentTypeEntity {
 	@Column({ type: "text", nullable: true })
 	description: string;
 
+	@Column("varchar", { length: 120 })
+	brand: string;
+
+	@Column("varchar", { length: 120 })
+	model: string;
+
 	@Column("uuid")
 	category_id: string;
 
@@ -29,6 +35,8 @@ export const EquipmentTypeMapper = {
 			schema.name,
 			schema.description,
 			schema.category_id,
+			schema.brand,
+			schema.model,
 			schema.buffer_days,
 			schema.created_at,
 		);
@@ -40,6 +48,8 @@ export const EquipmentTypeMapper = {
 		schema.name = entity.name;
 		schema.description = entity.description;
 		schema.category_id = entity.categoryId;
+		schema.brand = entity.brand;
+		schema.model = entity.model;
 		schema.buffer_days = entity.bufferDays;
 		schema.created_at = entity.createdAt;
 		return schema;

@@ -5,5 +5,7 @@ export class CreateEquipmentTypeCommand implements ICommand {
 		public readonly name: string,
 		public readonly description: string,
 		public readonly categoryId: string,
+		public readonly brand: string,
+		public readonly model: string,
 	) {}
 }

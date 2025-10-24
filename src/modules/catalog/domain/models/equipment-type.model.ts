@@ -6,6 +6,8 @@ export class EquipmentType {
 		public readonly name: string,
 		public readonly description: string | null,
 		public readonly categoryId: string,
+		public readonly brand: string,
+		public readonly model: string,
 		public bufferDays: number,
 		public readonly createdAt: Date,
 	) {
@@ -17,6 +19,8 @@ export class EquipmentType {
 		name: string,
 		description: string | null,
 		categoryId: string,
+		brand: string,
+		model: string,
 		bufferDays: number,
 	): EquipmentType {
 		return new EquipmentType(
@@ -24,6 +28,8 @@ export class EquipmentType {
 			name,
 			description,
 			categoryId,
+			brand,
+			model,
 			bufferDays,
 			new Date(),
 		);
@@ -34,6 +40,8 @@ export class EquipmentType {
 		name: string,
 		description: string | null,
 		categoryId: string,
+		brand: string,
+		model: string,
 		bufferDays: number,
 		createdAt: Date,
 	): EquipmentType {
@@ -42,6 +50,8 @@ export class EquipmentType {
 			name,
 			description,
 			categoryId,
+			brand,
+			model,
 			bufferDays,
 			createdAt,
 		);

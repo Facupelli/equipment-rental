@@ -19,6 +19,8 @@ export class CreateEquipmentTypeHandler
 			command.name,
 			command.description,
 			command.categoryId,
+			command.brand,
+			command.model,
 			0,
 		);
 
