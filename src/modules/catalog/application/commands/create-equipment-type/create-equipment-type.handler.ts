@@ -14,13 +14,13 @@ export class CreateEquipmentTypeHandler
 	) {}
 
 	async execute(command: CreateEquipmentTypeCommand): Promise<string> {
-		const equipmentType = new EquipmentType({
-			id: uuidv4(),
-			name: command.name,
-			description: command.description,
-			categoryId: command.categoryId,
-			bufferDays: 0,
-		});
+		const equipmentType = EquipmentType.create(
+			uuidv4(),
+			command.name,
+			command.description,
+			command.categoryId,
+			0,
+		);
 
 		await this.equipmentTypeRepository.save(equipmentType);
 		return equipmentType.id;

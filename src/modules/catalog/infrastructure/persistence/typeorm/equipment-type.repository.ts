@@ -32,7 +32,7 @@ export class EquipmentTypeRepository {
 	}
 
 	async findByCategoryId(categoryId: string): Promise<EquipmentType[]> {
-		const entities = await this.repository.findBy({ categoryId });
+		const entities = await this.repository.findBy({ category_id: categoryId });
 		return entities.map(EquipmentTypeMapper.toDomain);
 	}
 

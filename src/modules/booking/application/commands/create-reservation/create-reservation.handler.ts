@@ -85,17 +85,16 @@ export class CreateReservationHandler
 			quantity: command.quantity,
 		});
 
-		const allocations = itemIds.map(
-			(itemId) =>
-				new Allocation(
-					uuidv4(),
-					itemId,
-					command.startDateTime,
-					command.endDateTime,
-				),
+		const allocations = itemIds.map((itemId) =>
+			Allocation.create(
+				uuidv4(),
+				itemId,
+				command.startDateTime,
+				command.endDateTime,
+			),
 		);
 
-		const reservationOrderItem = new ReservationOrderItem(
+		const reservationOrderItem = ReservationOrderItem.create(
 			uuidv4(),
 			command.equipmentTypeId,
 			command.quantity,
@@ -103,13 +102,11 @@ export class CreateReservationHandler
 			allocations,
 		);
 
-		const reservationOrder = new ReservationOrder(
+		const reservationOrder = ReservationOrder.create(
 			uuidv4(),
 			command.customerId,
 			[reservationOrderItem],
-			ReservationOrderStatus.Pending,
 			quote.total.amount,
-			new Date(),
 		);
 
 		await this.unitOfWork.execute(async () => {
