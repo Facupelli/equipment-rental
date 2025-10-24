@@ -13,10 +13,10 @@ export class EquipmentTypeEntity {
 	description: string;
 
 	@Column("uuid")
-	categoryId: string;
+	category_id: string;
 
 	@Column({ type: "int", default: 0 })
-	bufferDays: number;
+	buffer_days: number;
 
 	@Column("timestamptz", { default: () => "CURRENT_TIMESTAMP" })
 	created_at: Date;
@@ -24,14 +24,14 @@ export class EquipmentTypeEntity {
 
 export const EquipmentTypeMapper = {
 	toDomain(schema: EquipmentTypeEntity): EquipmentType {
-		return new EquipmentType({
-			id: schema.id,
-			name: schema.name,
-			description: schema.description,
-			categoryId: schema.categoryId,
-			bufferDays: schema.bufferDays,
-			createdAt: schema.created_at,
-		});
+		return EquipmentType.reconstitute(
+			schema.id,
+			schema.name,
+			schema.description,
+			schema.category_id,
+			schema.buffer_days,
+			schema.created_at,
+		);
 	},
 
 	toEntity(entity: EquipmentType): EquipmentTypeEntity {
@@ -39,8 +39,8 @@ export const EquipmentTypeMapper = {
 		schema.id = entity.id;
 		schema.name = entity.name;
 		schema.description = entity.description;
-		schema.categoryId = entity.categoryId;
-		schema.bufferDays = entity.bufferDays;
+		schema.category_id = entity.categoryId;
+		schema.buffer_days = entity.bufferDays;
 		schema.created_at = entity.createdAt;
 		return schema;
 	},
