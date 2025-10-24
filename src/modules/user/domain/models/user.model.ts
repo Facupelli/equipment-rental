@@ -67,6 +67,28 @@ export class User {
 		);
 	}
 
+	static reconstitute(
+		id: string,
+		name: string,
+		email: string,
+		phone: string,
+		passwordHash: string,
+		status: UserStatus,
+		registeredAt: Date,
+		lastLoginAt: Date | null = null,
+	): User {
+		return new User(
+			id,
+			name,
+			email,
+			phone,
+			passwordHash,
+			status,
+			registeredAt,
+			lastLoginAt,
+		);
+	}
+
 	public suspend(): void {
 		if (this._status === UserStatus.SUSPENDED) {
 			throw new Error("User is already suspended");

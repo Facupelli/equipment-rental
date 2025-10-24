@@ -24,7 +24,7 @@ export class UserEntity {
 	phone: string;
 
 	@Column("varchar", { length: 255 })
-	passwordHash: string;
+	password_hash: string;
 
 	@Column({ type: "timestamp", nullable: true })
 	last_login_at: Date | null;
@@ -39,13 +39,16 @@ export class UserEntity {
 
 export const UserMapper = {
 	toDomain(entity: UserEntity): User {
-		return User.create({
-			id: entity.id,
-			name: entity.name,
-			email: entity.email,
-			phone: entity.phone,
-			passwordHash: entity.passwordHash,
-		});
+		return User.reconstitute(
+			entity.id,
+			entity.name,
+			entity.email,
+			entity.phone,
+			entity.password_hash,
+			entity.status,
+			entity.registered_at,
+			entity.last_login_at,
+		);
 	},
 
 	toEntity(domain: User): UserEntity {
@@ -57,7 +60,7 @@ export const UserMapper = {
 		entity.status = domain.status;
 		entity.last_login_at = domain.lastLoginAt;
 		entity.registered_at = domain.registeredAt;
-		entity.passwordHash = domain.passwordHash;
+		entity.password_hash = domain.passwordHash;
 		return entity;
 	},
 };
