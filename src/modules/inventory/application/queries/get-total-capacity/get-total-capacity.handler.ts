@@ -12,7 +12,7 @@ export class GetTotalCapacityHandler
 	) {}
 
 	async execute(query: GetTotalCapacityQuery): Promise<number> {
-		const total = await this.equipmentItemRepository.getTotalEquipmentByTypeId(
+		const total = await this.equipmentItemRepository.getTotalByTypeId(
 			query.equipmentTypeId,
 		);
 		return total;

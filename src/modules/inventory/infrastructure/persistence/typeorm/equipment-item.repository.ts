@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import type { EquipmentItem } from "src/modules/inventory/domain/models/equipment-item.model";
 import type { Repository } from "typeorm";
@@ -15,7 +15,22 @@ export class EquipmentItemRepository {
     private readonly repository: Repository<EquipmentItemEntity>
   ) {}
 
-	async findByEquipmentTypeId(
+	async findById(
+		equipmentItemId: string,
+	): Promise<EquipmentItem> {
+		const equipmentItem = await this.repository
+			.createQueryBuilder("item")
+			.where("item.id = :equipmentItemId", { equipmentItemId })
+			.getOne();
+
+		if(!equipmentItem){
+			throw new NotFoundException(`Equipment with id ${equipmentItemId} not found`);
+		}
+		
+		return EquipmentItemMapper.toDomain(equipmentItem);
+	}
+
+	async findAllByTypeId(
 		equipmentTypeId: string,
 	): Promise<EquipmentItem[]> {
 		const equipmentItems = await this.repository
@@ -31,7 +46,7 @@ export class EquipmentItemRepository {
 		return this.repository.exists({ where: { serial_number: serialNumber } });
 	}
 
-	async getTotalEquipmentByTypeId(equipmentTypeId: string): Promise<number> {
+	async getTotalByTypeId(equipmentTypeId: string): Promise<number> {
 		const result = await this.repository.createQueryBuilder()
 			.select("COUNT(DISTINCT item.id)", "count")
 			.from("inventory.equipment_items", "item")

@@ -340,12 +340,6 @@ We will adhere to the established architectural constraints: modular monolith st
 
 ---
 
-# Customer Modules Documentation
-
-Here's the markdown documentation for both Customer modules following your established specification format:
-
----
-
 ## Customer Identity Module
 
 ### 1. Specify Phase: Defining the User Journey ("What" and "Why")

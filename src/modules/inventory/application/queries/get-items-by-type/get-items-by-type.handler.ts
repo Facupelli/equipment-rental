@@ -13,8 +13,6 @@ export class GetEquipmentItemsByTypeHandler
 	) {}
 
 	async execute(query: GetEquipmentItemsByTypeQuery): Promise<EquipmentItem[]> {
-		return this.equipmentItemRepository.findByEquipmentTypeId(
-			query.equipmentTypeId,
-		);
+		return this.equipmentItemRepository.findAllByTypeId(query.equipmentTypeId);
 	}
 }
