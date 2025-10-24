@@ -4,8 +4,8 @@ import {
 	type GetEquipmentTypesResponseDto,
 	GetEquipmentTypesSortBy,
 	GetEquipmentTypesSortOrder,
-} from "src/modules/catalog/application/queries/get-equipment-type/get-equipments-type.dto";
-import type { GetEquipmentTypesQuery } from "src/modules/catalog/application/queries/get-equipment-type/get-equipments-type.query";
+} from "src/modules/catalog/application/queries/get-equipment-types/get-equipment-types.dto";
+import type { GetEquipmentTypesQuery } from "src/modules/catalog/application/queries/get-equipment-types/get-equipment-types.query";
 import type { EquipmentType } from "src/modules/catalog/domain/models/equipment-type.model";
 import { RateStructureEntity } from "src/modules/pricing/infrastructure/persistence/typeorm/rate-structure.entity";
 import type { Repository } from "typeorm";
@@ -58,8 +58,8 @@ export class EquipmentTypeRepository {
 				"et.id",
 				"et.name",
 				"et.description",
-				"et.categoryId",
-				"et.bufferDays",
+				"et.category_id",
+				"et.buffer_days",
 				"et.created_at",
 			])
 			.addSelect("rs.id", "rate_id")
@@ -71,7 +71,7 @@ export class EquipmentTypeRepository {
 			.addSelect("rs.effective_to", "rate_effective_to");
 
 		if (categoryId) {
-			queryBuilder.andWhere("et.categoryId = :categoryId", { categoryId });
+			queryBuilder.andWhere("et.category_id = :categoryId", { categoryId });
 		}
 
 		if (sortBy === "created") {

@@ -4,7 +4,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { CreateCategoryHandler } from "./application/commands/create-category/create-category.handler";
 import { CreateEquipmentTypeHandler } from "./application/commands/create-equipment-type/create-equipment-type.handler";
 import { GetCategoriesHandler } from "./application/queries/get-categories/get-categories.handler";
-import { GetEquipmentTypesHandler } from "./application/queries/get-equipment-type/get-equipments-type.handler";
+import { GetEquipmentTypesHandler } from "./application/queries/get-equipment-types/get-equipment-types.handler";
 import { CatalogFacade } from "./catalog.facade";
 import { CategoryEntity } from "./infrastructure/persistence/typeorm/category.entity";
 import { CategoryRepository } from "./infrastructure/persistence/typeorm/category.repository";

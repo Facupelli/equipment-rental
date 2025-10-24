@@ -5,8 +5,8 @@ import { CreateEquipmentTypeCommand } from "../application/commands/create-equip
 // biome-ignore lint: /style/useImportType
 import { CreateEquipmentTypeDto } from "../application/commands/create-equipment-type/create-equipment-type.dto";
 // biome-ignore lint: /style/useImportType
-import { GetEquipmentTypesDto, GetEquipmentTypesResponseDto } from "../application/queries/get-equipment-type/get-equipments-type.dto";
-import { GetEquipmentTypesQuery } from "../application/queries/get-equipment-type/get-equipments-type.query";
+import { GetEquipmentTypesDto, GetEquipmentTypesResponseDto } from "../application/queries/get-equipment-types/get-equipment-types.dto";
+import { GetEquipmentTypesQuery } from "../application/queries/get-equipment-types/get-equipment-types.query";
 
 @Controller("equipment-types")
 export class EquipmentTypeController {

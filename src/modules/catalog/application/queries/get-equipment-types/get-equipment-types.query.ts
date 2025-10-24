@@ -2,7 +2,7 @@ import type { IQuery } from "@nestjs/cqrs";
 import type {
 	GetEquipmentTypesSortBy,
 	GetEquipmentTypesSortOrder,
-} from "./get-equipments-type.dto";
+} from "./get-equipment-types.dto";
 
 export class GetEquipmentTypesQuery implements IQuery {
 	constructor(

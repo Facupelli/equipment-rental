@@ -24,6 +24,7 @@ export class EquipmentItemController {
   ): Promise<string> {
     const equipmentItem = await this.commandBus.execute(new RegisterEquipmentCommand(
       dto.equipmentTypeId,
+      dto.currentLocationId,
       dto.serialNumber,
     ));
 

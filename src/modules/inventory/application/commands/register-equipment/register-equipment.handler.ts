@@ -15,7 +15,7 @@ export class RegisterEquipmentHandler
 	) {}
 
 	async execute(command: RegisterEquipmentCommand): Promise<string> {
-		const { equipmentTypeId, serialNumber } = command;
+		const { equipmentTypeId, serialNumber, currentLocationId } = command;
 
 		const existing =
 			await this.equipmentItemRepository.existsSerial(serialNumber);
@@ -30,6 +30,7 @@ export class RegisterEquipmentHandler
 			uuidv4(),
 			equipmentTypeId,
 			serialNumber,
+			currentLocationId,
 		);
 
 		await this.equipmentItemRepository.save(equipmentItem);

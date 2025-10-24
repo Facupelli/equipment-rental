@@ -14,28 +14,44 @@ export class StatusChange {
 	) {}
 }
 
+export class LocationChange {
+	constructor(
+		public readonly newLocationId: string,
+		public readonly reason: string,
+		public readonly changedAt: Date,
+		public readonly previousLocationId?: string,
+	) {}
+}
+
 export class EquipmentItem {
 	private _status: EquipmentStatus;
 	private _statusHistory: StatusChange[];
+	private _currentLocationId: string;
+	private _locationHistory: LocationChange[];
 
 	constructor(
 		public readonly id: string,
 		public readonly equipmentTypeId: string,
+		currentLocationId: string,
 		public readonly serialNumber: string,
 		status: EquipmentStatus,
 		public readonly createdAt: Date,
 		statusHistory: StatusChange[] = [],
+		locationHistory: LocationChange[] = [],
 		public updatedAt?: Date,
 		public readonly version: number = 1,
 	) {
 		this._status = status;
 		this._statusHistory = statusHistory;
+		this._locationHistory = locationHistory;
+		this._currentLocationId = currentLocationId;
 	}
 
 	static register(
 		id: string,
 		equipmentTypeId: string,
 		serialNumber: string,
+		currentLocationId: string,
 	): EquipmentItem {
 		const now = new Date();
 		const initialStatus = EquipmentStatus.AVAILABLE;
@@ -44,13 +60,19 @@ export class EquipmentItem {
 			new StatusChange(initialStatus, "Equipment registered in system", now),
 		];
 
+		const locationHistory = [
+			new LocationChange(currentLocationId, "Equipment registered", now),
+		];
+
 		return new EquipmentItem(
 			id,
 			equipmentTypeId,
+			currentLocationId,
 			serialNumber,
 			initialStatus,
 			now,
 			statusHistory,
+			locationHistory,
 			now,
 			1,
 		);
@@ -63,19 +85,31 @@ export class EquipmentItem {
 		status: EquipmentStatus,
 		createdAt: Date,
 		statusHistory: StatusChange[],
+		locationHistory: LocationChange[],
 		updatedAt: Date,
 		version: number,
+		currentLocationId: string,
 	): EquipmentItem {
 		return new EquipmentItem(
 			id,
 			equipmentTypeId,
+			currentLocationId,
 			serialNumber,
 			status,
 			createdAt,
 			statusHistory,
+			locationHistory,
 			updatedAt,
 			version,
 		);
+	}
+
+	get currentLocationId(): string {
+		return this._currentLocationId;
+	}
+
+	get locationHistory(): ReadonlyArray<LocationChange> {
+		return this._locationHistory;
 	}
 
 	get status(): EquipmentStatus {

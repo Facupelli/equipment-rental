@@ -2,7 +2,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 // biome-ignore lint: /style/useImportType
 import { EquipmentTypeRepository } from "src/modules/catalog/infrastructure/persistence/typeorm/equipment-type.repository";
 import type { EquipmentTypeResponseDto } from "../../commands/create-equipment-type/create-equipment-type.dto";
-import { GetEquipmentTypesQuery } from "./get-equipments-type.query";
+import { GetEquipmentTypesQuery } from "./get-equipment-types.query";
 
 const DEFAULT_PAGE_SIZE = 30;
 
