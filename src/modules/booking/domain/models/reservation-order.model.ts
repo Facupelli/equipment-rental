@@ -16,13 +16,47 @@ export const BLOCKING_ORDER_STATUSES = [
 
 export class ReservationOrder {
 	constructor(
-		readonly id: string,
-		readonly customerId: string,
-		readonly items: ReservationOrderItem[],
-		readonly status: ReservationOrderStatus,
-		readonly totalAmountCents: number,
-		readonly createdAt: Date,
+		public readonly id: string,
+		public readonly customerId: string,
+		public readonly items: ReservationOrderItem[],
+		public readonly status: ReservationOrderStatus,
+		public readonly totalAmountCents: number,
+		public readonly createdAt: Date,
 	) {}
+
+	static create(
+		id: string,
+		customerId: string,
+		items: ReservationOrderItem[],
+		totalAmountCents: number,
+	): ReservationOrder {
+		return new ReservationOrder(
+			id,
+			customerId,
+			items,
+			ReservationOrderStatus.Pending,
+			totalAmountCents,
+			new Date(),
+		);
+	}
+
+	static reconstitute(
+		id: string,
+		customerId: string,
+		items: ReservationOrderItem[],
+		status: ReservationOrderStatus,
+		totalAmountCents: number,
+		createdAt: Date,
+	): ReservationOrder {
+		return new ReservationOrder(
+			id,
+			customerId,
+			items,
+			status,
+			totalAmountCents,
+			createdAt,
+		);
+	}
 
 	confirm() {
 		if (this.status !== ReservationOrderStatus.Pending) {

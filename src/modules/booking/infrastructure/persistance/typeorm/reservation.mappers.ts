@@ -7,7 +7,7 @@ import { ReservationOrderItemEntity } from "./reservation-order-item.entity";
 
 export const reservationOrderMapper = {
 	toDomain(entity: ReservationOrderEntity): ReservationOrder {
-		return new ReservationOrder(
+		return ReservationOrder.reconstitute(
 			entity.id,
 			entity.customer_id,
 			entity.items?.map((item) => reservationOrderItemMapper.toDomain(item)) ??
@@ -37,7 +37,7 @@ export const reservationOrderMapper = {
 
 export const reservationOrderItemMapper = {
 	toDomain(entity: ReservationOrderItemEntity): ReservationOrderItem {
-		return new ReservationOrderItem(
+		return ReservationOrderItem.reconstitute(
 			entity.id,
 			entity.equipment_type_id,
 			entity.quantity,
@@ -61,7 +61,7 @@ export const reservationOrderItemMapper = {
 
 export const allocationMapper = {
 	toDomain(entity: AllocationEntity): Allocation {
-		return new Allocation(
+		return Allocation.reconstitute(
 			entity.id,
 			entity.item_id,
 			entity.start_date,

@@ -3,12 +3,44 @@ import { Allocation } from "./allocation.model";
 
 export class ReservationOrderItem {
 	constructor(
-		readonly id: string,
-		readonly equipmentId: string,
-		readonly quantity: number,
-		readonly priceQuote: Quote,
-		readonly allocations: Allocation[],
+		public readonly id: string,
+		public readonly equipmentId: string,
+		public readonly quantity: number,
+		public readonly priceQuote: Quote,
+		public readonly allocations: Allocation[],
 	) {}
+
+	static create(
+		id: string,
+		equipmentId: string,
+		quantity: number,
+		priceQuote: Quote,
+		allocations: Allocation[],
+	): ReservationOrderItem {
+		return new ReservationOrderItem(
+			id,
+			equipmentId,
+			quantity,
+			priceQuote,
+			allocations,
+		);
+	}
+
+	static reconstitute(
+		id: string,
+		equipmentId: string,
+		quantity: number,
+		priceQuote: Quote,
+		allocations: Allocation[],
+	): ReservationOrderItem {
+		return new ReservationOrderItem(
+			id,
+			equipmentId,
+			quantity,
+			priceQuote,
+			allocations,
+		);
+	}
 
 	allocate(
 		equipmentUnitId: string,
