@@ -1,17 +1,27 @@
 export class EquipmentType {
 	private _bufferDays: number;
+	private _description: string | null;
 
 	constructor(
 		public readonly id: string,
 		public readonly name: string,
-		public readonly description: string | null,
+		description: string | null,
 		public readonly categoryId: string,
 		public readonly brand: string,
 		public readonly model: string,
-		public bufferDays: number,
+		bufferDays: number,
 		public readonly createdAt: Date,
 	) {
 		this._bufferDays = bufferDays;
+		this._description = description;
+	}
+
+	get description(): string | null {
+		return this._description;
+	}
+
+	get bufferDays(): number {
+		return this._bufferDays;
 	}
 
 	static create(
@@ -57,19 +67,29 @@ export class EquipmentType {
 		);
 	}
 
+	updateDescription(newDescription: string | null): void {
+		if (newDescription !== null && newDescription.trim().length === 0) {
+			throw new Error("Description cannot be empty string; use null instead");
+		}
+		this._description = newDescription;
+	}
+
+	updateBufferDays(days: number): void {
+		if (days < 0) {
+			throw new Error("Buffer days cannot be negative");
+		}
+		if (!Number.isInteger(days)) {
+			throw new Error("Buffer days must be a whole number");
+		}
+		this._bufferDays = days;
+	}
+
 	hasBuffer(): boolean {
 		return this._bufferDays > 0;
 	}
 
 	getBufferHours(): number {
 		return this._bufferDays * 24;
-	}
-
-	setBufferDays(days: number): void {
-		if (days < 0) {
-			throw new Error("Buffer days cannot be negative");
-		}
-		this._bufferDays = days;
 	}
 
 	requiresMaintenanceTime(): boolean {
