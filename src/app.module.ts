@@ -5,13 +5,13 @@ import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ZodSerializerInterceptor, ZodValidationPipe } from "nestjs-zod";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { AuthModule } from "./modules/auth/auth.module";
-import { JwtGuard } from "./modules/auth/guards/jwt.guard";
 import { BookingModule } from "./modules/booking/booking.module";
 import { CatalogModule } from "./modules/catalog/catalog.module";
+import { IamModule } from "./modules/iam/iam.module";
+import { JwtGuard } from "./modules/iam/infrastructure/guards/jwt.guard";
+import { PermissionsGuard } from "./modules/iam/infrastructure/guards/permissions.guard";
 import { InventoryModule } from "./modules/inventory/inventory.module";
 import { PricingModule } from "./modules/pricing/pricing.module";
-import { UserModule } from "./modules/user/user.module";
 import configuration, { envSchema } from "./shared/config/configuration";
 import { HttpExceptionFilter } from "./shared/filters/http-exception.filter";
 import { DatabaseModule } from "./shared/infrastructure/database/database.module";
@@ -35,9 +35,8 @@ import { DatabaseModule } from "./shared/infrastructure/database/database.module
 		BookingModule,
 		InventoryModule,
 		CatalogModule,
-		UserModule,
+		IamModule,
 		PricingModule,
-		AuthModule,
 	],
 	controllers: [AppController],
 	providers: [
@@ -60,6 +59,10 @@ import { DatabaseModule } from "./shared/infrastructure/database/database.module
 		{
 			provide: APP_GUARD,
 			useClass: JwtGuard,
+		},
+		{
+			provide: APP_GUARD,
+			useClass: PermissionsGuard,
 		},
 	],
 })

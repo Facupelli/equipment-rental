@@ -9,13 +9,13 @@ import { ReservationOrderItem } from "src/modules/booking/domain/models/reservat
 // biome-ignore lint: /style/useImportType
 import { ReservationOrderRepository } from "src/modules/booking/infrastructure/persistance/typeorm/reservation-order.repository";
 // biome-ignore lint: /style/useImportType
+import { UserFacade } from "src/modules/iam/user.facade";
+// biome-ignore lint: /style/useImportType
 import { InventoryFacade } from "src/modules/inventory/inventory.facade";
 // biome-ignore lint: /style/useImportType
 import { OutboxService } from "src/modules/outbox/application/outbox.service";
 // biome-ignore lint: /style/useImportType
 import { PricingFacade } from "src/modules/pricing/pricing.facade";
-// biome-ignore lint: /style/useImportType
-import { UserFacade } from "src/modules/user/user.facade";
 // biome-ignore lint: /style/useImportType
 import { UnitOfWork } from "src/shared/infrastructure/database/unit-of-work.service";
 import { validateDateRange } from "src/shared/utils/date-range.utils";
