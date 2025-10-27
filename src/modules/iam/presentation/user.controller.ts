@@ -5,9 +5,8 @@ import { AssignRoleCommand } from "../application/commands/assign-role/assign-ro
 // biome-ignore lint: /style/useImportType
 import { AssignRoleDto } from "../application/commands/assign-role/assign-role.dto";
 // biome-ignore lint: /style/useImportType
-import { GetUserByIdDto } from "../application/queries/get-user-by-id/get-user-by-id.dto";
+import { GetUserByIdDto, type UserDto } from "../application/queries/get-user-by-id/get-user-by-id.dto";
 import { GetUserByIdQuery } from "../application/queries/get-user-by-id/get-user-by-id.query";
-import type { User } from "../domain/models/user.model";
 
 @Controller("users")
 export class UserController {
@@ -17,7 +16,7 @@ export class UserController {
 	) {}
 
 	@Get(":userId")
-  async getUserById(@Param() params: GetUserByIdDto): Promise<User | null> {
+  async getUserById(@Param() params: GetUserByIdDto): Promise<UserDto> {
     const user = await this.queryBus.execute(new GetUserByIdQuery(
       params.userId,
     ));

@@ -3,8 +3,8 @@ import { Body, Controller, Get, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateRoleCommand } from "../application/commands/create-role/create-role.command";
 import type { CreateRoleDto } from "../application/commands/create-role/create-role.dto";
+import type { RolesDto } from "../application/queries/get-roles/get-roles.dto";
 import { GetRolesQuery } from "../application/queries/get-roles/get-roles.query";
-import type { Role } from "../domain/models/role.model";
 
 @Controller("roles")
 export class RoleController {
@@ -19,7 +19,7 @@ export class RoleController {
   }
 
 	@Get()
-	async findAll(): Promise<Role[]> {
+	async findAll(): Promise<RolesDto[]> {
 		return this.queryBus.execute(new GetRolesQuery());
 	}
 }

@@ -29,7 +29,6 @@ export class RoleRepository {
 
 	async findAll(): Promise<Role[]> {
 		const entities = await this.repo.find();
-		console.dir({entities},{depth:null})
 		return entities.map((e) => roleMapper.toDomain(e));
 	}
 
