@@ -136,9 +136,7 @@ We explicitly **avoid useless abstractions**. Abstractions are complex and often
 ```
 ---
 
-### Booking Module
-
-## 1. Specify Phase: Defining the User Journey ("What" and "Why")
+# Booking Module
 
 The Booking Module is responsible for managing equipment rental reservations through a multi-item order system. It coordinates availability checking, order creation, and physical asset allocation.
 
@@ -154,24 +152,9 @@ The Booking Module is responsible for managing equipment rental reservations thr
 
 ---
 
-## 2. Plan Phase: Defining the Technical Architecture ("How")
-
-The Booking Module manages a three-level entity hierarchy: Orders contain Items which have Allocations.
-
-### A. Core Architectural Constraints
-
-| Constraint | Detail based on Architecture Theory | Implementation Evidence |
-|:-----------|:-----------------------------------|:------------------------|
-| **Boundary/Module** | The module is defined by the **Booking Capability**: managing rental orders and equipment allocation lifecycle. | The `BookingModule` handles order creation, confirmation, and cancellation. It coordinates with Pricing (for quotes) and Inventory (for availability/allocation) but owns the order state. |
-| **Internal Structure** | Uses **Clean Architecture** (Domain, Application, Infrastructure) with aggregate roots for transactional consistency. | The `ReservationOrder` is the aggregate root, containing `ReservationOrderItem` entities and `Allocation` entities. All changes happen through the aggregate root. |
-| **Separation of Concerns** | Uses **Command-Query Separation (CQS)** to separate state-changing operations from data retrieval. | **Commands:** `CreateOrderCommand`, `ConfirmOrderCommand`, `CancelOrderCommand`. **Queries:** `CheckMultiItemAvailabilityQuery`, `GetOrderDetailsQuery`. |
-| **Evolution/Optionality** | Architectural evolution is enabled by planting seeds for **asynchronous movement** between modules. | The system uses the **Outbox Pattern** to emit domain events after order state changes, ensuring transactional consistency and enabling eventual consistency with Inventory and Payment modules. |
-
----
-
 ### B. Domain Model: Three-Level Hierarchy
 
-#### 1. ReservationOrder (Aggregate Root)
+#### 1. ReservationOrder
 
 The top-level entity representing a customer's complete rental order.
 
@@ -189,7 +172,6 @@ The top-level entity representing a customer's complete rental order.
 | `updatedAt` | Timestamp | Last modification timestamp | Auto-generated |
 
 **Design Rationale:**
-- **Aggregate Root:** All modifications to items and allocations must go through the order (enforces consistency)
 - **Status Workflow:** `PENDING` (created, awaiting payment) → `CONFIRMED` (paid, equipment allocated) → `ACTIVE` (rental period started) → `COMPLETED` (equipment returned) or `CANCELLED`
 - **Pricing Storage:** Order stores aggregate amounts only; detailed breakdowns live in items
 
@@ -200,7 +182,7 @@ The top-level entity representing a customer's complete rental order.
 
 ---
 
-#### 2. ReservationOrderItem (Entity within Aggregate)
+#### 2. ReservationOrderItem
 
 A line item in an order representing a specific equipment type, quantity, and rental period.
 
@@ -236,7 +218,7 @@ A line item in an order representing a specific equipment type, quantity, and re
 
 ---
 
-#### 3. Allocation (Entity within Aggregate)
+#### 3. Allocation
 
 Maps a specific physical equipment item to a reservation order item.
 
@@ -272,13 +254,9 @@ Maps a specific physical equipment item to a reservation order item.
 
 ---
 
-### Catalog Module
-
-# Catalog Capability Specification
+# Catalog Module
 
 The Catalog Module is responsible for maintaining the taxonomy and descriptive details of rentable equipment (equipment types, categories, and technical specifications). It acts as the system's authoritative source for _what_ can be rented.
-
-### 1. Specify Phase: User Journeys and Outcomes (The "What" and "Why")
 
 | User Journey                | Intent & Description                                                                                                                             | Outcomes & Success Criteria                                                                                                                      |
 | :-------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -287,24 +265,9 @@ The Catalog Module is responsible for maintaining the taxonomy and descriptive d
 | **Type Definition (Admin)** | An administrator needs to define a new equipment type (e.g., "Heavy Duty Forklift") and assign its technical specifications and category.        | **Success:** A new `EquipmentType` entity is persisted with all required metadata. This is a state-changing operation (Command).                 |
 | **Category Management**     | An administrator needs to create, rename, and manage the hierarchy of categories (e.g., "Construction Tools" > "Excavators").                    | **Success:** Category entities and relationships are correctly persisted, ensuring searchable hierarchy.                                         |
 
-### 2. Plan Phase: Technical Architecture and Constraints (The "How")
-
-The Catalog module's design will prioritize **read performance** and maintain its isolation from volatile inventory/booking data by adhering to the principles of CQS and modularity.
-
-| Component            | Technical Implementation Detail                                                                                                                                                                                                                                                                                        | Architectural Principle                    |
-| :------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------- |
-| **Model Separation** | The core entity is **`EquipmentType`** (Name, Description, Category, Specs). This is split from the Booking module's **`Reservation`** and the Inventory module's **`EquipmentItem`** (which tracks serial numbers).                                                                                                   | Model by Capabilities / Split Mega-Models. |
-| **CQS Emphasis**     | This module will contain far more **Queries** than Commands, leveraging the **Benefit of Explicitness**. Read models may be intentionally simpler or even directly optimized (e.g., using specific ORM views) to support fast searching, leveraging the option CQS provides to optimize reads independently of writes. | Command-Query Separation (CQS).            |
-| **Public Interface** | The **`CatalogFacade`** will be the public interface, exposing read methods like `searchEquipmentTypes` and `getEquipmentTypeDetails`.                                                                                                                                                                                 | Loose Coupling / Facade Pattern.           |
-| **Integration**      | Communication with the Catalog module will typically be **synchronous request-response**. The Booking Module and Inventory Module will use the Catalog module's IDs (the `equipmentTypeId`) but will rely on the `CatalogFacade` to retrieve human-readable names or descriptions as needed.                           | Start Synchronous / Match Current Needs.   |
-| **Abstractions**     | The repository implementation (e.g., `EquipmentTypeRepository`) will likely be injected directly into its handlers. Repository interfaces will only be introduced if the complexity or number of consumers justifies the abstraction.                                                                                  | Avoid Useless Abstractions.                |
-| **Data Structure**   | `EquipmentType` will likely contain embedded technical specifications (e.g., as JSON/JSONB data) since this data is descriptive and should be retrieved quickly with the type definition.                                                                                                                              | Optimizing Read Path.                      |
-
 ---
 
-### Inventory Module
-
-## I. Inventory Module: Specify Phase (What and Why)
+# Inventory Module
 
 The sources emphasize that modules must be defined by capabilities, not solely by data. Since "Equipment" means different things to different parts of the system (e.g., a Booking needs to know capacity, Logistics needs to know location, and Inventory needs to track asset lifecycle), the **Inventory Management** capability focuses purely on asset tracking and availability statistics.
 
@@ -315,34 +278,9 @@ The sources emphasize that modules must be defined by capabilities, not solely b
 | **System Integration: Capacity Provider (Sync)**  | The Booking module must be able to synchronously request the total count of rentable equipment for a given type.                                                    | The Inventory Module must expose a Query (read path) to satisfy the `TODO: Get totalInventory from Inventory module` identified in the `CreateReservationHandler` and `CheckAvailabilityHandler`.                                                         |
 | **System Integration: Asset Reservation (Async)** | The Inventory module must react to a successful reservation created in the Booking module by logically allocating specific equipment items for the reserved period. | The Inventory module must consume the **`ReservationCreated`** event or ideally the **`ReservationConfirmed`** event to manage asset status changes asynchronously, adhering to the principle of low-cost asynchronous movement using the Outbox pattern. |
 
-## II. Inventory Module: Plan Phase (How)
-
-We will adhere to the established architectural constraints: modular monolith structure, CQS, Clean Architecture, and planted seeds for evolution.
-
-### A. Architectural Decisions and Constraints
-
-| Constraint            | Application to Inventory Module                                                                                                                                                                                                                                                                             | Principle/Source                                |
-| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------- |
-| **CQS/Modularity**    | Separate path for state change (Commands) like `RegisterEquipment` or `MarkEquipmentAsDamaged` from safe data retrieval (Queries) like `GetTotalCapacity`.                                                                                                                                                  | Command-Query Separation.                       |
-| **Event Consumption** | The Inventory module must contain **Event Handlers** that react to events published by the Booking module (via the Outbox processor). This is how the workflow is handed off between capabilities without tight coupling.                                                                                   | Planting the Seeds for Architectural Evolution. |
-| **Public Interface**  | The module will expose an `InventoryFacade` as the single public interface, hiding the internal CQS handlers and domain structure from external consumers (like the Booking Module).                                                                                                                        | Defining Module Boundaries.                     |
-| **Abstraction**       | We will inject the concrete TypeORM Repository directly into the handlers/services initially, only creating repository interfaces if complexity demands it, thereby avoiding useless abstractions. (This mirrors the approach taken in the Booking module, which injects `ReservationRepository` directly). | Avoid Useless Abstractions.                     |
-
-### B. Module Structure and Key Components
-
-| Component Type    | Example                                     | Purpose in Inventory Management                                                                                                               |
-| :---------------- | :------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Domain Entity** | `EquipmentItem` (Serial #, Status, Type ID) | Defines the core business rules for a single physical asset.                                                                                  |
-| **Facade**        | `InventoryFacade`                           | Exposes `getTotalCapacity` (Query) and `registerNewEquipment` (Command).                                                                      |
-| **Query**         | `GetTotalCapacityQuery`                     | Used by the Booking Module to check constraints.                                                                                              |
-| **Command**       | `RegisterEquipmentCommand`                  | Used by admins to add new assets.                                                                                                             |
-| **Event Handler** | `ReservationConfirmedHandler`               | Consumes `ReservationConfirmedEvent` to change the status of specific `EquipmentItem`s from `Available` to `Allocated` for the rental period. |
-
 ---
 
-## Customer Identity Module
-
-### 1. Specify Phase: Defining the User Journey ("What" and "Why")
+# Customer Identity Module
 
 The Customer Identity Module is responsible for managing the authoritative source of customer profile data. It answers the fundamental question: "Who is this person and how do we reach them?"
 
@@ -356,145 +294,16 @@ The Customer Identity Module is responsible for managing the authoritative sourc
 | **User Journey: Profile Update**        | An existing customer needs to update their contact information (e.g., new phone number, updated address, email change).                                                          | The system validates the new data, ensures email uniqueness if changed, and persists the updates. This is a state-changing Command operation.                                       |
 | **Data Privacy Consideration**          | Customer data must be managed in compliance with privacy regulations (e.g., GDPR), including the ability to retrieve all data for a customer or remove their information.        | The system supports queries to export all customer data and commands to anonymize or delete customer records when legally required.                                                 |
 
----
-
-### 2. Plan Phase: Defining the Technical Architecture ("How")
-
-The Customer Identity module is intentionally designed as a **simple, stable, high-read capability** with minimal domain complexity. It serves as a foundational module that other capabilities reference but do not embed.
-
-#### A. Core Architectural Constraints
-
-| Constraint                    | Detail based on Architecture Theory                                                                                                                                               | Implementation Approach                                                                                                                                                                                            |
-| :---------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Boundary/Module**           | The module is defined by the **Customer Identity Capability**: managing the "who" of customers, not the "what" of their relationship with the business (rental history, loyalty). | The `CustomerIdentityModule` is standalone and has no dependencies on Booking, Inventory, or future CRM modules. Other modules reference customers via `customerId` only.                                          |
-| **Internal Structure**        | Uses **Clean Architecture** (Domain, Application, Infrastructure) but with minimal domain complexity since customer profiles have straightforward validation rules.               | Domain layer contains the `Customer` entity with basic validation (email format, required fields). Application layer contains simple CQRS handlers. Infrastructure layer uses TypeORM for persistence.             |
-| **Separation of Concerns**    | Uses **Command-Query Separation (CQS)** with emphasis on optimizing the read path, as this module will be **read-heavy**.                                                         | **Commands:** `RegisterCustomerCommand`, `UpdateCustomerProfileCommand`. **Queries:** `GetCustomerByIdQuery`, `FindCustomerByEmailQuery`, `SearchCustomersQuery`.                                                  |
-| **Integration Pattern**       | Other modules interact with Customer Identity **synchronously** via the `CustomerFacade`. This module does **not** consume events from other modules.                             | The Booking module, for example, calls `customerFacade.getCustomerById()` to validate customer existence before creating a reservation. This is a simple request-response pattern matching current needs.          |
-| **Data Stability**            | Customer profile data is **stable** (changes infrequently compared to transactional data like reservations or payments).                                                          | This stability justifies keeping the module simple and focusing on data integrity rather than complex business logic. Future optimizations (like caching customer lookups) can be added without changing the core. |
-| **No Authentication Concern** | Customer Identity does **not** handle authentication (passwords, OAuth tokens, sessions). If authentication is needed, it will be a separate capability/module.                   | The `Customer` entity contains only profile data. Authentication tokens, password hashes, or session management are out of scope.                                                                                  |
-
-#### B. Technical Implementation Details (Customer Identity Module)
-
-| Component                           | Responsibility                                            | Technical Details                                                                                                                                                                                                                          |
-| :---------------------------------- | :-------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Read Path (Queries)**             | `GetCustomerByIdQuery`, `FindCustomerByEmailQuery`        | Pure read operations with no side effects. These queries may be optimized with database indexes on `id` (primary key) and `email` (unique index) for fast lookups. Future: read model optimization or caching layer if traffic demands it. |
-| **Write Path (Commands)**           | `RegisterCustomerCommand`, `UpdateCustomerProfileCommand` | Commands validate input (email format, required fields, uniqueness constraints) before persisting. Email uniqueness is enforced at the database level with a unique constraint.                                                            |
-| **Data Integrity**                  | Email uniqueness, required field validation.              | The `Customer` entity enforces business rules (e.g., email must be valid format). The database schema enforces uniqueness constraints. Failures result in clear exceptions (e.g., `ConflictException` for duplicate email).                |
-| **Interface for Consumers**         | Hiding internal structure from other modules.             | The **`CustomerFacade`** acts as the only public interface, exposing methods like `getCustomerById`, `findCustomerByEmail`, `registerCustomer`, and `updateCustomerProfile`.                                                               |
-| **Future Evolution: Anonymization** | Supporting GDPR "right to be forgotten" requirements.     | A future `AnonymizeCustomerCommand` can be added to replace personal data with anonymized placeholders while preserving referential integrity (keeping the `customerId` but removing PII).                                                 |
-
-#### C. Customer Entity (Domain Model)
-
-The `Customer` entity is intentionally minimal, focusing on identity and contact information:
-
-| Attribute      | Type                           | Description                                                                                           | Constraints                          |
-| :------------- | :----------------------------- | :---------------------------------------------------------------------------------------------------- | :----------------------------------- |
-| `id`           | UUID (string)                  | Unique identifier for the customer, used as a foreign key reference in other modules (e.g., Booking). | Primary Key, Auto-generated          |
-| `name`         | String                         | Full name of the customer.                                                                            | Required, Max length 255             |
-| `email`        | String                         | Email address, used for communication and as a natural unique identifier for customer lookup.         | Required, Unique, Valid email format |
-| `phone`        | String                         | Contact phone number.                                                                                 | Required, Max length 20              |
-| `address`      | Embedded Object (Value Object) | Structured address containing: `street`, `city`, `state`, `postalCode`, `country`.                    | All fields required                  |
-| `registeredAt` | Timestamp                      | The date and time when the customer record was created.                                               | Auto-generated on creation           |
-| `status`       | Enum (Active, Suspended)       | Indicates whether the customer can currently interact with the system (e.g., create reservations).    | Default: Active                      |
-
 **Design Rationale:**
 
 - **Embedded Address:** The address is stored as a structured object (not a separate table) to optimize read performance and avoid over-normalization. If address history or multiple addresses per customer are needed in the future, this can be refactored without impacting other modules.
 - **Email as Natural Key:** While `id` is the primary key for referential integrity, `email` serves as a natural unique identifier for human-facing lookups (e.g., "find or create customer by email" flow in the presentation layer).
 - **Status Field:** Plants the seed for future business rules (e.g., suspended customers cannot create new reservations). The Booking module can query customer status via the `CustomerFacade` before accepting a reservation.
 
-**Key Integration Principle:** The Booking module **never embeds customer data** (name, email, phone). It only stores and references the `customerId`. If customer details are needed (e.g., for display or notification), the Booking module queries the `CustomerFacade` at read time. This prevents data duplication and ensures the Customer Identity module remains the single source of truth.
-
----
-
-## Customer Relationship Management (CRM) Module
-
-### 1. Specify Phase: Defining the User Journey ("What" and "Why")
-
-The Customer Relationship Management (CRM) Module is responsible for understanding and managing the ongoing relationship between the business and its customers. It answers the question: "What is our history and relationship with this customer?"
-
-This module is **not yet implemented** but is architected for future evolution. The following specification defines the "what" and "why" to guide future development.
-
-#### A. High-Level CRM Capability Specification
-
-| Aspect                                      | Description (User/Business Intent)                                                                                                                                                                      | Outcomes and Success Criteria                                                                                                                                                                              |
-| :------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Capability Goal**                         | To build a comprehensive view of each customer's interaction history, loyalty status, and value to the business, enabling personalized service, targeted marketing, and data-driven business decisions. | **Success:** The system can answer questions like "What is this customer's rental history?", "What loyalty tier are they in?", and "What is their lifetime value?". **Failure:** Missing or stale data.    |
-| **User Journey: Rental History View**       | A customer service representative or the customer themselves needs to view a complete history of past and current reservations, including equipment rented, dates, and total spend.                     | The system provides a **read-optimized query** that aggregates reservation data. This is a denormalized view built from events, not real-time queries to the Booking module.                               |
-| **User Journey: Loyalty Program**           | The business wants to reward frequent renters with loyalty points, tier-based discounts, or priority booking access.                                                                                    | The system calculates loyalty points based on completed reservations, assigns customers to tiers (e.g., Bronze, Silver, Gold), and exposes this data to the Pricing or Booking modules for discount logic. |
-| **User Journey: Customer Lifetime Value**   | The business needs to understand which customers are the most valuable (by total revenue) to prioritize retention efforts or tailor marketing campaigns.                                                | The system aggregates payment data (consumed from Payment module events) to calculate and expose Customer Lifetime Value (CLV) metrics.                                                                    |
-| **User Journey: Communication Preferences** | Customers want to opt-in or opt-out of marketing emails, SMS notifications, or newsletters.                                                                                                             | The system stores communication preferences and exposes them to the Notification module to respect customer choices.                                                                                       |
-| **Architectural Output**                    | This module is **event-driven** and **read-optimized**. It consumes events from Booking, Payment, and potentially other modules to build denormalized, analytical views.                                | The module's internal data models are optimized for complex queries and aggregations, potentially using separate storage (e.g., a time-series database or OLAP store) in the future.                       |
-
----
-
-### 2. Plan Phase: Defining the Technical Architecture ("How")
-
-The CRM module's design prioritizes **event-driven reactivity** and **read model optimization**. Unlike the Customer Identity module, this module is **write-heavy** (consuming many events) but serves **read-heavy analytical queries**.
-
-#### A. Core Architectural Constraints
-
-| Constraint                   | Detail based on Architecture Theory                                                                                                                                                                             | Implementation Approach                                                                                                                                                                                              |
-| :--------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Boundary/Module**          | The module is defined by the **Customer Relationship Capability**: understanding the "what" of customer interactions, not the "who" (which is owned by Customer Identity).                                      | The `CRMModule` is a separate, independent module. It references `customerId` from the Customer Identity module but builds its own denormalized projections of rental history, loyalty data, and CLV.                |
-| **Internal Structure**       | Uses **Clean Architecture** but with a focus on **Event Handlers** and **Projections** (denormalized read models) rather than traditional Aggregates.                                                           | Domain layer may contain value objects like `LoyaltyTier` or `CustomerSegment`. Application layer is dominated by Event Handlers. Infrastructure layer may use a separate read-optimized database or schema.         |
-| **Separation of Concerns**   | Uses **Command-Query Separation (CQS)** with heavy emphasis on **read model optimization** and **eventual consistency**.                                                                                        | **Commands (few):** `UpdateCommunicationPreferencesCommand`. **Queries (many):** `GetCustomerRentalHistoryQuery`, `GetCustomerLoyaltyStatusQuery`, `GetHighValueCustomersQuery`.                                     |
-| **Integration Pattern**      | This module **consumes events asynchronously** from Booking, Payment, and potentially Inventory modules. It does not expose commands that other modules call (except for preferences).                          | Event Handlers listen to `ReservationConfirmedEvent`, `ReservationCompletedEvent`, `PaymentReceivedEvent`, etc., and update denormalized projections. Other modules query the `CRMFacade` for read-only data.        |
-| **Data Volatility**          | CRM data is **highly volatile** (changes with every completed reservation or payment) but serves **eventual consistency** needs (it's acceptable for rental history to be a few seconds out of date).           | This justifies using the Outbox pattern for event consumption and building projections asynchronously. The read models are eventually consistent with the source-of-truth data in Booking and Payment modules.       |
-| **Evolution/Optionality**    | The module is explicitly designed for **future extraction**. If CRM queries become a performance bottleneck, the entire module (including its data store) can be separated or migrated to a specialized system. | By keeping the module boundary clean (event-driven input, facade-based output), the internal implementation can evolve (e.g., migrate from PostgreSQL to a Redshift data warehouse) without impacting other modules. |
-| **Future: Machine Learning** | The aggregated data in this module (rental patterns, loyalty behavior, CLV) is the foundation for future ML models (e.g., churn prediction, personalized recommendations).                                      | The read models are designed to be exportable for offline analysis or real-time feature serving to ML systems.                                                                                                       |
-
-#### B. Technical Implementation Details (CRM Module)
-
-| Component                               | Responsibility                                                         | Technical Details                                                                                                                                                                                                                                      |
-| :-------------------------------------- | :--------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Event Consumption**                   | Reacting to domain events from other modules.                          | Event Handlers subscribe to `ReservationConfirmedEvent`, `ReservationCompletedEvent`, `ReservationCancelledEvent`, `PaymentReceivedEvent`. These handlers update denormalized projections like `CustomerRentalHistory` and `CustomerLoyaltyStatus`.    |
-| **Projection: Rental History**          | Building a complete, queryable view of a customer's rental activity.   | A `CustomerRentalHistory` projection aggregates: reservation IDs, equipment types rented, rental dates, durations, and total amounts spent. This is a denormalized table optimized for fast queries by `customerId`.                                   |
-| **Projection: Loyalty Status**          | Calculating and storing loyalty points and tier assignments.           | A `CustomerLoyaltyStatus` projection calculates points based on completed rentals (e.g., 1 point per $10 spent), assigns tiers (Bronze: 0-100 points, Silver: 101-500, Gold: 501+), and tracks tier expiration dates.                                  |
-| **Projection: Customer Lifetime Value** | Aggregating total revenue per customer for business analytics.         | A `CustomerCLV` projection sums all payments attributed to a customer. This can be exposed to analytics dashboards or used for segmentation (e.g., "high-value customers").                                                                            |
-| **Read Path (Queries)**                 | Fast, complex queries for analytical or operational needs.             | Queries like `GetCustomerRentalHistoryQuery` read from the denormalized projections, not from the Booking or Payment modules directly. This avoids expensive joins and cross-module queries. Queries may be paginated for large result sets.           |
-| **Write Path (Commands)**               | Handling customer-initiated changes to CRM-specific data.              | Example: `UpdateCommunicationPreferencesCommand` allows customers to opt-in/out of marketing. This is one of the few commands in this module since most writes are event-driven.                                                                       |
-| **Interface for Consumers**             | Exposing CRM data to other modules or the presentation layer.          | The **`CRMFacade`** exposes read-only methods like `getCustomerRentalHistory`, `getCustomerLoyaltyStatus`, and `getHighValueCustomers`. Other modules (e.g., Pricing) might call `crmFacade.getCustomerLoyaltyStatus()` to apply tier-based discounts. |
-| **Future: Separate Data Store**         | Evolving to use a specialized analytical database for complex queries. | If query performance becomes an issue, the projections can be migrated to a separate PostgreSQL schema, a time-series database (e.g., TimescaleDB), or an OLAP store (e.g., ClickHouse) without changing the event handlers or facade interface.       |
-
-## Module Interaction Summary
-
-```
-
-┌──────────────────────┐
-│ Customer Identity │ ← Authoritative source of "who is this person?"
-│ (Standalone) │ ← Synchronous queries from other modules
-└──────────┬───────────┘
-│ customerId reference
-│
-↓
-┌──────────────────────┐
-│ Booking Module │ → Emits ReservationConfirmedEvent,
-│ │ ReservationCompletedEvent, etc.
-└──────────┬───────────┘
-│
-│ (via Outbox)
-│
-↓
-┌──────────────────────┐
-│ CRM Module │ ← Event-driven, builds projections
-│ (Future) │ ← Exposes analytical read models
-└──────────────────────┘
-
-```
-
-**Separation Rationale:**
-
-- **Customer Identity** changes when a customer updates their profile (rare).
-- **CRM** changes with every business transaction (frequent).
-- Separating these concerns allows independent optimization, scaling, and evolution.
-```
 
 ---
 
 # Pricing Module Documentation
-
-## 1. Specify Phase: Defining the User Journey ("What" and "Why")
 
 The Pricing Module is responsible for calculating rental costs and managing the rate structures that govern how equipment rentals are priced. It answers the fundamental question: "How much will this rental cost?"
 
@@ -508,39 +317,6 @@ The Pricing Module is responsible for calculating rental costs and managing the 
 | **User Journey: Discount Application**           | The system must automatically apply eligible discounts to quotes based on customer loyalty tier, promotional codes, or volume-based rules.                   | Discounts are applied transparently during calculation. The quote breakdown shows which discounts were applied and their impact on the final price.                                                                                                                 |
 | **User Journey: Price Consistency**              | When a reservation is created, the price calculated at that moment must be preserved, even if rates change later.                                            | Pricing provides a quote; the Booking module stores that quote as an immutable snapshot. Pricing does not store per-reservation pricing history.                                                                                                                    |
 | **Integration Output**                           | Pricing calculations must be fast enough to support real-time quote generation in the user interface without blocking.                                       | Target: Quote calculation completes in <100ms for standard complexity (single equipment type, 1-2 discounts). Complex calculations (multiple items, promotional stacking) may take longer but must remain sub-second.                                               |
-
----
-
-## 2. Plan Phase: Defining the Technical Architecture ("How")
-
-The Pricing module is designed as a **synchronous, stateless calculation service** with minimal dependencies. It is intentionally kept simple to avoid premature complexity while planting seeds for future evolution (dynamic pricing, multi-currency, external tax APIs).
-
-### A. Core Architectural Constraints
-
-| Constraint                           | Detail based on Architecture Theory                                                                                                                                                                                     | Implementation Approach                                                                                                                                                                                                                              |
-| :----------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Boundary/Module**                  | The module is defined by the **Pricing Capability**: calculating rental costs and managing rate structures. It does NOT own payment processing, invoicing, or reservation state.                                        | The `PricingModule` is standalone with clear dependencies: reads from Catalog (equipment type details) and CRM (loyalty status) but never writes to them. Other modules (Booking) call Pricing synchronously before creating reservations.           |
-| **Internal Structure**               | Uses **Clean Architecture** (Domain, Application, Infrastructure) with emphasis on pure calculation logic in the domain layer.                                                                                          | Domain layer contains pricing rules (`RateStructure`, `DiscountRule`, `Quote` value objects). Application layer contains CQS handlers (`CalculateQuoteQuery`, `CreateRateStructureCommand`). Infrastructure layer uses TypeORM for rate persistence. |
-| **Separation of Concerns**           | Uses **Command-Query Separation (CQS)** with heavy emphasis on the **Query path** since the primary use case is quote calculation (read-heavy).                                                                         | **Commands:** `CreateRateStructureCommand`, `UpdateRateStructureCommand`, `CreateDiscountRuleCommand`. **Queries:** `CalculateQuoteQuery`, `GetRateStructureQuery`, `GetApplicableDiscountsQuery`.                                                   |
-| **Integration Pattern**              | Other modules interact with Pricing **synchronously** via the `PricingFacade`. Pricing does NOT consume events from other modules in the initial implementation.                                                        | The Booking module calls `pricingFacade.calculateQuote()` before creating a reservation. This is a simple request-response pattern. No async event-driven flows initially (matches "Start Synchronous / Match Current Needs").                       |
-| **Statelessness**                    | Pricing calculations are **stateless** and **deterministic**: same inputs always produce the same output at a given point in time (rate structures are time-versioned but calculations don't store state per customer). | Pricing does NOT track "what quote did we give customer X on Tuesday?". That's Booking's responsibility (stores price snapshot in `Reservation`). Pricing only stores rate structures and discount rules (configuration data).                       |
-| **No Event Consumption (Initially)** | Pricing does not react to events from other modules in v1. It is a pure calculation service called on-demand.                                                                                                           | Future evolution: If analytics needs emerge (e.g., "track discount usage"), Pricing can emit `QuoteCalculatedEvent` or `DiscountAppliedEvent` via the Outbox pattern, but these are additive changes.                                                |
-| **Dependencies**                     | Pricing depends on Catalog (equipment type metadata) and CRM (customer loyalty status) for calculations, but these are **read-only synchronous queries**.                                                               | Pricing calls `CatalogFacade.getEquipmentTypeDetails(equipmentTypeId)` and `CRMFacade.getCustomerLoyaltyStatus(customerId)` during quote calculation. These are fast lookups that don't involve complex business logic.                              |
-
----
-
-### B. Technical Implementation Details (Pricing Module)
-
-| Component                    | Responsibility                                                             | Technical Details                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| :--------------------------- | :------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Read Path (Queries)**      | `CalculateQuoteQuery`, `GetRateStructureQuery`                             | The primary query is `CalculateQuoteQuery`, which takes `{ equipmentTypeId, startDate, endDate, customerId?, promoCode? }` and returns a `Quote` DTO with: `subtotal`, `discounts[]`, `taxAmount`, `total`. This is a pure calculation with no database writes.                                                                                                                                                                                                                                                                                                                                                        |
-| **Calculation Flow**         | Multi-step calculation pipeline.                                           | 1. **Fetch Rate Structure**: Query `RateStructureRepository` for the equipment type's current rates (hourly, daily, minimum charge). 2. **Calculate Duration**: Compute rental duration in hours/days from `startDate` and `endDate`. 3. **Apply Base Rate**: Choose hourly vs. daily rate based on duration (e.g., if >24 hours, use daily rate). 4. **Apply Discounts**: Query applicable discount rules (loyalty tier, promo code) and apply in order of precedence. 5. **Calculate Tax**: Apply tax percentage (future: integrate with external tax API). 6. **Return Quote**: Structured DTO with full breakdown. |
-| **Write Path (Commands)**    | `CreateRateStructureCommand`, `UpdateRateStructureCommand`                 | Commands validate input (positive rates, logical relationships like `dailyRate <= hourlyRate * 24 * 0.8` for typical discount), persist to `RateStructure` entity, and optionally emit `RateStructureChangedEvent` for audit/analytics (future).                                                                                                                                                                                                                                                                                                                                                                       |
-| **Discount Rules Engine**    | Determining which discounts apply and in what order.                       | Discount rules are stored as entities (`DiscountRule`) with: `type` (loyalty, promo, volume), `eligibilityCriteria` (e.g., "Gold tier"), `discountPercentage`, `validFrom`, `validUntil`. The calculation engine queries applicable rules and applies them sequentially (future: support stacking limits).                                                                                                                                                                                                                                                                                                             |
-| **Data Integrity**           | Ensuring rate structures are always valid.                                 | The `RateStructure` entity enforces business rules: rates must be positive, daily rate should be less than 24× hourly rate (warning, not error), equipment type must exist in Catalog (validated during command execution).                                                                                                                                                                                                                                                                                                                                                                                            |
-| **Interface for Consumers**  | Hiding internal calculation complexity.                                    | The **`PricingFacade`** exposes: `calculateQuote(input): Promise<Quote>`, `getRateStructure(equipmentTypeId): Promise<RateStructure>`, `createRateStructure(command): Promise<string>`, `updateRateStructure(command): Promise<void>`.                                                                                                                                                                                                                                                                                                                                                                                 |
-| **Future: External Tax API** | Integrating with services like Avalara for complex tax jurisdiction rules. | A `TaxCalculationService` interface can be introduced with implementations: `SimpleTaxCalculator` (flat percentage) and `AvalaraTaxCalculator` (external API). The facade remains unchanged; the implementation is swapped via DI.                                                                                                                                                                                                                                                                                                                                                                                     |
-| **Future: Dynamic Pricing**  | Supporting surge pricing, seasonal rates, or ML-based pricing.             | Introduce a `PricingStrategy` interface with implementations: `StandardStrategy`, `SeasonalStrategy`, `SurgePricingStrategy`. The `CalculateQuoteHandler` selects the strategy based on configuration or feature flags.                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ---
 
@@ -675,62 +451,4 @@ The `Quote` is a **value object** (not an entity) representing the calculated pr
 **Future Enhancement:** Support complex stacking policies (e.g., "max 2 discounts", "loyalty + seasonal only").
 
 ---
-
-### F. Data Flow: Quote Calculation Workflow
-
-Let me trace the complete flow when the Booking module requests a quote:
-
-```
-┌─────────────────────────────────────────────┐
-│  Booking Module (CreateReservationHandler)  │
-└──────┬──────────────────────────────────────┘
-       │ pricingFacade.calculateQuote({...})
-       ↓
-┌─────────────────────────────────────────────┐
-│  Pricing Module (PricingFacade)              │
-│  └─ Delegates to CalculateQuoteHandler       │
-└──────┬──────────────────────────────────────┘
-       │
-       ↓
-┌─────────────────────────────────────────────┐
-│  CalculateQuoteHandler (Application Layer)   │
-│  ├─ 1. Validate Input                        │
-│  │    ├─ Start date < end date?              │
-│  │    └─ Dates in future?                    │
-│  ├─ 2. Get Equipment Type Details            │
-│  │    └─ catalogFacade.getEquipmentTypeDetails() │
-│  ├─ 3. Get Rate Structure                    │
-│  │    └─ rateStructureRepo.findActiveRate()  │ ← Queries by equipmentTypeId, effectiveDate = startDate
-│  ├─ 4. Calculate Duration                    │
-│  │    └─ durationHours = (end - start) / 3600 │
-│  ├─ 5. Apply Base Rate                       │
-│  │    ├─ If durationHours <= 24:             │
-│  │    │   subtotal = hourlyRate × durationHours │
-│  │    └─ Else:                                │
-│  │        durationDays = durationHours / 24   │
-│  │        subtotal = min(                     │
-│  │          hourlyRate × durationHours,       │
-│  │          dailyRate × durationDays          │
-│  │        )                                   │
-│  ├─ 6. Get Applicable Discounts              │
-│  │    ├─ If customerId provided:             │
-│  │    │   └─ crmFacade.getCustomerLoyaltyStatus() │
-│  │    ├─ If promoCode provided:              │
-│  │    │   └─ discountRuleRepo.findByCode()   │
-│  │    └─ Query volume/seasonal rules          │
-│  ├─ 7. Apply Discounts                       │
-│  │    └─ Execute precedence/stacking logic    │
-│  ├─ 8. Calculate Tax                         │
-│  │    └─ taxAmount = subtotalAfterDiscounts × taxPercentage │
-│  └─ 9. Build Quote VO                        │
-│       └─ Return fully populated Quote object  │
-└──────┬──────────────────────────────────────┘
-       │ Quote DTO
-       ↓
-┌─────────────────────────────────────────────┐
-│  Booking Module (continues...)               │
-│  ├─ Store quote.total in Reservation         │
-│  ├─ Store quote breakdown as JSON            │
-│  └─ Proceed with reservation creation        │
-└─────────────────────────────────────────────┘
 ```
