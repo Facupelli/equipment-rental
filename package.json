@@ -1,0 +1,17 @@
+{
+  "name": "equipment-rental-2",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "packageManager": "pnpm@10.0.0",
+  "license": "ISC",
+  "devDependencies": {
+    "turbo": "latest",
+    "typescript": "^5.0.0"
+  }
+}
