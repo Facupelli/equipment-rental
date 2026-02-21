@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+
 export class Tenant {
   private constructor(
     private readonly _id: string,
@@ -10,7 +12,7 @@ export class Tenant {
 
   public static create(id: string, name: string, slug: string, planTier: string): Tenant {
     if (!slug.match(/^[a-z0-9-]+$/)) {
-      throw new Error('Slug must be lowercase alphanumeric with hyphens only');
+      throw new BadRequestException('Slug must be lowercase alphanumeric with hyphens only');
     }
     return new Tenant(id, name, slug, planTier, true, new Date());
   }
