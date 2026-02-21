@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { ProblemDetails } from './problem-details.interface';
+import { ProblemDetails } from '@repo/types';
 
 export class ProblemException extends HttpException {
   private readonly problemDetails: ProblemDetails;
