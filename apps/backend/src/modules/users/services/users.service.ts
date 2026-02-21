@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UserAuthPort } from 'src/modules/auth/interfaces/user-auth.interface';
-import { User } from '../entities/user.entity';
-import { UsersRepository } from '../users.repository';
+import { User } from '../domain/entities/user.entity';
+import { UsersRepository } from '../domain/repositories/users.repository';
 
 @Injectable()
 export class UsersService extends UserAuthPort {

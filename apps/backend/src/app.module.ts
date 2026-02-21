@@ -29,7 +29,7 @@ export class AppModule implements NestModule {
       // The middleware would throw on these since req.user won't be populated yet.
       .exclude(
         { path: 'auth/login', method: RequestMethod.POST },
-        { path: 'auth/register', method: RequestMethod.POST },
+        { path: 'tenancy/register', method: RequestMethod.POST },
         { path: 'health', method: RequestMethod.GET },
       )
       .forRoutes('*');

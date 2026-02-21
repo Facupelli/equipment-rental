@@ -1,4 +1,4 @@
-import { User } from 'src/modules/users/entities/user.entity';
+import { User } from 'src/modules/users/domain/entities/user.entity';
 import { User as PrismaUser } from '../../../../generated/prisma/client';
 import { Prisma } from 'src/generated/prisma/browser';
 
