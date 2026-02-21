@@ -1,7 +1,10 @@
+Here is the updated Database Schema Design Document, integrating the Authentication and Authorization requirements to support the `TenancyModule` implementation.
+
+````markdown
 # Database Schema Design Document
 
 **Project:** Rental SaaS Platform  
-**Version:** 1.2  
+**Version:** 1.3  
 **Architectural Pattern:** Modular Monolith with Row-Level Security  
 **Database Engine:** PostgreSQL
 
@@ -17,13 +20,14 @@ This schema is designed to support a B2B rental platform that handles both **ser
 2.  **Allocatable Batches:** Ownership is tied to physical stock "batches" rather than abstract product definitions, ensuring precise financial settlements.
 3.  **Financial Integrity:** Immutable snapshots in booking records ensure historical data accuracy even if current inventory, pricing, or promotions change.
 4.  **Temporal Availability:** Availability is treated as a derived calculation based on time ranges, rather than a static cached state, ensuring accurate future booking capabilities.
-5.  **Flexible Promotion Engine:** A rule-based discount system using JSONB configuration to support diverse promotional strategies (combos, duration-based, codes) without schema rigidness.
+5.  **Flexible Promotion Engine:** A rule-based discount system using JSONB configuration to support diverse promotional strategies.
+6.  **CASL-Driven Authorization:** Permissions are stored as structured data (Action + Subject + Conditions) to allow dynamic, granular access control for employees without code changes.
 
 ---
 
 ## 2. Entity-Relationship Schema
 
-### 2.1. Core Entities (Tenancy & Organization)
+### 2.1. Core Entities (Tenancy, IAM & Organization)
 
 #### **`tenants`**
 
@@ -31,8 +35,46 @@ The root entity for multi-tenancy.
 
 - `id` (PK, UUID)
 - `name` (VARCHAR)
-- `slug` (VARCHAR, Unique)
-- `plan_tier` (VARCHAR)
+- `slug` (VARCHAR, Unique) — _Used for subdomain or URL identifiers_
+- `plan_tier` (VARCHAR) — _e.g., 'starter', 'pro', 'enterprise'_
+- `is_active` (BOOLEAN) — _Allows suspending access for non-payment_
+- `created_at` (TIMESTAMP)
+
+#### **`users`**
+
+Employees or administrators who manage the tenant's account.
+
+- `id` (PK, UUID)
+- `tenant_id` (FK, UUID) — _Index for RLS_
+- `email` (VARCHAR, Unique) — _Global unique identifier for login_
+- `password_hash` (VARCHAR) — _Hashed using bcrypt/argon2_
+- `first_name` (VARCHAR)
+- `last_name` (VARCHAR)
+- `role_id` (FK, UUID) — _Links to the tenant's role definition_
+- `is_active` (BOOLEAN) — _Allows disabling specific employees_
+- `last_login_at` (TIMESTAMP)
+
+#### **`roles`**
+
+Defines job functions within a tenant (e.g., "Admin", "Technician", "Accountant").
+
+- `id` (PK, UUID)
+- `tenant_id` (FK, UUID) — _Index for RLS. Roles are tenant-specific._
+- `name` (VARCHAR) — _Display name_
+- `is_system` (BOOLEAN) — _Protects default roles created during tenant signup_
+- `description` (VARCHAR)
+
+#### **`permissions`**
+
+The granular rules that make up a Role. This structure mirrors the CASL library format for easy serialization.
+
+- `id` (PK, UUID)
+- `role_id` (FK, UUID) — _Links to the role_
+- `action` (VARCHAR) — _e.g., 'create', 'read', 'update', 'manage'_
+- `subject` (VARCHAR) — _The entity name, e.g., 'Booking', 'InventoryItem', 'User'_
+- `conditions` (JSONB) — _Optional attribute-based filters (e.g., `{"createdById": "{{user.id}}"}`)_
+- `fields` (VARCHAR, Nullable) — _Optional field-level restriction (e.g., 'status')_
+- `inverted` (BOOLEAN) — _If true, represents a "Cannot" rule_
 
 #### **`locations`**
 
@@ -59,29 +101,29 @@ Individuals or entities that hold equity ownership of the inventory (Founders, I
 
 #### **`products`**
 
-The definition layer (SKU). Describes _what_ the item is, not _where_ it is or _who_ owns it.
+The definition layer (SKU). Describes _what_ the item is.
 
 - `id` (PK, UUID)
 - `tenant_id` (FK, UUID)
 - `name` (VARCHAR)
 - `tracking_type` (ENUM: `SERIALIZED`, `BULK`)
-- `base_rental_price` (DECIMAL) — _Default price, can be overridden_
-- `attributes` (JSONB) — _Flexible specs (e.g., `{ "weight": "2t", "power": "100hp" }`)_
+- `base_rental_price` (DECIMAL) — _Default price_
+- `attributes` (JSONB) — _Flexible specs_
 
 #### **`inventory_items`**
 
-The physical layer. Represents a specific batch of items at a specific location owned by a specific owner.
+The physical layer. Represents a specific batch of items at a location.
 
 - `id` (PK, UUID)
 - `tenant_id` (FK, UUID)
 - `product_id` (FK, UUID)
 - `location_id` (FK, UUID)
 - `owner_id` (FK, UUID) — _Links to the Owner entity_
-- `status` (ENUM: `OPERATIONAL`, `MAINTENANCE`, `RETIRED`) — _Physical condition only_
+- `status` (ENUM: `OPERATIONAL`, `MAINTENANCE`, `RETIRED`)
 - `total_quantity` (INT) — _Always 1 for SERIALIZED; >=1 for BULK_
-- `serial_number` (VARCHAR, Nullable) — _Only for SERIALIZED type_
+- `serial_number` (VARCHAR, Nullable)
 - `purchase_date` (DATE)
-- `purchase_cost` (DECIMAL) — _For depreciation tracking_
+- `purchase_cost` (DECIMAL)
 
 ---
 
@@ -97,17 +139,17 @@ Individuals or companies renting equipment.
 
 #### **`promotions`**
 
-Defines discount rules and validity periods. Uses JSONB for flexible rule definition.
+Defines discount rules and validity periods.
 
 - `id` (PK, UUID)
 - `tenant_id` (FK, UUID)
-- `name` (VARCHAR) — _Display name (e.g., "Summer Sale")_
-- `code` (VARCHAR, Nullable) — _Optional promo code for checkout (Unique per tenant)_
+- `name` (VARCHAR)
+- `code` (VARCHAR, Nullable)
 - `is_active` (BOOLEAN)
 - `valid_from` (TIMESTAMP)
 - `valid_to` (TIMESTAMP)
-- `rules` (JSONB) — _Condition logic (e.g., product inclusion, duration minimums, combo triggers)_
-- `reward` (JSONB) — _Benefit definition (e.g., percentage discount, fixed amount)_
+- `rules` (JSONB)
+- `reward` (JSONB)
 
 #### **`bookings`**
 
@@ -116,92 +158,90 @@ The header record for a rental transaction.
 - `id` (PK, UUID)
 - `tenant_id` (FK, UUID)
 - `customer_id` (FK, UUID)
-- `rental_period` (TSTZRANGE) — _Native PostgreSQL time range with timezone support_
+- `rental_period` (TSTZRANGE)
 - `status` (ENUM: `RESERVED`, `ACTIVE`, `COMPLETED`, `CANCELLED`)
-- `subtotal` (DECIMAL) — _Sum of line item base prices_
-- `total_discount` (DECIMAL) — _Sum of applied discounts_
-- `total_tax` (DECIMAL) — _Calculated tax amount_
-- `grand_total` (DECIMAL) — _Final amount payable (`subtotal` - `total_discount` + `total_tax`)_
+- `subtotal` (DECIMAL)
+- `total_discount` (DECIMAL)
+- `total_tax` (DECIMAL)
+- `grand_total` (DECIMAL)
 
 #### **`booking_line_items`**
 
-The intersection of Booking and Inventory. This is where ownership allocation happens.
+The intersection of Booking and Inventory.
 
 - `id` (PK, UUID)
 - `booking_id` (FK, UUID)
-- `inventory_item_id` (FK, UUID) — _Links to the specific batch rented_
-- `owner_id` (FK, UUID) — **SNAPSHOT:** Copied from `inventory_item` at time of booking
+- `inventory_item_id` (FK, UUID)
+- `owner_id` (FK, UUID) — **SNAPSHOT**
 - `quantity_rented` (INT)
-- `unit_price` (DECIMAL) — **SNAPSHOT:** Copied from `product` or custom price
+- `unit_price` (DECIMAL) — **SNAPSHOT**
 - `line_total` (DECIMAL)
 
 #### **`booking_discounts`**
 
-Immutable ledger of applied discounts to ensure historical financial integrity.
+Immutable ledger of applied discounts.
 
 - `id` (PK, UUID)
 - `tenant_id` (FK, UUID)
 - `booking_id` (FK, UUID)
-- `promotion_id` (FK, UUID, Nullable) — _Links to the rule (Nullable if manually applied)_
-- `description` (VARCHAR) — **SNAPSHOT:** Text description of the discount at time of application
-- `discount_amount` (DECIMAL) — **SNAPSHOT:** The calculated monetary value
-- `affected_line_items` (JSONB) — _Metadata: IDs of line items that contributed to/received the discount_
+- `promotion_id` (FK, UUID, Nullable)
+- `description` (VARCHAR) — **SNAPSHOT**
+- `discount_amount` (DECIMAL) — **SNAPSHOT**
+- `affected_line_items` (JSONB)
 
 ---
 
 ## 3. Design Rationale
 
-### 3.1. The "Allocatable Batch" Pattern
+### 3.1. CASL-Based Permission Storage
 
-**Decision:** We placed `owner_id` on the `inventory_items` table rather than the `products` table.
-**Why:** Rental inventory is not an abstract concept; it is physical capital. If Founder A owns 5 chairs and Founder B owns 5 chairs, and Founder A's chairs are broken or rented out, the system must know that only Founder B's chairs are available for the next rental. By attaching ownership to the "Batch" (`inventory_item`), we enable the application code to perform an "Allocation Strategy" (e.g., FIFO or Location Priority) that attributes earnings precisely to the correct owner based on actual availability.
+**Decision:** Storing `action`, `subject`, and `conditions` in a relational `permissions` table rather than hardcoding roles in code.
+**Why:** This empowers Tenant Admins to create custom roles (e.g., "Junior Staff") via the UI without requiring code deployment. The structure maps 1:1 with the CASL `Ability` object, allowing the backend to simply query `SELECT * FROM permissions WHERE role_id = X` and construct the user's abilities instantly. The `conditions` JSONB column supports complex logic (e.g., "Users can only edit bookings they created") which is critical for B2B workflows.
 
-### 3.2. Availability as a Derived Value
+### 3.2. User & Tenant Separation
 
-**Decision:** Removed the `available_quantity` column from `inventory_items`.
-**Why:** In a rental business, "Availability" is a function of time, not a static state. A cached `available_quantity` column only represents "on-hand" stock _now_, failing to account for future returns or upcoming reservations.
-**Implementation:** Availability is calculated dynamically by querying the overlap between the requested time range and existing `booking_line_items`. This prevents "phantom availability" (where items show as available but are booked for the requested dates) and eliminates the complexity of keeping a cached column in sync with future bookings.
+**Decision:** `users` table contains `tenant_id` but `email` is globally unique.
+**Why:**
 
-### 3.3. Financial Snapshots
+1. **Login Simplicity:** Users login with one email and one password. We resolve their tenant context post-authentication.
+2. **Future Cross-Tenant Access:** This structure allows a single user to potentially belong to multiple tenants in the future (via a join table migration) without changing the auth logic.
 
-**Decision:** Storing `owner_id` and `unit_price` in `booking_line_items`, and `discount_amount`/`description` in `booking_discounts`.
-**Why:** Financial records must be immutable. If an item changes ownership next month, previous bookings must still attribute revenue to the _previous_ owner. Similarly, if rental prices change or active promotions are modified/deleted, historical bookings should reflect the price and discounts agreed upon at the time of rental. The `booking_discounts` table ensures that revenue reports remain accurate even if marketing campaigns change.
+### 3.3. The "Allocatable Batch" Pattern
 
-### 3.4. Flexible Promotion Engine
+**Decision:** We placed `owner_id` on the `inventory_items` table.
+**Why:** Inventory is physical capital. If Founder A's chairs are rented out, the system must know only Founder B's chairs are available. This enables precise revenue attribution.
 
-**Decision:** Using JSONB columns (`rules`, `reward`) in the `promotions` table instead of rigid columns like `is_early_bird` or `bundle_id`.
-**Why:** Discount logic is highly variable and tenant-specific. A construction rental tenant may need "Long-term duration discounts," while an event tenant needs "Product Bundles (Combos)." Hard-coding these types requires schema migrations for every new marketing idea. JSONB allows the application to serialize complex logic (e.g., "If Product A and Product B are in cart, apply 10% to Product B") without database changes, supporting a "Build-your-own-rule" UI in the frontend.
+### 3.4. Availability as a Derived Value
+
+**Decision:** Removed the `available_quantity` column.
+**Why:** Availability is a function of time. A cached column fails to account for future reservations. It is calculated dynamically by querying overlaps.
+
+### 3.5. Financial Snapshots
+
+**Decision:** Storing `owner_id`, `unit_price`, and discount details in transactional tables.
+**Why:** Financial records must be immutable. Changes in ownership or pricing must not corrupt historical booking records.
 
 ---
 
 ## 4. Normalization Analysis
 
-Our schema adheres to a **"Pragmatically Normalized"** standard. We prioritize data integrity and performance over academic purity.
-
 ### 1NF (First Normal Form) — ✅ **COMPLIANT**
 
-- All tables have a Primary Key (`id`).
-- All columns are atomic (values are not lists or sets).
-- The JSONB fields (`attributes`, `rules`, `reward`) and Range fields (`rental_period`) are treated as atomic values by the database engine, satisfying 1NF.
+- All tables have PKs. Columns are atomic. JSONB fields are treated as atomic values.
 
 ### 2NF (Second Normal Form) — ✅ **COMPLIANT**
 
-- All tables use surrogate keys (UUIDs).
-- There are no composite primary keys; therefore, no partial dependencies exist.
+- No partial dependencies as all tables use surrogate UUID keys.
 
 ### 3NF (Third Normal Form) — ⚠️ **INTENTIONAL DEVIATION**
 
-- **Violation:** `booking_line_items` contains `owner_id` and `unit_price`. `booking_discounts` contains `discount_amount` and `description`.
-- **Justification:** **Historical Accuracy.** This is a standard denormalization pattern for financial ledgers. We violate 3NF to ensure that changes in the source data (ownership, pricing, or promotion rules) do not corrupt historical financial records. The "truth" is frozen at the moment of transaction.
+- **Violation:** `booking_line_items` and `booking_discounts` contain denormalized data.
+- **Justification:** Historical Accuracy (Immutable Ledger pattern).
 
 ### 4NF (Fourth Normal Form) — ❌ **INTENTIONAL VIOLATION**
 
-- **Violation:** The `products.attributes`, `promotions.rules`, and `promotions.reward` JSONB columns store multiple independent facts without a defined schema.
-- **Justification:** **SaaS Flexibility.** Strict normalization of these attributes makes querying and indexing significantly complex and slow for a multi-tenant system. It would also require continuous schema migrations to accommodate new product attributes or discount logic.
-
-### 5NF (Fifth Normal Form) — ✅ **COMPLIANT**
-
-- The schema avoids complex cyclic constraints. The relationships are direct and reconstructable without loss of data integrity.
+- **Violation:** `permissions.conditions` and `products.attributes` store multivalued facts in JSONB.
+- **Justification:** Flexibility. Storing CASL conditions and product specs in separate tables creates an explosion of join tables that are unnecessary for these flexible attributes.
 
 ---
 
@@ -209,20 +249,15 @@ Our schema adheres to a **"Pragmatically Normalized"** standard. We prioritize d
 
 ### Indexing Strategy
 
-1.  **Tenant Indexing:** All tables must have an index on `tenant_id` to support Row-Level Security (RLS) policies efficiently.
-2.  **Temporal Lookup (GiST):** A GiST index on `bookings.rental_period` to enable fast overlap queries.
-    ```sql
-    CREATE INDEX idx_bookings_rental_period ON bookings USING GIST (rental_period);
-    ```
-3.  **Financial Reporting:** An index on `booking_line_items` (`owner_id`, `created_at`) to generate "Payout Reports" efficiently.
-4.  **Promotion Lookup:** A unique index on `promotions` (`tenant_id`, `code`) to allow fast code validation and ensure uniqueness per tenant.
+1.  **Tenant Indexing:** Index `tenant_id` on all tenant-scoped tables (`users`, `inventory_items`, `bookings`, etc.) for RLS performance.
+2.  **Auth Lookup:** Unique index on `users` (`email`) for fast login checks.
+3.  **Role Lookup:** Index on `permissions` (`role_id`) to quickly load abilities during the request lifecycle.
+4.  **Temporal Lookup (GiST):** GiST index on `bookings.rental_period`.
+5.  **Financial Reporting:** Index on `booking_line_items` (`owner_id`, `created_at`).
 
 ### Concurrency Control
 
-Double-booking prevention is enforced using PostgreSQL's native **Exclusion Constraints**.
-
-**Implementation:**
-Add an exclusion constraint to `booking_line_items` that prevents overlapping `rental_period` entries for the same `inventory_item_id`.
+Double-booking prevention using PostgreSQL **Exclusion Constraints**.
 
 ```sql
 ALTER TABLE booking_line_items
@@ -232,6 +267,7 @@ EXCLUDE USING GIST (
     daterange(lower(booking.rental_period), upper(booking.rental_period)) WITH &&
 );
 ```
+````
 
 _Note: This requires a trigger or application logic to denormalize the `rental_period` from the `bookings` table to `booking_line_items`, or a more complex constraint setup._
 

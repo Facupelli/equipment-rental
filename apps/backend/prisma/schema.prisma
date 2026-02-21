@@ -10,11 +10,52 @@ datasource db {
 
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  isActive     Boolean  @default(true) @map("is_active")
+  tenantId     String   @map("tenant_id")
+  roleId       String   @map("role_id")
+  
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  role         Role     @relation(fields: [roleId], references: [id])
+
+  @@index([tenantId]) // Critical for RLS
+  @@map("users")
 }
 
+model Role {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  isSystem    Boolean      @default(false) @map("is_system")
+  tenantId    String       @map("tenant_id")
+  
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  users       User[]
+  permissions Permission[]
+
+  @@unique([tenantId, name]) // Role names unique per tenant
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model Permission {
+  id         String   @id @default(cuid())
+  action     String   // e.g., "read", "manage"
+  subject    String   // e.g., "Booking"
+  conditions Json?    // CASL conditions
+  fields     String?  // Optional field masking
+  inverted   Boolean  @default(false)
+  roleId     String   @map("role_id")
+
+  role       Role     @relation(fields: [roleId], references: [id])
+
+  @@index([roleId])
+  @@map("permissions")
+}
 
 // --- Enums ---
 
@@ -43,6 +84,10 @@ model Tenant {
   name      String
   slug      String     @unique
   planTier  String     @map("plan_tier")
+  isActive  Boolean    @default(true) @map("is_active")
+  users     User[]
+  roles     Role[]
+  createdAt DateTime   @default(now()) @map("created_at")
 
   // Relations
   locations       Location[]
