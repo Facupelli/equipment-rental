@@ -21,8 +21,6 @@
     "db:seed": "dotenv -e .env.local -- prisma db seed"
   },
   "dependencies": {
-    "@repo/typescript-config": "workspace:*",
-    "@repo/schemas": "workspace:*",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@tailwindcss/vite": "^4.1.18",
@@ -50,6 +48,9 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@repo/schemas": "workspace:*",
+    "@repo/types": "workspace:*",
     "@biomejs/biome": "2.2.4",
     "@tanstack/devtools-vite": "^0.3.11",
     "@testing-library/dom": "^10.4.0",

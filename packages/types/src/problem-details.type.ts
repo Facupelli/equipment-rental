@@ -31,3 +31,13 @@ export interface ProblemDetails {
    */
   [key: string]: any;
 }
+
+export function isProblemDetails(error: unknown): error is ProblemDetails {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "type" in error &&
+    "title" in error &&
+    "status" in error
+  );
+}

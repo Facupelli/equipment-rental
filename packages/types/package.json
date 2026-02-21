@@ -1,0 +1,14 @@
+{
+  "name": "@repo/types",
+  "version": "1.0.0",
+  "private": true,
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts"
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.1.3"
+  }
+}
