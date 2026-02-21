@@ -6,6 +6,9 @@ export const EnvSchema = z.object({
 
   DATABASE_URL: z.url(),
   DATABASE_POOL_SIZE: z.coerce.number().default(10),
+
+  JWT_SECRET: z.string(),
+  JWT_EXPIRATION_TIME_SECONDS: z.coerce.number().default(3600),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
