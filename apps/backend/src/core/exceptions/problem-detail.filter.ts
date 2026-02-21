@@ -41,12 +41,16 @@ export class ProblemDetailsFilter implements ExceptionFilter {
   }
 
   private tryHandleValidationException(exception: unknown, request: Request): HandlerResult | null {
-    if (!(exception instanceof HttpException)) return null;
+    if (!(exception instanceof HttpException)) {
+      return null;
+    }
 
     const exceptionResponse = exception.getResponse();
     const isValidationError = typeof exceptionResponse === 'object' && (exceptionResponse as any).message;
 
-    if (!isValidationError) return null;
+    if (!isValidationError) {
+      return null;
+    }
 
     const messages = (exceptionResponse as any).message;
     const status = exception.getStatus();

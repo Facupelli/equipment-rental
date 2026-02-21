@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { TenancyRepository } from '../../tenancy.repository';
-import { Tenant } from '../../entities/tenant.entity';
+import { Tenant } from '../../domain/entities/tenant.entity';
 import { TenantMapper } from './tenant.mapper';
+import { TenancyRepository } from '../../domain/repositories/tenancy.repository';
 
 @Injectable()
 export class PrismaTenancyRepository implements TenancyRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findById(id: string): Promise<Tenant | null> {
+    const rawTenant = await this.prisma.tenant.findUnique({ where: { id } });
+    return rawTenant ? TenantMapper.toDomain(rawTenant) : null;
+  }
 
   async findBySlug(slug: string): Promise<Tenant | null> {
     const rawTenant = await this.prisma.tenant.findUnique({ where: { slug } });

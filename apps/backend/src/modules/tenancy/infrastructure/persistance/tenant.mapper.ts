@@ -1,6 +1,6 @@
 import { Tenant as PrismaTenant } from 'src/generated/prisma/client';
 import { Prisma } from 'src/generated/prisma/browser';
-import { Tenant } from '../../entities/tenant.entity';
+import { Tenant } from '../../domain/entities/tenant.entity';
 
 export class TenantMapper {
   static toDomain(raw: PrismaTenant): Tenant {

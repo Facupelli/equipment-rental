@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BcryptUserValidator } from './services/bcript-user-validator.service';
-import { UserValidator } from 'src/modules/auth/interfaces/user-validator.interface';
+import { UserValidator } from 'src/modules/auth/domain/interfaces/user-validator.interface';
 import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
 import { UsersService } from './services/users.service';
 import { UsersController } from './users.controller';

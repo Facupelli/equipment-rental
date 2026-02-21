@@ -1,13 +1,13 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { TenancyRepository } from '../tenancy.repository';
 import { RegisterTenantAndAdminDto, RegisterResponseDto } from '@repo/schemas';
 import * as bcrypt from 'bcrypt';
 import { User } from 'src/modules/users/domain/entities/user.entity';
 import { randomUUID } from 'node:crypto';
-import { Tenant } from '../entities/tenant.entity';
+import { Tenant } from '../domain/entities/tenant.entity';
 import { UsersService } from 'src/modules/users/services/users.service';
 import { RolesService } from 'src/modules/users/services/roles.service';
 import { Role } from 'src/modules/users/domain/entities/role.entity';
+import { TenancyRepository } from '../domain/repositories/tenancy.repository';
 
 @Injectable()
 export class RegisterTenantAndAdminUseCase {
