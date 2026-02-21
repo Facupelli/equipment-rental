@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { User } from 'src/users/entities/user.entity';
-import { UserRepository } from 'src/users/users.repository';
+import { User } from 'src/modules/users/entities/user.entity';
+import { UsersRepository } from 'src/modules/users/users.repository';
 import { UserMapper } from './user.mapper';
 
 @Injectable()
-export class PrismaUserRepository implements UserRepository {
+export class PrismaUserRepository implements UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findMany(): Promise<User[]> {
+    const rawUsers = await this.prisma.user.findMany();
+    return rawUsers.map((rawUser) => UserMapper.toDomain(rawUser));
+  }
 
   async findById(id: string): Promise<User | null> {
     const rawUser = await this.prisma.user.findUnique({
@@ -24,13 +29,15 @@ export class PrismaUserRepository implements UserRepository {
     return rawUser ? UserMapper.toDomain(rawUser) : null;
   }
 
-  async save(user: User): Promise<void> {
-    const { id, ...data } = UserMapper.toPersistence(user);
+  async save(user: User): Promise<string> {
+    const data = UserMapper.toPersistence(user);
 
-    await this.prisma.user.upsert({
-      where: { id },
-      create: { id, ...data },
+    const result = await this.prisma.user.upsert({
+      where: { id: user.id },
+      create: data,
       update: data,
     });
+
+    return result.id;
   }
 }

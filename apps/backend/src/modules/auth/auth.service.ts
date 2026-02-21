@@ -14,8 +14,6 @@ export class AuthService {
   }
 
   async login(user: any) {
-    // The payload is CRITICAL. This is what ends up inside the JWT string.
-    // We include tenantId and role so we don't have to query the DB on every request.
     const payload = {
       sub: user.id,
       email: user.email,

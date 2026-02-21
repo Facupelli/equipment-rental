@@ -1,10 +1,10 @@
-import { User } from 'src/users/entities/user.entity';
-import { User as PrismaUser } from '../../../generated/prisma/client';
+import { User } from 'src/modules/users/entities/user.entity';
+import { User as PrismaUser } from '../../../../generated/prisma/client';
 import { Prisma } from 'src/generated/prisma/browser';
 
 export class UserMapper {
   static toDomain(raw: PrismaUser): User {
-    const user = new (User as any)(
+    const user = User.reconstitute(
       raw.id,
       raw.email,
       raw.passwordHash,

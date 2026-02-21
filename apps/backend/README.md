@@ -20,7 +20,7 @@
 
 ## 2. Architectural Pattern: Modular Monolith
 
-**Decision:** Build a single deployable application organized into independent modules (NestJS Modules), rather than starting with microservices.
+**Decision:** Build a single deployable application organized into independent modules (NestJS Modules, Prisma, Passport JWT), rather than starting with microservices.
 **Why:**
 
 - **Speed:** Eliminates the operational complexity of distributed systems (network latency, deployment orchestration) during the early stage.

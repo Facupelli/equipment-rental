@@ -30,6 +30,19 @@ export class User {
     return new User(id, email, passwordHash, firstName, lastName, true, tenantId, roleId);
   }
 
+  public static reconstitute(
+    id: string,
+    email: string,
+    passwordHash: string,
+    firstName: string,
+    lastName: string,
+    isActive: boolean,
+    tenantId: string,
+    roleId: string,
+  ): User {
+    return new User(id, email, passwordHash, firstName, lastName, isActive, tenantId, roleId);
+  }
+
   get id(): string {
     return this._id;
   }
