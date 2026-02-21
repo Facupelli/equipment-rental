@@ -14,3 +14,225 @@ model User {
   email String  @unique
   name  String?
 }
+
+
+// --- Enums ---
+
+enum TrackingType {
+  SERIALIZED
+  BULK
+}
+
+enum InventoryStatus {
+  OPERATIONAL
+  MAINTENANCE
+  RETIRED
+}
+
+enum BookingStatus {
+  RESERVED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// --- Core Entities (Tenancy & Organization) ---
+
+model Tenant {
+  id        String     @id @default(uuid())
+  name      String
+  slug      String     @unique
+  planTier  String     @map("plan_tier")
+
+  // Relations
+  locations       Location[]
+  owners          Owner[]
+  products        Product[]
+  inventoryItems  InventoryItem[]
+  customers       Customer[]
+  promotions      Promotion[]
+  bookings        Booking[]
+  bookingDiscounts BookingDiscount[]
+
+  @@map("tenants")
+}
+
+model Location {
+  id        String  @id @default(uuid())
+  name      String
+  address   Json    // Flexible structure (street, city, geo)
+  isActive  Boolean @default(true) @map("is_active")
+
+  // Relations
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId      String        @map("tenant_id")
+  inventoryItems InventoryItem[]
+
+  @@index([tenantId]) // RLS Index
+  @@map("locations")
+}
+
+model Owner {
+  id           String  @id @default(uuid())
+  name         String
+  payoutDetails Json    @map("payout_details") // Bank info, split rules
+
+  // Relations
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId      String        @map("tenant_id")
+  inventoryItems InventoryItem[]
+  bookingItems  BookingLineItem[] // For payout reporting
+
+  @@index([tenantId]) // RLS Index
+  @@map("owners")
+}
+
+// --- Inventory Entities ---
+
+model Product {
+  id                String        @id @default(uuid())
+  name              String
+  trackingType      TrackingType  @map("tracking_type")
+  baseRentalPrice   Decimal       @map("base_rental_price") @db.Decimal(10, 2)
+  attributes        Json          // Flexible specs (weight, power, etc.)
+
+  // Relations
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId      String          @map("tenant_id")
+  inventoryItems InventoryItem[]
+
+  @@index([tenantId])
+  @@map("products")
+}
+
+model InventoryItem {
+  id             String          @id @default(uuid())
+  status         InventoryStatus @default(OPERATIONAL)
+  totalQuantity  Int             @map("total_quantity") // 1 for SERIALIZED, >=1 for BULK
+  serialNumber   String?         @map("serial_number")
+  purchaseDate   DateTime?       @map("purchase_date") @db.Date
+  purchaseCost   Decimal?        @map("purchase_cost") @db.Decimal(10, 2)
+
+  // Relations
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId     String       @map("tenant_id")
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId    String       @map("product_id")
+  location     Location     @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  locationId   String       @map("location_id")
+  owner        Owner        @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  ownerId      String       @map("owner_id")
+  
+  bookingLineItems BookingLineItem[]
+
+  @@index([tenantId]) // RLS Index
+  @@index([productId])
+  @@index([locationId])
+  @@index([ownerId])
+  @@map("inventory_items")
+}
+
+// --- Transactional Entities ---
+
+model Customer {
+  id     String @id @default(uuid())
+  name   String
+  email  String
+  phone  String?
+
+  // Relations
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String    @map("tenant_id")
+  bookings Booking[]
+
+  @@index([tenantId])
+  @@map("customers")
+}
+
+model Promotion {
+  id         String    @id @default(uuid())
+  name       String
+  code       String?   @unique // Unique per tenant logic handled by DB or App
+  isActive   Boolean   @default(true) @map("is_active")
+  validFrom  DateTime  @map("valid_from")
+  validTo    DateTime  @map("valid_to")
+  rules      Json      // Condition logic
+  reward     Json      // Benefit definition
+
+  // Relations
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String           @map("tenant_id")
+  bookingDiscounts BookingDiscount[]
+
+  @@index([tenantId])
+  @@map("promotions")
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  rentalPeriod  Unsupported("tstzrange")? @map("rental_period") // Native Postgres Range Type
+  status        BookingStatus @default(RESERVED)
+  subtotal      Decimal       @db.Decimal(10, 2)
+  totalDiscount Decimal       @map("total_discount") @db.Decimal(10, 2)
+  totalTax      Decimal       @map("total_tax") @db.Decimal(10, 2)
+  grandTotal    Decimal       @map("grand_total") @db.Decimal(10, 2)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId      String           @map("tenant_id")
+  customer      Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customerId    String           @map("customer_id")
+  
+  lineItems     BookingLineItem[]
+  discounts     BookingDiscount[]
+
+  @@index([tenantId])
+  @@index([customerId])
+  // Note: GiST index for rental_period must be added via raw SQL migration
+  @@map("bookings")
+}
+
+model BookingLineItem {
+  id              String   @id @default(uuid())
+  quantityRented  Int      @map("quantity_rented")
+  unitPrice       Decimal  @map("unit_price") @db.Decimal(10, 2) // Snapshot
+  lineTotal       Decimal  @map("line_total") @db.Decimal(10, 2)
+  
+  // Snapshot Fields (Denormalized for integrity)
+  ownerId         String   @map("owner_id") 
+
+  // Relations
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId       String        @map("booking_id")
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  inventoryItemId String        @map("inventory_item_id")
+  
+  // Explicit relation to Owner for reporting (Optional but helpful)
+  owner           Owner         @relation(fields: [ownerId], references: [id])
+
+  @@index([bookingId])
+  @@index([inventoryItemId])
+  @@index([ownerId]) // Financial reporting index
+  @@map("booking_line_items")
+}
+
+model BookingDiscount {
+  id                 String   @id @default(uuid())
+  description        String   // Snapshot
+  discountAmount     Decimal  @map("discount_amount") @db.Decimal(10, 2) // Snapshot
+  affectedLineItems  Json     @map("affected_line_items") // Metadata
+
+  // Relations
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId      String      @map("tenant_id")
+  booking       Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId     String      @map("booking_id")
+  promotion     Promotion?  @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  promotionId   String?     @map("promotion_id")
+
+  @@index([tenantId])
+  @@index([bookingId])
+  @@map("booking_discounts")
+}
