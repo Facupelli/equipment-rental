@@ -18,6 +18,7 @@
     "lint": "eslint src/**/*.ts"
   },
   "dependencies": {
+    "@repo/types": "workspace:*",
     "zod": "^4.1.11"
   },
   "devDependencies": {

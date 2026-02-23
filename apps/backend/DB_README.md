@@ -1,5 +1,3 @@
-Here is the updated Database Schema Design Document, integrating the Authentication and Authorization requirements to support the `TenancyModule` implementation.
-
 ````markdown
 # Database Schema Design Document
 

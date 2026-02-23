@@ -9,9 +9,19 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/infrastructure/guards/jwt-auth.guard';
 import { TenantInterceptor } from './modules/tenancy/tenant.interceptor';
 import { OwnerModule } from './modules/owner/owner.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 
 @Module({
-  imports: [AppConfigModule, DatabaseModule, TenancyModule, AuthModule, UsersModule, LocationModule, OwnerModule],
+  imports: [
+    AppConfigModule,
+    DatabaseModule,
+    TenancyModule,
+    AuthModule,
+    UsersModule,
+    LocationModule,
+    OwnerModule,
+    InventoryModule,
+  ],
   providers: [
     {
       provide: APP_GUARD,
