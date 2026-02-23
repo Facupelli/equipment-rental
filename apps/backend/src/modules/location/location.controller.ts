@@ -16,4 +16,9 @@ export class LocationController {
   async findById(@Param('id') id: string) {
     return await this.locationService.findById(id);
   }
+
+  @Get()
+  async findAll() {
+    return await this.locationService.findAll();
+  }
 }

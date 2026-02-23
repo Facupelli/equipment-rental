@@ -27,4 +27,8 @@ export class LocationService {
   async findById(id: string): Promise<Location | null> {
     return await this.locationRepository.findOne(id);
   }
+
+  async findAll(): Promise<Location[]> {
+    return await this.locationRepository.findAll();
+  }
 }

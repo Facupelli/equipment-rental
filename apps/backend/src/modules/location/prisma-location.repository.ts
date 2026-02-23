@@ -14,7 +14,6 @@ export class PrismaLocationRepository implements LocationRepositoryPort {
     const result = await this.prisma.client.location.upsert({
       where: { id: location.id },
       update: {
-        tenantId: data.tenantId,
         name: data.name,
         address: data.address,
         isActive: data.isActive,

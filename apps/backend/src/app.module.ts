@@ -8,9 +8,10 @@ import { LocationModule } from './modules/location/location.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/infrastructure/guards/jwt-auth.guard';
 import { TenantInterceptor } from './modules/tenancy/tenant.interceptor';
+import { OwnerModule } from './modules/owner/owner.module';
 
 @Module({
-  imports: [AppConfigModule, DatabaseModule, TenancyModule, AuthModule, UsersModule, LocationModule],
+  imports: [AppConfigModule, DatabaseModule, TenancyModule, AuthModule, UsersModule, LocationModule, OwnerModule],
   providers: [
     {
       provide: APP_GUARD,

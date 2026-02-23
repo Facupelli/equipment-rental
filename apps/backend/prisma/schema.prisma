@@ -120,10 +120,9 @@ model Location {
 }
 
 model Owner {
-  id             String  @id @default(uuid())
-  tenantId       String  @map("tenant_id")
+  id             String   @id @default(uuid())
+  tenantId       String   @map("tenant_id")
   name           String
-  payoutDetails  Json    @map("payout_details") // Bank info, split rules
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
