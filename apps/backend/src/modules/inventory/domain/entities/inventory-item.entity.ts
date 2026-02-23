@@ -56,6 +56,8 @@ export class InventoryItem {
     const id = randomUUID();
     const now = new Date();
 
+    console.log(typeof props.totalQuantity);
+
     // Invariant: Serialized items must have a quantity of 1
     if (productTrackingType === TrackingType.SERIALIZED) {
       if (props.totalQuantity !== 1) {

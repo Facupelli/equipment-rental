@@ -1,11 +1,11 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { RegisterResponseDto, RegisterTenantAndAdminDto } from '@repo/schemas';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { Tenant } from '../../domain/entities/tenant.entity';
 import { TenancyService } from '../../application/tenancy.service';
 import { RegisterTenantAndAdminUseCase } from '../../application/use-cases/register-tenant-and-admin.use-case';
 import { Public } from 'src/modules/auth/infrastructure/is-public.decorator';
 import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { CreateTenantUserDto, CreateTenantUserResponseDto } from '../../application/dto/create-tenant-user.dto';
 
 @Controller('tenancy')
 export class TenancyController {
@@ -17,7 +17,7 @@ export class TenancyController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: RegisterTenantAndAdminDto): Promise<RegisterResponseDto> {
+  async register(@Body() dto: CreateTenantUserDto): Promise<CreateTenantUserResponseDto> {
     const result = await this.registerUseCase.execute(dto);
     return result;
   }

@@ -7,7 +7,7 @@ export const createInventoryItemSchema = z.object({
   locationId: z.uuid({ message: "Valid Location ID is required" }),
   ownerId: z.uuid({ message: "Valid Owner ID is required" }),
 
-  totalQuantity: z
+  totalQuantity: z.coerce
     .number()
     .int()
     .positive({ message: "Quantity must be at least 1" }),

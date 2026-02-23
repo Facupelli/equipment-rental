@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import { OwnerService } from './owner.service';
-import { CreateOwnerDto } from '@repo/schemas';
+import { CreateOwnerDto } from './dto/create-owner.dto';
 
 @Controller('owner')
 export class OwnerController {

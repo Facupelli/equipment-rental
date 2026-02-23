@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import { LocationService } from './location.service';
-import { CreateLocationDto } from '@repo/schemas';
+import { CreateLocationDto } from './dto/create-location.dto';
 
 @Controller('location')
 export class LocationController {

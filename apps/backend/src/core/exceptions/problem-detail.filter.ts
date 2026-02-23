@@ -46,26 +46,43 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     }
 
     const exceptionResponse = exception.getResponse();
-    const isValidationError = typeof exceptionResponse === 'object' && (exceptionResponse as any).message;
 
-    if (!isValidationError) {
+    if (typeof exceptionResponse !== 'object' || exceptionResponse === null) {
       return null;
     }
 
-    const messages = (exceptionResponse as any).message;
+    const responseObj = exceptionResponse as Record<string, any>;
     const status = exception.getStatus();
 
-    return {
-      status,
-      problemDetails: {
-        type: 'errors://validation-error',
-        title: 'Validation Failed',
+    if (Array.isArray(responseObj.errors)) {
+      return {
         status,
-        detail: 'Input data validation failed',
-        instance: request.url,
-        errors: Array.isArray(messages) ? messages : [messages],
-      },
-    };
+        problemDetails: {
+          type: 'errors://validation-error',
+          title: 'Validation Failed',
+          status,
+          detail: 'Input data validation failed',
+          instance: request.url,
+          errors: responseObj.errors,
+        },
+      };
+    }
+
+    if (Array.isArray(responseObj.message)) {
+      return {
+        status,
+        problemDetails: {
+          type: 'errors://validation-error',
+          title: 'Validation Failed',
+          status,
+          detail: 'Input data validation failed',
+          instance: request.url,
+          errors: responseObj.message,
+        },
+      };
+    }
+
+    return null;
   }
 
   private tryHandleHttpException(exception: unknown, request: Request): HandlerResult | null {
