@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TenantContextService } from './tenant-context.service';
-import { TenantMiddleware } from './tenant.middleware';
 import { PrismaTenancyRepository } from './infrastructure/persistance/prisma-tenancy.repository';
 import { TenancyController } from './infrastructure/controllers/tenancy.controller';
 import { UsersModule } from '../users/users.module';
@@ -9,7 +8,7 @@ import { RegisterTenantAndAdminUseCase } from './application/use-cases/register-
 import { TenancyService } from './application/tenancy.service';
 
 const repositories = [{ provide: TenancyRepository, useClass: PrismaTenancyRepository }];
-const services = [TenantContextService, TenantMiddleware, RegisterTenantAndAdminUseCase, TenancyService];
+const services = [TenantContextService, RegisterTenantAndAdminUseCase, TenancyService];
 
 @Module({
   imports: [UsersModule],

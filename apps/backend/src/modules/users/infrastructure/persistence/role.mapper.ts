@@ -7,13 +7,13 @@ export class RoleMapper {
     return Role.reconstitute(raw.id, raw.tenantId, raw.name, raw.isSystem, raw.description);
   }
 
-  static toPersistence(role: Role): Prisma.RoleCreateInput {
+  static toPersistence(role: Role): Prisma.RoleUncheckedCreateInput {
     return {
       id: role.id,
       name: role.name,
       isSystem: role.isSystem,
       description: role.description,
-      tenant: { connect: { id: role.tenantId } },
+      tenantId: role.tenantId,
     };
   }
 }

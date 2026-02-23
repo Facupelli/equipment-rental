@@ -5,11 +5,29 @@ import { Env } from 'src/config/env.schema';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
 
-type TenantScopedPrismaClient = ReturnType<PrismaService['_buildScopedClient']>;
+const TENANT_EXCLUDED_MODELS = new Set(['Tenant', 'Permission', 'BookingLineItem']);
+
+// Operations that only need WHERE injection
+const READ_OPS = new Set(['findMany', 'findFirst', 'findFirstOrThrow', 'count', 'aggregate', 'groupBy']);
+
+// Mutations that need WHERE injection to prevent cross-tenant writes
+const MUTATE_WITH_WHERE_OPS = new Set(['update', 'updateMany', 'delete', 'deleteMany']);
+
+// findUnique variants — need special treatment (see comment in `client` getter)
+const FIND_UNIQUE_OPS = new Set(['findUnique', 'findUniqueOrThrow']);
+
+export function injectTenantId(operation: string, args: Record<string, any>, tenantId: string): Record<string, any> {
+  if (READ_OPS.has(operation) || MUTATE_WITH_WHERE_OPS.has(operation)) {
+    args.where = { ...args.where, tenantId };
+    return args;
+  }
+
+  return args;
+}
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private _client: TenantScopedPrismaClient | undefined;
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
+  private readonly _prisma: PrismaClient;
 
   constructor(
     readonly configService: ConfigService<Env, true>,
@@ -18,218 +36,71 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     const adapter = new PrismaPg({
       connectionString: configService.get('DATABASE_URL'),
     });
-    super({ adapter, log: ['query'] });
-  }
 
-  get client(): TenantScopedPrismaClient {
-    if (!this._client) {
-      this._client = this._buildScopedClient();
-    }
-    return this._client;
+    this._prisma = new PrismaClient({ adapter, log: ['query'] });
   }
 
   async onModuleInit() {
-    await this.$connect();
+    await this._prisma.$connect();
     console.log('📦 Database connected successfully');
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
+    await this._prisma.$disconnect();
     console.log('📦 Database disconnected');
   }
 
-  _buildScopedClient() {
-    const getTenantId = (): string => {
-      const tenantId = this.tenantContext.getTenantId();
-      if (!tenantId) {
-        throw new Error(
-          'No tenant context found. Ensure the request passed through TenantMiddleware, ' +
-            'or use `prismaService` directly for system-level operations.',
-        );
-      }
-      return tenantId;
-    };
+  get client() {
+    // Capture the reference so the closure inside $extends doesn't need
+    // to reach back through `this` (which can be confusing in async contexts).
+    const prisma = this._prisma;
+    const tenantContext = this.tenantContext;
 
-    // Reusable interceptor functions.
-    // Defined as arrow functions so they share the getTenantId closure above.
-    const withTenantWhere = ({ args, query }: any) => {
-      args.where = { ...args.where, tenantId: getTenantId() };
-      return query(args);
-    };
-
-    const withTenantData = ({ args, query }: any) => {
-      args.data = { ...args.data, tenantId: getTenantId() };
-      return query(args);
-    };
-
-    const withTenantDataArray = ({ args, query }: any) => {
-      const tenantId = getTenantId();
-      args.data = (args.data as any[]).map((item) => ({ ...item, tenantId }));
-      return query(args);
-    };
-
-    const withTenantUpsert = ({ args, query }: any) => {
-      const tenantId = getTenantId();
-      args.where = { ...args.where, tenantId };
-      args.create = { ...args.create, tenantId };
-      return query(args);
-    };
-
-    // One entry per tenant-scoped model.
-    // Static keys are required — Prisma's $extends type system cannot verify
-    // a dynamically computed object (e.g. Object.fromEntries), which causes
-    // the index signature to collapse to `never`.
-    return this.$extends({
+    return prisma.$extends({
       query: {
-        user: {
-          findMany: withTenantWhere,
-          findFirst: withTenantWhere,
-          findFirstOrThrow: withTenantWhere,
-          findUnique: withTenantWhere,
-          findUniqueOrThrow: withTenantWhere,
-          count: withTenantWhere,
-          create: withTenantData,
-          createMany: withTenantDataArray,
-          update: withTenantWhere,
-          updateMany: withTenantWhere,
-          upsert: withTenantUpsert,
-          delete: withTenantWhere,
-          deleteMany: withTenantWhere,
-        },
-        role: {
-          findMany: withTenantWhere,
-          findFirst: withTenantWhere,
-          findFirstOrThrow: withTenantWhere,
-          findUnique: withTenantWhere,
-          findUniqueOrThrow: withTenantWhere,
-          count: withTenantWhere,
-          create: withTenantData,
-          createMany: withTenantDataArray,
-          update: withTenantWhere,
-          updateMany: withTenantWhere,
-          upsert: withTenantUpsert,
-          delete: withTenantWhere,
-          deleteMany: withTenantWhere,
-        },
-        location: {
-          findMany: withTenantWhere,
-          findFirst: withTenantWhere,
-          findFirstOrThrow: withTenantWhere,
-          findUnique: withTenantWhere,
-          findUniqueOrThrow: withTenantWhere,
-          count: withTenantWhere,
-          create: withTenantData,
-          createMany: withTenantDataArray,
-          update: withTenantWhere,
-          updateMany: withTenantWhere,
-          upsert: withTenantUpsert,
-          delete: withTenantWhere,
-          deleteMany: withTenantWhere,
-        },
-        owner: {
-          findMany: withTenantWhere,
-          findFirst: withTenantWhere,
-          findFirstOrThrow: withTenantWhere,
-          findUnique: withTenantWhere,
-          findUniqueOrThrow: withTenantWhere,
-          count: withTenantWhere,
-          create: withTenantData,
-          createMany: withTenantDataArray,
-          update: withTenantWhere,
-          updateMany: withTenantWhere,
-          upsert: withTenantUpsert,
-          delete: withTenantWhere,
-          deleteMany: withTenantWhere,
-        },
-        product: {
-          findMany: withTenantWhere,
-          findFirst: withTenantWhere,
-          findFirstOrThrow: withTenantWhere,
-          findUnique: withTenantWhere,
-          findUniqueOrThrow: withTenantWhere,
-          count: withTenantWhere,
-          create: withTenantData,
-          createMany: withTenantDataArray,
-          update: withTenantWhere,
-          updateMany: withTenantWhere,
-          upsert: withTenantUpsert,
-          delete: withTenantWhere,
-          deleteMany: withTenantWhere,
-        },
-        inventoryItem: {
-          findMany: withTenantWhere,
-          findFirst: withTenantWhere,
-          findFirstOrThrow: withTenantWhere,
-          findUnique: withTenantWhere,
-          findUniqueOrThrow: withTenantWhere,
-          count: withTenantWhere,
-          create: withTenantData,
-          createMany: withTenantDataArray,
-          update: withTenantWhere,
-          updateMany: withTenantWhere,
-          upsert: withTenantUpsert,
-          delete: withTenantWhere,
-          deleteMany: withTenantWhere,
-        },
-        customer: {
-          findMany: withTenantWhere,
-          findFirst: withTenantWhere,
-          findFirstOrThrow: withTenantWhere,
-          findUnique: withTenantWhere,
-          findUniqueOrThrow: withTenantWhere,
-          count: withTenantWhere,
-          create: withTenantData,
-          createMany: withTenantDataArray,
-          update: withTenantWhere,
-          updateMany: withTenantWhere,
-          upsert: withTenantUpsert,
-          delete: withTenantWhere,
-          deleteMany: withTenantWhere,
-        },
-        promotion: {
-          findMany: withTenantWhere,
-          findFirst: withTenantWhere,
-          findFirstOrThrow: withTenantWhere,
-          findUnique: withTenantWhere,
-          findUniqueOrThrow: withTenantWhere,
-          count: withTenantWhere,
-          create: withTenantData,
-          createMany: withTenantDataArray,
-          update: withTenantWhere,
-          updateMany: withTenantWhere,
-          upsert: withTenantUpsert,
-          delete: withTenantWhere,
-          deleteMany: withTenantWhere,
-        },
-        booking: {
-          findMany: withTenantWhere,
-          findFirst: withTenantWhere,
-          findFirstOrThrow: withTenantWhere,
-          findUnique: withTenantWhere,
-          findUniqueOrThrow: withTenantWhere,
-          count: withTenantWhere,
-          create: withTenantData,
-          createMany: withTenantDataArray,
-          update: withTenantWhere,
-          updateMany: withTenantWhere,
-          upsert: withTenantUpsert,
-          delete: withTenantWhere,
-          deleteMany: withTenantWhere,
-        },
-        bookingDiscount: {
-          findMany: withTenantWhere,
-          findFirst: withTenantWhere,
-          findFirstOrThrow: withTenantWhere,
-          findUnique: withTenantWhere,
-          findUniqueOrThrow: withTenantWhere,
-          count: withTenantWhere,
-          create: withTenantData,
-          createMany: withTenantDataArray,
-          update: withTenantWhere,
-          updateMany: withTenantWhere,
-          upsert: withTenantUpsert,
-          delete: withTenantWhere,
-          deleteMany: withTenantWhere,
+        $allModels: {
+          async $allOperations({ model, operation, args, query }) {
+            // ── Guard 1: model has no tenantId column ──────────────────────
+            if (TENANT_EXCLUDED_MODELS.has(model ?? '')) {
+              return query(args);
+            }
+
+            // ── Guard 2: resolve tenantId from ALS ─────────────────────────
+            const tenantId = tenantContext.getTenantId();
+            if (!tenantId) {
+              return query(args);
+            }
+
+            // ── findUnique / findUniqueOrThrow → downgrade to findFirst ────
+            //
+            // Prisma enforces that findUnique's `where` may ONLY contain fields
+            // that form a declared unique constraint (@@unique or @unique).
+            // `tenantId` alone is not a unique constraint, so injecting it
+            // would cause a compile-time and runtime type error.
+            //
+            // Fix: downgrade to findFirst, which accepts arbitrary `where`
+            // filters. The semantics are equivalent because the unique field
+            // (e.g. `id`) already guarantees at most one row; tenantId just
+            // adds the RLS boundary on top of that.
+            if (FIND_UNIQUE_OPS.has(operation)) {
+              const downgradedOp = operation === 'findUnique' ? 'findFirst' : 'findFirstOrThrow';
+
+              const mutatedArgs = {
+                ...args,
+                where: { ...(args as any).where, tenantId },
+              };
+
+              // Call the downgraded operation on the raw client's model
+              // delegate. The cast is unavoidable here because TypeScript
+              // cannot statically index PrismaClient by a runtime model name.
+              return (prisma as any)[model][downgradedOp](mutatedArgs);
+            }
+
+            // ── All other operations ────────────────────────────────────────
+            const mutatedArgs = injectTenantId(operation, args as Record<string, any>, tenantId);
+
+            return query(mutatedArgs);
+          },
         },
       },
     });

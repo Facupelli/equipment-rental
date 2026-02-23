@@ -9,19 +9,19 @@ export class PrismaTenancyRepository implements TenancyRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<Tenant | null> {
-    const rawTenant = await this.prisma.tenant.findUnique({ where: { id } });
+    const rawTenant = await this.prisma.client.tenant.findUnique({ where: { id } });
     return rawTenant ? TenantMapper.toDomain(rawTenant) : null;
   }
 
   async findBySlug(slug: string): Promise<Tenant | null> {
-    const rawTenant = await this.prisma.tenant.findUnique({ where: { slug } });
+    const rawTenant = await this.prisma.client.tenant.findUnique({ where: { slug } });
     return rawTenant ? TenantMapper.toDomain(rawTenant) : null;
   }
 
   async save(user: Tenant): Promise<string> {
     const data = TenantMapper.toPersistence(user);
 
-    const result = await this.prisma.tenant.upsert({
+    const result = await this.prisma.client.tenant.upsert({
       where: { id: user.id },
       create: data,
       update: data,

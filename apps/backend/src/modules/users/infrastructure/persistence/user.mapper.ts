@@ -18,7 +18,7 @@ export class UserMapper {
     return user;
   }
 
-  static toPersistence(user: User): Prisma.UserCreateInput {
+  static toPersistence(user: User): Prisma.UserUncheckedCreateInput {
     return {
       id: user.id,
       email: user.email,
@@ -26,8 +26,8 @@ export class UserMapper {
       firstName: user.firstName,
       lastName: user.lastName,
       isActive: user.isActive,
-      tenant: { connect: { id: user.tenantId } },
-      role: { connect: { id: user.roleId } },
+      tenantId: user.tenantId,
+      roleId: user.roleId,
     };
   }
 }

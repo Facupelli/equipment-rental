@@ -104,13 +104,15 @@ model Tenant {
 
 model Location {
   id        String  @id @default(uuid())
+  tenantId      String        @map("tenant_id")
   name      String
   address   Json    // Flexible structure (street, city, geo)
   isActive  Boolean @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tenantId      String        @map("tenant_id")
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   inventoryItems InventoryItem[]
 
   @@index([tenantId]) // RLS Index
@@ -118,15 +120,17 @@ model Location {
 }
 
 model Owner {
-  id           String  @id @default(uuid())
-  name         String
-  payoutDetails Json    @map("payout_details") // Bank info, split rules
+  id             String  @id @default(uuid())
+  tenantId       String  @map("tenant_id")
+  name           String
+  payoutDetails  Json    @map("payout_details") // Bank info, split rules
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
-  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tenantId      String        @map("tenant_id")
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   inventoryItems InventoryItem[]
-  bookingItems  BookingLineItem[] // For payout reporting
+  bookingItems   BookingLineItem[] // For payout reporting
 
   @@index([tenantId]) // RLS Index
   @@map("owners")
@@ -136,15 +140,17 @@ model Owner {
 
 model Product {
   id                String        @id @default(uuid())
+  tenantId          String          @map("tenant_id")
   name              String
   trackingType      TrackingType  @map("tracking_type")
   baseRentalPrice   Decimal       @map("base_rental_price") @db.Decimal(10, 2)
   attributes        Json          // Flexible specs (weight, power, etc.)
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tenantId      String          @map("tenant_id")
-  inventoryItems InventoryItem[]
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inventoryItems    InventoryItem[]
 
   @@index([tenantId])
   @@map("products")
@@ -152,21 +158,23 @@ model Product {
 
 model InventoryItem {
   id             String          @id @default(uuid())
+  tenantId       String          @map("tenant_id")
+  productId      String          @map("product_id")
+  locationId     String          @map("location_id")
+  ownerId        String          @map("owner_id")
   status         InventoryStatus @default(OPERATIONAL)
   totalQuantity  Int             @map("total_quantity") // 1 for SERIALIZED, >=1 for BULK
   serialNumber   String?         @map("serial_number")
   purchaseDate   DateTime?       @map("purchase_date") @db.Date
   purchaseCost   Decimal?        @map("purchase_cost") @db.Decimal(10, 2)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
   // Relations
   tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tenantId     String       @map("tenant_id")
   product      Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
-  productId    String       @map("product_id")
   location     Location     @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  locationId   String       @map("location_id")
   owner        Owner        @relation(fields: [ownerId], references: [id], onDelete: Restrict)
-  ownerId      String       @map("owner_id")
   
   bookingLineItems BookingLineItem[]
 
