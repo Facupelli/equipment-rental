@@ -17,9 +17,9 @@ We will organize the code into **seven** primary modules. The dependencies flow 
 
 **Responsibility:** Manages the SaaS platform structure, subscriptions, and the technical resolution of the tenant context.
 
-- **Domain Concepts:** `Tenant`, `Subscription`, `Plan`.
+- **Domain Concepts:** `Tenant`, `Subscription`, `Plan`, `PricingConfig`.
 - **Why:** This is the "Kernel" layer for the SaaS business model. It isolates the logic for subscription billing and tenant onboarding.
-- **Key Logic:** Subscription status checks, Plan limits enforcement (e.g., "max 500 inventory items"), and Infrastructure middleware to set the database `tenant_id` context (RLS).
+- **Key Logic:** Subscription status checks, Plan limits enforcement, and storage of global business rules (e.g., `weekend_counts_as_one`, `over_rental_enabled`).
 - **Dependencies:** None.
 
 ### 1.2. `UsersModule` (Identity Context)
@@ -44,12 +44,12 @@ We will organize the code into **seven** primary modules. The dependencies flow 
 
 **Responsibility:** Managing the "Supply Side" of the business. It knows _what_ items exist, _where_ they are, and _who_ owns them.
 
-- **Aggregates:** `Product` (The Definition), `InventoryItem` (The Physical Batch/Asset).
+- **Aggregates:** `Product`, `InventoryItem`, `BlackoutPeriod`, `PricingTier`.
 - **Entities:** `Location`, `Owner`, `MaintenanceRecord`.
 - **Domain Logic:**
-  - **Hybrid Tracking:** Logic to enforce rules based on `tracking_type` (e.g., ensuring `serial_number` is unique for SERIALIZED items, or managing `total_quantity` for BULK items).
-  - **Maintenance:** Status transitions (`OPERATIONAL` <-> `MAINTENANCE`).
-  - **Depreciation:** Calculations based on `purchase_cost` and `purchase_date`.
+  - **Hybrid Tracking:** Logic to enforce rules based on `tracking_type`.
+  - **Availability Blocks:** Managing `BlackoutPeriods` for maintenance or owner reservations.
+  - **Pricing Definitions:** Storing `PricingTiers` (Day 1 rate, Day 2 rate, etc.) and item-level overrides.
 - **Dependencies:** None (Stand-alone domain).
 
 ### 1.5. `RentalModule` (Core Transaction Context)
@@ -58,12 +58,13 @@ We will organize the code into **seven** primary modules. The dependencies flow 
 
 - **Aggregates:** `Booking` (Root).
 - **Entities:** `BookingLineItem`.
-- **Domain Services:** `AvailabilityService`.
+- **Domain Services:** `AvailabilityService`, `PricingEngine`.
 - **Domain Logic:**
-  - **Availability Calculation:** Intersects requested dates with existing bookings.
-  - **Reservation Logic:** Handles the state machine (`RESERVED` -> `ACTIVE` -> `COMPLETED`).
-  - **Snapshotting:** Captures financial state (`owner_id`, `unit_price`) at the moment of booking.
-- **Dependencies:** `InventoryModule` (Read-only access to check product details/ownership), `CustomerModule`.
+  - **Availability Calculation:** Intersects requested dates with existing bookings AND blackout periods.
+  - **Over-Rental Logic:** Checks tenant config to allow "soft" bookings against Products (not Items) when stock is 0.
+  - **Reservation Logic:** State machine (`PENDING_CONFIRMATION` -> `RESERVED` -> `ACTIVE` -> `COMPLETED`).
+  - **Pricing Pipeline:** Calculates `billable_days` (applying weekend rules), resolves pricing tiers, and generates a `price_breakdown` snapshot.
+- **Dependencies:** `InventoryModule` (Read-only access), `CustomerModule`.
 
 ### 1.6. `BillingModule` (Financial Settlement Context)
 
@@ -72,8 +73,7 @@ We will organize the code into **seven** primary modules. The dependencies flow 
 - **Aggregates:** `Invoice`, `Payout`.
 - **Domain Logic:**
   - **Invoice Generation:** Triggered by events (`BookingCompleted`).
-  - **Revenue Splitting:** Uses the "Snapshot" data from `BookingLineItems` to calculate exactly how much `Owner A` vs `Owner B` is owed for a specific rental.
-  - **Tax Calculation:** Applying local taxes to the invoice.
+  - **Revenue Splitting:** Uses the "Snapshot" data (checking `is_externally_sourced` flag) to calculate payouts. External items are excluded from owner payouts.
 - **Dependencies:** `RentalModule` (Reads snapshots, listens to events).
 
 ### 1.7. `CustomerModule` (CRM Context)
@@ -88,53 +88,42 @@ We will organize the code into **seven** primary modules. The dependencies flow 
 
 ## 2. Handling the "Availability" Conundrum
 
-One of the hardest parts of DDD in rental systems is **Availability**. It requires data from `InventoryModule` (stock counts) and `RentalModule` (booked quantities).
-
 **Decision:** Keep `Availability` logic inside the `RentalModule`.
 
-**Why?**
-"Availability" is a temporal concept that only exists because of a desire to book. Inventory just "sits there"; it is the _Booking_ that gives it meaning. Availability is a projection of the Rental context onto the Inventory data.
-
 **Implementation (Pragmatic DDD):**
-The `RentalModule` contains an **Application Service** called `AvailabilityService`.
+The `AvailabilityService` performs a coordinated check:
 
-1.  It queries `inventory_items` (Read-Only) to get the total capacity.
-2.  It queries `bookings` (Read-Write) to calculate current utilization.
-3.  It performs the math: `Available = Total - Utilized`.
-4.  It returns the result to the UI or the `Booking` aggregate.
+1.  **Fetch Capacity:** Queries `InventoryModule` for total stock and `BlackoutPeriods`.
+2.  **Calculate Utilized:** Queries `Bookings` for overlapping confirmed reservations.
+3.  **Compute Net Available:** `Total - (Booked + Blackouts)`.
+4.  **Over-Rental Check:** If Net Available < Requested Quantity, check `TenantConfig.over_rental_enabled`. If true, return status `OVERBOOK_WARNING`.
 
 ---
 
 ## 3. Aggregate Design & Invariants
 
-Here we define where the "locks" and "rules" live to satisfy ADR #6 (Concurrency).
-
 ### Aggregate Root: `Booking` (in RentalModule)
 
-This is the most critical aggregate.
-
-- **Invariants:** "Cannot double-book," "Start date must be before end date," "Customer must be active."
+- **Invariants:** "Cannot double-book physical items," "Start date < End date."
 - **Concurrency Control:**
-  - When creating a booking, the `Booking` aggregate calls a repository method that utilizes the SQL `EXCLUSION CONSTRAINT` or `SELECT FOR UPDATE` described in your Schema Doc.
-  - It ensures that the transaction succeeds or fails atomically.
+  - **Physical Path:** If `inventory_item_id` is present, DB Exclusion Constraint prevents overlap.
+  - **Virtual Path:** If `product_id` is present (Over-Rental), constraint allows overlap. Application logic enforces `max_over_rent_threshold`.
 
 ### Aggregate Root: `InventoryItem` (in InventoryModule)
 
-- **Invariants:** "Cannot rent a RETIRED item," "Bulk quantity cannot be negative."
-- **Behavior:** If `status` changes to `MAINTENANCE`, the `RentalModule` will see this availability drop during its next check (or via an event), but `InventoryModule` doesn't manage bookings itself.
+- **Invariants:** "Cannot rent RETIRED item."
+- **Behavior:** `BlackoutPeriods` are child entities of `InventoryItem`.
 
 ---
 
 ## 4. Event-Driven Communication (Decoupling)
 
-To avoid "spaghetti code" where modules import each other directly, we use NestJS `EventEmitter` (ADR #7).
-
-| Event                           | Publisher           | Subscriber             | Action                                                                              |
-| :------------------------------ | :------------------ | :--------------------- | :---------------------------------------------------------------------------------- |
-| `booking.created`               | **RentalModule**    | **NotificationModule** | Send confirmation email to Customer.                                                |
-| `booking.completed`             | **RentalModule**    | **BillingModule**      | Generate Invoice & Trigger Payout calculation.                                      |
-| `inventory.maintenance_started` | **InventoryModule** | **RentalModule**       | Update availability cache (if used) or flag item as unavailable for future lookups. |
-| `payout.failed`                 | **BillingModule**   | **NotificationModule** | Alert Admin/Finance team.                                                           |
+| Event                           | Publisher           | Subscriber             | Action                                            |
+| :------------------------------ | :------------------ | :--------------------- | :------------------------------------------------ |
+| `booking.created`               | **RentalModule**    | **NotificationModule** | Send confirmation email to Customer.              |
+| `booking.pending_confirmation`  | **RentalModule**    | **NotificationModule** | Alert Admin to source equipment for over-rental.  |
+| `booking.completed`             | **RentalModule**    | **BillingModule**      | Generate Invoice & Trigger Payout calculation.    |
+| `inventory.maintenance_started` | **InventoryModule** | **RentalModule**       | Creates `BlackoutPeriod`, affecting availability. |
 
 ---
 
@@ -150,58 +139,40 @@ apps/backend/src/
 │
 ├── modules/
 │   ├── auth/             # Context: Authentication
-│   │   ├── domain/
-│   │   │   └── ports/    (user-validator.port.ts - Interface)
-│   │   ├── infrastructure/
-│   │   │   ├── guards/   (jwt-auth.guard.ts)
-│   │   │   └── strategies/ (jwt.strategy.ts, local.strategy.ts)
-│   │   └── auth.module.ts
+│   │   └── ...
 │   │
 │   ├── users/            # Context: Identity Management
-│   │   ├── domain/
-│   │   │   ├── entities/ (user.entity.ts, role.entity.ts)
-│   │   │   └── repositories/
-│   │   ├── application/
-│   │   │   └── users.service.ts (Implements UserValidator Port)
-│   │   └── users.module.ts
+│   │   └── ...
 │   │
 │   ├── tenancy/          # Context: Platform Foundation
 │   │   ├── domain/
-│   │   │   └── entities/ (tenant.entity.ts, subscription.entity.ts)
-│   │   ├── infrastructure/
-│   │   │   └── middleware/ (tenant-context.middleware.ts - Sets RLS)
-│   │   └── tenancy.module.ts
+│   │   │   └── entities/ (tenant.entity.ts)
+│   │   ├── domain/value-objects/ (pricing-config.vo.ts)
+│   │   └── ...
 │   │
 │   ├── inventory/        # Context: Asset Management
 │   │   ├── domain/
 │   │   │   ├── entities/ (product.entity.ts, inventory-item.entity.ts)
-│   │   │   ├── value-objects/ (tracking-type.vo.ts)
+│   │   │   ├── aggregates/ (pricing-tier.entity.ts, blackout-period.entity.ts)
 │   │   │   └── repositories/
-│   │   ├── application/  (Use Cases: CreateProduct, UpdateStock)
-│   │   └── infrastructure/ (Controllers, TypeORM Repositories)
+│   │   ├── application/
+│   │   └── infrastructure/
 │   │
 │   ├── rental/           # Context: Booking Operations
 │   │   ├── domain/
 │   │   │   ├── aggregates/ (booking.aggregate.ts)
-│   │   │   ├── services/   (availability.service.ts - Domain Service)
-│   │   │   └── events/
+│   │   │   ├── services/
+│   │   │   │   ├── availability.service.ts
+│   │   │   │   └── pricing-engine.service.ts  <-- NEW
 │   │   ├── application/
 │   │   │   ├── commands/ (create-booking.command.ts)
-│   │   │   └── sagas/    (Handle booking lifecycle)
 │   │   └── infrastructure/
 │   │
 │   ├── billing/          # Context: Finance
-│   │   ├── domain/
-│   │   ├── application/  (Listens to events, handles Stripe API)
 │   │   └── ...
 │   │
 │   └── customer/         # Context: CRM
 │       └── ...
 ```
 
-### Why this works for your SaaS:
-
-1.  **Decoupled Identity:** By separating `Auth` and `Users`, you can change your authentication mechanism (e.g., moving to Auth0 or Firebase) by only rewriting the `AuthModule` without touching your `Users` database entity.
-2.  **Dependency Inversion:** The `AuthModule` defines what it needs (the `UserValidator` interface), and `UsersModule` provides the implementation. This ensures `Auth` does not tightly couple to `Users` implementation details.
-3.  **Scalability:** If `Billing` becomes heavy (integrating with Quickbooks/Xero), you can extract that entire folder into a microservice without changing the `RentalModule` code—just swap the local Event Emitter for a message bus (Redis/RabbitMQ).
-4.  **Transaction Safety:** By keeping the critical path (Booking Creation) synchronous and within the `RentalModule` transaction boundary, you guarantee data integrity as per ADR #6.
+---

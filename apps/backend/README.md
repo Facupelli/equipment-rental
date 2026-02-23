@@ -1,3 +1,7 @@
+Here are the three updated Architecture documents, incorporating the new features (Over-rental, Blackouts, Tiered Pricing, Weekend Logic) and the recommended improvements (Price Breakdown persistence, Thresholds).
+
+---
+
 # Architecture Decision Record (ADR): Rental SaaS Platform
 
 ## Application Overview
@@ -52,12 +56,13 @@
 - **SaaS Flexibility:** Allows tenants to define custom fields for their specific inventory types (Skis vs. Jackhammers) without requiring schema migrations or complex Entity-Attribute-Value (EAV) SQL joins.
 - **Type Safety:** TypeScript interfaces on the frontend can validate these flexible structures while the database remains agnostic.
 
-## 6. Concurrency & Critical Path: Database Transactions
+## 6. Concurrency & Critical Path: Hybrid Constraint Strategy
 
-**Decision:** Handle availability checks and reservation logic synchronously within a database transaction.
+**Decision:** Use Database Exclusion Constraints for physical assets, and Application-Level Logic for "virtual" (over-rented) bookings.
 **Why:**
 
-- **Data Integrity:** Prevents double-bookings (race conditions) where two users book the last item simultaneously. This requires immediate consistency, which eventual consistency (async events) cannot guarantee.
+- **Data Integrity:** For physical stock (`inventory_item_id` set), the database enforces hard limits to prevent double bookings.
+- **Business Flexibility:** For "over-rentals" (`product_id` set, no physical item yet), the constraint is bypassed (via nullable FKs) to allow accepting orders beyond current capacity. The application manages thresholds to prevent infinite over-renting.
 
 ## 7. Communication Pattern: Hybrid Event-Driven
 
@@ -75,7 +80,15 @@
 - **Performance:** Keeps API response times fast by moving I/O bound tasks to the background.
 - **Resilience:** Provides automatic retries for failed jobs (e.g., third-party API downtime), ensuring tasks are not lost if a service temporarily fails.
 
-## 9. Tech Stack
+## 9. Pricing Strategy: Calendar-Aware Engine
+
+**Decision:** Implement a `PricingEngine` domain service that calculates costs based on a pipeline: Calendar Rules → Duration Rounding → Tier Lookup.
+**Why:**
+
+- **Complexity Management:** Rental pricing is non-linear (weekend deals, tiered duration discounts). A dedicated engine encapsulates this logic, keeping the Booking creation service clean.
+- **Transparency:** Persisting the calculation breakdown (as JSONB) allows for dispute resolution and auditing without re-calculating historical prices.
+
+## 10. Tech Stack
 
 - **Backend:** NestJS (Enforces modular architecture).
 - **Database:** PostgreSQL (Relational integrity + JSONB flexibility).

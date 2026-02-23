@@ -1,5 +1,0 @@
-export enum InventoryStatus {
-  OPERATIONAL = 'OPERATIONAL',
-  MAINTENANCE = 'MAINTENANCE',
-  RETIRED = 'RETIRED',
-}
