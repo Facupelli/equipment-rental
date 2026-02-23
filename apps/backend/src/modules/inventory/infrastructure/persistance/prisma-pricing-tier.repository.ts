@@ -1,7 +1,7 @@
 import { PricingTier } from '../../domain/entities/pricing-tier.entity';
 import { PricingTierRepositoryPort } from '../../domain/ports/pricing-tier.repository.port';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { PricingTierMapper } from './pricing-tier.mapper';
+import { PricingTierMapper } from './mappers/pricing-tier.mapper';
 
 export class PrismaPricingTierRepository extends PricingTierRepositoryPort {
   constructor(private readonly prismaSerivce: PrismaService) {

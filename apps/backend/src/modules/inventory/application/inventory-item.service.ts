@@ -42,6 +42,7 @@ export class InventoryItemService {
         serialNumber: dto.serialNumber ? dto.serialNumber : null,
         purchaseDate: dto.purchaseDate ? dto.purchaseDate : null,
         purchaseCost: dto.purchaseCost ? dto.purchaseCost : null,
+        blackouts: [],
         tenantId,
       },
       product.TrackingType,

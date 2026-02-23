@@ -221,7 +221,6 @@ model BlackoutPeriod {
   inventoryItemId String                    @map("inventory_item_id")
   reason          String
   blockedPeriod   Unsupported("tstzrange")? @map("blocked_period") // Native Postgres Range Type
-  createdById     String                    @map("created_by")
   createdAt       DateTime                  @default(now()) @map("created_at")
   updatedAt       DateTime                  @updatedAt @map("updated_at")
 

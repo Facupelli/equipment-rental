@@ -1,5 +1,7 @@
 import { InventoryItemStatus, TrackingType } from '@repo/types';
 import { randomUUID } from 'node:crypto';
+import { BlackoutPeriod } from './blackout-period.entity';
+import { DateRange } from '../value-objects/date-range.vo';
 
 export interface InventoryItemProps {
   id: string;
@@ -12,6 +14,7 @@ export interface InventoryItemProps {
   serialNumber: string | null;
   purchaseDate: Date | null;
   purchaseCost: number | null;
+  blackouts: BlackoutPeriod[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +22,12 @@ export interface InventoryItemProps {
 export type CreateInventoryItemProps = Omit<InventoryItemProps, 'id' | 'createdAt' | 'updatedAt' | 'status'> & {
   status?: InventoryItemStatus;
 };
+
+export interface AddBlackoutProps {
+  id: string;
+  reason: string;
+  blockedPeriod: DateRange;
+}
 
 export class InventoryItem {
   private readonly id: string;
@@ -30,6 +39,8 @@ export class InventoryItem {
   private _status: InventoryItemStatus;
   private _totalQuantity: number;
   private _serialNumber: string | null;
+  private _blackouts: BlackoutPeriod[];
+  private _newBlackouts: BlackoutPeriod[] = [];
 
   private readonly purchaseDate: Date | null;
   private _purchaseCost: number | null;
@@ -46,6 +57,7 @@ export class InventoryItem {
     this._status = props.status;
     this._totalQuantity = props.totalQuantity;
     this._serialNumber = props.serialNumber;
+    this._blackouts = props.blackouts;
     this.purchaseDate = props.purchaseDate;
     this._purchaseCost = props.purchaseCost;
     this.createdAt = props.createdAt;
@@ -55,8 +67,6 @@ export class InventoryItem {
   public static create(props: CreateInventoryItemProps, productTrackingType: TrackingType): InventoryItem {
     const id = randomUUID();
     const now = new Date();
-
-    console.log(typeof props.totalQuantity);
 
     // Invariant: Serialized items must have a quantity of 1
     if (productTrackingType === TrackingType.SERIALIZED) {
@@ -82,6 +92,7 @@ export class InventoryItem {
       id,
       ...props,
       status: props.status ?? InventoryItemStatus.OPERATIONAL,
+      blackouts: [],
       createdAt: now,
       updatedAt: now,
     });
@@ -92,6 +103,38 @@ export class InventoryItem {
   }
 
   // --- Behaviors ---
+
+  /**
+   * Adds a blackout period to this item, enforcing two invariants:
+   *
+   * 1. A RETIRED item cannot receive new blackouts — it will never be rented again.
+   * 2. No two blackout periods on the same item can overlap — this would create
+   *    ambiguity in availability calculations and signals a data entry error.
+   */
+  public addBlackout(props: AddBlackoutProps): void {
+    if (this._status === InventoryItemStatus.RETIRED) {
+      throw new Error('Cannot add a blackout period to a retired item.');
+    }
+
+    const hasOverlap = this._blackouts.some((existing) => existing.conflictsWith(props.blockedPeriod));
+
+    if (hasOverlap) {
+      throw new Error('The requested blackout period overlaps with an existing one on this item.');
+    }
+
+    const blackout = BlackoutPeriod.create({
+      id: props.id,
+      tenantId: this.tenantId,
+      inventoryItemId: this.id,
+      reason: props.reason,
+      blockedPeriod: props.blockedPeriod,
+    });
+
+    this._blackouts.push(blackout);
+    this._newBlackouts.push(blackout);
+    this._updatedAt = new Date();
+  }
+
   public moveTo(newLocationId: string): void {
     if (this._status === InventoryItemStatus.RETIRED) {
       throw new Error('Cannot move a retired item.');
@@ -158,6 +201,12 @@ export class InventoryItem {
   }
   get SerialNumber(): string | null {
     return this._serialNumber;
+  }
+  get Blackouts(): ReadonlyArray<BlackoutPeriod> {
+    return this._blackouts;
+  }
+  get NewBlackouts(): ReadonlyArray<BlackoutPeriod> {
+    return this._newBlackouts;
   }
   get PurchaseDate(): Date | null {
     return this.purchaseDate;

@@ -8,6 +8,7 @@ import { TenancyModule } from '../tenancy/tenancy.module';
 import { InventoryItemRepositoryPort } from './domain/ports/inventory.repository.port';
 import { PrismaInventoryItemRepository } from './infrastructure/persistance/prisma-inventory-item.repository';
 import { InventoryItemService } from './application/inventory-item.service';
+import { CreateBlackoutPeriodCommand } from './application/create-blackout-period.command';
 
 const repositories = [
   {
@@ -23,6 +24,6 @@ const repositories = [
 @Module({
   imports: [TenancyModule],
   controllers: [ProductController, InventoryItemController],
-  providers: [...repositories, ProductService, InventoryItemService],
+  providers: [...repositories, ProductService, InventoryItemService, CreateBlackoutPeriodCommand],
 })
 export class InventoryModule {}

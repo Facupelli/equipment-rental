@@ -1,6 +1,6 @@
 import { Product as PrismaProduct } from 'src/generated/prisma/client';
 import { Prisma } from 'src/generated/prisma/browser';
-import { Product, ProductProps } from '../../domain/entities/product.entity';
+import { Product, ProductProps } from '../../../domain/entities/product.entity';
 import { TrackingType } from '@repo/types';
 
 export class ProductMapper {

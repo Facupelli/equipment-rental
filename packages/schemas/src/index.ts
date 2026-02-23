@@ -5,3 +5,4 @@ export * from "./owner/create-owner.schema";
 export * from "./inventory/create-product.schema";
 export * from "./inventory/create-inventory-item.schema";
 export * from "./inventory/create-pricing-tier.schema";
+export * from "./inventory/create-blackout-period.schema";

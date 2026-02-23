@@ -1,5 +1,5 @@
 import { PricingTier as PrismaPricingTier } from 'src/generated/prisma/client';
-import { PricingTier } from '../../domain/entities/pricing-tier.entity';
+import { PricingTier } from '../../../domain/entities/pricing-tier.entity';
 import { Prisma } from 'src/generated/prisma/browser';
 
 export class PricingTierMapper {
