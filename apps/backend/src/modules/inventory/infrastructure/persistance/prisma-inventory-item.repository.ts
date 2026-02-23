@@ -5,8 +5,10 @@ import { InventoryItem } from '../../domain/entities/inventory-item.entity';
 import { InventoryItemMapper } from './inventory-item.mapper';
 
 @Injectable()
-export class PrismaInventoryItemRepository implements InventoryItemRepositoryPort {
-  constructor(private readonly prisma: PrismaService) {}
+export class PrismaInventoryItemRepository extends InventoryItemRepositoryPort {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
 
   async findById(id: string): Promise<InventoryItem | null> {
     const item = await this.prisma.client.inventoryItem.findUnique({
