@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserValidator } from 'src/modules/auth/domain/interfaces/user-validator.interface';
+import { UserValidator } from 'src/modules/auth/domain/port/user-validator.port';
 import * as bcrypt from 'bcrypt';
-import { UsersRepository } from '../domain/repositories/users.repository';
+import { UsersRepository } from '../../domain/repositories/users.repository';
 
 @Injectable()
 export class BcryptUserValidator extends UserValidator {

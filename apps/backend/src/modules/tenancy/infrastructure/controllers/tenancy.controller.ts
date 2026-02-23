@@ -1,11 +1,11 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
-import { RegisterTenantAndAdminUseCase } from './services/register-tenant-and-admin.use-case';
 import { RegisterResponseDto, RegisterTenantAndAdminDto } from '@repo/schemas';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { TenancyService } from './services/tenancy.service';
-import { Tenant } from './domain/entities/tenant.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ReqUser } from '../auth/strategies/jwt.strategy';
+import { Tenant } from '../../domain/entities/tenant.entity';
+import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard';
+import { ReqUser } from '../../../auth/infrastructure/strategies/jwt.strategy';
+import { TenancyService } from '../../application/tenancy.service';
+import { RegisterTenantAndAdminUseCase } from '../../application/use-cases/register-tenant-and-admin.use-case';
 
 @Controller('tenancy')
 export class TenancyController {
