@@ -33,8 +33,6 @@ export class PrismaInventoryItemRepository extends InventoryItemRepositoryPort {
     WHERE inventory_item_id = ${id}
   `;
 
-    console.log({ item, rawBlackouts });
-
     if (!item) {
       return null;
     }

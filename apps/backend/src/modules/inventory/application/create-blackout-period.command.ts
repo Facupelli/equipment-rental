@@ -9,14 +9,11 @@ export class CreateBlackoutPeriodCommand {
   constructor(private readonly inventoryItemRepository: InventoryItemRepositoryPort) {}
 
   async execute(dto: CreateBlackoutPeriodDto): Promise<string> {
-    console.log('EXECUTE');
     const item = await this.inventoryItemRepository.findById(dto.inventoryItemId);
 
     if (!item) {
       throw new NotFoundException(`InventoryItem not found: ${dto.inventoryItemId}`);
     }
-
-    console.log({ item });
 
     const blockedPeriod = DateRange.create(dto.startDate, dto.endDate);
 

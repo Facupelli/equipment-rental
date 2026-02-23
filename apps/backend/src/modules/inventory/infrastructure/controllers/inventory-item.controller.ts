@@ -18,7 +18,6 @@ export class InventoryItemController {
 
   @Post('blackout-period')
   async createBlackoutPeriod(@Body() dto: CreateBlackoutPeriodDto) {
-    console.log({ dto });
     return await this.createBlackoutPeriodCommand.execute(dto);
   }
 
