@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { CustomerRepository } from './customer.repository';
-import { Prisma } from 'src/generated/prisma/browser';
+import { Customer } from './customer.entity';
 
 @Injectable()
 export class CustomerService {
   constructor(private readonly customerRepository: CustomerRepository) {}
 
-  async create(data: Prisma.CustomerUncheckedCreateInput): Promise<string> {
+  async create(data: Customer): Promise<string> {
     return await this.customerRepository.save(data);
   }
 }

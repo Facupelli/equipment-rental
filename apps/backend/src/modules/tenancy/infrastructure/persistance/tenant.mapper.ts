@@ -1,20 +1,60 @@
-import { Tenant as PrismaTenant } from 'src/generated/prisma/client';
-import { Prisma } from 'src/generated/prisma/browser';
-import { Tenant } from '../../domain/entities/tenant.entity';
+import { Tenant, TenantProps, TenantPricingConfig } from '../../domain/entities/tenant.entity';
+import { BillingUnit } from '../../domain/entities/billing-unit.entity';
+import { Prisma, BillingUnit as PrismaBillingUnit } from 'src/generated/prisma/client';
 
 export class TenantMapper {
-  static toDomain(raw: PrismaTenant): Tenant {
-    return Tenant.reconstitute(raw.id, raw.name, raw.slug, raw.planTier, raw.isActive, raw.createdAt);
+  static toDomain(raw: any): Tenant {
+    const props: TenantProps = {
+      id: raw.id,
+      name: raw.name,
+      slug: raw.slug,
+      planTier: raw.planTier,
+      isActive: raw.isActive,
+      pricingConfig: raw.pricingConfig as TenantPricingConfig,
+      billingUnits: raw.billingUnits.map(TenantMapper.billingUnitToDomain),
+      createdAt: raw.createdAt,
+    };
+
+    return Tenant.reconstitute(props);
   }
 
-  static toPersistence(tenant: Tenant): Prisma.TenantCreateInput {
+  static toPersistence(entity: Tenant): Prisma.TenantUncheckedCreateInput {
     return {
-      id: tenant.id,
-      name: tenant.name,
-      slug: tenant.slug,
-      planTier: tenant.planTier,
-      isActive: tenant.isActive,
+      id: entity.id,
+      name: entity.name,
+      slug: entity.slug,
+      planTier: entity.planTier,
+      isActive: entity.isActive,
+      pricingConfig: entity.pricingConfig as unknown as Prisma.InputJsonValue,
+      createdAt: entity.createdAt,
+      billingUnits: {
+        create: entity.billingUnits.map(TenantMapper.billingUnitToPersistenceCreate),
+      },
     };
-    // createdAt is intentionally omitted — Prisma lets the DB default handle it
+  }
+
+  private static billingUnitToDomain(prismaUnit: PrismaBillingUnit): BillingUnit {
+    return BillingUnit.reconstitute({
+      id: prismaUnit.id,
+      tenantId: prismaUnit.tenantId,
+      name: prismaUnit.name,
+      durationHours: prismaUnit.durationHours.toNumber(),
+      sortOrder: prismaUnit.sortOrder,
+      createdAt: prismaUnit.createdAt,
+      updatedAt: prismaUnit.updatedAt,
+    });
+  }
+
+  private static billingUnitToPersistenceCreate(
+    unit: BillingUnit,
+  ): Prisma.BillingUnitUncheckedCreateWithoutTenantInput {
+    return {
+      id: unit.id,
+      name: unit.name,
+      durationHours: unit.durationHours,
+      sortOrder: unit.sortOrder,
+      createdAt: unit.createdAt,
+      updatedAt: unit.updatedAt,
+    };
   }
 }

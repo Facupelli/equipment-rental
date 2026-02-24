@@ -3,6 +3,7 @@ import { ProductRepositoryPort } from '../domain/ports/product.repository.port';
 import { Product } from '../domain/entities/product.entity';
 import { CreateProductDto } from '@repo/schemas';
 import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
+import { TrackingType } from '@repo/types';
 
 @Injectable()
 export class ProductService {
@@ -11,8 +12,8 @@ export class ProductService {
     private readonly tenantContext: TenantContextService,
   ) {}
 
-  async findById(id: string): Promise<Product | null> {
-    return await this.productRepository.findById(id);
+  async findTrackingType(id: string): Promise<TrackingType | null> {
+    return await this.productRepository.findTrackingType(id);
   }
 
   async findAll(): Promise<Product[]> {
@@ -29,11 +30,11 @@ export class ProductService {
     }
 
     const product = Product.create({
+      tenantId,
       name: dto.name,
       trackingType: dto.trackingType,
-      baseRentalPrice: dto.baseRentalPrice,
       attributes: dto.attributes,
-      tenantId,
+      baseTier: dto.pricingTiers[0],
     });
 
     return await this.productRepository.save(product);

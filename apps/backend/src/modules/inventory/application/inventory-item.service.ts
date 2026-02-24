@@ -30,9 +30,9 @@ export class InventoryItemService {
       );
     }
 
-    const product = await this.productService.findById(dto.productId);
+    const productTrackingType = await this.productService.findTrackingType(dto.productId);
 
-    if (product === null) {
+    if (!productTrackingType) {
       throw new BadRequestException('Product not found');
     }
 
@@ -45,7 +45,7 @@ export class InventoryItemService {
         blackouts: [],
         tenantId,
       },
-      product.TrackingType,
+      productTrackingType,
     );
 
     return await this.inventoryItemRepository.save(item);

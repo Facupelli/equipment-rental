@@ -5,3 +5,8 @@ export enum BookingStatus {
   COMPLETED = "COMPLETED", // Equipment returned (terminal)
   CANCELLED = "CANCELLED", // Booking voided (terminal)
 }
+
+export const BLOCKING_STATUSES: BookingStatus[] = [
+  BookingStatus.RESERVED,
+  BookingStatus.ACTIVE,
+];

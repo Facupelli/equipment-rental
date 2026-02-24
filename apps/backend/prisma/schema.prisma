@@ -86,7 +86,7 @@ model Tenant {
   slug             String     @unique
   planTier         String     @map("plan_tier")
   isActive         Boolean    @default(true) @map("is_active")
-  pricingConfig    Json?       @map("pricing_config") 
+  pricingConfig    Json?      @map("pricing_config") 
 
   users            User[]
   roles            Role[]
@@ -101,8 +101,9 @@ model Tenant {
   promotions       Promotion[]
   bookings         Booking[]
   bookingDiscounts BookingDiscount[]
-  pricingTiers     PricingTier[]     // New
-  blackoutPeriods  BlackoutPeriod[]  // New
+  billingUnits     BillingUnit[]
+  pricingTiers     PricingTier[]
+  blackoutPeriods  BlackoutPeriod[] 
 
   @@map("tenants")
 }
@@ -147,7 +148,6 @@ model Product {
   tenantId          String          @map("tenant_id")
   name              String
   trackingType      TrackingType  @map("tracking_type")
-  baseRentalPrice   Decimal       @map("base_rental_price") @db.Decimal(10, 2)
   attributes        Json          // Flexible specs (weight, power, etc.)
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
@@ -155,7 +155,7 @@ model Product {
   // Relations
   tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   inventoryItems    InventoryItem[]
-  pricingTiers      PricingTier[]   // New: Product-level default pricing
+  pricingTiers      PricingTier[] 
   bookingLineItems  BookingLineItem[] 
 
   @@index([tenantId])
@@ -193,25 +193,40 @@ model InventoryItem {
   @@map("inventory_items")
 }
 
+model BillingUnit {
+  id            String        @id @default(uuid())
+  tenantId      String        @map("tenant_id")
+  name          String        // "half_day" | "full_day" | "week"
+  durationHours Decimal       @map("duration_hours") @db.Decimal(6, 2)
+  sortOrder     Int           @map("sort_order")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  pricingTiers  PricingTier[]
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@map("billing_units")
+}
+
 model PricingTier {
-  id              String       @id @default(uuid())
-  tenantId        String       @map("tenant_id")
-  productId       String?      @map("product_id")
-  inventoryItemId String?      @map("inventory_item_id")
-  minDays         Decimal      @map("min_days") @db.Decimal(5, 2) // Supports 0.5 (half day)
-  maxDays         Decimal?     @map("max_days") @db.Decimal(5, 2) // Null for infinity
-  pricePerDay     Decimal      @map("price_per_day") @db.Decimal(10, 2)
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt @map("updated_at")
+  id              String         @id @default(uuid())
+  tenantId        String         @map("tenant_id")
+  productId       String         @map("product_id")
+  inventoryItemId String?        @map("inventory_item_id")
+  billingUnitId   String         @map("billing_unit_id")
+  fromUnit        Decimal        @map("from_unit") @db.Decimal(5, 2)
+  pricePerUnit    Decimal        @map("price_per_unit") @db.Decimal(10, 2)
+  currency        String         @db.Char(3)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
 
-  // Relations
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  product       Product?       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  product         Product?       @relation(fields: [productId], references: [id])
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  billingUnit     BillingUnit    @relation(fields: [billingUnitId], references: [id])
 
-  @@index([tenantId])
-  @@index([productId])
-  @@index([inventoryItemId])
+  @@unique([tenantId, productId, inventoryItemId, billingUnitId, fromUnit])
   @@map("pricing_tiers")
 }
 
@@ -238,15 +253,26 @@ model BlackoutPeriod {
 
 // --- Transactional Entities ---
 
+enum CustomerStatus {
+  ACTIVE
+  SUSPENDED
+  BLACKLISTED
+  PENDING_KYC
+  INACTIVE
+}
+
 model Customer {
-  id     String @id @default(uuid())
+  id     String         @id @default(uuid())
+  tenantId String       @map("tenant_id")
   name   String
   email  String
+  status CustomerStatus @default(ACTIVE)
   phone  String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tenantId String    @map("tenant_id")
+  tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   bookings Booking[]
 
   @@index([tenantId])
@@ -274,21 +300,21 @@ model Promotion {
 
 model Booking {
   id            String        @id @default(uuid())
-  rentalPeriod  Unsupported("tstzrange")? @map("rental_period") // Native Postgres Range Type
+  rentalPeriod  Unsupported("tstzrange")? @map("rental_period")
   status        BookingStatus @default(RESERVED)
   subtotal      Decimal       @db.Decimal(10, 2)
-  totalDiscount Decimal       @map("total_discount") @db.Decimal(10, 2)
-  totalTax      Decimal       @map("total_tax") @db.Decimal(10, 2)
+  totalDiscount Decimal       @default(0) @map("total_discount") @db.Decimal(10, 2)
+  totalTax      Decimal       @default(0) @map("total_tax") @db.Decimal(10, 2)
   grandTotal    Decimal       @map("grand_total") @db.Decimal(10, 2)
+  notes         String?
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  // Relations
   tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tenantId      String           @map("tenant_id")
   customer      Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
   customerId    String           @map("customer_id")
-  
+
   lineItems     BookingLineItem[]
   discounts     BookingDiscount[]
 
@@ -299,39 +325,32 @@ model Booking {
 }
 
 model BookingLineItem {
-  id                  String   @id @default(uuid())
-  
-  // FK Logic: InventoryItem (Standard) XOR Product (Over-Rental)
-  inventoryItemId     String?  @map("inventory_item_id")
-  productId           String?  @map("product_id")
+  id                  String        @id @default(uuid())
 
-  quantityRented      Int      @map("quantity_rented")
-  unitPrice           Decimal  @map("unit_price") @db.Decimal(10, 2) // Snapshot
-  lineTotal           Decimal  @map("line_total") @db.Decimal(10, 2)
-  
-  // Snapshot Fields
-  ownerId             String?  @map("owner_id") // Nullable for external sourcing
-  isExternallySourced Boolean  @default(false) @map("is_externally_sourced")
-  priceBreakdown      Json?    @map("price_breakdown") // Snapshot of calculation details
+  productId           String        @map("product_id")
+  inventoryItemId     String?       @map("inventory_item_id")
 
-  // Relations
+  status              BookingStatus @default(RESERVED)
+  quantityRented      Int           @map("quantity_rented")
+  unitPrice           Decimal       @map("unit_price") @db.Decimal(10, 2)
+  lineTotal           Decimal       @map("line_total") @db.Decimal(10, 2)
+
+  ownerId             String?       @map("owner_id")
+  isExternallySourced Boolean       @default(false) @map("is_externally_sourced")
+  priceBreakdown      Json?         @map("price_breakdown")
+
   booking         Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   bookingId       String         @map("booking_id")
-  
-  // Optional Relations
+  product         Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
   inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  product         Product?       @relation(fields: [productId], references: [id], onDelete: Restrict)
-  
-  // Explicit relation to Owner for reporting
   owner           Owner?         @relation(fields: [ownerId], references: [id])
 
   @@index([bookingId])
+  @@index([productId])
   @@index([inventoryItemId])
-  @@index([productId]) // New Index
-  @@index([ownerId]) 
-  
-  // Note: CHECK constraint (XOR logic) and EXCLUDE constraint (double booking prevention) 
-  // must be added via raw SQL migration.
+  @@index([ownerId])
+  // Note: EXCLUDE constraint (double booking prevention) and CHECK constraint (XOR logic)
+  // must be added via raw SQL migration
   @@map("booking_line_items")
 }
 

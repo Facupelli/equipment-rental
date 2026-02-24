@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { RentalInventoryReadPort } from '../domain/ports/rental-inventory-read.port';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
-import { TenantConfigPort } from '../domain/ports/tenant-config.port';
-import { BookingRepositoryPort } from '../domain/ports/booking.repository.port';
+import { TenantConfigPort } from '../../tenancy/domain/ports/tenant-config.port';
+import { BookingRepository } from '../domain/ports/booking.repository';
 import { TrackingType } from '@repo/types';
 
 export interface CheckAvailabilityParams {
@@ -13,20 +13,26 @@ export interface CheckAvailabilityParams {
   trackingType: TrackingType;
 }
 
+export enum AvailabilityStatus {
+  AVAILABLE = 'AVAILABLE',
+  OVERBOOK_WARNING = 'OVERBOOK_WARNING',
+  UNAVAILABLE = 'UNAVAILABLE',
+}
+
 export type AvailabilityResult =
-  | { status: 'AVAILABLE'; availableQuantity: number }
-  | { status: 'OVERBOOK_WARNING'; deficit: number }
-  | { status: 'UNAVAILABLE'; reason: string };
+  | { status: AvailabilityStatus.AVAILABLE; availableQuantity: number; candidateItemIds: string[] }
+  | { status: AvailabilityStatus.OVERBOOK_WARNING; deficit: number }
+  | { status: AvailabilityStatus.UNAVAILABLE; reason: string };
 
 @Injectable()
 export class AvailabilityService {
   constructor(
     private readonly inventoryRead: RentalInventoryReadPort,
-    private readonly tenantConfig: TenantConfigPort,
-    private readonly bookingRepository: BookingRepositoryPort,
+    private readonly tenancyQuery: TenantConfigPort,
+    private readonly bookingRepository: BookingRepository,
   ) {}
 
-  async checkAvailability(params: CheckAvailabilityParams): Promise<AvailabilityResult> {
+  async check(params: CheckAvailabilityParams): Promise<AvailabilityResult> {
     const { productId, tenantId, requestedQuantity, range, trackingType } = params;
 
     // Step 1 — Total rentable supply (excludes RETIRED items)
@@ -43,15 +49,27 @@ export class AvailabilityService {
 
     // Step 5a — Sufficient stock: straightforward approval
     if (netAvailable >= requestedQuantity) {
-      return { status: 'AVAILABLE', availableQuantity: netAvailable };
+      const candidateItemIds = [];
+
+      if (trackingType === TrackingType.SERIALIZED) {
+        const itemIds = await this.inventoryRead.getCandidateItemIds(productId, tenantId, range);
+        candidateItemIds.push(...itemIds);
+      }
+
+      return {
+        status: AvailabilityStatus.AVAILABLE,
+        availableQuantity: netAvailable,
+        candidateItemIds,
+      };
     }
 
     // Step 5b — Insufficient stock: consult tenant config for over-rental rules
-    const config = await this.tenantConfig.getConfig(tenantId);
+    const tenantConfig = await this.tenancyQuery.findPricingInputs(tenantId);
+    const config = tenantConfig?.pricingConfig;
 
-    if (!config.overRentalEnabled) {
+    if (!config?.overRentalEnabled) {
       return {
-        status: 'UNAVAILABLE',
+        status: AvailabilityStatus.UNAVAILABLE,
         reason: `Insufficient stock. Requested ${requestedQuantity}, available ${netAvailable}.`,
       };
     }
@@ -61,11 +79,11 @@ export class AvailabilityService {
     // TODO: The Threshold Logic (Absolute vs. Percentage) this is assuming absolute value. what if it is a procetnage?
     if (deficit > config.maxOverRentThreshold) {
       return {
-        status: 'UNAVAILABLE',
+        status: AvailabilityStatus.UNAVAILABLE,
         reason: `Over-rental threshold exceeded. Deficit of ${deficit} surpasses the maximum allowed threshold of ${config.maxOverRentThreshold}.`,
       };
     }
 
-    return { status: 'OVERBOOK_WARNING', deficit };
+    return { status: AvailabilityStatus.OVERBOOK_WARNING, deficit };
   }
 }

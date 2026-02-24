@@ -1,4 +1,4 @@
-# Architecture Decision Record (ADR): Rental SaaS Platform
+# Architecture Decision Record (ADR): Rental SaaS Platform — Module Map
 
 ## Application Overview
 
@@ -11,168 +11,228 @@
 
 ## 1. Module Map (Bounded Contexts)
 
-We will organize the code into **seven** primary modules. The dependencies flow strictly **inward or downward** (from business logic to infrastructure/persistence), never sideways between business modules.
+We organize the code into **seven** primary modules. Dependencies flow strictly **inward or downward** — never sideways between business modules. Cross-module data access is mediated exclusively through focused ports (abstract classes).
 
 ### 1.1. `TenancyModule` (Platform Context)
 
-**Responsibility:** Manages the SaaS platform structure, subscriptions, and the technical resolution of the tenant context.
+**Responsibility:** Manages the SaaS platform structure, tenant onboarding, and global business rule configuration.
 
-- **Domain Concepts:** `Tenant`, `Subscription`, `Plan`, `PricingConfig`.
-- **Why:** This is the "Kernel" layer for the SaaS business model. It isolates the logic for subscription billing and tenant onboarding.
-- **Key Logic:** Subscription status checks, Plan limits enforcement, and storage of global business rules (e.g., `weekend_counts_as_one`, `over_rental_enabled`).
+- **Aggregate Root:** `Tenant`
+- **Child Entities:** `BillingUnit` (owned by Tenant — defines tenant-specific billing units and their hour equivalents)
+- **Value Objects:** `TenantPricingConfig` (embedded in `Tenant` — holds `weekendCountsAsOne`, `roundingRule`, `overRentalEnabled`, `maxOverRentThreshold`)
+- **Key Logic:**
+  - Subscription status checks and plan limit enforcement
+  - Tenant onboarding with default `TenantPricingConfig` (sensible defaults provided — a new tenant can rent without manual configuration)
+  - `BillingUnit` lifecycle management with uniqueness enforcement per tenant
 - **Dependencies:** None.
+
+**Design Note:** `TenantPricingConfig` and `RoundingRule` are defined here and imported by `RentalModule`'s `PricingEngine`. This direction is correct — `TenancyModule` is the kernel; it does not depend on rental concerns.
+
+---
 
 ### 1.2. `UsersModule` (Identity Context)
 
-**Responsibility:** Managing the user entities, profiles, and role assignments. This is the "Who."
+**Responsibility:** Managing user entities, profiles, and role assignments. This is the "Who."
 
-- **Domain Concepts:** `User`, `Role`, `Profile`.
-- **Why:** Centralizes the identity data. It is a stable domain that other modules (like Auth or Auditing) rely on, but it does not depend on them.
-- **Key Logic:** User CRUD, Password hashing, Role assignment.
-- **Dependencies:** None (Stand-alone domain).
+- **Domain Concepts:** `User`, `Role`, `Profile`
+- **Key Logic:** User CRUD, password hashing, role assignment
+- **Dependencies:** None (stand-alone domain)
+
+---
 
 ### 1.3. `AuthModule` (Authentication Context)
 
 **Responsibility:** Verifying identity and issuing tokens. This is the "How."
 
-- **Domain Concepts:** `AccessToken`, `Session` (optional).
-- **Why:** Encapsulates the security mechanisms (Passport, JWT) separate from user data storage.
-- **Key Logic:** Login flow, Token signing/verification, Guards.
-- **Dependencies:** `UsersModule` (via Interface/Port to validate credentials).
+- **Domain Concepts:** `AccessToken`, `Session` (optional)
+- **Key Logic:** Login flow, token signing/verification, Guards, `TenancyGuard` (injects `tenantId` from JWT into commands — callers never self-declare their tenant)
+- **Dependencies:** `UsersModule` (via port to validate credentials)
+
+---
 
 ### 1.4. `InventoryModule` (Asset & Catalog Context)
 
-**Responsibility:** Managing the "Supply Side" of the business. It knows _what_ items exist, _where_ they are, and _who_ owns them.
+**Responsibility:** Managing the "Supply Side" — what items exist, where they are, and who owns them.
 
-- **Aggregates:** `Product`, `InventoryItem`, `BlackoutPeriod`, `PricingTier`.
-- **Entities:** `Location`, `Owner`, `MaintenanceRecord`.
+- **Aggregate Root:** `Product`
+  - **Child Entities:** `PricingTier[]` — product-level and item-level override tiers. `Product` owns all tiers; `InventoryItem` does not own tiers directly. The `inventoryItemId` on a tier is a scope field, not a transfer of aggregate ownership.
+- **Aggregate Root:** `InventoryItem`
+  - **Child Entities:** `BlackoutPeriod[]`
+- **Entities:** `Location`, `Owner`
 - **Domain Logic:**
-  - **Hybrid Tracking:** Logic to enforce rules based on `tracking_type`.
-  - **Availability Blocks:** Managing `BlackoutPeriods` for maintenance or owner reservations.
-  - **Pricing Definitions:** Storing `PricingTiers` (Day 1 rate, Day 2 rate, etc.) and item-level overrides.
-- **Dependencies:** None (Stand-alone domain).
+  - **Hybrid Tracking:** Rules enforced based on `trackingType` (`SERIALIZED` vs `BULK`)
+  - **Base Tier Invariant:** `Product.create()` requires a `baseTier` parameter. A product cannot exist without at least one `PricingTier` with `fromUnit: 1`. `removePricingTier()` guards against removing this base tier.
+  - **Availability Blocks:** `BlackoutPeriod` lifecycle on `InventoryItem`
+  - **Pricing Definitions:** `PricingTier` CRUD with currency consistency and uniqueness invariants enforced by the `Product` aggregate
+- **Ports Implemented:** `ProductRepositoryPort`, `RentalProductQueryPort` (defined by `RentalModule`, implemented here)
+- **Dependencies:** None (stand-alone domain)
+
+---
 
 ### 1.5. `RentalModule` (Core Transaction Context)
 
-**Responsibility:** Managing the "Demand Side" and the critical path of the business—Booking lifecycle and Availability.
+**Responsibility:** Managing the "Demand Side" — booking lifecycle, availability, and pricing calculation.
 
-- **Aggregates:** `Booking` (Root).
-- **Entities:** `BookingLineItem`.
-- **Domain Services:** `AvailabilityService`, `PricingEngine`.
+- **Aggregate Root:** `Booking`
+  - **Child Entities:** `BookingLineItem[]`
+- **Domain Services:**
+  - `AvailabilityService` — intersects requested dates with existing bookings and blackout periods; checks `TenantPricingConfig.overRentalEnabled` to allow soft bookings
+  - `PricingEngine` — pure domain service, four-stage pipeline (see ADR-1 §9)
+- **Value Objects:** `PriceBreakdown` (immutable snapshot, persisted as JSONB per line item), `Money` (wraps `decimal.js` for all financial arithmetic)
+- **Cross-Module Ports (defined here, implemented elsewhere):**
+  - `RentalProductQueryPort` → implemented by `PrismaProductRepository` in `InventoryModule`
+  - `CustomerRepository` → implemented by `PrismaCustomerRepository` in `CustomerModule`
 - **Domain Logic:**
-  - **Availability Calculation:** Intersects requested dates with existing bookings AND blackout periods.
-  - **Over-Rental Logic:** Checks tenant config to allow "soft" bookings against Products (not Items) when stock is 0.
-  - **Reservation Logic:** State machine (`PENDING_CONFIRMATION` -> `RESERVED` -> `ACTIVE` -> `COMPLETED`).
-  - **Pricing Pipeline:** Calculates `billable_days` (applying weekend rules), resolves pricing tiers, and generates a `price_breakdown` snapshot.
-- **Dependencies:** `InventoryModule` (Read-only access), `CustomerModule`.
+  - Booking state machine: `PENDING_CONFIRMATION` → `RESERVED` → `ACTIVE` → `COMPLETED` / `CANCELLED`
+  - Conservative status derivation: if any line is `PENDING_CONFIRMATION`, the whole booking becomes `PENDING_CONFIRMATION`
+  - Physical item auto-assignment for `SERIALIZED` products (preferred item hint supported)
+  - Financial summary derivation from line totals (`subtotal`, `grandTotal`)
+  - Pricing inputs (tiers, billing units, config) fetched by the application layer before calling the engine — the engine itself is pure
+- **Dependencies:** `InventoryModule` (read-only via port), `CustomerModule` (read-only via port), `TenancyModule` (reads `TenantPricingConfig` and `BillingUnit[]`)
+
+---
 
 ### 1.6. `BillingModule` (Financial Settlement Context)
 
-**Responsibility:** The financial aftermath of a rental. Invoicing, payments, and complex owner payouts.
+**Responsibility:** The financial aftermath of a rental — invoicing, payments, and complex owner payouts.
 
-- **Aggregates:** `Invoice`, `Payout`.
+- **Aggregates:** `Invoice`, `Payout`
 - **Domain Logic:**
-  - **Invoice Generation:** Triggered by events (`BookingCompleted`).
-  - **Revenue Splitting:** Uses the "Snapshot" data (checking `is_externally_sourced` flag) to calculate payouts. External items are excluded from owner payouts.
-- **Dependencies:** `RentalModule` (Reads snapshots, listens to events).
+  - Invoice generation triggered by `booking.completed` event
+  - Revenue splitting using `isExternallySourced` flag on `BookingLineItem` — externally sourced items are excluded from owner payouts
+- **Dependencies:** `RentalModule` (reads snapshots, listens to domain events)
+
+---
 
 ### 1.7. `CustomerModule` (CRM Context)
 
 **Responsibility:** Managing the people renting the equipment.
 
-- **Aggregates:** `Customer`.
-- **Domain Logic:** KYC (Know Your Customer), blacklisting problematic renters, credit limit checks.
-- **Dependencies:** None.
+- **Aggregate Root:** `Customer`
+- **Domain Logic:** KYC, blacklisting, credit limit checks
+- **Dependencies:** None
 
 ---
 
-## 2. Handling the "Availability" Conundrum
+## 2. Availability Calculation
 
-**Decision:** Keep `Availability` logic inside the `RentalModule`.
+**Decision:** Keep `AvailabilityService` inside `RentalModule`.
 
-**Implementation (Pragmatic DDD):**
-The `AvailabilityService` performs a coordinated check:
+The service performs a coordinated check across two data sources via ports:
 
-1.  **Fetch Capacity:** Queries `InventoryModule` for total stock and `BlackoutPeriods`.
-2.  **Calculate Utilized:** Queries `Bookings` for overlapping confirmed reservations.
-3.  **Compute Net Available:** `Total - (Booked + Blackouts)`.
-4.  **Over-Rental Check:** If Net Available < Requested Quantity, check `TenantConfig.over_rental_enabled`. If true, return status `OVERBOOK_WARNING`.
+1. **Fetch Capacity:** Query `InventoryModule` for total item stock and active `BlackoutPeriods` overlapping the requested window (using PostgreSQL `&&` range overlap on `tstzrange`)
+2. **Calculate Utilized:** Query confirmed bookings (`RESERVED`, `ACTIVE`) overlapping the requested window
+3. **Compute Net Available:** `Total − (Booked + Blacked Out)`
+4. **Over-Rental Check:** If Net Available < Requested Quantity, check `TenantPricingConfig.overRentalEnabled`. If true, return `OVERBOOK_WARNING`; otherwise `UNAVAILABLE`
 
 ---
 
 ## 3. Aggregate Design & Invariants
 
-### Aggregate Root: `Booking` (in RentalModule)
+### `Booking` (RentalModule)
 
-- **Invariants:** "Cannot double-book physical items," "Start date < End date."
-- **Concurrency Control:**
-  - **Physical Path:** If `inventory_item_id` is present, DB Exclusion Constraint prevents overlap.
-  - **Virtual Path:** If `product_id` is present (Over-Rental), constraint allows overlap. Application logic enforces `max_over_rent_threshold`.
+- **Invariants:** "Cannot double-book physical items" (enforced by DB EXCLUDE constraint on `tstzrange`), "Start date < end date"
+- **Concurrency:**
+  - Physical path (`inventoryItemId` set): DB Exclusion Constraint on `booking_line_items` prevents overlap
+  - Virtual path (`inventoryItemId` null, over-rental): constraint bypassed; application enforces `maxOverRentThreshold`
+- **Financial fields** (`subtotal`, `totalDiscount`, `totalTax`, `grandTotal`) are derived from line items at creation time and stored as snapshots. `totalDiscount` and `totalTax` default to 0 at booking creation — updated when the `PromotionEngine` (v2) applies discounts
 
-### Aggregate Root: `InventoryItem` (in InventoryModule)
+### `Product` (InventoryModule)
 
-- **Invariants:** "Cannot rent RETIRED item."
-- **Behavior:** `BlackoutPeriods` are child entities of `InventoryItem`.
+- **Invariants:** "Must have at least one `PricingTier` with `fromUnit: 1`", "All tiers must share the same currency", "No two tiers can share the same `billingUnitId` + `fromUnit` + `inventoryItemId` combination"
+- **No `basePrice` field:** The base tier replaces it entirely. A product without pricing cannot be created.
 
----
+### `InventoryItem` (InventoryModule)
 
-## 4. Event-Driven Communication (Decoupling)
-
-| Event                           | Publisher           | Subscriber             | Action                                            |
-| :------------------------------ | :------------------ | :--------------------- | :------------------------------------------------ |
-| `booking.created`               | **RentalModule**    | **NotificationModule** | Send confirmation email to Customer.              |
-| `booking.pending_confirmation`  | **RentalModule**    | **NotificationModule** | Alert Admin to source equipment for over-rental.  |
-| `booking.completed`             | **RentalModule**    | **BillingModule**      | Generate Invoice & Trigger Payout calculation.    |
-| `inventory.maintenance_started` | **InventoryModule** | **RentalModule**       | Creates `BlackoutPeriod`, affecting availability. |
+- **Invariants:** "Cannot rent a `RETIRED` item"
+- **Behavior:** `BlackoutPeriods` are child entities managed through `InventoryItem`
 
 ---
 
-## 5. File Structure (Monorepo Implementation)
+## 4. Event-Driven Communication
 
-This structure enforces the boundaries physically in the code.
+| Event                           | Publisher           | Subscriber             | Action                                           |
+| :------------------------------ | :------------------ | :--------------------- | :----------------------------------------------- |
+| `booking.created`               | **RentalModule**    | **NotificationModule** | Send confirmation email to customer              |
+| `booking.pending_confirmation`  | **RentalModule**    | **NotificationModule** | Alert admin to source equipment for over-rental  |
+| `booking.completed`             | **RentalModule**    | **BillingModule**      | Generate invoice and trigger payout calculation  |
+| `inventory.maintenance_started` | **InventoryModule** | **RentalModule**       | Creates `BlackoutPeriod`, affecting availability |
+
+---
+
+## 5. File Structure
 
 ```text
 apps/backend/src/
 ├── app.module.ts
 ├── main.ts
-├── core/                 # Shared Kernel (DB connection, Logger, Constants)
+├── core/                             # Shared Kernel (DB, Logger, Constants)
 │
 ├── modules/
-│   ├── auth/             # Context: Authentication
+│   ├── auth/                         # Context: Authentication
 │   │   └── ...
 │   │
-│   ├── users/            # Context: Identity Management
+│   ├── users/                        # Context: Identity Management
 │   │   └── ...
 │   │
-│   ├── tenancy/          # Context: Platform Foundation
+│   ├── tenancy/                      # Context: Platform Foundation
 │   │   ├── domain/
-│   │   │   └── entities/ (tenant.entity.ts)
-│   │   ├── domain/value-objects/ (pricing-config.vo.ts)
-│   │   └── ...
-│   │
-│   ├── inventory/        # Context: Asset Management
-│   │   ├── domain/
-│   │   │   ├── entities/ (product.entity.ts, inventory-item.entity.ts)
-│   │   │   ├── aggregates/ (pricing-tier.entity.ts, blackout-period.entity.ts)
-│   │   │   └── repositories/
+│   │   │   ├── entities/
+│   │   │   │   ├── tenant.entity.ts
+│   │   │   │   └── billing-unit.entity.ts
+│   │   │   └── value-objects/
+│   │   │       └── tenant-pricing-config.vo.ts
 │   │   ├── application/
 │   │   └── infrastructure/
 │   │
-│   ├── rental/           # Context: Booking Operations
+│   ├── inventory/                    # Context: Asset Management
 │   │   ├── domain/
-│   │   │   ├── aggregates/ (booking.aggregate.ts)
+│   │   │   ├── entities/
+│   │   │   │   ├── product.entity.ts           # Aggregate Root — owns PricingTier[]
+│   │   │   │   ├── pricing-tier.entity.ts      # Child of Product
+│   │   │   │   ├── inventory-item.entity.ts    # Aggregate Root — owns BlackoutPeriod[]
+│   │   │   │   └── blackout-period.entity.ts
+│   │   │   └── ports/
+│   │   │       └── product.repository.port.ts
+│   │   ├── application/
+│   │   └── infrastructure/
+│   │       ├── repositories/
+│   │       │   └── prisma-product.repository.ts  # Implements ProductRepositoryPort
+│   │       │                                      # + RentalProductQueryPort
+│   │       └── mappers/
+│   │           └── product.mapper.ts
+│   │
+│   ├── rental/                       # Context: Booking Operations
+│   │   ├── domain/
+│   │   │   ├── aggregates/
+│   │   │   │   └── booking.aggregate.ts
+│   │   │   ├── entities/
+│   │   │   │   └── booking-line-item.entity.ts
 │   │   │   ├── services/
 │   │   │   │   ├── availability.service.ts
-│   │   │   │   └── pricing-engine.service.ts  <-- NEW
+│   │   │   │   └── pricing-engine/
+│   │   │   │       ├── pricing-engine.service.ts   # Orchestrator — @Injectable
+│   │   │   │       ├── unit-decomposition.ts       # Stage 2 — pure function
+│   │   │   │       ├── tier-resolution.ts          # Stage 3 — pure function
+│   │   │   │       └── amount-calculation.ts       # Stage 4 — pure function
+│   │   │   └── ports/
+│   │   │       └── rental-product-query.port.ts   # Defined here, implemented in InventoryModule
 │   │   ├── application/
-│   │   │   ├── commands/ (create-booking.command.ts)
+│   │   │   └── commands/
+│   │   │       ├── create-booking.command.ts       # Zod schema + DTO + Command type
+│   │   │       └── create-booking.handler.ts       # Orchestrates critical path
 │   │   └── infrastructure/
+│   │       └── repositories/
+│   │           └── prisma-booking.repository.ts
 │   │
-│   ├── billing/          # Context: Finance
+│   ├── billing/                      # Context: Finance
 │   │   └── ...
 │   │
-│   └── customer/         # Context: CRM
+│   └── customer/                     # Context: CRM
 │       └── ...
+│
+└── shared/
+    └── value-objects/
+        ├── money.vo.ts               # Wraps decimal.js — all monetary arithmetic
+        └── price-breakdown.vo.ts     # Immutable pricing snapshot — persisted as JSONB
 ```
-
----

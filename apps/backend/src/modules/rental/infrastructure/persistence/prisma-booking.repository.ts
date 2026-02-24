@@ -1,17 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { BookingRepositoryPort } from '../../domain/ports/booking.repository.port';
+import { BookingRepository } from '../../domain/ports/booking.repository';
 import { Booking } from '../../domain/entities/booking.entity';
 import { BookingMapper, BookingRawRecord } from './booking.mapper';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
-import { TrackingType } from '@repo/types';
 
 interface QuantityRow {
   total: bigint;
 }
 
 @Injectable()
-export class PrismaBookingRepository extends BookingRepositoryPort {
+export class PrismaBookingRepository extends BookingRepository {
   constructor(private readonly prisma: PrismaService) {
     super();
   }
@@ -74,58 +73,27 @@ export class PrismaBookingRepository extends BookingRepositoryPort {
     productId: string,
     tenantId: string,
     range: DateRange,
-    trackingType: TrackingType,
+    // trackingType is kept for potential future logic or logging,
+    // but doesn't change the SQL anymore.
+    // trackingType: TrackingType,
   ): Promise<number> {
-    const start = range.start;
-    const end = range.end;
+    const { start, end } = range;
 
-    if (trackingType === TrackingType.SERIALIZED) {
-      return this.getBookedQuantitySerialized(productId, tenantId, start, end);
-    }
-
-    return this.getBookedQuantityBulk(productId, tenantId, start, end);
-  }
-
-  /**
-   * SERIALIZED: count distinct physical items already committed to this product
-   * in the requested range. Each serialized unit is a unique asset, so distinct
-   * counting is used to stay defensive against any duplicates.
-   */
-  private async getBookedQuantitySerialized(
-    productId: string,
-    tenantId: string,
-    start: Date,
-    end: Date,
-  ): Promise<number> {
     const rows = await this.prisma.client.$queryRaw<QuantityRow[]>`
-      SELECT COUNT(DISTINCT bli.inventory_item_id) AS total
-      FROM booking_line_items bli
-      JOIN bookings b ON b.id = bli.booking_id
-      JOIN inventory_items ii ON ii.id = bli.inventory_item_id
-      WHERE ii.product_id = ${productId}
-        AND b.tenant_id = ${tenantId}
-        AND b.status NOT IN ('CANCELLED', 'COMPLETED')
-        AND b.rental_period && tstzrange(${start}, ${end})
-    `;
-
-    return Number(rows[0]?.total ?? 0);
-  }
-
-  /**
-   * BULK: sum quantity_rented across all physical line items belonging to this
-   * product in the requested range. Units are fungible, so we sum rather than count.
-   */
-  private async getBookedQuantityBulk(productId: string, tenantId: string, start: Date, end: Date): Promise<number> {
-    const rows = await this.prisma.client.$queryRaw<QuantityRow[]>`
-      SELECT COALESCE(SUM(bli.quantity_rented), 0) AS total
-      FROM booking_line_items bli
-      JOIN bookings b ON b.id = bli.booking_id
-      JOIN inventory_items ii ON ii.id = bli.inventory_item_id
-      WHERE ii.product_id = ${productId}
-        AND b.tenant_id = ${tenantId}
-        AND b.status NOT IN ('CANCELLED', 'COMPLETED')
-        AND b.rental_period && tstzrange(${start}, ${end})
-    `;
+    SELECT COALESCE(SUM(bli.quantity_rented), 0) AS total
+    FROM booking_line_items bli
+    JOIN bookings b ON b.id = bli.booking_id
+    LEFT JOIN inventory_items ii ON ii.id = bli.inventory_item_id
+    WHERE 
+      b.tenant_id = ${tenantId}
+      AND b.status NOT IN ('CANCELLED', 'COMPLETED')
+      AND b.rental_period && tstzrange(${start}, ${end})
+      AND (
+        ii.product_id = ${productId} 
+        OR 
+        (bli.inventory_item_id IS NULL AND bli.product_id = ${productId})
+      )
+  `;
 
     return Number(rows[0]?.total ?? 0);
   }

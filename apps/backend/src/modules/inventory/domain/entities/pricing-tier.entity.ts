@@ -3,11 +3,15 @@ import { randomUUID } from 'node:crypto';
 export interface PricingTierProps {
   id: string;
   tenantId: string;
-  productId: string | null;
+  productId: string;
+  /** When set, this tier is an item-level override. Null = product-level tier. */
   inventoryItemId: string | null;
-  minDays: number; // Stored as number in Domain (converted from Decimal)
-  maxDays: number | null; // Null represents infinity
-  pricePerDay: number;
+  billingUnitId: string;
+  /** Threshold in natural units — e.g. 4 means "from 4 units of this type onwards". */
+  fromUnit: number;
+  pricePerUnit: number;
+  /** ISO 4217 currency code e.g. "USD", "EUR". */
+  currency: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,109 +19,108 @@ export interface PricingTierProps {
 export type CreatePricingTierProps = Omit<PricingTierProps, 'id' | 'createdAt' | 'updatedAt'>;
 
 export class PricingTier {
-  private readonly id: string;
-  private readonly tenantId: string;
-
-  private _productId: string | null;
-  private _inventoryItemId: string | null;
-
-  private _minDays: number;
-  private _maxDays: number | null;
-  private _pricePerDay: number;
-
-  private readonly createdAt: Date;
+  private readonly _id: string;
+  private readonly _tenantId: string;
+  private readonly _productId: string;
+  private readonly _inventoryItemId: string | null;
+  private readonly _billingUnitId: string;
+  private _fromUnit: number;
+  private _pricePerUnit: number;
+  private readonly _currency: string;
+  private readonly _createdAt: Date;
   private _updatedAt: Date;
 
   private constructor(props: PricingTierProps) {
-    this.id = props.id;
-    this.tenantId = props.tenantId;
+    this._id = props.id;
+    this._tenantId = props.tenantId;
     this._productId = props.productId;
     this._inventoryItemId = props.inventoryItemId;
-    this._minDays = props.minDays;
-    this._maxDays = props.maxDays;
-    this._pricePerDay = props.pricePerDay;
-    this.createdAt = props.createdAt;
+    this._billingUnitId = props.billingUnitId;
+    this._fromUnit = props.fromUnit;
+    this._pricePerUnit = props.pricePerUnit;
+    this._currency = props.currency;
+    this._createdAt = props.createdAt;
     this._updatedAt = props.updatedAt;
   }
 
   public static create(props: CreatePricingTierProps): PricingTier {
-    const id = randomUUID();
+    PricingTier.assertValidFromUnit(props.fromUnit);
+    PricingTier.assertValidPrice(props.pricePerUnit);
+    PricingTier.assertValidCurrency(props.currency);
+
     const now = new Date();
-
-    // Invariant: Tier must belong to a scope (Product, Item, or Global/Tenant-level)
-    if (!props.productId && !props.inventoryItemId) {
-      throw new Error('Pricing tier must be associated with a product or inventory item.');
-    }
-
-    // Invariant: Max days must be greater than min days (if not infinite)
-    if (props.maxDays !== null && props.maxDays <= props.minDays) {
-      throw new Error('Max days must be greater than min days.');
-    }
-
-    // Invariant: Price cannot be negative
-    if (props.pricePerDay < 0) {
-      throw new Error('Price per day cannot be negative.');
-    }
-
-    // Invariant: Min days cannot be negative
-    if (props.minDays < 0) {
-      throw new Error('Min days cannot be negative.');
-    }
-
-    return new PricingTier({
-      id,
-      ...props,
-      createdAt: now,
-      updatedAt: now,
-    });
+    return new PricingTier({ id: randomUUID(), ...props, createdAt: now, updatedAt: now });
   }
 
   public static reconstitute(props: PricingTierProps): PricingTier {
     return new PricingTier(props);
   }
 
-  // --- Behaviors ---
-  public updatePrice(newPrice: number): void {
-    if (newPrice < 0) throw new Error('Price cannot be negative.');
-    this._pricePerDay = newPrice;
+  // --- Behavior ---
+  public updateRate(pricePerUnit: number): void {
+    PricingTier.assertValidPrice(pricePerUnit);
+    this._pricePerUnit = pricePerUnit;
     this._updatedAt = new Date();
   }
 
-  public updateDurationRange(minDays: number, maxDays: number | null): void {
-    if (maxDays !== null && maxDays <= minDays) {
-      throw new Error('Max days must be greater than min days.');
-    }
-    this._minDays = minDays;
-    this._maxDays = maxDays;
+  public updateThreshold(fromUnit: number): void {
+    PricingTier.assertValidFromUnit(fromUnit);
+    this._fromUnit = fromUnit;
     this._updatedAt = new Date();
+  }
+
+  /** Whether this tier is an item-level override (scoped to a specific InventoryItem). */
+  get isItemOverride(): boolean {
+    return this._inventoryItemId !== null;
   }
 
   // --- Getters ---
-  get Id(): string {
-    return this.id;
+  get id(): string {
+    return this._id;
   }
-  get TenantId(): string {
-    return this.tenantId;
+  get tenantId(): string {
+    return this._tenantId;
   }
-  get ProductId(): string | null {
+  get productId(): string {
     return this._productId;
   }
-  get InventoryItemId(): string | null {
+  get inventoryItemId(): string | null {
     return this._inventoryItemId;
   }
-  get MinDays(): number {
-    return this._minDays;
+  get billingUnitId(): string {
+    return this._billingUnitId;
   }
-  get MaxDays(): number | null {
-    return this._maxDays;
+  get fromUnit(): number {
+    return this._fromUnit;
   }
-  get PricePerDay(): number {
-    return this._pricePerDay;
+  get pricePerUnit(): number {
+    return this._pricePerUnit;
   }
-  get CreatedAt(): Date {
-    return this.createdAt;
+  get currency(): string {
+    return this._currency;
   }
-  get UpdatedAt(): Date {
+  get createdAt(): Date {
+    return this._createdAt;
+  }
+  get updatedAt(): Date {
     return this._updatedAt;
+  }
+
+  private static assertValidFromUnit(fromUnit: number): void {
+    if (fromUnit <= 0) {
+      throw new Error(`fromUnit must be positive, received: ${fromUnit}`);
+    }
+  }
+
+  private static assertValidPrice(pricePerUnit: number): void {
+    if (pricePerUnit < 0) {
+      throw new Error(`pricePerUnit must be non-negative, received: ${pricePerUnit}`);
+    }
+  }
+
+  private static assertValidCurrency(currency: string): void {
+    if (!/^[A-Z]{3}$/.test(currency)) {
+      throw new Error(`currency must be a valid ISO 4217 code (3 uppercase letters), received: "${currency}"`);
+    }
   }
 }

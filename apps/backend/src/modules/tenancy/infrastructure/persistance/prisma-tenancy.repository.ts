@@ -18,11 +18,11 @@ export class PrismaTenancyRepository implements TenancyRepository {
     return rawTenant ? TenantMapper.toDomain(rawTenant) : null;
   }
 
-  async save(user: Tenant): Promise<string> {
-    const data = TenantMapper.toPersistence(user);
+  async save(tenant: Tenant): Promise<string> {
+    const data = TenantMapper.toPersistence(tenant);
 
     const result = await this.prisma.client.tenant.upsert({
-      where: { id: user.id },
+      where: { id: tenant.id },
       create: data,
       update: data,
     });

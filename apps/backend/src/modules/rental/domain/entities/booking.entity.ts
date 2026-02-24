@@ -11,6 +11,7 @@ export interface CreateBookingProps {
   lineItems: BookingLineItem[];
   currency: string;
   status: BookingStatus.RESERVED | BookingStatus.PENDING_CONFIRMATION;
+  notes?: string;
 }
 
 export interface ReconstituteBookingProps {
@@ -19,6 +20,7 @@ export interface ReconstituteBookingProps {
   customerId: string;
   rentalPeriod: DateRange;
   status: BookingStatus;
+  notes?: string;
   lineItems: BookingLineItem[];
   subtotal: Money;
   totalDiscount: Money;
@@ -54,6 +56,7 @@ export class Booking {
   readonly rentalPeriod: DateRange;
   readonly createdAt: Date;
 
+  private _notes?: string;
   private _status: BookingStatus;
   private _lineItems: BookingLineItem[];
   private _subtotal: Money;
@@ -67,6 +70,7 @@ export class Booking {
     this.tenantId = props.tenantId;
     this.customerId = props.customerId;
     this.rentalPeriod = props.rentalPeriod;
+    this._notes = props.notes;
     this.createdAt = props.createdAt;
     this._status = props.status;
     this._lineItems = [...props.lineItems];
@@ -86,7 +90,10 @@ export class Booking {
     const now = new Date();
     const currency = props.currency;
 
-    const subtotal = props.lineItems.reduce((sum, item) => sum.add(item.lineTotal), Money.zero(currency));
+    let subtotal = Money.zero(currency);
+    for (const item of props.lineItems) {
+      subtotal = subtotal.add(item.lineTotal);
+    }
 
     const totalDiscount = Money.zero(currency);
     const totalTax = Money.zero(currency);
@@ -108,6 +115,9 @@ export class Booking {
     return new Booking(props.id, props);
   }
 
+  get notes(): string | undefined {
+    return this._notes;
+  }
   get status(): BookingStatus {
     return this._status;
   }

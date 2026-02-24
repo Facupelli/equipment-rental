@@ -1,22 +1,26 @@
-import { Product as PrismaProduct } from 'src/generated/prisma/client';
-import { Prisma } from 'src/generated/prisma/browser';
+import { Prisma, PricingTier as PrismaPricingTier } from 'src/generated/prisma/client';
 import { Product, ProductProps } from '../../../domain/entities/product.entity';
+import { PricingTier, PricingTierProps } from '../../../domain/entities/pricing-tier.entity';
 import { TrackingType } from '@repo/types';
 
+/**
+ * The Prisma payload type for a Product with its PricingTier children included.
+ * Used as the input type for toDomain — enforces that the query always
+ * includes tiers, preventing silent mapping failures at runtime.
+ */
+export type PrismaProductWithTiers = Prisma.ProductGetPayload<{
+  include: { pricingTiers: true };
+}>;
+
 export class ProductMapper {
-  public static toDomain(prismaProduct: PrismaProduct): Product {
+  public static toDomain(prismaProduct: PrismaProductWithTiers): Product {
     const props: ProductProps = {
       id: prismaProduct.id,
       tenantId: prismaProduct.tenantId,
       name: prismaProduct.name,
       trackingType: prismaProduct.trackingType as TrackingType,
-
-      // Prisma returns Decimal objects. Convert to number for domain simplicity.
-      baseRentalPrice: prismaProduct.baseRentalPrice.toNumber(),
-
-      // Prisma returns JsonValue. We assume it matches our domain structure.
-      attributes: prismaProduct.attributes as Record<string, any>,
-
+      attributes: prismaProduct.attributes as Record<string, unknown>,
+      pricingTiers: prismaProduct.pricingTiers.map(ProductMapper.tierToDomain),
       createdAt: prismaProduct.createdAt,
       updatedAt: prismaProduct.updatedAt,
     };
@@ -26,14 +30,47 @@ export class ProductMapper {
 
   public static toPersistence(entity: Product): Prisma.ProductUncheckedCreateInput {
     return {
-      id: entity.Id,
-      tenantId: entity.TenantId, // Prisma relation syntax
-      name: entity.Name,
-      trackingType: entity.TrackingType,
-      baseRentalPrice: entity.BaseRentalPrice,
-      attributes: entity.Attributes,
-      createdAt: entity.CreatedAt,
-      updatedAt: entity.UpdatedAt,
+      id: entity.id,
+      tenantId: entity.tenantId,
+      name: entity.name,
+      trackingType: entity.trackingType,
+      attributes: entity.attributes as unknown as Prisma.InputJsonValue,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      pricingTiers: {
+        create: entity.pricingTiers.map(ProductMapper.tierToPersistenceCreate),
+      },
+    };
+  }
+
+  private static tierToDomain(prismaTier: PrismaPricingTier): PricingTier {
+    const props: PricingTierProps = {
+      id: prismaTier.id,
+      tenantId: prismaTier.tenantId,
+      productId: prismaTier.productId,
+      inventoryItemId: prismaTier.inventoryItemId,
+      billingUnitId: prismaTier.billingUnitId,
+      fromUnit: prismaTier.fromUnit.toNumber(),
+      pricePerUnit: prismaTier.pricePerUnit.toNumber(),
+      currency: prismaTier.currency,
+      createdAt: prismaTier.createdAt,
+      updatedAt: prismaTier.updatedAt,
+    };
+
+    return PricingTier.reconstitute(props);
+  }
+
+  private static tierToPersistenceCreate(tier: PricingTier): Prisma.PricingTierUncheckedCreateWithoutProductInput {
+    return {
+      id: tier.id,
+      tenantId: tier.tenantId,
+      inventoryItemId: tier.inventoryItemId,
+      billingUnitId: tier.billingUnitId,
+      fromUnit: tier.fromUnit,
+      pricePerUnit: tier.pricePerUnit,
+      currency: tier.currency,
+      createdAt: tier.createdAt,
+      updatedAt: tier.updatedAt,
     };
   }
 }

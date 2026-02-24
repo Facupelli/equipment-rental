@@ -48,4 +48,57 @@ export class PrismaInventoryReadAdapter extends RentalInventoryReadPort {
 
     return Number(rows[0]?.total ?? 0);
   }
+
+  /**
+   * Returns IDs of inventory items that are free to book for the requested range,
+   * ranked by all-time booking count descending (bin-packing strategy).
+   *
+   * Bin-packing rationale: preferring the most-used items keeps lightly-used
+   * items available for future bookings, minimising fleet fragmentation.
+   *
+   * An item is considered free when it has:
+   *   - No confirmed booking (RESERVED or ACTIVE) whose rental_period overlaps
+   *     the requested range
+   *   - No blackout period whose blocked_period overlaps the requested range
+   *
+   * Only applies to SERIALIZED products — BULK availability is quantity-based
+   * and does not require item-level candidate resolution.
+   */
+  async getCandidateItemIds(productId: string, tenantId: string, range: DateRange): Promise<string[]> {
+    interface CandidateRow {
+      id: string;
+    }
+
+    const rows = await this.prisma.client.$queryRaw<CandidateRow[]>`
+      SELECT ii.id
+      FROM inventory_items ii
+      LEFT JOIN booking_line_items bli ON bli.inventory_item_id = ii.id
+      WHERE ii.product_id = ${productId}
+        AND ii.tenant_id  = ${tenantId}
+        AND ii.status     != ${InventoryItemStatus.RETIRED}::"InventoryStatus"
+
+        -- Exclude items with a confirmed booking overlapping the requested range
+        AND NOT EXISTS (
+          SELECT 1
+          FROM booking_line_items b2
+          JOIN bookings bk ON bk.id = b2.booking_id
+          WHERE b2.inventory_item_id = ii.id
+            AND bk.status IN ('RESERVED', 'ACTIVE')
+            AND bk.rental_period && tstzrange(${range.start}, ${range.end})
+        )
+
+        -- Exclude items blocked by a blackout period overlapping the requested range
+        AND NOT EXISTS (
+          SELECT 1
+          FROM blackout_periods bp
+          WHERE bp.inventory_item_id = ii.id
+            AND bp.blocked_period && tstzrange(${range.start}, ${range.end})
+        )
+
+      GROUP BY ii.id
+      ORDER BY COUNT(bli.id) DESC
+    `;
+
+    return rows.map((row) => row.id);
+  }
 }

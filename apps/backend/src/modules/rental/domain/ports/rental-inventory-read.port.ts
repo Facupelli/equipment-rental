@@ -16,4 +16,6 @@ export abstract class RentalInventoryReadPort {
    * For BULK items, each blackout row contributes its explicit `blocked_quantity`.
    */
   abstract getBlackedOutQuantity(productId: string, tenantId: string, range: DateRange): Promise<number>;
+
+  abstract getCandidateItemIds(productId: string, tenantId: string, range: DateRange): Promise<string[]>;
 }

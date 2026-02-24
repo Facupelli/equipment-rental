@@ -11,7 +11,7 @@ interface LineItemRawRecord {
   id: string;
   booking_id: string;
   inventory_item_id: string | null;
-  product_id: string | null;
+  product_id: string;
   quantity_rented: number;
   unit_price: number;
   line_total: number;
@@ -82,7 +82,7 @@ export class BookingMapper {
       throw new Error(`BookingLineItem ${raw.id} is missing its priceBreakdown snapshot.`);
     }
 
-    const priceBreakdown = PriceBreakdown.fromJson(raw.price_breakdown, currency);
+    const priceBreakdown = PriceBreakdown.fromJson(raw.price_breakdown);
 
     return BookingLineItem.reconstitute({
       id: raw.id,

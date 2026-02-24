@@ -4,8 +4,8 @@ import { PriceBreakdown } from '../value-objects/price-breakdown.vo';
 
 export interface CreateBookingLineItemProps {
   bookingId: string;
+  productId: string;
   inventoryItemId: string | null; // Standard rental
-  productId: string | null; // Over-rental
   quantityRented: number;
   unitPrice: Money;
   ownerId: string | null; // Snapshot — null if externally sourced
@@ -13,31 +13,18 @@ export interface CreateBookingLineItemProps {
   priceBreakdown: PriceBreakdown;
 }
 
-/**
- * Props for reconstituting a line item from persistence.
- * Includes the persisted id and lineTotal — no recalculation.
- */
 export interface ReconstituteBookingLineItemProps extends CreateBookingLineItemProps {
   id: string;
   lineTotal: Money;
 }
 
-/**
- * Represents a single inventory entry within a Booking.
- * Enforces the XOR invariant: a line item references either a specific
- * InventoryItem (standard) or a generic Product (over-rental) — never both,
- * never neither.
- *
- * All monetary fields are immutable snapshots captured at booking time,
- * ensuring historical accuracy even if prices change later.
- */
 export class BookingLineItem {
   readonly id: string;
   readonly bookingId: string;
+  readonly productId: string;
 
-  // XOR: exactly one must be set
+  // inventoryItemId is optional. Null indicates an over-rental.
   readonly inventoryItemId: string | null;
-  readonly productId: string | null;
 
   readonly quantityRented: number;
   readonly unitPrice: Money; // snapshot

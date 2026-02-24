@@ -2,7 +2,7 @@ import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range
 import { Booking } from '../entities/booking.entity';
 import { TrackingType } from '@repo/types';
 
-export abstract class BookingRepositoryPort {
+export abstract class BookingRepository {
   abstract findById(id: string, currency: string): Promise<Booking | null>;
   abstract save(booking: Booking): Promise<string>;
 
