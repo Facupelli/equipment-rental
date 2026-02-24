@@ -33,10 +33,6 @@ export class PrismaInventoryItemRepository extends InventoryItemRepositoryPort {
     WHERE inventory_item_id = ${id}
   `;
 
-    if (!item) {
-      return null;
-    }
-
     const blackouts = rawBlackouts.map(BlackoutPeriodMapper.toDomain);
 
     return InventoryItemMapper.toDomain(item, blackouts);

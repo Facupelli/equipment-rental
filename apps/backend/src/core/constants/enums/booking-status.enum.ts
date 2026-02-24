@@ -1,6 +1,0 @@
-export enum BookingStatus {
-  RESERVED = 'RESERVED',
-  ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-}

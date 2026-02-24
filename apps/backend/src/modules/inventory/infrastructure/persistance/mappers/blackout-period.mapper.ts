@@ -1,3 +1,4 @@
+import { parsePostgresRange } from 'src/core/utils/postgres-range.util';
 import { BlackoutPeriod } from 'src/modules/inventory/domain/entities/blackout-period.entity';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
 
@@ -45,7 +46,7 @@ export class BlackoutPeriodMapper {
    * and extract the two ISO timestamps.
    */
   static toDomain(raw: BlackoutPeriodRawRecord): BlackoutPeriod {
-    const { start, end } = BlackoutPeriodMapper.parsePostgresRange(raw.blocked_period);
+    const { start, end } = parsePostgresRange(raw.blocked_period);
 
     return BlackoutPeriod.reconstitute({
       id: raw.id,
@@ -76,42 +77,5 @@ export class BlackoutPeriodMapper {
       created_at: props.createdAt,
       updated_at: props.updatedAt,
     };
-  }
-
-  /**
-   * Parses a PostgreSQL tstzrange string into a { start, end } pair.
-   *
-   * Supported formats (both bounds styles are handled defensively):
-   *   ["2025-06-01 00:00:00+00","2025-06-10 00:00:00+00")   ← standard [)
-   *   ["2025-06-01T00:00:00.000Z","2025-06-10T00:00:00.000Z")  ← ISO variant
-   *
-   * Throws if the string cannot be parsed, surfacing data corruption early.
-   */
-  private static parsePostgresRange(rangeStr: string): {
-    start: Date;
-    end: Date;
-  } {
-    // Strip the leading/trailing bound characters: [ ( ] )
-    const inner = rangeStr.replace(/^[\[(]/, '').replace(/[\])]$/, '');
-
-    // Split on the comma that separates the two timestamps.
-    // We split on `","` to avoid splitting on commas inside the timestamps themselves.
-    const parts = inner.split('","');
-
-    if (parts.length !== 2) {
-      throw new Error(`BlackoutPeriodMapper: Unable to parse tstzrange string: "${rangeStr}"`);
-    }
-
-    const startStr = parts[0].replace(/^"/, '');
-    const endStr = parts[1].replace(/"$/, '');
-
-    const start = new Date(startStr);
-    const end = new Date(endStr);
-
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new Error(`BlackoutPeriodMapper: Parsed invalid dates from range string: "${rangeStr}"`);
-    }
-
-    return { start, end };
   }
 }
