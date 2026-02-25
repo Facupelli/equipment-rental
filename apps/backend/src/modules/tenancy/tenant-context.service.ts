@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { AsyncLocalStorage } from 'async_hooks';
 
 interface TenantStore {
@@ -11,14 +12,22 @@ export class TenantContextService {
     this.als.run({ tenantId }, callback);
   }
 
-  getTenantId(): string {
+  requireTenantId(): string {
     const store = this.als.getStore();
-
     const tenantId = store?.tenantId;
 
     if (!tenantId) {
-      throw new Error('No tenant ID found in context.');
+      throw new BadRequestException(
+        'No tenant context found. Ensure the request passed through TenantMiddleware, or use `prismaService` directly for system-level operations.',
+      );
     }
+
+    return tenantId;
+  }
+
+  getTenantId(): string | undefined {
+    const store = this.als.getStore();
+    const tenantId = store?.tenantId;
 
     return tenantId;
   }

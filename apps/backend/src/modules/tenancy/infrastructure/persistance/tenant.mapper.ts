@@ -1,6 +1,7 @@
-import { Tenant, TenantProps, TenantPricingConfig } from '../../domain/entities/tenant.entity';
+import { Tenant, TenantProps } from '../../domain/entities/tenant.entity';
 import { BillingUnit } from '../../domain/entities/billing-unit.entity';
 import { Prisma, BillingUnit as PrismaBillingUnit } from 'src/generated/prisma/client';
+import { TenantPricingConfig } from '../../domain/value-objects/pricing-config.type';
 
 export class TenantMapper {
   static toDomain(raw: any): Tenant {

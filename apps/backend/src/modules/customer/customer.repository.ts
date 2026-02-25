@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { CustomerServiceRepository } from './ports/customer-service.repository';
+import { CustomerRepository } from './ports/customer-service.repository';
 import { RentalCustomerQueryPort } from '../rental/domain/ports/rental-customer.port';
 import { Customer } from './customer.entity';
 import { CustomerMapper } from './customer.mapper';
 
 @Injectable()
-export class CustomerRepository implements CustomerServiceRepository, RentalCustomerQueryPort {
+export class PrismaCustomerRepository implements CustomerRepository, RentalCustomerQueryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   async save(customer: Customer): Promise<string> {

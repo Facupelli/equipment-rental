@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const registerTenantAndAdminSchema = z.object({
+export const createTenantUserSchema = z.object({
   // User fields
   email: z.email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -18,6 +18,11 @@ export const registerTenantAndAdminSchema = z.object({
     ),
 });
 
-export type RegisterTenantAndAdminDto = z.infer<
-  typeof registerTenantAndAdminSchema
->;
+export type createTenantUserDto = z.infer<typeof createTenantUserSchema>;
+
+export const registerResponseSchema = z.object({
+  userId: z.uuid(),
+  tenantId: z.uuid(),
+});
+
+export type RegisterResponseDto = z.infer<typeof registerResponseSchema>;

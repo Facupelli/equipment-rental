@@ -1,7 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { TenancyRepository } from '../domain/repositories/tenancy.repository';
 import { Tenant } from '../domain/entities/tenant.entity';
-import { RegisterTenantAndAdminDto } from '@repo/schemas';
+import { createTenantUserDto } from '@repo/schemas';
 import { randomUUID } from 'node:crypto';
 
 @Injectable()
@@ -12,7 +12,7 @@ export class TenancyService {
     return await this.tenancyRepository.findById(id);
   }
 
-  async create(dto: RegisterTenantAndAdminDto): Promise<string> {
+  async create(dto: createTenantUserDto): Promise<string> {
     const slugTaken = await this.tenancyRepository.findBySlug(dto.companySlug);
     if (slugTaken) {
       throw new ConflictException('Company slug already in use');

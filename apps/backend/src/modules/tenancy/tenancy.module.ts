@@ -4,16 +4,21 @@ import { PrismaTenancyRepository } from './infrastructure/persistance/prisma-ten
 import { TenancyController } from './infrastructure/controllers/tenancy.controller';
 import { UsersModule } from '../users/users.module';
 import { TenancyRepository } from './domain/repositories/tenancy.repository';
-import { RegisterTenantAndAdminUseCase } from './application/use-cases/register-tenant-and-admin.use-case';
+import { CreateTenantUserCommand } from './application/create-tenant-user.command';
 import { TenancyService } from './application/tenancy.service';
+import { TenantConfigPort } from './domain/ports/tenant-config.port';
+import { PrismaTenantConfigAdapter } from './infrastructure/persistance/prisma-tenant-config.adapter';
 
-const repositories = [{ provide: TenancyRepository, useClass: PrismaTenancyRepository }];
-const services = [TenantContextService, RegisterTenantAndAdminUseCase, TenancyService];
+const repositories = [
+  { provide: TenancyRepository, useClass: PrismaTenancyRepository },
+  { provide: TenantConfigPort, useClass: PrismaTenantConfigAdapter },
+];
+const services = [TenantContextService, CreateTenantUserCommand, TenancyService];
 
 @Module({
   imports: [UsersModule],
   controllers: [TenancyController],
   providers: [...repositories, ...services],
-  exports: [TenantContextService],
+  exports: [TenantContextService, TenantConfigPort],
 })
 export class TenancyModule {}

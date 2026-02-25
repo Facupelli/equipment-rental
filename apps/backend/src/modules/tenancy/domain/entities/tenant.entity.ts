@@ -1,22 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
-import { RoundingRule } from './billing-unit.entity';
 import { BillingUnit, CreateBillingUnitProps } from './billing-unit.entity';
-
-export interface TenantPricingConfig {
-  overRentalEnabled: boolean;
-  maxOverRentThreshold: number;
-  weekendCountsAsOne: boolean;
-  roundingRule: RoundingRule;
-  defaultCurrency: string;
-}
-
-const DEFAULT_PRICING_CONFIG: TenantPricingConfig = {
-  overRentalEnabled: false,
-  maxOverRentThreshold: 0,
-  weekendCountsAsOne: false,
-  roundingRule: 'ROUND_UP',
-  defaultCurrency: 'ARS',
-};
+import { DEFAULT_BILLING_UNITS_PROPS, DEFAULT_PRICING_CONFIG } from '../../infrastructure/config/tenancy.defaults';
+import { TenantPricingConfig } from '../value-objects/pricing-config.type';
 
 export interface TenantProps {
   id: string;
@@ -55,7 +40,7 @@ export class Tenant {
       throw new BadRequestException('Slug must be lowercase alphanumeric with hyphens only.');
     }
 
-    return new Tenant({
+    const tenant = new Tenant({
       id,
       name,
       slug,
@@ -65,6 +50,12 @@ export class Tenant {
       billingUnits: [],
       createdAt: new Date(),
     });
+
+    DEFAULT_BILLING_UNITS_PROPS.forEach((unitProps) => {
+      tenant.addBillingUnit(unitProps);
+    });
+
+    return tenant;
   }
 
   public static reconstitute(props: TenantProps): Tenant {

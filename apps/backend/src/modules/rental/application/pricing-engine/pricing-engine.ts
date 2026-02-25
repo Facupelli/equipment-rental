@@ -4,9 +4,9 @@ import { decomposeIntoUnits } from './unit-decomposition';
 import { resolveTier } from './tier-resolution';
 import { calculateAmount } from './amount-calculation';
 import { PriceBreakdown } from '../../domain/value-objects/price-breakdown.vo';
-import { TenantPricingConfig } from 'src/modules/tenancy/domain/entities/tenant.entity';
 import { BillingUnitReadModel } from 'src/modules/tenancy/infrastructure/persistance/prisma-tenant-config.adapter';
 import { RentalPricingTierView } from '../../domain/ports/rental-product.port';
+import { TenantPricingConfig } from 'src/modules/tenancy/domain/value-objects/pricing-config.type';
 
 /**
  * Everything the engine needs to compute a price.

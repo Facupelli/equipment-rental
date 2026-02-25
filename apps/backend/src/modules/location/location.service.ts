@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { LocationRepositoryPort } from './ports/location.repository';
 import { Location } from './entities/location.entity';
 import { CreateLocationDto } from '@repo/schemas';
@@ -12,13 +12,7 @@ export class LocationService {
   ) {}
 
   async create(dto: CreateLocationDto) {
-    const tenantId = this.tenantContext.getTenantId();
-
-    if (tenantId === undefined) {
-      throw new BadRequestException(
-        'No tenant context found. Ensure the request passed through TenantMiddleware, or use `prismaService` directly for system-level operations.',
-      );
-    }
+    const tenantId = this.tenantContext.requireTenantId();
 
     const location = Location.create(dto.name, dto.address, tenantId);
     return await this.locationRepository.save(location);

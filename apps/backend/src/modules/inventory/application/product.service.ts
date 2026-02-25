@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ProductRepositoryPort } from '../domain/ports/product.repository.port';
 import { Product } from '../domain/entities/product.entity';
 import { CreateProductDto } from '@repo/schemas';
@@ -21,13 +21,7 @@ export class ProductService {
   }
 
   async save(dto: CreateProductDto): Promise<string> {
-    const tenantId = this.tenantContext.getTenantId();
-
-    if (tenantId === undefined) {
-      throw new BadRequestException(
-        'No tenant context found. Ensure the request passed through TenantMiddleware, or use `prismaService` directly for system-level operations.',
-      );
-    }
+    const tenantId = this.tenantContext.requireTenantId();
 
     const product = Product.create({
       tenantId,

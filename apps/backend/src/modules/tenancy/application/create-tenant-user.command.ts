@@ -1,18 +1,18 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { RegisterTenantAndAdminDto, RegisterResponseDto } from '@repo/schemas';
+import { createTenantUserDto, RegisterResponseDto } from '@repo/schemas';
 import { UsersService } from 'src/modules/users/application/users.service';
 import { RolesService } from 'src/modules/users/application/roles.service';
-import { TenancyService } from '../tenancy.service';
+import { TenancyService } from './tenancy.service';
 
 @Injectable()
-export class RegisterTenantAndAdminUseCase {
+export class CreateTenantUserCommand {
   constructor(
     private readonly usersService: UsersService,
     private readonly rolesService: RolesService,
     private readonly tenancyService: TenancyService,
   ) {}
 
-  async execute(dto: RegisterTenantAndAdminDto): Promise<RegisterResponseDto> {
+  async execute(dto: createTenantUserDto): Promise<RegisterResponseDto> {
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {
       throw new ConflictException('Email already in use');

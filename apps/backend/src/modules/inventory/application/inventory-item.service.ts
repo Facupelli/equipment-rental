@@ -22,13 +22,7 @@ export class InventoryItemService {
   }
 
   async save(dto: CreateInventoryItemDto): Promise<string> {
-    const tenantId = this.tenantContext.getTenantId();
-
-    if (tenantId === undefined) {
-      throw new BadRequestException(
-        'No tenant context found. Ensure the request passed through TenantMiddleware, or use `prismaService` directly for system-level operations.',
-      );
-    }
+    const tenantId = this.tenantContext.requireTenantId();
 
     const productTrackingType = await this.productService.findTrackingType(dto.productId);
 

@@ -60,7 +60,7 @@ export class CreateBookingCommand {
   ) {}
 
   async execute(command: CreateBookingDto): Promise<string> {
-    const tenantId = this.tenantContext.getTenantId();
+    const tenantId = this.tenantContext.requireTenantId();
 
     const { customerId, lineItems, startDate, endDate, notes } = command;
     const period = DateRange.create(startDate, endDate);
