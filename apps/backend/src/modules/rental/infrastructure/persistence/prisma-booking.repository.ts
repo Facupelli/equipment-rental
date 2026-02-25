@@ -93,8 +93,6 @@ export class PrismaBookingRepository extends BookingRepository {
       AND (bli.inventory_item_id IS NULL OR ii.status != 'RETIRED')
   `;
 
-    console.log({ rows });
-
     return Number(rows[0]?.total ?? 0);
   }
 
