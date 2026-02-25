@@ -12,9 +12,11 @@ import { OwnerModule } from './modules/owner/owner.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { CustomerModule } from './modules/customer/customer.module';
 import { RentalModule } from './modules/rental/rental.module';
+import { LoggerModule } from './core/logger/logger.module';
 
 @Module({
   imports: [
+    LoggerModule,
     AppConfigModule,
     DatabaseModule,
     TenancyModule,

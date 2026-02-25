@@ -78,21 +78,6 @@ export class PrismaBookingRepository extends BookingRepository {
   ): Promise<number> {
     const { start, end } = range;
 
-    const debugRows = await this.prisma.client.$queryRaw<any[]>`
-  SELECT 
-    bli.id, 
-    bli.quantity_rented, 
-    bli.product_id, 
-    b.status, 
-    b.rental_period::text as rental_period,  -- Cast to text
-    b.tenant_id
-  FROM booking_line_items bli
-  JOIN bookings b ON b.id = bli.booking_id
-  WHERE bli.product_id = ${productId}
-`;
-
-    console.log('DEBUG RESULTS:', debugRows);
-
     const rows = await this.prisma.client.$queryRaw<QuantityRow[]>`
     SELECT COALESCE(SUM(bli.quantity_rented), 0) AS total
     FROM booking_line_items bli

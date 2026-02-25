@@ -14,6 +14,8 @@ import { Booking } from '../domain/entities/booking.entity';
 import { BookingLineItem } from '../domain/entities/booking-line-item.entity';
 import { BookingRepository } from '../domain/ports/booking.repository';
 import { CandidateItem } from '../domain/ports/rental-inventory-read.port';
+import { AppLogger } from 'src/core/logger/app-logger.service';
+import { LogContext } from 'src/core/logger/log-context';
 
 /**
  * Represents a fully resolved line after all pre-transaction I/O:
@@ -50,6 +52,7 @@ interface ResolvedLine {
 @Injectable()
 export class CreateBookingCommand {
   constructor(
+    private readonly logger: AppLogger,
     private readonly tenantContext: TenantContextService,
     private readonly customerQuery: RentalCustomerQueryPort,
     private readonly tenancyQuery: TenantConfigPort,
@@ -64,6 +67,14 @@ export class CreateBookingCommand {
 
     const { customerId, lineItems, startDate, endDate, notes } = command;
     const period = DateRange.create(startDate, endDate);
+
+    // ── Enrich canonical log with the intent of this command ──────────────
+    LogContext.set('tenantId', tenantId);
+    LogContext.set('customerId', customerId);
+    LogContext.set('lineItemCount', lineItems.length);
+    LogContext.set('rentalStart', startDate);
+    LogContext.set('rentalEnd', endDate);
+    // ─────────────────────────────────────────────────────────────────────
 
     const [customer, tenancyPricingInputs] = await Promise.all([
       this.customerQuery.findById(customerId),
@@ -90,6 +101,9 @@ export class CreateBookingCommand {
       ),
     );
 
+    const overRentalCount = resolvedLines.filter((l) => l.isOverRental).length;
+    LogContext.set('overRentalLines', overRentalCount);
+
     // 4. Construct Domain Objects
     // Booking.create handles ID generation, status derivation, and total calculation.
     const bookingLineItems = resolvedLines.map((line) => this.buildLineItem(line));
@@ -105,6 +119,8 @@ export class CreateBookingCommand {
     });
 
     await this.bookingRepo.save(booking);
+
+    LogContext.set('bookingId', booking.id);
 
     return booking.id;
   }
@@ -201,7 +217,7 @@ export class CreateBookingCommand {
       trackingType: product.trackingType,
     });
 
-    console.log('resolveAvailability', { result });
+    this.logger.debug(`Availability result: ${result.status}`, 'CreateBookingCommand');
 
     if (result.status === AvailabilityStatus.UNAVAILABLE) {
       throw new ConflictException(`Product '${product.id}' is unavailable for the requested period and quantity.`);

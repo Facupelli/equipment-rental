@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Env } from 'src/config/env.schema';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
+import { LogContext } from '../logger/log-context';
 
 const TENANT_EXCLUDED_MODELS = new Set(['Tenant', 'Permission', 'BookingLineItem']);
 
@@ -37,7 +38,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       connectionString: configService.get('DATABASE_URL'),
     });
 
-    this._prisma = new PrismaClient({ adapter, log: ['query'] });
+    this._prisma = new PrismaClient({ adapter });
   }
 
   async onModuleInit() {
@@ -56,7 +57,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     const prisma = this._prisma;
     const tenantContext = this.tenantContext;
 
-    return prisma.$extends({
+    const tenantClient = prisma.$extends({
       query: {
         $allModels: {
           async $allOperations({ model, operation, args, query }) {
@@ -100,6 +101,23 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
             const mutatedArgs = injectTenantId(operation, args as Record<string, any>, tenantId);
 
             return query(mutatedArgs);
+          },
+        },
+      },
+    });
+
+    return tenantClient.$extends({
+      query: {
+        $allModels: {
+          async $allOperations({ args, query }) {
+            const start = Date.now();
+            try {
+              return await query(args);
+            } finally {
+              // finally guarantees we track even queries that throw
+              LogContext.increment('dbQueries');
+              LogContext.increment('dbDurationMs', Date.now() - start);
+            }
           },
         },
       },

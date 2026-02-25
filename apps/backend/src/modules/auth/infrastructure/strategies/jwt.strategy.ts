@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Env } from 'src/config/env.schema';
+import { LogContext } from 'src/core/logger/log-context';
 
 export interface JwtPayload {
   sub: string; // User ID
@@ -32,6 +33,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    LogContext.set('userId', payload.sub);
+
     return {
       id: payload.sub,
       email: payload.email,
