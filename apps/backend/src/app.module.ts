@@ -10,6 +10,7 @@ import { JwtAuthGuard } from './modules/auth/infrastructure/guards/jwt-auth.guar
 import { TenantInterceptor } from './modules/tenancy/tenant.interceptor';
 import { OwnerModule } from './modules/owner/owner.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { CustomerModule } from './modules/customer/customer.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
     LocationModule,
     OwnerModule,
     InventoryModule,
+    CustomerModule,
   ],
   providers: [
     {

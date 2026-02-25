@@ -9,7 +9,7 @@ export class PrismaTenancyRepository implements TenancyRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<Tenant | null> {
-    const rawTenant = await this.prisma.client.tenant.findUnique({ where: { id } });
+    const rawTenant = await this.prisma.client.tenant.findUnique({ where: { id }, include: { billingUnits: true } });
     return rawTenant ? TenantMapper.toDomain(rawTenant) : null;
   }
 

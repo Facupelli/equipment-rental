@@ -262,14 +262,14 @@ enum CustomerStatus {
 }
 
 model Customer {
-  id     String         @id @default(uuid())
-  tenantId String       @map("tenant_id")
-  name   String
-  email  String
-  status CustomerStatus @default(ACTIVE)
-  phone  String?
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  id             String         @id @default(uuid())
+  tenantId       String       @map("tenant_id")
+  name           String
+  email          String
+  status         CustomerStatus @default(ACTIVE)
+  phone          String?
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
 
   // Relations
   tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
