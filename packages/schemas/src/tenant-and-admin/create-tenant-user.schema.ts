@@ -18,7 +18,7 @@ export const createTenantUserSchema = z.object({
     ),
 });
 
-export type createTenantUserDto = z.infer<typeof createTenantUserSchema>;
+export type CreateTenantUserDto = z.infer<typeof createTenantUserSchema>;
 
 export const registerResponseSchema = z.object({
   userId: z.uuid(),

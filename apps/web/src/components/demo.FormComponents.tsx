@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
 import * as ShadcnSelect from "@/components/ui/select";
-import { Slider as ShadcnSlider } from "@/components/ui/slider";
 import { Switch as ShadcnSwitch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -132,26 +131,6 @@ export function Select({
           </ShadcnSelect.SelectGroup>
         </ShadcnSelect.SelectContent>
       </ShadcnSelect.Select>
-      {field.state.meta.isTouched && <ErrorMessages errors={errors} />}
-    </div>
-  );
-}
-
-export function Slider({ label }: { label: string }) {
-  const field = useFieldContext<number>();
-  const errors = useStore(field.store, (state) => state.meta.errors);
-
-  return (
-    <div>
-      <Label htmlFor={label} className="mb-2 text-xl font-bold">
-        {label}
-      </Label>
-      <ShadcnSlider
-        id={label}
-        onBlur={field.handleBlur}
-        value={[field.state.value]}
-        onValueChange={(value) => field.handleChange(value[0])}
-      />
       {field.state.meta.isTouched && <ErrorMessages errors={errors} />}
     </div>
   );

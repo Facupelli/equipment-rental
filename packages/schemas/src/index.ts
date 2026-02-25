@@ -1,3 +1,4 @@
+export * from "./api/api.schema";
 export * from "./tenant-and-admin/create-tenant-user.schema";
 export * from "./location/create-location.schema";
 export * from "./owner/create-owner.schema";
