@@ -6,15 +6,14 @@ import { RentalTenancyPricingView, TenantConfigPort } from 'src/modules/tenancy/
 import { RentalProductQueryPort, RentalProductView } from '../domain/ports/rental-product.port';
 import { AvailabilityService, AvailabilityStatus } from './availability.service';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
-import { BookingStatus, TrackingType } from '@repo/types';
+import { TrackingType } from '@repo/types';
 import { PriceBreakdown } from '../domain/value-objects/price-breakdown.vo';
 import { PricingEngine } from './pricing-engine/pricing-engine';
 import { Money } from '../domain/value-objects/money.vo';
 import { Booking } from '../domain/entities/booking.entity';
 import { BookingLineItem } from '../domain/entities/booking-line-item.entity';
 import { BookingRepository } from '../domain/ports/booking.repository';
-
-const PG_EXCLUSION_VIOLATION = '23P01';
+import { CandidateItem } from '../domain/ports/rental-inventory-read.port';
 
 /**
  * Represents a fully resolved line after all pre-transaction I/O:
@@ -30,7 +29,7 @@ interface ResolvedLine {
    * SERIALIZED + AVAILABLE: ranked candidate item IDs (preferred hint first).
    * BULK or over-rental: empty — physical item assignment is not applicable.
    */
-  candidateItemIds: string[];
+  candidateItems: CandidateItem[];
 
   /**
    * True when AvailabilityService returned OVERBOOK_WARNING.
@@ -63,12 +62,6 @@ export class CreateBookingCommand {
   async execute(command: CreateBookingDto): Promise<string> {
     const tenantId = this.tenantContext.getTenantId();
 
-    if (tenantId === undefined) {
-      throw new BadRequestException(
-        'No tenant context found. Ensure the request passed through TenantMiddleware, or use `prismaService` directly for system-level operations.',
-      );
-    }
-
     const { customerId, lineItems, startDate, endDate, notes } = command;
     const period = DateRange.create(startDate, endDate);
 
@@ -77,16 +70,13 @@ export class CreateBookingCommand {
       this.tenancyQuery.findPricingInputs(tenantId),
     ]);
 
-    if (!customer) {
-      throw new BadRequestException(`Customer "${customerId}" not found.`);
-    }
-    if (!customer.canBook) {
-      throw new BadRequestException(`Customer "${customerId}" is blacklisted and cannot make bookings.`);
-    }
+    this.validateCustomer(customer, customerId);
     if (!tenancyPricingInputs) {
-      throw new NotFoundException(`Tenant '${tenantId}' not found or has no pricing configuration.`);
+      throw new NotFoundException(`Tenant '${tenantId}' configuration not found.`);
     }
 
+    // 3. Resolve Lines (Pricing + Availability)
+    // Passes tenancyInputs for early currency validation
     const resolvedLines = await Promise.all(
       lineItems.map((lineItem) =>
         this.resolveLine(
@@ -100,37 +90,28 @@ export class CreateBookingCommand {
       ),
     );
 
-    // All line items on a single booking must share one currency.
-    // Mixed currencies would make subtotal / grandTotal meaningless.
-    const currencies = [...new Set(resolvedLines.map((l) => l.currency))];
-    if (currencies.length > 1) {
-      throw new BadRequestException(`All line items must share the same currency. Found: ${currencies.join(', ')}.`);
-    }
-    const currency = currencies[0];
-
-    // Conservative status derivation: if ANY line is an over-rental the whole
-    // booking requires admin confirmation before sourcing equipment externally.
-    const bookingStatus: BookingStatus.RESERVED | BookingStatus.PENDING_CONFIRMATION = resolvedLines.some(
-      (l) => l.isOverRental,
-    )
-      ? BookingStatus.PENDING_CONFIRMATION
-      : BookingStatus.RESERVED;
-
-    const bookingLineItems = await this.buildLineItems(resolvedLines);
+    // 4. Construct Domain Objects
+    // Booking.create handles ID generation, status derivation, and total calculation.
+    const bookingLineItems = resolvedLines.map((line) => this.buildLineItem(line));
 
     const booking = Booking.create({
       tenantId,
       customerId,
       rentalPeriod: period,
       lineItems: bookingLineItems,
-      currency,
-      status: bookingStatus,
+      // Currency is consistent due to validation in resolveLine
+      currency: resolvedLines[0].currency,
       notes,
     });
 
     await this.bookingRepo.save(booking);
 
     return booking.id;
+  }
+
+  private validateCustomer(customer: any, id: string) {
+    if (!customer) throw new BadRequestException(`Customer "${id}" not found.`);
+    if (!customer.canBook) throw new BadRequestException(`Customer "${id}" is blacklisted.`);
   }
 
   private async resolveLine(
@@ -146,7 +127,7 @@ export class CreateBookingCommand {
       throw new BadRequestException(`Product not found.`);
     }
 
-    const { isOverRental, candidateItemIds } = await this.resolveAvailability(
+    const { isOverRental, candidateItems } = await this.resolveAvailability(
       tenantId,
       product,
       requestedQuantity,
@@ -175,11 +156,17 @@ export class CreateBookingCommand {
     const unitPrice = priceBreakdown.tierApplied.pricePerUnit;
     const currency = priceBreakdown.total.currency;
 
+    if (currency !== tenancyInputs.pricingConfig.defaultCurrency) {
+      throw new BadRequestException(
+        `Product "${product.id}" is priced in ${currency}, but this account operates in ${tenancyInputs.pricingConfig.defaultCurrency}.`,
+      );
+    }
+
     return {
       productId,
       trackingType: product.trackingType,
       requestedQuantity,
-      candidateItemIds,
+      candidateItems,
       isOverRental,
       priceBreakdown,
       unitPrice,
@@ -205,7 +192,7 @@ export class CreateBookingCommand {
     requestedQuantity: number,
     preferredItemId: string | null,
     period: DateRange,
-  ): Promise<{ isOverRental: boolean; candidateItemIds: string[] }> {
+  ): Promise<{ isOverRental: boolean; candidateItems: CandidateItem[] }> {
     const result = await this.availabilityService.check({
       tenantId,
       productId: product.id,
@@ -219,75 +206,69 @@ export class CreateBookingCommand {
     }
 
     if (result.status === AvailabilityStatus.OVERBOOK_WARNING) {
-      return { isOverRental: true, candidateItemIds: [] };
+      return { isOverRental: true, candidateItems: [] };
     }
 
-    // AVAILABLE — apply the preferred item hint to the front of the ranked list.
-    const candidates: string[] = result.candidateItemIds ?? [];
-    const ranked =
-      preferredItemId && candidates.includes(preferredItemId)
-        ? [preferredItemId, ...candidates.filter((id) => id !== preferredItemId)]
-        : candidates;
+    // AVAILABLE: Rank candidates (Preferred Item Hint)
+    const candidates = result.candidateItems;
+    const ranked = preferredItemId
+      ? [
+          // Move preferred to front if exists
+          ...candidates.filter((c) => c.id === preferredItemId),
+          ...candidates.filter((c) => c.id !== preferredItemId),
+        ]
+      : candidates;
 
-    return { isOverRental: false, candidateItemIds: ranked };
+    return { isOverRental: false, candidateItems: ranked };
   }
 
-  private async buildLineItems(resolvedLines: ResolvedLine[]): Promise<BookingLineItem[]> {
-    return Promise.all(resolvedLines.map((line) => this.buildLineItem(line)));
-  }
-
-  private async buildLineItem(line: ResolvedLine): Promise<BookingLineItem> {
-    if (line.isOverRental || line.trackingType === TrackingType.BULK) {
+  /**
+   * ADR 012 MVP Implementation:
+   * Selects the top candidate. No retry loop.
+   * Concurrency conflicts are handled by the database constraint.
+   */
+  private buildLineItem(line: ResolvedLine): BookingLineItem {
+    // BULK: No owner (aggregate root is product, not item)
+    if (line.trackingType === TrackingType.BULK) {
       return BookingLineItem.create({
-        bookingId: '',
         productId: line.productId,
         inventoryItemId: null,
         quantityRented: line.requestedQuantity,
         unitPrice: line.unitPrice,
-        ownerId: null,
+        ownerId: null, // BULK items have no owner at line level
         isExternallySourced: false,
         priceBreakdown: line.priceBreakdown,
       });
     }
 
-    // SERIALIZED: try each ranked candidate in order.
-    for (const itemId of line.candidateItemIds) {
-      try {
-        return BookingLineItem.create({
-          bookingId: '',
-          productId: line.productId,
-          inventoryItemId: itemId,
-          quantityRented: line.requestedQuantity,
-          unitPrice: line.unitPrice,
-          ownerId: null, // Resolved by the repository from InventoryItem
-          isExternallySourced: false,
-          priceBreakdown: line.priceBreakdown,
-        });
-      } catch (err) {
-        if (this.isExclusionViolation(err)) {
-          continue; // Candidate claimed concurrently — try the next
-        }
-        throw err;
-      }
+    // OVER-RENTAL: No physical item, no owner
+    if (line.isOverRental) {
+      return BookingLineItem.create({
+        productId: line.productId,
+        inventoryItemId: null,
+        quantityRented: line.requestedQuantity,
+        unitPrice: line.unitPrice,
+        ownerId: null, // Over-rental has no owner
+        isExternallySourced: true,
+        priceBreakdown: line.priceBreakdown,
+      });
     }
 
-    throw new ConflictException(
-      `No available items remain for product '${line.productId}'. ` +
-        `All candidates were claimed by concurrent bookings. Please try again.`,
-    );
-  }
+    // SERIALIZED: Pick top candidate and snapshot ownerId
+    const selectedItem = line.candidateItems[0];
 
-  /**
-   * Returns true when the error is a Postgres exclusion constraint violation.
-   * Code 23P01 is raised by the EXCLUDE USING GIST constraint on
-   * booking_line_items that prevents overlapping bookings on the same physical item.
-   */
-  private isExclusionViolation(err: unknown): boolean {
-    return (
-      typeof err === 'object' &&
-      err !== null &&
-      'code' in err &&
-      (err as Record<string, unknown>).code === PG_EXCLUSION_VIOLATION
-    );
+    if (!selectedItem) {
+      throw new ConflictException(`Race condition: Item claimed during transaction.`);
+    }
+
+    return BookingLineItem.create({
+      productId: line.productId,
+      inventoryItemId: selectedItem.id,
+      quantityRented: line.requestedQuantity,
+      unitPrice: line.unitPrice,
+      ownerId: selectedItem.ownerId, // SNAPSHOT from inventory read
+      isExternallySourced: false,
+      priceBreakdown: line.priceBreakdown,
+    });
   }
 }

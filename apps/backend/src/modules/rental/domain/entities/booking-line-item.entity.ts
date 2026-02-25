@@ -3,7 +3,7 @@ import { Money } from '../value-objects/money.vo';
 import { PriceBreakdown } from '../value-objects/price-breakdown.vo';
 
 export interface CreateBookingLineItemProps {
-  bookingId: string;
+  bookingId?: string;
   productId: string;
   inventoryItemId: string | null; // Standard rental
   quantityRented: number;
@@ -20,7 +20,7 @@ export interface ReconstituteBookingLineItemProps extends CreateBookingLineItemP
 
 export class BookingLineItem {
   readonly id: string;
-  readonly bookingId: string;
+  private _bookingId?: string;
   readonly productId: string;
 
   // inventoryItemId is optional. Null indicates an over-rental.
@@ -34,8 +34,8 @@ export class BookingLineItem {
   readonly priceBreakdown: PriceBreakdown; // snapshot
 
   private constructor(id: string, props: CreateBookingLineItemProps, lineTotal: Money) {
+    this._bookingId = props.bookingId;
     this.id = id;
-    this.bookingId = props.bookingId;
     this.inventoryItemId = props.inventoryItemId;
     this.productId = props.productId;
     this.quantityRented = props.quantityRented;
@@ -44,6 +44,10 @@ export class BookingLineItem {
     this.ownerId = props.ownerId;
     this.isExternallySourced = props.isExternallySourced;
     this.priceBreakdown = props.priceBreakdown;
+  }
+
+  assignBookingId(id: string): void {
+    this._bookingId = id;
   }
 
   static create(props: CreateBookingLineItemProps): BookingLineItem {
@@ -61,15 +65,10 @@ export class BookingLineItem {
   }
 
   private static assertInvariants(props: CreateBookingLineItemProps): void {
-    const hasItem = props.inventoryItemId !== null;
     const hasProduct = props.productId !== null;
 
-    // XOR: exactly one reference must be set
-    if (hasItem === hasProduct) {
-      throw new Error(
-        'A BookingLineItem must reference either an InventoryItem (standard rental) ' +
-          'or a Product (over-rental) — not both and not neither.',
-      );
+    if (!hasProduct) {
+      throw new Error('A BookingLineItem must have a productId.');
     }
 
     if (props.quantityRented <= 0) {
@@ -81,9 +80,20 @@ export class BookingLineItem {
         'An externally sourced item cannot have an ownerId. ' + 'External items are excluded from payout calculations.',
       );
     }
+
+    // Invariant: Inventory Item Assignment
+    // If we have an InventoryItem ID, it implies a serialized rental.
+    // If not, it implies Bulk or Over-rental.
   }
 
   get isOverRental(): boolean {
     return this.inventoryItemId === null;
+  }
+
+  get bookingId(): string {
+    if (!this._bookingId) {
+      throw new Error('BookingLineItem is not assigned to a Booking.');
+    }
+    return this._bookingId;
   }
 }

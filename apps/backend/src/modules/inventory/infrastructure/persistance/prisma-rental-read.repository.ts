@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InventoryItemStatus } from '@repo/types';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { RentalInventoryReadPort } from 'src/modules/rental/domain/ports/rental-inventory-read.port';
+import { CandidateItem, RentalInventoryReadPort } from 'src/modules/rental/domain/ports/rental-inventory-read.port';
 import { DateRange } from '../../domain/value-objects/date-range.vo';
 
 interface QuantityRow {
@@ -64,13 +64,14 @@ export class PrismaInventoryReadAdapter extends RentalInventoryReadPort {
    * Only applies to SERIALIZED products — BULK availability is quantity-based
    * and does not require item-level candidate resolution.
    */
-  async getCandidateItemIds(productId: string, tenantId: string, range: DateRange): Promise<string[]> {
+  async getCandidateItems(productId: string, tenantId: string, range: DateRange): Promise<CandidateItem[]> {
     interface CandidateRow {
       id: string;
+      owner_id: string;
     }
 
     const rows = await this.prisma.client.$queryRaw<CandidateRow[]>`
-      SELECT ii.id
+      SELECT ii.id, ii.owner_id
       FROM inventory_items ii
       LEFT JOIN booking_line_items bli ON bli.inventory_item_id = ii.id
       WHERE ii.product_id = ${productId}
@@ -99,6 +100,6 @@ export class PrismaInventoryReadAdapter extends RentalInventoryReadPort {
       ORDER BY COUNT(bli.id) DESC
     `;
 
-    return rows.map((row) => row.id);
+    return rows.map((row) => ({ id: row.id, ownerId: row.owner_id }));
   }
 }

@@ -39,6 +39,7 @@ export class PrismaTenantConfigAdapter extends TenantConfigPort {
         roundingRule: pricingConfig.roundingRule,
         overRentalEnabled: pricingConfig.overRentalEnabled,
         maxOverRentThreshold: pricingConfig.maxOverRentThreshold,
+        defaultCurrency: pricingConfig.defaultCurrency,
       },
       billingUnits: rawTenant.billingUnits.map((bu) => ({
         id: bu.id,

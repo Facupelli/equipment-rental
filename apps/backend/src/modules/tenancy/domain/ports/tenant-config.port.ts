@@ -17,6 +17,7 @@ export interface TenantPricingConfigView {
   roundingRule: 'SPLIT' | 'ROUND_UP';
   overRentalEnabled: boolean;
   maxOverRentThreshold: number;
+  defaultCurrency: string;
 }
 
 export interface BillingUnitView {

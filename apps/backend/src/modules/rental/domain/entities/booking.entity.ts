@@ -10,7 +10,6 @@ export interface CreateBookingProps {
   rentalPeriod: DateRange;
   lineItems: BookingLineItem[];
   currency: string;
-  status: BookingStatus.RESERVED | BookingStatus.PENDING_CONFIRMATION;
   notes?: string;
 }
 
@@ -88,6 +87,10 @@ export class Booking {
 
     const id = randomUUID();
     const now = new Date();
+
+    const hasOverRental = props.lineItems.some((item) => item.isExternallySourced);
+    const status = hasOverRental ? BookingStatus.PENDING_CONFIRMATION : BookingStatus.RESERVED;
+
     const currency = props.currency;
 
     let subtotal = Money.zero(currency);
@@ -99,9 +102,10 @@ export class Booking {
     const totalTax = Money.zero(currency);
     const grandTotal = subtotal.subtract(totalDiscount).add(totalTax);
 
-    return new Booking(randomUUID(), {
+    const booking = new Booking(id, {
       ...props,
       id,
+      status,
       subtotal,
       totalDiscount,
       totalTax,
@@ -109,6 +113,11 @@ export class Booking {
       createdAt: now,
       updatedAt: now,
     });
+
+    // Assign Aggregate Root ID to child entities
+    booking._lineItems.forEach((item) => item.assignBookingId(id));
+
+    return booking;
   }
 
   static reconstitute(props: ReconstituteBookingProps): Booking {

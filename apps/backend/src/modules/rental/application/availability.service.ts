@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RentalInventoryReadPort } from '../domain/ports/rental-inventory-read.port';
+import { CandidateItem, RentalInventoryReadPort } from '../domain/ports/rental-inventory-read.port';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
 import { TenantConfigPort } from '../../tenancy/domain/ports/tenant-config.port';
 import { BookingRepository } from '../domain/ports/booking.repository';
@@ -20,7 +20,7 @@ export enum AvailabilityStatus {
 }
 
 export type AvailabilityResult =
-  | { status: AvailabilityStatus.AVAILABLE; availableQuantity: number; candidateItemIds: string[] }
+  | { status: AvailabilityStatus.AVAILABLE; availableQuantity: number; candidateItems: CandidateItem[] }
   | { status: AvailabilityStatus.OVERBOOK_WARNING; deficit: number }
   | { status: AvailabilityStatus.UNAVAILABLE; reason: string };
 
@@ -49,17 +49,17 @@ export class AvailabilityService {
 
     // Step 5a — Sufficient stock: straightforward approval
     if (netAvailable >= requestedQuantity) {
-      const candidateItemIds = [];
+      const candidateItems: CandidateItem[] = [];
 
       if (trackingType === TrackingType.SERIALIZED) {
-        const itemIds = await this.inventoryRead.getCandidateItemIds(productId, tenantId, range);
-        candidateItemIds.push(...itemIds);
+        const items = await this.inventoryRead.getCandidateItems(productId, tenantId, range);
+        candidateItems.push(...items);
       }
 
       return {
         status: AvailabilityStatus.AVAILABLE,
         availableQuantity: netAvailable,
-        candidateItemIds,
+        candidateItems,
       };
     }
 

@@ -11,8 +11,15 @@ export class TenantContextService {
     this.als.run({ tenantId }, callback);
   }
 
-  getTenantId(): string | undefined {
+  getTenantId(): string {
     const store = this.als.getStore();
-    return store?.tenantId;
+
+    const tenantId = store?.tenantId;
+
+    if (!tenantId) {
+      throw new Error('No tenant ID found in context.');
+    }
+
+    return tenantId;
   }
 }

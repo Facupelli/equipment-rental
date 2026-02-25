@@ -7,6 +7,7 @@ export interface TenantPricingConfig {
   maxOverRentThreshold: number;
   weekendCountsAsOne: boolean;
   roundingRule: RoundingRule;
+  defaultCurrency: string;
 }
 
 const DEFAULT_PRICING_CONFIG: TenantPricingConfig = {
@@ -14,6 +15,7 @@ const DEFAULT_PRICING_CONFIG: TenantPricingConfig = {
   maxOverRentThreshold: 0,
   weekendCountsAsOne: false,
   roundingRule: 'ROUND_UP',
+  defaultCurrency: 'ARS',
 };
 
 export interface TenantProps {

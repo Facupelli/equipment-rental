@@ -17,5 +17,10 @@ export abstract class RentalInventoryReadPort {
    */
   abstract getBlackedOutQuantity(productId: string, tenantId: string, range: DateRange): Promise<number>;
 
-  abstract getCandidateItemIds(productId: string, tenantId: string, range: DateRange): Promise<string[]>;
+  abstract getCandidateItems(productId: string, tenantId: string, range: DateRange): Promise<CandidateItem[]>;
+}
+
+export interface CandidateItem {
+  id: string;
+  ownerId: string | null;
 }
