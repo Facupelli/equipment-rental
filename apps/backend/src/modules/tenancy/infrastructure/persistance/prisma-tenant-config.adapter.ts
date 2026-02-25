@@ -21,10 +21,7 @@ export class PrismaTenantConfigAdapter extends TenantConfigPort {
   async findPricingInputs(tenantId: string): Promise<RentalTenancyPricingView | null> {
     const rawTenant = await this.prisma.client.tenant.findUnique({
       where: { id: tenantId },
-      select: { pricingConfig: true },
-      include: {
-        billingUnits: true,
-      },
+      select: { pricingConfig: true, billingUnits: true },
     });
 
     if (!rawTenant) {

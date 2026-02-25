@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { BookingRepository } from '../../domain/ports/booking.repository';
 import { Booking } from '../../domain/entities/booking.entity';
-import { BookingMapper, BookingRawRecord } from './booking.mapper';
+import { BookingInsertParams, BookingMapper, BookingRawRecord, LineItemInsertParams } from './booking.mapper';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { Prisma } from 'src/generated/prisma/client';
 
 interface QuantityRow {
   total: bigint;
@@ -13,6 +14,16 @@ interface QuantityRow {
 export class PrismaBookingRepository extends BookingRepository {
   constructor(private readonly prisma: PrismaService) {
     super();
+  }
+
+  async save(booking: Booking): Promise<string> {
+    if (booking.isNew) {
+      await this.insert(booking);
+    } else {
+      await this.update(booking);
+    }
+
+    return booking.id;
   }
 
   async findById(id: string, currency: string): Promise<Booking | null> {
@@ -59,25 +70,28 @@ export class PrismaBookingRepository extends BookingRepository {
     return BookingMapper.toDomain(rows[0], currency);
   }
 
-  async save(booking: Booking): Promise<string> {
-    const persistenceModel = BookingMapper.toPersistence(booking);
-
-    const createdBooking = await this.prisma.client.booking.create({
-      data: persistenceModel,
-    });
-
-    return createdBooking.id;
-  }
-
   async getBookedQuantity(
     productId: string,
     tenantId: string,
     range: DateRange,
-    // trackingType is kept for potential future logic or logging,
-    // but doesn't change the SQL anymore.
     // trackingType: TrackingType,
   ): Promise<number> {
     const { start, end } = range;
+
+    const debugRows = await this.prisma.client.$queryRaw<any[]>`
+  SELECT 
+    bli.id, 
+    bli.quantity_rented, 
+    bli.product_id, 
+    b.status, 
+    b.rental_period::text as rental_period,  -- Cast to text
+    b.tenant_id
+  FROM booking_line_items bli
+  JOIN bookings b ON b.id = bli.booking_id
+  WHERE bli.product_id = ${productId}
+`;
+
+    console.log('DEBUG RESULTS:', debugRows);
 
     const rows = await this.prisma.client.$queryRaw<QuantityRow[]>`
     SELECT COALESCE(SUM(bli.quantity_rented), 0) AS total
@@ -88,13 +102,93 @@ export class PrismaBookingRepository extends BookingRepository {
       b.tenant_id = ${tenantId}
       AND b.status NOT IN ('CANCELLED', 'COMPLETED')
       AND b.rental_period && tstzrange(${start}, ${end})
-      AND (
-        ii.product_id = ${productId} 
-        OR 
-        (bli.inventory_item_id IS NULL AND bli.product_id = ${productId})
-      )
+      AND bli.product_id = ${productId}
+      -- Consistency Check: Exclude bookings on RETIRED items
+      -- (If inventory_item_id is NULL, it's an over-rental, so we count it)
+      AND (bli.inventory_item_id IS NULL OR ii.status != 'RETIRED')
   `;
 
+    console.log({ rows });
+
     return Number(rows[0]?.total ?? 0);
+  }
+
+  private async insert(booking: Booking): Promise<void> {
+    const b = BookingMapper.toInsertParams(booking);
+    const lineItems = BookingMapper.toLineItemInsertParams(booking);
+
+    await this.prisma.client.$transaction([this.insertBookingSql(b), this.insertLineItemsSql(lineItems)]);
+  }
+
+  private async update(booking: Booking): Promise<void> {
+    const data = BookingMapper.toUpdateInput(booking);
+
+    await this.prisma.client.booking.update({
+      where: { id: booking.id },
+      data,
+    });
+  }
+
+  /**
+   * Raw INSERT for the bookings table.
+   * rentalPeriod is cast explicitly to tstzrange — Prisma cannot generate
+   * this because the column type is Unsupported("tstzrange").
+   */
+  private insertBookingSql(b: BookingInsertParams): Prisma.PrismaPromise<unknown> {
+    return this.prisma.client.$queryRaw`
+      INSERT INTO bookings (
+        id, tenant_id, customer_id, rental_period,
+        status, subtotal, total_discount, total_tax, grand_total,
+        notes, created_at, updated_at
+      ) VALUES (
+        ${b.id}, ${b.tenantId}, ${b.customerId}, ${b.rentalPeriod}::tstzrange,
+        ${b.status}::"BookingStatus", ${b.subtotal}, ${b.totalDiscount}, ${b.totalTax}, ${b.grandTotal},
+        ${b.notes}, ${b.createdAt}, ${b.updatedAt}
+      )
+    `;
+  }
+
+  /**
+   * Raw bulk INSERT for booking_line_items.
+   * Uses UNNEST for efficiency — one round-trip regardless of item count.
+   *
+   * If the booking has no line items this is never called
+   * (enforced by Booking.create invariant), but we guard anyway.
+   */
+  private insertLineItemsSql(items: LineItemInsertParams[]): Prisma.PrismaPromise<unknown> {
+    if (items.length === 0) {
+      // Return a no-op PrismaPromise so the transaction array stays consistent
+      return this.prisma.client.$queryRaw`SELECT 1`;
+    }
+
+    const ids = items.map((i) => i.id);
+    const bookingIds = items.map((i) => i.bookingId);
+    const productIds = items.map((i) => i.productId);
+    const inventoryItemIds = items.map((i) => i.inventoryItemId);
+    const quantitiesRented = items.map((i) => i.quantityRented);
+    const unitPrices = items.map((i) => i.unitPrice);
+    const lineTotals = items.map((i) => i.lineTotal);
+    const ownerIds = items.map((i) => i.ownerId);
+    const isExternallySourced = items.map((i) => i.isExternallySourced);
+    const priceBreakdowns = items.map((i) => JSON.stringify(i.priceBreakdown));
+
+    return this.prisma.client.$queryRaw`
+      INSERT INTO booking_line_items (
+        id, booking_id, product_id, inventory_item_id,
+        quantity_rented, unit_price, line_total,
+        owner_id, is_externally_sourced, price_breakdown
+      )
+      SELECT
+        UNNEST(${ids}::uuid[]),
+        UNNEST(${bookingIds}::uuid[]),
+        UNNEST(${productIds}::uuid[]),
+        UNNEST(${inventoryItemIds}::uuid[]),
+        UNNEST(${quantitiesRented}::int[]),
+        UNNEST(${unitPrices}::decimal[]),
+        UNNEST(${lineTotals}::decimal[]),
+        UNNEST(${ownerIds}::uuid[]),
+        UNNEST(${isExternallySourced}::boolean[]),
+        UNNEST(${priceBreakdowns}::jsonb[])
+    `;
   }
 }

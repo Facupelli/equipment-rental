@@ -1,4 +1,4 @@
-import { parsePostgresRange } from 'src/core/utils/postgres-range.util';
+import { formatPostgresRange, parsePostgresRange } from 'src/core/utils/postgres-range.util';
 import { Prisma } from 'src/generated/prisma/client';
 import { Booking } from '../../domain/entities/booking.entity';
 import { BookingStatus } from '@repo/types';
@@ -30,10 +30,41 @@ export interface BookingRawRecord {
   total_discount: number;
   total_tax: number;
   grand_total: number;
+  notes: string | null;
   created_at: Date;
   updated_at: Date;
   line_items: LineItemRawRecord[];
 }
+
+export interface BookingInsertParams {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  rentalPeriod: string; // cast as ::tstzrange in SQL
+  status: BookingStatus;
+  subtotal: Prisma.Decimal;
+  totalDiscount: Prisma.Decimal;
+  totalTax: Prisma.Decimal;
+  grandTotal: Prisma.Decimal;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LineItemInsertParams {
+  id: string;
+  bookingId: string;
+  productId: string;
+  inventoryItemId: string | null;
+  quantityRented: number;
+  unitPrice: Prisma.Decimal;
+  lineTotal: Prisma.Decimal;
+  ownerId: string | null;
+  isExternallySourced: boolean;
+  priceBreakdown: Prisma.JsonValue;
+}
+
+export type BookingUpdateInput = Prisma.BookingUncheckedUpdateInput;
 
 export class BookingMapper {
   static toDomain(raw: BookingRawRecord, currency: string): Booking {
@@ -57,21 +88,36 @@ export class BookingMapper {
     });
   }
 
-  static toPersistence(booking: Booking): Prisma.BookingUncheckedCreateInput {
+  static toInsertParams(booking: Booking): BookingInsertParams {
     return {
       id: booking.id,
       tenantId: booking.tenantId,
       customerId: booking.customerId,
+      rentalPeriod: formatPostgresRange(booking.rentalPeriod),
       status: booking.status,
       subtotal: booking.subtotal.toDecimal(),
       totalDiscount: booking.totalDiscount.toDecimal(),
       totalTax: booking.totalTax.toDecimal(),
       grandTotal: booking.grandTotal.toDecimal(),
+      notes: booking.notes ?? null,
       createdAt: booking.createdAt,
       updatedAt: booking.updatedAt,
-      lineItems: {
-        create: booking.lineItems.map(BookingMapper.lineItemToPersistence),
-      },
+    };
+  }
+
+  static toLineItemInsertParams(booking: Booking): LineItemInsertParams[] {
+    return booking.lineItems.map(BookingMapper.lineItemToInsertParams);
+  }
+
+  static toUpdateInput(booking: Booking): BookingUpdateInput {
+    return {
+      status: booking.status,
+      notes: booking.notes ?? null,
+      subtotal: booking.subtotal.toDecimal(),
+      totalDiscount: booking.totalDiscount.toDecimal(),
+      totalTax: booking.totalTax.toDecimal(),
+      grandTotal: booking.grandTotal.toDecimal(),
+      updatedAt: booking.updatedAt,
     };
   }
 
@@ -98,17 +144,16 @@ export class BookingMapper {
     });
   }
 
-  private static lineItemToPersistence(
-    item: BookingLineItem,
-  ): Prisma.BookingLineItemUncheckedCreateWithoutBookingInput {
+  private static lineItemToInsertParams(item: BookingLineItem): LineItemInsertParams {
     return {
       id: item.id,
-      inventoryItemId: item.inventoryItemId ?? undefined,
-      productId: item.productId ?? undefined,
+      bookingId: item.bookingId,
+      productId: item.productId,
+      inventoryItemId: item.inventoryItemId ?? null,
       quantityRented: item.quantityRented,
       unitPrice: item.unitPrice.toDecimal(),
       lineTotal: item.lineTotal.toDecimal(),
-      ownerId: item.ownerId ?? undefined,
+      ownerId: item.ownerId ?? null,
       isExternallySourced: item.isExternallySourced,
       priceBreakdown: item.priceBreakdown?.toJson() ?? Prisma.JsonNull,
     };

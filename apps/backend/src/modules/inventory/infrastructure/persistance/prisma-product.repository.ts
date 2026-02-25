@@ -44,7 +44,6 @@ export class PrismaProductRepository implements ProductRepositoryPort, RentalPro
   async findRentalProductById(id: string): Promise<RentalProductView | null> {
     const product = await this.prisma.client.product.findUnique({
       where: { id },
-      include: { pricingTiers: true },
       select: {
         id: true,
         tenantId: true,

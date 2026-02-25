@@ -1,3 +1,5 @@
+import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+
 /**
  * Parses a PostgreSQL tstzrange string into a { start, end } pair.
  *
@@ -33,4 +35,10 @@ export function parsePostgresRange(rangeStr: string): {
   }
 
   return { start, end };
+}
+
+export function formatPostgresRange(range: DateRange): string {
+  // Standard Postgres tstzrange format: '[start, end)'
+  // Ensure dates are in ISO format or standard Postgres timestamp format
+  return `[${range.start.toISOString()}, ${range.end.toISOString()})`;
 }

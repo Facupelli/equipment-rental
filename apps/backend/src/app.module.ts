@@ -11,6 +11,7 @@ import { TenantInterceptor } from './modules/tenancy/tenant.interceptor';
 import { OwnerModule } from './modules/owner/owner.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { CustomerModule } from './modules/customer/customer.module';
+import { RentalModule } from './modules/rental/rental.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CustomerModule } from './modules/customer/customer.module';
     OwnerModule,
     InventoryModule,
     CustomerModule,
+    RentalModule,
   ],
   providers: [
     {

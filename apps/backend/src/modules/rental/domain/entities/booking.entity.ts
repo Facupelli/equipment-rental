@@ -55,6 +55,7 @@ export class Booking {
   readonly rentalPeriod: DateRange;
   readonly createdAt: Date;
 
+  private _isNew: boolean;
   private _notes?: string;
   private _status: BookingStatus;
   private _lineItems: BookingLineItem[];
@@ -64,7 +65,7 @@ export class Booking {
   private _grandTotal: Money;
   private _updatedAt: Date;
 
-  private constructor(id: string, props: ReconstituteBookingProps) {
+  private constructor(id: string, props: ReconstituteBookingProps, isNew: boolean) {
     this.id = id;
     this.tenantId = props.tenantId;
     this.customerId = props.customerId;
@@ -78,6 +79,7 @@ export class Booking {
     this._totalTax = props.totalTax;
     this._grandTotal = props.grandTotal;
     this._updatedAt = props.updatedAt;
+    this._isNew = isNew;
   }
 
   static create(props: CreateBookingProps): Booking {
@@ -102,17 +104,21 @@ export class Booking {
     const totalTax = Money.zero(currency);
     const grandTotal = subtotal.subtract(totalDiscount).add(totalTax);
 
-    const booking = new Booking(id, {
-      ...props,
+    const booking = new Booking(
       id,
-      status,
-      subtotal,
-      totalDiscount,
-      totalTax,
-      grandTotal,
-      createdAt: now,
-      updatedAt: now,
-    });
+      {
+        ...props,
+        id,
+        status,
+        subtotal,
+        totalDiscount,
+        totalTax,
+        grandTotal,
+        createdAt: now,
+        updatedAt: now,
+      },
+      true,
+    );
 
     // Assign Aggregate Root ID to child entities
     booking._lineItems.forEach((item) => item.assignBookingId(id));
@@ -121,7 +127,7 @@ export class Booking {
   }
 
   static reconstitute(props: ReconstituteBookingProps): Booking {
-    return new Booking(props.id, props);
+    return new Booking(props.id, props, false);
   }
 
   get notes(): string | undefined {
@@ -147,6 +153,9 @@ export class Booking {
   }
   get updatedAt(): Date {
     return this._updatedAt;
+  }
+  get isNew(): boolean {
+    return this._isNew;
   }
 
   // ── State Machine ──────────────────────────────────────────────────────────

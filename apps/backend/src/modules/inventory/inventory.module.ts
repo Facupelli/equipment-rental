@@ -10,6 +10,8 @@ import { PrismaInventoryItemRepository } from './infrastructure/persistance/pris
 import { InventoryItemService } from './application/inventory-item.service';
 import { CreateBlackoutPeriodCommand } from './application/create-blackout-period.command';
 import { RentalProductQueryPort } from '../rental/domain/ports/rental-product.port';
+import { RentalInventoryReadPort } from '../rental/domain/ports/rental-inventory-read.port';
+import { PrismaInventoryReadAdapter } from './infrastructure/persistance/prisma-rental-read.repository';
 
 const repositories = [
   {
@@ -24,6 +26,10 @@ const repositories = [
     provide: InventoryItemRepositoryPort,
     useClass: PrismaInventoryItemRepository,
   },
+  {
+    provide: RentalInventoryReadPort,
+    useClass: PrismaInventoryReadAdapter,
+  },
 ];
 
 const providers = [ProductService, InventoryItemService, CreateBlackoutPeriodCommand];
@@ -32,6 +38,6 @@ const providers = [ProductService, InventoryItemService, CreateBlackoutPeriodCom
   imports: [TenancyModule],
   controllers: [ProductController, InventoryItemController],
   providers: [...repositories, ...providers],
-  exports: [RentalProductQueryPort],
+  exports: [RentalProductQueryPort, RentalInventoryReadPort],
 })
 export class InventoryModule {}

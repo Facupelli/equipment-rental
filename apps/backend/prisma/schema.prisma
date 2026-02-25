@@ -299,21 +299,21 @@ model Promotion {
 }
 
 model Booking {
-  id            String        @id @default(uuid())
-  rentalPeriod  Unsupported("tstzrange")? @map("rental_period")
-  status        BookingStatus @default(RESERVED)
-  subtotal      Decimal       @db.Decimal(10, 2)
-  totalDiscount Decimal       @default(0) @map("total_discount") @db.Decimal(10, 2)
-  totalTax      Decimal       @default(0) @map("total_tax") @db.Decimal(10, 2)
-  grandTotal    Decimal       @map("grand_total") @db.Decimal(10, 2)
+  id            String                   @id @default(uuid())
+  rentalPeriod  Unsupported("tstzrange") @map("rental_period")
+  status        BookingStatus            @default(RESERVED)
+  subtotal      Decimal                  @db.Decimal(10, 2)
+  totalDiscount Decimal                  @default(0) @map("total_discount") @db.Decimal(10, 2)
+  totalTax      Decimal                  @default(0) @map("total_tax") @db.Decimal(10, 2)
+  grandTotal    Decimal                  @map("grand_total") @db.Decimal(10, 2)
   notes         String?
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
 
-  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tenantId      String           @map("tenant_id")
-  customer      Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  customerId    String           @map("customer_id")
+  tenant        Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId      String                   @map("tenant_id")
+  customer      Customer                 @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customerId    String                   @map("customer_id")
 
   lineItems     BookingLineItem[]
   discounts     BookingDiscount[]

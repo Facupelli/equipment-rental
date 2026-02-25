@@ -201,6 +201,8 @@ export class CreateBookingCommand {
       trackingType: product.trackingType,
     });
 
+    console.log('resolveAvailability', { result });
+
     if (result.status === AvailabilityStatus.UNAVAILABLE) {
       throw new ConflictException(`Product '${product.id}' is unavailable for the requested period and quantity.`);
     }
