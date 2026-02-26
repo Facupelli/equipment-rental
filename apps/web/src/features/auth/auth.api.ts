@@ -65,7 +65,6 @@ export const getCurrentUser = createServerFn({ method: "GET" }).handler(
 
     const result = await apiFetch<MeResponseDto>("/users/me", {
       method: "GET",
-      authenticated: true,
     });
 
     if (!result.success || !result.data) {

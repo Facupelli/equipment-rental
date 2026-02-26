@@ -4,7 +4,6 @@ import {
   useQueryClient,
   type UseMutationResult,
 } from "@tanstack/react-query";
-import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { getCurrentUser, loginUser } from "./auth.api";
 import type { ApiResult } from "@/lib/api";
@@ -31,7 +30,6 @@ export function useLogin(): UseMutationResult<
 > {
   const loginFn = useServerFn(loginUser);
   const queryClient = useQueryClient();
-  const router = useRouter();
 
   return useMutation({
     mutationFn: loginFn,
@@ -41,10 +39,6 @@ export function useLogin(): UseMutationResult<
         await queryClient.invalidateQueries({
           queryKey: authQueryKey.currentUser,
         });
-        // Now navigate
-        console.log("NAVIGATING");
-
-        router.navigate({ to: "/dashboard" });
       }
     },
   });

@@ -1,4 +1,4 @@
-import { RoundingRule } from '../entities/billing-unit.entity';
+import { RoundingRule } from '@repo/types';
 
 // TODO create value object
 export interface TenantPricingConfig {

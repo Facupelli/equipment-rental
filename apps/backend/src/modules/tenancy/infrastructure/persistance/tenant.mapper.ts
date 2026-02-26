@@ -2,6 +2,7 @@ import { Tenant, TenantProps } from '../../domain/entities/tenant.entity';
 import { BillingUnit } from '../../domain/entities/billing-unit.entity';
 import { Prisma, BillingUnit as PrismaBillingUnit } from 'src/generated/prisma/client';
 import { TenantPricingConfig } from '../../domain/value-objects/pricing-config.type';
+import { TenantResponseDto } from '@repo/schemas';
 
 export class TenantMapper {
   static toDomain(raw: any): Tenant {
@@ -34,6 +35,19 @@ export class TenantMapper {
     };
   }
 
+  static toResponse(entity: Tenant): TenantResponseDto {
+    return {
+      id: entity.id,
+      name: entity.name,
+      slug: entity.slug,
+      planTier: entity.planTier,
+      isActive: entity.isActive,
+      pricingConfig: entity.pricingConfig,
+      createdAt: entity.createdAt,
+      billingUnits: entity.billingUnits.map(TenantMapper.billingUnitToResponse),
+    };
+  }
+
   private static billingUnitToDomain(prismaUnit: PrismaBillingUnit): BillingUnit {
     return BillingUnit.reconstitute({
       id: prismaUnit.id,
@@ -49,6 +63,17 @@ export class TenantMapper {
   private static billingUnitToPersistenceCreate(
     unit: BillingUnit,
   ): Prisma.BillingUnitUncheckedCreateWithoutTenantInput {
+    return {
+      id: unit.id,
+      name: unit.name,
+      durationHours: unit.durationHours,
+      sortOrder: unit.sortOrder,
+      createdAt: unit.createdAt,
+      updatedAt: unit.updatedAt,
+    };
+  }
+
+  private static billingUnitToResponse(unit: BillingUnit) {
     return {
       id: unit.id,
       name: unit.name,

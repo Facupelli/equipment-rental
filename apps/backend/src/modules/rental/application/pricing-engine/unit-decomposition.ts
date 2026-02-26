@@ -1,4 +1,4 @@
-import { RoundingRule } from 'src/modules/tenancy/domain/entities/billing-unit.entity';
+import { RoundingRule } from '@repo/types';
 import { BillingUnitReadModel } from 'src/modules/tenancy/infrastructure/persistance/prisma-tenant-config.adapter';
 
 /**

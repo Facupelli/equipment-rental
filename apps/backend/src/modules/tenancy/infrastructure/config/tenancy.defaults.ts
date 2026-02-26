@@ -1,3 +1,4 @@
+import { RoundingRule } from '@repo/types';
 import { CreateBillingUnitProps } from '../../domain/entities/billing-unit.entity';
 import { TenantPricingConfig } from '../../domain/value-objects/pricing-config.type';
 
@@ -5,7 +6,7 @@ export const DEFAULT_PRICING_CONFIG: TenantPricingConfig = {
   overRentalEnabled: false,
   maxOverRentThreshold: 0,
   weekendCountsAsOne: false,
-  roundingRule: 'ROUND_UP',
+  roundingRule: RoundingRule.ROUND_UP,
   defaultCurrency: 'ARS',
 };
 

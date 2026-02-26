@@ -18,7 +18,7 @@ import { Route as DemoPrismaRouteImport } from './routes/demo/prisma'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthedDashboardProductsNewRouteImport } from './routes/_authed/dashboard/products/new'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -64,33 +64,34 @@ const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
   path: '/demo/form/address',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthedDashboardProductsNewRoute =
+  AuthedDashboardProductsNewRouteImport.update({
+    id: '/products/new',
+    path: '/products/new',
+    getParentRoute: () => AuthedDashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/dashboard': typeof AuthedDashboardRoute
+  '/dashboard': typeof AuthedDashboardRouteWithChildren
   '/demo/prisma': typeof DemoPrismaRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/dashboard': typeof AuthedDashboardRoute
+  '/dashboard': typeof AuthedDashboardRouteWithChildren
   '/demo/prisma': typeof DemoPrismaRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,12 +99,12 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/_authed/dashboard': typeof AuthedDashboardRouteWithChildren
   '/demo/prisma': typeof DemoPrismaRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/_authed/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -114,9 +115,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/demo/prisma'
     | '/demo/tanstack-query'
-    | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/dashboard/products/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -125,9 +126,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/demo/prisma'
     | '/demo/tanstack-query'
-    | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/dashboard/products/new'
   id:
     | '__root__'
     | '/'
@@ -137,9 +138,9 @@ export interface FileRouteTypes {
     | '/_authed/dashboard'
     | '/demo/prisma'
     | '/demo/tanstack-query'
-    | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/_authed/dashboard/products/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -149,7 +150,6 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   DemoPrismaRoute: typeof DemoPrismaRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
 }
@@ -219,22 +219,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoFormAddressRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authed/dashboard/products/new': {
+      id: '/_authed/dashboard/products/new'
+      path: '/products/new'
+      fullPath: '/dashboard/products/new'
+      preLoaderRoute: typeof AuthedDashboardProductsNewRouteImport
+      parentRoute: typeof AuthedDashboardRoute
     }
   }
 }
 
+interface AuthedDashboardRouteChildren {
+  AuthedDashboardProductsNewRoute: typeof AuthedDashboardProductsNewRoute
+}
+
+const AuthedDashboardRouteChildren: AuthedDashboardRouteChildren = {
+  AuthedDashboardProductsNewRoute: AuthedDashboardProductsNewRoute,
+}
+
+const AuthedDashboardRouteWithChildren = AuthedDashboardRoute._addFileChildren(
+  AuthedDashboardRouteChildren,
+)
+
 interface AuthedRouteChildren {
-  AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedDashboardRoute: typeof AuthedDashboardRouteWithChildren
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
-  AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedDashboardRoute: AuthedDashboardRouteWithChildren,
 }
 
 const AuthedRouteWithChildren =
@@ -247,7 +259,6 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   DemoPrismaRoute: DemoPrismaRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
   DemoFormSimpleRoute: DemoFormSimpleRoute,
 }

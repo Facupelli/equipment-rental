@@ -1,3 +1,5 @@
+import { RoundingRule } from '@repo/types';
+
 export abstract class TenantConfigPort {
   /**
    * Returns the pricing inputs required by PricingEngine.
@@ -14,7 +16,7 @@ export interface RentalTenancyPricingView {
 
 export interface TenantPricingConfigView {
   weekendCountsAsOne: boolean;
-  roundingRule: 'SPLIT' | 'ROUND_UP';
+  roundingRule: RoundingRule;
   overRentalEnabled: boolean;
   maxOverRentThreshold: number;
   defaultCurrency: string;
