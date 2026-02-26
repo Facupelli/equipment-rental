@@ -51,7 +51,7 @@ function CreateProductPage() {
       onChange: createProductSchema,
     },
     onSubmit: async ({ value }) => {
-      createProduct({ data: value });
+      createProduct(value);
     },
   });
 
@@ -289,7 +289,9 @@ function CreateProductPage() {
                                     type="number"
                                     value={subField.state.value}
                                     onChange={(e) =>
-                                      subField.handleChange(e.target.value)
+                                      subField.handleChange(
+                                        Number(e.target.value),
+                                      )
                                     }
                                     onBlur={subField.handleBlur}
                                   />
@@ -316,7 +318,9 @@ function CreateProductPage() {
                                     type="number"
                                     value={subField.state.value}
                                     onChange={(e) =>
-                                      subField.handleChange(e.target.value)
+                                      subField.handleChange(
+                                        Number(e.target.value),
+                                      )
                                     }
                                     onBlur={subField.handleBlur}
                                   />

@@ -1,27 +1,50 @@
-import { useMutation, type UseMutationResult } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { createProduct } from "./products.api";
-import type { ApiResult } from "@/lib/api";
-import type { CreateProductDto } from "@repo/schemas";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseQueryOptions,
+} from "@tanstack/react-query";
+import { createProduct, getProducts } from "./products.api";
+import type { CreateProductDto, ProductResponseDto } from "@repo/schemas";
+import type { ProblemDetailsError } from "@/shared/errors";
 
-export function useCreateProduct(): UseMutationResult<
-  ApiResult<string>,
-  Error,
-  { data: CreateProductDto }
-> {
-  const createProductFn = useServerFn(createProduct);
+type ProductsQueryOptions<TData = ProductResponseDto[]> = Omit<
+  UseQueryOptions<ProductResponseDto[], ProblemDetailsError, TData>,
+  "queryKey" | "queryFn"
+>;
 
-  return useMutation({
-    mutationFn: createProductFn,
-    onSuccess: async (result) => {
-      if (result.success) {
-        // invalidate products
-        // await queryClient.invalidateQueries({
-        // queryKey: authQueryKey.currentUser,
-        // });
+export function createProductsQueryOptions<TData = ProductResponseDto[]>(
+  options?: ProductsQueryOptions<TData>,
+): UseQueryOptions<ProductResponseDto[], ProblemDetailsError, TData> {
+  return {
+    ...options,
+    queryKey: ["products"],
+    queryFn: () => getProducts(),
+  };
+}
 
-        console.log({ result });
-      }
+//
+
+export function useProducts() {
+  return useQuery(createProductsQueryOptions());
+}
+
+export function useCreateProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation<string, ProblemDetailsError, CreateProductDto>({
+    mutationFn: (data) => createProduct({ data }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: createProductsQueryOptions().queryKey,
+      });
+    },
+    onError: (error) => {
+      // error is fully typed as ProblemDetailsError here.
+      // You can log, toast, or handle it however you like.
+      console.error(
+        `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
+      );
     },
   });
 }

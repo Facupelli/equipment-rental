@@ -4,6 +4,7 @@ export * from "./tenant-and-admin/tenant-response.schema";
 export * from "./location/create-location.schema";
 export * from "./owner/create-owner.schema";
 export * from "./inventory/create-product.schema";
+export * from "./inventory/product-response.schema";
 export * from "./inventory/create-inventory-item.schema";
 export * from "./inventory/create-pricing-tier.schema";
 export * from "./inventory/create-blackout-period.schema";

@@ -5,7 +5,7 @@ import {
   type RegisterResponseDto,
   createTenantUserSchema,
 } from "@repo/schemas";
-import { apiFetch, type ApiResult } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { useAppSession } from "@/lib/session";
 import {
   loginSchema,
@@ -17,7 +17,7 @@ export const registerTenantUser = createServerFn({ method: "POST" })
   .inputValidator((data: CreateTenantUserDto) =>
     createTenantUserSchema.parse(data),
   )
-  .handler(async ({ data }): Promise<ApiResult<RegisterResponseDto>> => {
+  .handler(async ({ data }): Promise<RegisterResponseDto> => {
     const result = await apiFetch<RegisterResponseDto>("/tenancy/register", {
       method: "POST",
       body: data,
@@ -29,23 +29,21 @@ export const registerTenantUser = createServerFn({ method: "POST" })
 
 export const loginUser = createServerFn({ method: "POST" })
   .inputValidator((data: LoginDto) => loginSchema.parse(data))
-  .handler(async ({ data }): Promise<ApiResult<null>> => {
+  .handler(async ({ data }): Promise<{ success: true }> => {
     const result = await apiFetch<LoginResponseDto>("/auth/login", {
       method: "POST",
       body: data,
       authenticated: false,
     });
 
-    if (result.success) {
-      const session = await useAppSession();
-      await session.update({
-        accessToken: result.data.access_token,
-        // userId: result.data.userId,
-        // email: result.data.email,
-      });
-    }
+    const session = await useAppSession();
+    await session.update({
+      accessToken: result.access_token,
+      // userId: result.data.userId,
+      // email: result.data.email,
+    });
 
-    return { success: true, data: null };
+    return { success: true };
   });
 
 export const logoutUser = createServerFn({ method: "POST" }).handler(
@@ -56,7 +54,7 @@ export const logoutUser = createServerFn({ method: "POST" }).handler(
 );
 
 export const getCurrentUser = createServerFn({ method: "GET" }).handler(
-  async () => {
+  async (): Promise<MeResponseDto | null> => {
     const session = await useAppSession();
 
     if (!session.data.accessToken) {
@@ -67,10 +65,6 @@ export const getCurrentUser = createServerFn({ method: "GET" }).handler(
       method: "GET",
     });
 
-    if (!result.success || !result.data) {
-      return null;
-    }
-
-    return result.data;
+    return result;
   },
 );

@@ -38,7 +38,7 @@ function LoginPage() {
       onChange: loginSchema,
     },
     onSubmit: async ({ value }) => {
-      login({ data: value });
+      login(value);
     },
   });
 

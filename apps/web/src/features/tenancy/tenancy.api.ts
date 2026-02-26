@@ -4,7 +4,7 @@ import type { TenantResponseDto } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 
 export const getCurrentTenant = createServerFn({ method: "GET" }).handler(
-  async () => {
+  async (): Promise<TenantResponseDto | null> => {
     const session = await useAppSession();
 
     if (!session.data.accessToken) {
@@ -15,10 +15,6 @@ export const getCurrentTenant = createServerFn({ method: "GET" }).handler(
       method: "GET",
     });
 
-    if (!result.success) {
-      return null;
-    }
-
-    return result.data;
+    return result;
   },
 );

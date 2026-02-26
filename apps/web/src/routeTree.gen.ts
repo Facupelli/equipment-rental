@@ -18,6 +18,7 @@ import { Route as DemoPrismaRouteImport } from './routes/demo/prisma'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
+import { Route as AuthedDashboardProductsIndexRouteImport } from './routes/_authed/dashboard/products/index'
 import { Route as AuthedDashboardProductsNewRouteImport } from './routes/_authed/dashboard/products/new'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -64,6 +65,12 @@ const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
   path: '/demo/form/address',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedDashboardProductsIndexRoute =
+  AuthedDashboardProductsIndexRouteImport.update({
+    id: '/products/',
+    path: '/products/',
+    getParentRoute: () => AuthedDashboardRoute,
+  } as any)
 const AuthedDashboardProductsNewRoute =
   AuthedDashboardProductsNewRouteImport.update({
     id: '/products/new',
@@ -81,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
+  '/dashboard/products/': typeof AuthedDashboardProductsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -92,6 +100,7 @@ export interface FileRoutesByTo {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
+  '/dashboard/products': typeof AuthedDashboardProductsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -105,6 +114,7 @@ export interface FileRoutesById {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/_authed/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
+  '/_authed/dashboard/products/': typeof AuthedDashboardProductsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard/products/new'
+    | '/dashboard/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard/products/new'
+    | '/dashboard/products'
   id:
     | '__root__'
     | '/'
@@ -141,6 +153,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/_authed/dashboard/products/new'
+    | '/_authed/dashboard/products/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -219,6 +232,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoFormAddressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/dashboard/products/': {
+      id: '/_authed/dashboard/products/'
+      path: '/products'
+      fullPath: '/dashboard/products/'
+      preLoaderRoute: typeof AuthedDashboardProductsIndexRouteImport
+      parentRoute: typeof AuthedDashboardRoute
+    }
     '/_authed/dashboard/products/new': {
       id: '/_authed/dashboard/products/new'
       path: '/products/new'
@@ -231,10 +251,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthedDashboardRouteChildren {
   AuthedDashboardProductsNewRoute: typeof AuthedDashboardProductsNewRoute
+  AuthedDashboardProductsIndexRoute: typeof AuthedDashboardProductsIndexRoute
 }
 
 const AuthedDashboardRouteChildren: AuthedDashboardRouteChildren = {
   AuthedDashboardProductsNewRoute: AuthedDashboardProductsNewRoute,
+  AuthedDashboardProductsIndexRoute: AuthedDashboardProductsIndexRoute,
 }
 
 const AuthedDashboardRouteWithChildren = AuthedDashboardRoute._addFileChildren(

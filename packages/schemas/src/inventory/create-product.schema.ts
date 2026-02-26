@@ -10,7 +10,7 @@ export const productSchema = z.object({
   trackingType: z.enum(TrackingType),
 
   // JSONB field: flexible object structure
-  attributes: z.record(z.string(), z.string()).optional().default({}),
+  attributes: z.record(z.string(), z.string()).default({}),
 });
 
 export const createProductSchema = productSchema.extend({

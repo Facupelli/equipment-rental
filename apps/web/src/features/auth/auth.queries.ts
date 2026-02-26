@@ -1,13 +1,9 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type UseMutationResult,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getCurrentUser, loginUser } from "./auth.api";
-import type { ApiResult } from "@/lib/api";
 import type { LoginDto } from "./auth.schema";
+import type { ProblemDetailsError } from "@/shared/errors";
+import { useRouter } from "@tanstack/react-router";
 
 export const authQueryKey = {
   currentUser: ["currentUser"] as const,
@@ -23,23 +19,26 @@ export function useCurrentUser() {
   });
 }
 
-export function useLogin(): UseMutationResult<
-  ApiResult<null>,
-  Error,
-  { data: LoginDto }
-> {
-  const loginFn = useServerFn(loginUser);
+export function useLogin() {
+  const router = useRouter();
+  const login = useServerFn(loginUser);
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: loginFn,
+  return useMutation<{ success: boolean }, ProblemDetailsError, LoginDto>({
+    mutationFn: (data) => login({ data }),
     onSuccess: async (result) => {
       if (result.success) {
-        // Invalidate so useCurrentUser refetches with new session
         await queryClient.invalidateQueries({
           queryKey: authQueryKey.currentUser,
         });
+
+        router.navigate({ to: "/dashboard" });
       }
+    },
+    onError: (error) => {
+      console.error(
+        `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
+      );
     },
   });
 }

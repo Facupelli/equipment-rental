@@ -2,6 +2,7 @@ import { Prisma, PricingTier as PrismaPricingTier } from 'src/generated/prisma/c
 import { Product, ProductProps } from '../../../domain/entities/product.entity';
 import { PricingTier, PricingTierProps } from '../../../domain/entities/pricing-tier.entity';
 import { TrackingType } from '@repo/types';
+import { PricingTierResponseDto, ProductResponseDto } from '@repo/schemas';
 
 /**
  * The Prisma payload type for a Product with its PricingTier children included.
@@ -43,6 +44,18 @@ export class ProductMapper {
     };
   }
 
+  public static toResponse(entity: Product): ProductResponseDto {
+    return {
+      id: entity.id,
+      name: entity.name,
+      trackingType: entity.trackingType,
+      attributes: entity.attributes,
+      pricingTiers: entity.pricingTiers.map(ProductMapper.tierToResponse),
+      createdAt: entity.createdAt.toISOString(),
+      updatedAt: entity.updatedAt.toISOString(),
+    };
+  }
+
   private static tierToDomain(prismaTier: PrismaPricingTier): PricingTier {
     const props: PricingTierProps = {
       id: prismaTier.id,
@@ -71,6 +84,15 @@ export class ProductMapper {
       currency: tier.currency,
       createdAt: tier.createdAt,
       updatedAt: tier.updatedAt,
+    };
+  }
+
+  private static tierToResponse(tier: PricingTier): PricingTierResponseDto {
+    return {
+      id: tier.id,
+      fromUnit: tier.fromUnit,
+      pricePerUnit: tier.pricePerUnit,
+      currency: tier.currency,
     };
   }
 }
