@@ -7,6 +7,7 @@ export const productSchema = z.object({
     .string()
     .min(3, { message: "Name must be at least 3 characters long" })
     .max(255, { message: "Name cannot exceed 255 characters" }),
+  categoryId: z.uuid().optional(),
   trackingType: z.enum(TrackingType),
 
   // JSONB field: flexible object structure

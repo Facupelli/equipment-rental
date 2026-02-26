@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCategories } from "@/features/inventory/categories/categories.queries";
 import { useCreateProduct } from "@/features/inventory/products/products.queries";
 import { createProductSchema, type CreatePricingTierDto } from "@repo/schemas";
 import { TrackingType } from "@repo/types";
@@ -38,10 +39,13 @@ function CreateProductPage() {
   const {
     tenant: { billingUnits },
   } = Route.useRouteContext();
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useCategories();
   const { mutate: createProduct, isPending } = useCreateProduct();
 
   const form = useForm({
     defaultValues: {
+      categoryId: "",
       name: "",
       trackingType: undefined as unknown as TrackingType,
       attributes: {} as Record<string, string>,
@@ -75,6 +79,51 @@ function CreateProductPage() {
             className="space-y-8"
           >
             <FieldGroup>
+              {/* Category Field */}
+              <form.Field
+                name="categoryId"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Category</FieldLabel>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={(value) =>
+                          value && field.handleChange(value)
+                        }
+                        disabled={categoriesLoading}
+                        items={categories.map((l) => ({
+                          value: l.id,
+                          label: l.name,
+                        }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              categoriesLoading
+                                ? "Loading..."
+                                : "Select a category"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              />
+
               {/* Name Field */}
               <form.Field
                 name="name"

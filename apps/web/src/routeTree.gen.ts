@@ -19,6 +19,7 @@ import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as AuthedDashboardProductsIndexRouteImport } from './routes/_authed/dashboard/products/index'
+import { Route as AuthedDashboardCategoriesIndexRouteImport } from './routes/_authed/dashboard/categories/index'
 import { Route as AuthedDashboardProductsNewRouteImport } from './routes/_authed/dashboard/products/new'
 import { Route as AuthedDashboardInventoryItemsNewProductIdRouteImport } from './routes/_authed/dashboard/inventory-items/new/$productId'
 
@@ -72,6 +73,12 @@ const AuthedDashboardProductsIndexRoute =
     path: '/products/',
     getParentRoute: () => AuthedDashboardRoute,
   } as any)
+const AuthedDashboardCategoriesIndexRoute =
+  AuthedDashboardCategoriesIndexRouteImport.update({
+    id: '/categories/',
+    path: '/categories/',
+    getParentRoute: () => AuthedDashboardRoute,
+  } as any)
 const AuthedDashboardProductsNewRoute =
   AuthedDashboardProductsNewRouteImport.update({
     id: '/products/new',
@@ -95,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
+  '/dashboard/categories/': typeof AuthedDashboardCategoriesIndexRoute
   '/dashboard/products/': typeof AuthedDashboardProductsIndexRoute
   '/dashboard/inventory-items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
@@ -108,6 +116,7 @@ export interface FileRoutesByTo {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
+  '/dashboard/categories': typeof AuthedDashboardCategoriesIndexRoute
   '/dashboard/products': typeof AuthedDashboardProductsIndexRoute
   '/dashboard/inventory-items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
@@ -123,6 +132,7 @@ export interface FileRoutesById {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/_authed/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
+  '/_authed/dashboard/categories/': typeof AuthedDashboardCategoriesIndexRoute
   '/_authed/dashboard/products/': typeof AuthedDashboardProductsIndexRoute
   '/_authed/dashboard/inventory-items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard/products/new'
+    | '/dashboard/categories/'
     | '/dashboard/products/'
     | '/dashboard/inventory-items/new/$productId'
   fileRoutesByTo: FileRoutesByTo
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard/products/new'
+    | '/dashboard/categories'
     | '/dashboard/products'
     | '/dashboard/inventory-items/new/$productId'
   id:
@@ -165,6 +177,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/_authed/dashboard/products/new'
+    | '/_authed/dashboard/categories/'
     | '/_authed/dashboard/products/'
     | '/_authed/dashboard/inventory-items/new/$productId'
   fileRoutesById: FileRoutesById
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardProductsIndexRouteImport
       parentRoute: typeof AuthedDashboardRoute
     }
+    '/_authed/dashboard/categories/': {
+      id: '/_authed/dashboard/categories/'
+      path: '/categories'
+      fullPath: '/dashboard/categories/'
+      preLoaderRoute: typeof AuthedDashboardCategoriesIndexRouteImport
+      parentRoute: typeof AuthedDashboardRoute
+    }
     '/_authed/dashboard/products/new': {
       id: '/_authed/dashboard/products/new'
       path: '/products/new'
@@ -271,12 +291,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthedDashboardRouteChildren {
   AuthedDashboardProductsNewRoute: typeof AuthedDashboardProductsNewRoute
+  AuthedDashboardCategoriesIndexRoute: typeof AuthedDashboardCategoriesIndexRoute
   AuthedDashboardProductsIndexRoute: typeof AuthedDashboardProductsIndexRoute
   AuthedDashboardInventoryItemsNewProductIdRoute: typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
 
 const AuthedDashboardRouteChildren: AuthedDashboardRouteChildren = {
   AuthedDashboardProductsNewRoute: AuthedDashboardProductsNewRoute,
+  AuthedDashboardCategoriesIndexRoute: AuthedDashboardCategoriesIndexRoute,
   AuthedDashboardProductsIndexRoute: AuthedDashboardProductsIndexRoute,
   AuthedDashboardInventoryItemsNewProductIdRoute:
     AuthedDashboardInventoryItemsNewProductIdRoute,
