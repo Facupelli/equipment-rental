@@ -11,6 +11,8 @@ export * from "./inventory/create-inventory-item.schema";
 export * from "./inventory/inventory-item-response.schema";
 export * from "./inventory/create-pricing-tier.schema";
 export * from "./inventory/create-blackout-period.schema";
+export * from "./inventory/create-category.schema";
+export * from "./inventory/category-response.schema";
 export * from "./booking/create-booking.schema";
 export * from "./customer/create-customer.schema";
 export * from "./users/me-response.schema";

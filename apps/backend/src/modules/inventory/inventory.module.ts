@@ -12,6 +12,10 @@ import { CreateBlackoutPeriodCommand } from './application/create-blackout-perio
 import { RentalProductQueryPort } from '../rental/domain/ports/rental-product.port';
 import { RentalInventoryReadPort } from '../rental/domain/ports/rental-inventory-read.port';
 import { PrismaInventoryReadAdapter } from './infrastructure/persistance/prisma-rental-read.repository';
+import { CategoryRepositoryPort } from './domain/ports/category.repository.port';
+import { PrismaCategoryRepository } from './infrastructure/persistance/prisma-category.repository';
+import { CategoryService } from './application/category.service';
+import { CategoryController } from './infrastructure/controllers/category.controller';
 
 const repositories = [
   {
@@ -27,16 +31,20 @@ const repositories = [
     useClass: PrismaInventoryItemRepository,
   },
   {
+    provide: CategoryRepositoryPort,
+    useClass: PrismaCategoryRepository,
+  },
+  {
     provide: RentalInventoryReadPort,
     useClass: PrismaInventoryReadAdapter,
   },
 ];
 
-const providers = [ProductService, InventoryItemService, CreateBlackoutPeriodCommand];
+const providers = [ProductService, InventoryItemService, CreateBlackoutPeriodCommand, CategoryService];
 
 @Module({
   imports: [TenancyModule],
-  controllers: [ProductController, InventoryItemController],
+  controllers: [ProductController, InventoryItemController, CategoryController],
   providers: [...repositories, ...providers],
   exports: [RentalProductQueryPort, RentalInventoryReadPort],
 })

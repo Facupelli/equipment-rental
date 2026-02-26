@@ -58,6 +58,18 @@ _(Unchanged)_
 
 ### 2.2. Inventory Entities
 
+#### **`categories`**
+
+- `id` (PK, UUID)
+- `tenant_id` (FK, UUID)
+- `name` (VARCHAR) — unique per tenant
+- `description` (VARCHAR, Nullable)
+- `created_at`, `updated_at` (TIMESTAMP)
+- **Constraint:** `UNIQUE (tenant_id, name)`
+- **Index:** B-tree on `tenant_id`
+
+````
+
 #### **`products`**
 
 - `id` (PK, UUID)
@@ -66,6 +78,8 @@ _(Unchanged)_
 - `tracking_type` (ENUM: `SERIALIZED`, `BULK`)
 - `attributes` (JSONB) — flexible specs (weight, power source, etc.)
 - `created_at`, `updated_at` (TIMESTAMP)
+- `category_id` (FK, UUID, Nullable) — references `categories`;
+  null allowed for uncategorized products. DELETE restricted if category has products assigned.
 
 **Note:** `base_rental_price` has been removed. Every product must have at least one `PricingTier` with `fromUnit: 1` (the base tier). This invariant is enforced by the `Product` aggregate on creation — a product cannot be created without a `baseTier` parameter.
 
@@ -195,7 +209,7 @@ EXCLUDE USING GIST (
   (SELECT rental_period FROM bookings WHERE id = booking_id) WITH &&
 )
 WHERE (inventory_item_id IS NOT NULL);
-```
+````
 
 The `WHERE (inventory_item_id IS NOT NULL)` clause ensures over-rental rows (null `inventory_item_id`) are excluded from the constraint, allowing multiple virtual bookings against the same product.
 

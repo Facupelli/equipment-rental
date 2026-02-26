@@ -58,6 +58,8 @@ We organize the code into **seven** primary modules. Dependencies flow strictly 
   - **Child Entities:** `PricingTier[]` — product-level and item-level override tiers. `Product` owns all tiers; `InventoryItem` does not own tiers directly. The `inventoryItemId` on a tier is a scope field, not a transfer of aggregate ownership.
 - **Aggregate Root:** `InventoryItem`
   - **Child Entities:** `BlackoutPeriod[]`
+  - **Entity:** `Category` — flat, tenant-scoped taxonomy label for products.
+    One category has many products; a product belongs to at most one category.
 - **Entities:** `Location`, `Owner`
 - **Domain Logic:**
   - **Hybrid Tracking:** Rules enforced based on `trackingType` (`SERIALIZED` vs `BULK`)
@@ -191,6 +193,7 @@ apps/backend/src/
 │   │   │   │   ├── product.entity.ts           # Aggregate Root — owns PricingTier[]
 │   │   │   │   ├── pricing-tier.entity.ts      # Child of Product
 │   │   │   │   ├── inventory-item.entity.ts    # Aggregate Root — owns BlackoutPeriod[]
+│   │   │   │   ├── category.entity.ts
 │   │   │   │   └── blackout-period.entity.ts
 │   │   │   └── ports/
 │   │   │       └── product.repository.port.ts

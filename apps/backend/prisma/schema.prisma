@@ -93,6 +93,7 @@ model Tenant {
   createdAt        DateTime   @default(now()) @map("created_at")
 
   // Relations
+  categories       Category[]
   locations        Location[]
   owners           Owner[]
   products         Product[]
@@ -141,18 +142,38 @@ model Owner {
   @@map("owners")
 }
 
+
 // --- Inventory Entities ---
+
+model Category {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  name        String
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("categories")
+}
 
 model Product {
   id                String        @id @default(uuid())
   tenantId          String          @map("tenant_id")
+  categoryId        String?         @map("category_id")
   name              String
   trackingType      TrackingType  @map("tracking_type")
   attributes        Json          // Flexible specs (weight, power, etc.)
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
 
+
   // Relations
+  category          Category?       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   inventoryItems    InventoryItem[]
   pricingTiers      PricingTier[] 

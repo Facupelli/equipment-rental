@@ -49,6 +49,9 @@
 
 - **Domain Reality:** Equipment rental requires tracking specific unit history (maintenance, damage) for things like excavators, while commodity rental (e.g., chairs, tents) requires simple quantity management.
 - **Unified Logic:** A single `Inventory` table with a `tracking_type` flag prevents code duplication for the booking process.
+- **Taxonomy:** Products support a flat, per-tenant category system (e.g., "Camera",
+  "Lens", "Lighting"). Categories are optional on a product and orthogonal to
+  `trackingType` — a category may contain both serialized and bulk items.
 
 ---
 
