@@ -1,7 +1,8 @@
 import {
   createProductsQueryOptions,
   useProducts,
-} from "@/features/products/products.queries";
+} from "@/features/inventory/products/products.queries";
+import { Link } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/dashboard/products/")({
@@ -18,7 +19,15 @@ function ProductsPage() {
       <p>Hello "/_authed/dashboard/products/"!</p>
       <div className="text-black">
         {products?.map((product) => (
-          <p key={product.id}>{product.name}</p>
+          <div className="flex gap-10 items-center">
+            <p key={product.id}>{product.name}</p>
+            <Link
+              to={`/dashboard/inventory-items/new/$productId`}
+              params={{ productId: product.id }}
+            >
+              add inventory item
+            </Link>
+          </div>
         ))}
       </div>
     </div>

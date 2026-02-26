@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateProduct } from "@/features/products/products.queries";
+import { useCreateProduct } from "@/features/inventory/products/products.queries";
 import { createProductSchema, type CreatePricingTierDto } from "@repo/schemas";
 import { TrackingType } from "@repo/types";
 import { useForm } from "@tanstack/react-form";

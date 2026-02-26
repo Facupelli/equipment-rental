@@ -6,10 +6,12 @@ import {
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 
+const apiUrl = "/products";
+
 export const createProduct = createServerFn({ method: "POST" })
   .inputValidator((data: CreateProductDto) => createProductSchema.parse(data))
   .handler(async ({ data }): Promise<string> => {
-    const result = await apiFetch<string>("/products", {
+    const result = await apiFetch<string>(apiUrl, {
       method: "POST",
       body: data,
     });
@@ -19,7 +21,7 @@ export const createProduct = createServerFn({ method: "POST" })
 
 export const getProducts = createServerFn({ method: "GET" }).handler(
   async (): Promise<ProductResponseDto[]> => {
-    const result = await apiFetch<ProductResponseDto[]>("/products", {
+    const result = await apiFetch<ProductResponseDto[]>(apiUrl, {
       method: "GET",
     });
 

@@ -8,19 +8,15 @@ export const createInventoryItemSchema = z.object({
   ownerId: z.uuid({ message: "Valid Owner ID is required" }),
 
   totalQuantity: z.coerce
-    .number()
+    .number<number>()
     .int()
     .positive({ message: "Quantity must be at least 1" }),
 
-  serialNumber: z.string().min(1).max(100).nullable().optional(),
+  serialNumber: z.string().max(100).optional(),
 
-  purchaseDate: z
-    .string()
-    .transform((str) => (str ? new Date(str) : null))
-    .nullable()
-    .optional(),
+  purchaseDate: z.coerce.date().optional(),
 
-  purchaseCost: z.number().min(0).nullable().optional(),
+  purchaseCost: z.coerce.number<number>().min(0).optional(),
 
   status: z
     .enum(InventoryItemStatus)

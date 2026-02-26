@@ -8,7 +8,7 @@ export class BookingController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createBooking(@Body() command: CreateBookingDto) {
+  async createBooking(@Body() command: CreateBookingDto): Promise<string> {
     return this.createBookingCommand.execute(command);
   }
 }

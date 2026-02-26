@@ -7,7 +7,7 @@ export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
   @Post()
-  async create(@Body() dto: CreateCustomerDto) {
+  async create(@Body() dto: CreateCustomerDto): Promise<string> {
     return await this.customerService.create(dto);
   }
 }

@@ -13,11 +13,11 @@ export class InventoryItemService {
     private readonly tenantContext: TenantContextService,
   ) {}
 
-  async findById(id: string): Promise<any> {
+  async findById(id: string): Promise<InventoryItem | null> {
     return await this.inventoryItemRepository.findById(id);
   }
 
-  async findAll(): Promise<any> {
+  async findAll(): Promise<InventoryItem[]> {
     return await this.inventoryItemRepository.findAll();
   }
 

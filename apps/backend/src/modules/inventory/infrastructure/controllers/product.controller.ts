@@ -9,7 +9,7 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
-  async create(@Body() dto: CreateProductDto) {
+  async create(@Body() dto: CreateProductDto): Promise<string> {
     return await this.productService.save(dto);
   }
 

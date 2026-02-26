@@ -1,5 +1,6 @@
 import { Prisma, Location as PrismaLocation } from 'src/generated/prisma/client';
 import { AddressProps, Location } from './entities/location.entity';
+import { LocationResponseDto } from '@repo/schemas';
 
 export class LocationMapper {
   static toDomain(raw: PrismaLocation): Location {
@@ -26,6 +27,17 @@ export class LocationMapper {
       createdAt: location.createdAt,
       updatedAt: location.updatedAt,
       tenantId: location.tenantId,
+    };
+  }
+
+  static toResponse(location: Location): LocationResponseDto {
+    return {
+      id: location.id,
+      name: location.name,
+      address: location.address,
+      isActive: location.isActive,
+      createdAt: location.createdAt.toISOString(),
+      updatedAt: location.updatedAt.toISOString(),
     };
   }
 }

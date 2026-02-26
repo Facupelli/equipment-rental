@@ -20,6 +20,7 @@ import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as AuthedDashboardProductsIndexRouteImport } from './routes/_authed/dashboard/products/index'
 import { Route as AuthedDashboardProductsNewRouteImport } from './routes/_authed/dashboard/products/new'
+import { Route as AuthedDashboardInventoryItemsNewProductIdRouteImport } from './routes/_authed/dashboard/inventory-items/new/$productId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -77,6 +78,12 @@ const AuthedDashboardProductsNewRoute =
     path: '/products/new',
     getParentRoute: () => AuthedDashboardRoute,
   } as any)
+const AuthedDashboardInventoryItemsNewProductIdRoute =
+  AuthedDashboardInventoryItemsNewProductIdRouteImport.update({
+    id: '/inventory-items/new/$productId',
+    path: '/inventory-items/new/$productId',
+    getParentRoute: () => AuthedDashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
   '/dashboard/products/': typeof AuthedDashboardProductsIndexRoute
+  '/dashboard/inventory-items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,6 +109,7 @@ export interface FileRoutesByTo {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
   '/dashboard/products': typeof AuthedDashboardProductsIndexRoute
+  '/dashboard/inventory-items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,6 +124,7 @@ export interface FileRoutesById {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/_authed/dashboard/products/new': typeof AuthedDashboardProductsNewRoute
   '/_authed/dashboard/products/': typeof AuthedDashboardProductsIndexRoute
+  '/_authed/dashboard/inventory-items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/dashboard/products/new'
     | '/dashboard/products/'
+    | '/dashboard/inventory-items/new/$productId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/dashboard/products/new'
     | '/dashboard/products'
+    | '/dashboard/inventory-items/new/$productId'
   id:
     | '__root__'
     | '/'
@@ -154,6 +166,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/_authed/dashboard/products/new'
     | '/_authed/dashboard/products/'
+    | '/_authed/dashboard/inventory-items/new/$productId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -246,17 +259,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardProductsNewRouteImport
       parentRoute: typeof AuthedDashboardRoute
     }
+    '/_authed/dashboard/inventory-items/new/$productId': {
+      id: '/_authed/dashboard/inventory-items/new/$productId'
+      path: '/inventory-items/new/$productId'
+      fullPath: '/dashboard/inventory-items/new/$productId'
+      preLoaderRoute: typeof AuthedDashboardInventoryItemsNewProductIdRouteImport
+      parentRoute: typeof AuthedDashboardRoute
+    }
   }
 }
 
 interface AuthedDashboardRouteChildren {
   AuthedDashboardProductsNewRoute: typeof AuthedDashboardProductsNewRoute
   AuthedDashboardProductsIndexRoute: typeof AuthedDashboardProductsIndexRoute
+  AuthedDashboardInventoryItemsNewProductIdRoute: typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
 
 const AuthedDashboardRouteChildren: AuthedDashboardRouteChildren = {
   AuthedDashboardProductsNewRoute: AuthedDashboardProductsNewRoute,
   AuthedDashboardProductsIndexRoute: AuthedDashboardProductsIndexRoute,
+  AuthedDashboardInventoryItemsNewProductIdRoute:
+    AuthedDashboardInventoryItemsNewProductIdRoute,
 }
 
 const AuthedDashboardRouteWithChildren = AuthedDashboardRoute._addFileChildren(

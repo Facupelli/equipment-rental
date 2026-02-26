@@ -3,6 +3,7 @@ import { InventoryItem, InventoryItemProps } from '../../../domain/entities/inve
 import { InventoryItemStatus } from '@repo/types';
 import { Prisma } from 'src/generated/prisma/browser';
 import { BlackoutPeriod } from 'src/modules/inventory/domain/entities/blackout-period.entity';
+import { BlackoutPeriodResponseDto, InventoryItemResponseDto } from '@repo/schemas';
 
 export class InventoryItemMapper {
   public static toDomain(prismaItem: PrismaInventoryItem, blackouts: BlackoutPeriod[]): InventoryItem {
@@ -39,6 +40,37 @@ export class InventoryItemMapper {
       purchaseCost: inventoryItem.PurchaseCost,
       createdAt: inventoryItem.CreatedAt,
       updatedAt: inventoryItem.UpdatedAt,
+    };
+  }
+
+  public static toResponse(entity: InventoryItem): InventoryItemResponseDto {
+    return {
+      id: entity.Id,
+      productId: entity.ProductId,
+      locationId: entity.LocationId,
+      ownerId: entity.OwnerId,
+      status: entity.Status,
+      totalQuantity: entity.TotalQuantity,
+      serialNumber: entity.SerialNumber,
+      purchaseDate: entity.PurchaseDate?.toISOString() ?? null,
+      purchaseCost: entity.PurchaseCost,
+      blackouts: entity.Blackouts.map(InventoryItemMapper.blackoutToResponse),
+      createdAt: entity.CreatedAt.toISOString(),
+      updatedAt: entity.UpdatedAt.toISOString(),
+    };
+  }
+
+  private static blackoutToResponse(blackout: BlackoutPeriod): BlackoutPeriodResponseDto {
+    const period = blackout.blockedPeriod;
+
+    return {
+      id: blackout.id,
+      reason: blackout.reason,
+      blockedPeriod: {
+        start: period.start.toISOString(),
+        end: period.end.toISOString(),
+      },
+      createdAt: blackout.createdAt.toISOString(),
     };
   }
 }
