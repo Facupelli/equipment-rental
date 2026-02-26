@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { registerTenantUser } from "@/services/auth.functions";
 import {
   createTenantUserSchema,
   type RegisterResponseDto,
@@ -22,6 +21,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { registerTenantUser } from "@/features/auth/auth.api";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,

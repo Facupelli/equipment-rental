@@ -1,4 +1,5 @@
 import { problemDetailsSchema, type ProblemDetails } from "@repo/schemas";
+import { useAppSession } from "./session";
 
 export type ApiSuccess<T> = { success: true; data: T };
 export type ApiError = { success: false; error: ProblemDetails };
@@ -33,19 +34,39 @@ function unexpectedError(error: unknown): ApiError {
 
 type ApiFetchOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
+  authenticated?: boolean;
 };
 
 export async function apiFetch<T>(
   path: string,
   options: ApiFetchOptions = {},
 ): Promise<ApiResult<T>> {
-  const { body, headers, ...rest } = options;
+  const { body, headers, authenticated = true, ...rest } = options;
 
   try {
+    const authHeader: Record<string, string> = {};
+
+    if (authenticated) {
+      const session = await useAppSession();
+      const token = session.data.accessToken;
+
+      if (!token) {
+        return fail({
+          type: "about:blank",
+          title: "Unauthorized",
+          status: 401,
+          detail: "No active session. Please log in.",
+        });
+      }
+
+      authHeader["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${process.env.NESTJS_API_URL}${path}`, {
       ...rest,
       headers: {
         "Content-Type": "application/json",
+        ...authHeader,
         ...headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -69,7 +90,8 @@ export async function apiFetch<T>(
       });
     }
 
-    const data = (await response.json()) as T;
+    const successResponse = await response.json();
+    const data = successResponse.data as T;
     return ok(data);
   } catch (error) {
     return unexpectedError(error);
