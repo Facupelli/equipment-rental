@@ -5,7 +5,7 @@ import { createPricingTierSchema } from "./create-pricing-tier.schema";
 export const IncludedItemSchema = z.object({
   name: z.string().trim().min(1, "Included item name cannot be empty."),
   quantity: z.number().int().positive("Quantity must be a positive integer."),
-  notes: z.string().trim().min(1).nullable().optional(),
+  notes: z.string().trim().optional(),
 });
 
 export const productSchema = z.object({

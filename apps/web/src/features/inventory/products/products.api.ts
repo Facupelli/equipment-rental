@@ -2,7 +2,7 @@ import { apiFetch } from "@/lib/api";
 import {
   createProductSchema,
   type CreateProductDto,
-  type ProductResponseDto,
+  type ProductResponseWithCategoryDto,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -20,8 +20,8 @@ export const createProduct = createServerFn({ method: "POST" })
   });
 
 export const getProducts = createServerFn({ method: "GET" }).handler(
-  async (): Promise<ProductResponseDto[]> => {
-    const result = await apiFetch<ProductResponseDto[]>(apiUrl, {
+  async (): Promise<ProductResponseWithCategoryDto[]> => {
+    const result = await apiFetch<ProductResponseWithCategoryDto[]>(apiUrl, {
       method: "GET",
     });
 

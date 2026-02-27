@@ -1,18 +1,19 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/dashboard")({
-  component: DashboardComponent,
+  component: DashboardLayout,
 });
 
 const sidebarItems = [
   { name: "Dashboard", href: "/dashboard" },
   { name: "Bookings", href: "/dashboard/bookings" },
   { name: "Customers", href: "/dashboard/users" },
-  { name: "Categories", href: "/dashboard/categories" },
-  { name: "Products", href: "/dashboard/products" },
+  { name: "Categories", href: "/dashboard/inventory/categories" },
+  { name: "Assets", href: "/dashboard/inventory/items" },
+  { name: "Products", href: "/dashboard/inventory/products" },
 ];
 
-function DashboardComponent() {
+function DashboardLayout() {
   const { user, tenant } = Route.useRouteContext();
 
   return (
@@ -24,7 +25,6 @@ function DashboardComponent() {
             Hola {user.firstName} {user.lastName}
           </p>
         </div>
-
         <div className="grid gap-y-4 pt-10">
           {sidebarItems.map((item) => (
             <Link to={item.href} key={item.href}>
@@ -33,22 +33,8 @@ function DashboardComponent() {
           ))}
         </div>
       </aside>
-
       <div className="grid h-full grid-rows-[auto_1fr] bg-gray-50">
-        <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold text-gray-800">Dashboard</h1>
-          </div>
-
-          <nav className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Welcome back</span>
-            <div className="h-8 w-8 rounded-full bg-gray-300" />
-          </nav>
-        </header>
-
-        <main className="overflow-y-auto p-6">
-          <Outlet />
-        </main>
+        <Outlet />
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import z from "zod";
 import { IncludedItemSchema } from "./create-product.schema";
+import { categoryResponseSchema } from "./category-response.schema";
 
 export const PricingTierResponseSchema = z.object({
   id: z.uuid(),
@@ -19,5 +20,12 @@ export const ProductResponseSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
+export const ProductResponseWithCategorySchema = ProductResponseSchema.extend({
+  category: categoryResponseSchema.nullable(),
+});
+
 export type PricingTierResponseDto = z.infer<typeof PricingTierResponseSchema>;
 export type ProductResponseDto = z.infer<typeof ProductResponseSchema>;
+export type ProductResponseWithCategoryDto = z.infer<
+  typeof ProductResponseWithCategorySchema
+>;

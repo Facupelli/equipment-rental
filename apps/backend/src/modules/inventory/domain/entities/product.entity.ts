@@ -6,6 +6,7 @@ import { IncludedItem } from '../value-objects/included-item';
 export interface ProductProps {
   id: string;
   tenantId: string;
+  categoryId: string | null;
   name: string;
   trackingType: TrackingType;
   attributes: Record<string, unknown>;
@@ -24,6 +25,7 @@ export type CreateProductProps = Omit<ProductProps, 'id' | 'createdAt' | 'update
 export class Product {
   private readonly _id: string;
   private readonly _tenantId: string;
+  private readonly _categoryId: string | null;
   private _name: string;
   private _attributes: Record<string, unknown>;
   private readonly _trackingType: TrackingType;
@@ -35,6 +37,7 @@ export class Product {
   private constructor(props: ProductProps) {
     this._id = props.id;
     this._tenantId = props.tenantId;
+    this._categoryId = props.categoryId;
     this._name = props.name;
     this._trackingType = props.trackingType;
     this._attributes = props.attributes;
@@ -58,6 +61,7 @@ export class Product {
     return new Product({
       id,
       tenantId: props.tenantId,
+      categoryId: props.categoryId,
       name: props.name,
       trackingType: props.trackingType,
       attributes: props.attributes,
@@ -142,6 +146,9 @@ export class Product {
   }
   get tenantId(): string {
     return this._tenantId;
+  }
+  get categoryId(): string | null {
+    return this._categoryId;
   }
   get name(): string {
     return this._name;

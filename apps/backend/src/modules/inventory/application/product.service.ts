@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { ProductRepositoryPort } from '../domain/ports/product.repository.port';
+import { findAllWithCategoryFilters, ProductRepositoryPort } from '../domain/ports/product.repository.port';
 import { Product } from '../domain/entities/product.entity';
-import { CreateProductDto } from '@repo/schemas';
+import { CreateProductDto, ProductResponseWithCategoryDto } from '@repo/schemas';
 import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
 import { TrackingType } from '@repo/types';
+import { ProductMapper } from '../infrastructure/persistance/mappers/product.mapper';
 
 @Injectable()
 export class ProductService {
@@ -16,18 +17,19 @@ export class ProductService {
     return await this.productRepository.findTrackingType(id);
   }
 
-  async findAll(): Promise<Product[]> {
-    return await this.productRepository.findAll();
+  async findAllWithCategory(filters: findAllWithCategoryFilters): Promise<ProductResponseWithCategoryDto[]> {
+    const results = await this.productRepository.findAllWithCategory(filters);
+
+    return results.map(({ product, category }) => ProductMapper.toResponseWithCategory(product, category));
   }
 
   async save(dto: CreateProductDto): Promise<string> {
     const tenantId = this.tenantContext.requireTenantId();
 
     const product = Product.create({
+      ...dto,
       tenantId,
-      name: dto.name,
-      trackingType: dto.trackingType,
-      attributes: dto.attributes,
+      categoryId: dto.categoryId ?? null,
       baseTier: dto.pricingTiers[0],
     });
 

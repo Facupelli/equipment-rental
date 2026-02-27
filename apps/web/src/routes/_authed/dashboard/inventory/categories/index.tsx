@@ -27,7 +27,7 @@ import { useForm } from "@tanstack/react-form";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
-export const Route = createFileRoute("/_authed/dashboard/categories/")({
+export const Route = createFileRoute("/_authed/dashboard/inventory/categories/")({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(createCategoryQueryOptions()),
   component: CategoriesPage,

@@ -2,25 +2,27 @@ import { Prisma, PricingTier as PrismaPricingTier } from 'src/generated/prisma/c
 import { Product, ProductProps } from '../../../domain/entities/product.entity';
 import { PricingTier, PricingTierProps } from '../../../domain/entities/pricing-tier.entity';
 import { TrackingType } from '@repo/types';
-import { PricingTierResponseDto, ProductResponseDto } from '@repo/schemas';
+import { PricingTierResponseDto, ProductResponseDto, ProductResponseWithCategoryDto } from '@repo/schemas';
 import { IncludedItem } from 'src/modules/inventory/domain/value-objects/included-item';
+import { CategoryMapper } from './category.mapper';
+import { Category } from 'src/modules/inventory/domain/entities/category.entity';
 
-/**
- * The Prisma payload type for a Product with its PricingTier children included.
- * Used as the input type for toDomain — enforces that the query always
- * includes tiers, preventing silent mapping failures at runtime.
- */
-export type PrismaProductWithTiers = Prisma.ProductGetPayload<{
+export type PrismaProductBase = Prisma.ProductGetPayload<{
   include: { pricingTiers: true };
 }>;
 
+export type PrismaProductWithCategory = Prisma.ProductGetPayload<{
+  include: { pricingTiers: true; category: true };
+}>;
+
 export class ProductMapper {
-  public static toDomain(prismaProduct: PrismaProductWithTiers): Product {
+  public static toDomain(prismaProduct: PrismaProductBase): Product {
     const includedItems = (prismaProduct.includedItems as unknown as IncludedItem[]) ?? [];
 
     const props: ProductProps = {
       id: prismaProduct.id,
       tenantId: prismaProduct.tenantId,
+      categoryId: prismaProduct.categoryId,
       name: prismaProduct.name,
       trackingType: prismaProduct.trackingType as TrackingType,
       attributes: prismaProduct.attributes as Record<string, unknown>,
@@ -37,6 +39,7 @@ export class ProductMapper {
     return {
       id: entity.id,
       tenantId: entity.tenantId,
+      categoryId: entity.categoryId,
       name: entity.name,
       trackingType: entity.trackingType,
       attributes: entity.attributes as unknown as Prisma.InputJsonValue,
@@ -59,6 +62,13 @@ export class ProductMapper {
       includedItems: [...entity.includedItems],
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
+    };
+  }
+
+  public static toResponseWithCategory(entity: Product, category: Category | null): ProductResponseWithCategoryDto {
+    return {
+      ...ProductMapper.toResponse(entity),
+      category: category ? CategoryMapper.toResponse(category) : null,
     };
   }
 

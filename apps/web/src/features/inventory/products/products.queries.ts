@@ -5,17 +5,26 @@ import {
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { createProduct, getProducts } from "./products.api";
-import type { CreateProductDto, ProductResponseDto } from "@repo/schemas";
+import type {
+  CreateProductDto,
+  ProductResponseWithCategoryDto,
+} from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
-type ProductsQueryOptions<TData = ProductResponseDto[]> = Omit<
-  UseQueryOptions<ProductResponseDto[], ProblemDetailsError, TData>,
+type ProductsQueryOptions<TData = ProductResponseWithCategoryDto[]> = Omit<
+  UseQueryOptions<ProductResponseWithCategoryDto[], ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
-export function createProductsQueryOptions<TData = ProductResponseDto[]>(
+export function createProductsQueryOptions<
+  TData = ProductResponseWithCategoryDto[],
+>(
   options?: ProductsQueryOptions<TData>,
-): UseQueryOptions<ProductResponseDto[], ProblemDetailsError, TData> {
+): UseQueryOptions<
+  ProductResponseWithCategoryDto[],
+  ProblemDetailsError,
+  TData
+> {
   return {
     ...options,
     queryKey: ["products"],

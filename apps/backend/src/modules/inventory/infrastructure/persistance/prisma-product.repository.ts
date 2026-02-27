@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service'; // Assuming you have a global Prisma service
 import { Product } from '../../domain/entities/product.entity';
-import { ProductRepositoryPort } from '../../domain/ports/product.repository.port';
+import {
+  findAllWithCategoryFilters,
+  ProductRepositoryPort,
+  ProductsWithCategory,
+} from '../../domain/ports/product.repository.port';
 import { ProductMapper } from './mappers/product.mapper';
 import { RentalProductQueryPort, RentalProductView } from 'src/modules/rental/domain/ports/rental-product.port';
 import { TrackingType } from '@repo/types';
+import { CategoryMapper } from './mappers/category.mapper';
 
 @Injectable()
 export class PrismaProductRepository implements ProductRepositoryPort, RentalProductQueryPort {
@@ -25,12 +30,18 @@ export class PrismaProductRepository implements ProductRepositoryPort, RentalPro
     return product.trackingType as TrackingType;
   }
 
-  async findAll(): Promise<Product[]> {
-    const products = await this.prisma.client.product.findMany({
-      include: { pricingTiers: true },
+  async findAllWithCategory(filters: findAllWithCategoryFilters): Promise<ProductsWithCategory> {
+    const { categoryId } = filters;
+
+    const rows = await this.prisma.client.product.findMany({
+      where: { ...(categoryId ? { categoryId } : {}) },
+      include: { pricingTiers: true, category: true },
     });
 
-    return products.map(ProductMapper.toDomain);
+    return rows.map((row) => ({
+      product: ProductMapper.toDomain(row),
+      category: row.category ? CategoryMapper.toDomain(row.category) : null,
+    }));
   }
 
   async save(product: Product): Promise<string> {
