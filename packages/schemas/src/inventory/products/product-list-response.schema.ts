@@ -14,8 +14,8 @@ const ProductListItemSchema = z.object({
   attributes: z.record(z.string(), z.any()),
   includedItems: z.array(IncludedItemSchema),
   category: CategorySummarySchema.nullable(),
-  createdAt: z.iso.datetime(),
-  updatedAt: z.iso.datetime(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
 });
 
 export type ProductListItemResponseDto = z.infer<typeof ProductListItemSchema>;
@@ -28,3 +28,5 @@ export const GetProductsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
+
+export type GetProductsQueryDto = z.infer<typeof GetProductsQuerySchema>;

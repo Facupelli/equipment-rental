@@ -9,6 +9,8 @@
 
 ---
 
+<!-- todo: combos y nuevos ingresos -->
+
 ## 1. Repository Structure: Monorepo
 
 **Decision:** Use a Monorepo (managed via Turborepo/pnpm) containing `apps/backend`, `apps/web`, and shared packages.

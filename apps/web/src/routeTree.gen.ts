@@ -22,6 +22,7 @@ import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as AuthedDashboardInventoryProductsIndexRouteImport } from './routes/_authed/dashboard/inventory/products/index'
 import { Route as AuthedDashboardInventoryCategoriesIndexRouteImport } from './routes/_authed/dashboard/inventory/categories/index'
 import { Route as AuthedDashboardInventoryProductsNewRouteImport } from './routes/_authed/dashboard/inventory/products/new'
+import { Route as AuthedDashboardInventoryProductsProductIdRouteImport } from './routes/_authed/dashboard/inventory/products/$productId'
 import { Route as AuthedDashboardInventoryItemsNewProductIdRouteImport } from './routes/_authed/dashboard/inventory/items/new/$productId'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -91,6 +92,12 @@ const AuthedDashboardInventoryProductsNewRoute =
     path: '/inventory/products/new',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
+const AuthedDashboardInventoryProductsProductIdRoute =
+  AuthedDashboardInventoryProductsProductIdRouteImport.update({
+    id: '/inventory/products/$productId',
+    path: '/inventory/products/$productId',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
 const AuthedDashboardInventoryItemsNewProductIdRoute =
   AuthedDashboardInventoryItemsNewProductIdRouteImport.update({
     id: '/inventory/items/new/$productId',
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/': typeof AuthedDashboardIndexRoute
+  '/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/dashboard/inventory/categories/': typeof AuthedDashboardInventoryCategoriesIndexRoute
   '/dashboard/inventory/products/': typeof AuthedDashboardInventoryProductsIndexRoute
@@ -122,6 +130,7 @@ export interface FileRoutesByTo {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard': typeof AuthedDashboardIndexRoute
+  '/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/dashboard/inventory/categories': typeof AuthedDashboardInventoryCategoriesIndexRoute
   '/dashboard/inventory/products': typeof AuthedDashboardInventoryProductsIndexRoute
@@ -139,6 +148,7 @@ export interface FileRoutesById {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
+  '/_authed/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/_authed/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/_authed/dashboard/inventory/categories/': typeof AuthedDashboardInventoryCategoriesIndexRoute
   '/_authed/dashboard/inventory/products/': typeof AuthedDashboardInventoryProductsIndexRoute
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard/'
+    | '/dashboard/inventory/products/$productId'
     | '/dashboard/inventory/products/new'
     | '/dashboard/inventory/categories/'
     | '/dashboard/inventory/products/'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard'
+    | '/dashboard/inventory/products/$productId'
     | '/dashboard/inventory/products/new'
     | '/dashboard/inventory/categories'
     | '/dashboard/inventory/products'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/_authed/dashboard/'
+    | '/_authed/dashboard/inventory/products/$productId'
     | '/_authed/dashboard/inventory/products/new'
     | '/_authed/dashboard/inventory/categories/'
     | '/_authed/dashboard/inventory/products/'
@@ -296,6 +309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardInventoryProductsNewRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
+    '/_authed/dashboard/inventory/products/$productId': {
+      id: '/_authed/dashboard/inventory/products/$productId'
+      path: '/inventory/products/$productId'
+      fullPath: '/dashboard/inventory/products/$productId'
+      preLoaderRoute: typeof AuthedDashboardInventoryProductsProductIdRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
     '/_authed/dashboard/inventory/items/new/$productId': {
       id: '/_authed/dashboard/inventory/items/new/$productId'
       path: '/inventory/items/new/$productId'
@@ -308,6 +328,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthedDashboardRouteRouteChildren {
   AuthedDashboardIndexRoute: typeof AuthedDashboardIndexRoute
+  AuthedDashboardInventoryProductsProductIdRoute: typeof AuthedDashboardInventoryProductsProductIdRoute
   AuthedDashboardInventoryProductsNewRoute: typeof AuthedDashboardInventoryProductsNewRoute
   AuthedDashboardInventoryCategoriesIndexRoute: typeof AuthedDashboardInventoryCategoriesIndexRoute
   AuthedDashboardInventoryProductsIndexRoute: typeof AuthedDashboardInventoryProductsIndexRoute
@@ -316,6 +337,8 @@ interface AuthedDashboardRouteRouteChildren {
 
 const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
   AuthedDashboardIndexRoute: AuthedDashboardIndexRoute,
+  AuthedDashboardInventoryProductsProductIdRoute:
+    AuthedDashboardInventoryProductsProductIdRoute,
   AuthedDashboardInventoryProductsNewRoute:
     AuthedDashboardInventoryProductsNewRoute,
   AuthedDashboardInventoryCategoriesIndexRoute:

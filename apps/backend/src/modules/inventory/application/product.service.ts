@@ -1,16 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { ProductRepositoryPort } from '../domain/ports/product.repository.port';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { ProductRepositoryPort } from '../domain/ports/product-repository.port';
 import { Product } from '../domain/entities/product.entity';
-import { CreateProductDto, PaginatedDto, ProductListItemResponseDto } from '@repo/schemas';
+import { CreateProductDto, PaginatedDto, ProductDetailDto, ProductListItemResponseDto } from '@repo/schemas';
 import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
 import { TrackingType } from '@repo/types';
-import { ProductMapper } from '../infrastructure/persistance/mappers/product.mapper';
 import { GetProductsQueryDto } from './dto/products/get-product-list-query.dto';
+import { ProductQueryPort } from '../domain/ports/product-query.port';
 
 @Injectable()
 export class ProductService {
   constructor(
     private readonly productRepository: ProductRepositoryPort,
+    private readonly readRepository: ProductQueryPort,
     private readonly tenantContext: TenantContextService,
   ) {}
 
@@ -19,12 +20,18 @@ export class ProductService {
   }
 
   async findAllWithCategory(filters: GetProductsQueryDto): Promise<PaginatedDto<ProductListItemResponseDto>> {
-    const result = await this.productRepository.findAllWithCategory(filters);
+    const result = await this.readRepository.findAll(filters);
+    return result;
+  }
 
-    return {
-      data: result.data.map(ProductMapper.listItemToResponse),
-      meta: result.meta,
-    };
+  async getDetail(productId: string): Promise<ProductDetailDto> {
+    const result = await this.readRepository.findById(productId);
+
+    if (!result) {
+      throw new NotFoundException(`Product "${productId}" not found.`);
+    }
+
+    return result;
   }
 
   async save(dto: CreateProductDto): Promise<string> {

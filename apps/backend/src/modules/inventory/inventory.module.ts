@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { InventoryItemController } from './infrastructure/controllers/inventory-item.controller';
 import { ProductController } from './infrastructure/controllers/product.controller';
 import { ProductService } from './application/product.service';
-import { ProductRepositoryPort } from './domain/ports/product.repository.port';
+import { ProductRepositoryPort } from './domain/ports/product-repository.port';
 import { PrismaProductRepository } from './infrastructure/persistance/prisma-product.repository';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { InventoryItemRepositoryPort } from './domain/ports/inventory.repository.port';
@@ -16,11 +16,17 @@ import { CategoryRepositoryPort } from './domain/ports/category.repository.port'
 import { PrismaCategoryRepository } from './infrastructure/persistance/prisma-category.repository';
 import { CategoryService } from './application/category.service';
 import { CategoryController } from './infrastructure/controllers/category.controller';
+import { ProductQueryPort } from './domain/ports/product-query.port';
+import { PrismaProductQueryRepository } from './infrastructure/persistance/prisma-product-query.repository';
 
 const repositories = [
   {
     provide: ProductRepositoryPort,
     useClass: PrismaProductRepository,
+  },
+  {
+    provide: ProductQueryPort,
+    useClass: PrismaProductQueryRepository,
   },
   {
     provide: RentalProductQueryPort,

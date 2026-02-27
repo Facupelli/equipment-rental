@@ -8,6 +8,7 @@ export * from "./owner/owner-response.schema";
 export * from "./inventory/products/create-product.schema";
 export * from "./inventory/products/product-response.schema";
 export * from "./inventory/products/product-list-response.schema";
+export * from "./inventory/products/product-detail-response.schema";
 export * from "./inventory/products/create-pricing-tier.schema";
 export * from "./inventory/create-inventory-item.schema";
 export * from "./inventory/inventory-item-response.schema";

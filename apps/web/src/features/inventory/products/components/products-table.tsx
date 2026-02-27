@@ -83,14 +83,17 @@ export function ProductsTable({
   // ---------------------------------------------------------------------------
 
   function handleCategoryChange(value: string | null) {
-    onCategoryChange(value === ALL_CATEGORIES_VALUE ? undefined : value);
+    const categoryId = value === null ? undefined : value;
+    onCategoryChange(
+      categoryId === ALL_CATEGORIES_VALUE ? undefined : categoryId,
+    );
   }
 
   function handleRowClick(product: ProductListItemResponseDto) {
-    // navigate({
-    //   to: "/dashboard/inventory/products/$productId",
-    //   params: { productId: product.id },
-    // });
+    navigate({
+      to: "/dashboard/inventory/products/$productId",
+      params: { productId: product.id },
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -214,7 +217,7 @@ export function ProductsTable({
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          <span className="min-w-[5rem] text-center">
+          <span className="min-w-20 text-center">
             Page {meta.page} of {meta.totalPages}
           </span>
 

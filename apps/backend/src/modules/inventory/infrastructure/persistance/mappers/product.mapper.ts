@@ -2,9 +2,7 @@ import { Prisma, PricingTier as PrismaPricingTier } from 'src/generated/prisma/c
 import { Product, ProductProps } from '../../../domain/entities/product.entity';
 import { PricingTier, PricingTierProps } from '../../../domain/entities/pricing-tier.entity';
 import { TrackingType } from '@repo/types';
-import { PricingTierResponseDto, ProductListItemResponseDto, ProductResponseDto } from '@repo/schemas';
 import { IncludedItem } from 'src/modules/inventory/domain/value-objects/included-item';
-import { ProductListItem } from 'src/modules/inventory/domain/ports/product.repository.port';
 
 export type PrismaProductBase = Prisma.ProductGetPayload<{
   include: { pricingTiers: true };
@@ -51,32 +49,6 @@ export class ProductMapper {
     };
   }
 
-  public static toResponse(entity: Product): ProductResponseDto {
-    return {
-      id: entity.id,
-      name: entity.name,
-      trackingType: entity.trackingType,
-      attributes: entity.attributes,
-      pricingTiers: entity.pricingTiers.map(ProductMapper.tierToResponse),
-      includedItems: [...entity.includedItems],
-      createdAt: entity.createdAt.toISOString(),
-      updatedAt: entity.updatedAt.toISOString(),
-    };
-  }
-
-  public static listItemToResponse(item: ProductListItem): ProductListItemResponseDto {
-    return {
-      id: item.id,
-      name: item.name,
-      trackingType: item.trackingType,
-      attributes: item.attributes,
-      includedItems: [...item.includedItems],
-      category: item.category,
-      createdAt: item.createdAt.toISOString(),
-      updatedAt: item.updatedAt.toISOString(),
-    };
-  }
-
   private static tierToDomain(prismaTier: PrismaPricingTier): PricingTier {
     const props: PricingTierProps = {
       id: prismaTier.id,
@@ -105,15 +77,6 @@ export class ProductMapper {
       currency: tier.currency,
       createdAt: tier.createdAt,
       updatedAt: tier.updatedAt,
-    };
-  }
-
-  private static tierToResponse(tier: PricingTier): PricingTierResponseDto {
-    return {
-      id: tier.id,
-      fromUnit: tier.fromUnit,
-      pricePerUnit: tier.pricePerUnit,
-      currency: tier.currency,
     };
   }
 }
