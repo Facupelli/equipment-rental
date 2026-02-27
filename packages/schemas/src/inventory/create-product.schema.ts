@@ -2,6 +2,12 @@ import { z } from "zod";
 import { TrackingType } from "@repo/types";
 import { createPricingTierSchema } from "./create-pricing-tier.schema";
 
+export const IncludedItemSchema = z.object({
+  name: z.string().trim().min(1, "Included item name cannot be empty."),
+  quantity: z.number().int().positive("Quantity must be a positive integer."),
+  notes: z.string().trim().min(1).nullable().optional(),
+});
+
 export const productSchema = z.object({
   name: z
     .string()
@@ -12,6 +18,7 @@ export const productSchema = z.object({
 
   // JSONB field: flexible object structure
   attributes: z.record(z.string(), z.string()).default({}),
+  includedItems: z.array(IncludedItemSchema).default([]),
 });
 
 export const createProductSchema = productSchema.extend({
@@ -20,4 +27,5 @@ export const createProductSchema = productSchema.extend({
     .min(1, "At least one pricing tier is required"),
 });
 
+export type IncludedItemDto = z.infer<typeof IncludedItemSchema>;
 export type CreateProductDto = z.infer<typeof createProductSchema>;

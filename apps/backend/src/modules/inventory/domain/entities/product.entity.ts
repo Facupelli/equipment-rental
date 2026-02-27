@@ -1,6 +1,7 @@
 import { TrackingType } from '@repo/types';
 import { randomUUID } from 'node:crypto';
 import { PricingTier, CreatePricingTierProps } from './pricing-tier.entity';
+import { IncludedItem } from '../value-objects/included-item';
 
 export interface ProductProps {
   id: string;
@@ -9,6 +10,7 @@ export interface ProductProps {
   trackingType: TrackingType;
   attributes: Record<string, unknown>;
   pricingTiers: PricingTier[];
+  includedItems: IncludedItem[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,6 +18,7 @@ export interface ProductProps {
 export type CreateProductProps = Omit<ProductProps, 'id' | 'createdAt' | 'updatedAt' | 'pricingTiers'> & {
   /** The base tier is mandatory on creation — a product cannot exist without pricing. */
   baseTier: Omit<CreatePricingTierProps, 'productId' | 'tenantId' | 'inventoryItemId'>;
+  includedItems?: IncludedItem[];
 };
 
 export class Product {
@@ -25,6 +28,7 @@ export class Product {
   private _attributes: Record<string, unknown>;
   private readonly _trackingType: TrackingType;
   private _pricingTiers: PricingTier[];
+  private _includedItems: IncludedItem[];
   private readonly _createdAt: Date;
   private _updatedAt: Date;
 
@@ -35,6 +39,7 @@ export class Product {
     this._trackingType = props.trackingType;
     this._attributes = props.attributes;
     this._pricingTiers = props.pricingTiers;
+    this._includedItems = props.includedItems ?? [];
     this._createdAt = props.createdAt;
     this._updatedAt = props.updatedAt;
   }
@@ -56,6 +61,7 @@ export class Product {
       name: props.name,
       trackingType: props.trackingType,
       attributes: props.attributes,
+      includedItems: props.includedItems,
       pricingTiers: [baseTier],
       createdAt: now,
       updatedAt: now,
@@ -120,6 +126,16 @@ export class Product {
     this._updatedAt = new Date();
   }
 
+  public setIncludedItems(items: IncludedItem[]): void {
+    this._includedItems = items;
+    this._updatedAt = new Date();
+  }
+
+  public clearIncludedItems(): void {
+    this._includedItems = [];
+    this._updatedAt = new Date();
+  }
+
   // --- Getters ---
   get id(): string {
     return this._id;
@@ -138,6 +154,9 @@ export class Product {
   }
   get pricingTiers(): ReadonlyArray<PricingTier> {
     return this._pricingTiers;
+  }
+  get includedItems(): ReadonlyArray<IncludedItem> {
+    return this._includedItems;
   }
   get createdAt(): Date {
     return this._createdAt;

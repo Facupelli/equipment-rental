@@ -3,6 +3,7 @@ import { Product, ProductProps } from '../../../domain/entities/product.entity';
 import { PricingTier, PricingTierProps } from '../../../domain/entities/pricing-tier.entity';
 import { TrackingType } from '@repo/types';
 import { PricingTierResponseDto, ProductResponseDto } from '@repo/schemas';
+import { IncludedItem } from 'src/modules/inventory/domain/value-objects/included-item';
 
 /**
  * The Prisma payload type for a Product with its PricingTier children included.
@@ -15,6 +16,8 @@ export type PrismaProductWithTiers = Prisma.ProductGetPayload<{
 
 export class ProductMapper {
   public static toDomain(prismaProduct: PrismaProductWithTiers): Product {
+    const includedItems = (prismaProduct.includedItems as unknown as IncludedItem[]) ?? [];
+
     const props: ProductProps = {
       id: prismaProduct.id,
       tenantId: prismaProduct.tenantId,
@@ -22,6 +25,7 @@ export class ProductMapper {
       trackingType: prismaProduct.trackingType as TrackingType,
       attributes: prismaProduct.attributes as Record<string, unknown>,
       pricingTiers: prismaProduct.pricingTiers.map(ProductMapper.tierToDomain),
+      includedItems,
       createdAt: prismaProduct.createdAt,
       updatedAt: prismaProduct.updatedAt,
     };
@@ -38,6 +42,7 @@ export class ProductMapper {
       attributes: entity.attributes as unknown as Prisma.InputJsonValue,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+      includedItems: entity.includedItems as unknown as Prisma.InputJsonValue,
       pricingTiers: {
         create: entity.pricingTiers.map(ProductMapper.tierToPersistenceCreate),
       },
@@ -51,6 +56,7 @@ export class ProductMapper {
       trackingType: entity.trackingType,
       attributes: entity.attributes,
       pricingTiers: entity.pricingTiers.map(ProductMapper.tierToResponse),
+      includedItems: [...entity.includedItems],
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
     };

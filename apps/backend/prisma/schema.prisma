@@ -162,14 +162,15 @@ model Category {
 }
 
 model Product {
-  id                String        @id @default(uuid())
+  id                String          @id @default(uuid())
   tenantId          String          @map("tenant_id")
   categoryId        String?         @map("category_id")
   name              String
-  trackingType      TrackingType  @map("tracking_type")
+  trackingType      TrackingType    @map("tracking_type")
   attributes        Json          // Flexible specs (weight, power, etc.)
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
+  includedItems     Json            @default("[]") @map("included_items")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
 
 
   // Relations

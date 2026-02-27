@@ -1,4 +1,5 @@
 import z from "zod";
+import { IncludedItemSchema } from "./create-product.schema";
 
 export const PricingTierResponseSchema = z.object({
   id: z.uuid(),
@@ -13,6 +14,7 @@ export const ProductResponseSchema = z.object({
   trackingType: z.enum(["SERIALIZED", "BULK"]),
   attributes: z.record(z.string(), z.any()),
   pricingTiers: z.array(PricingTierResponseSchema),
+  includedItems: z.array(IncludedItemSchema),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
