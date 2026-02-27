@@ -1,41 +1,47 @@
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
-import { createProduct, getProducts } from "./products.api";
+import {
+  createProduct,
+  getProducts,
+  type GetProductsParams,
+} from "./products.api";
 import type {
   CreateProductDto,
-  ProductResponseWithCategoryDto,
+  PaginatedDto,
+  ProductListItemResponseDto,
 } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
-type ProductsQueryOptions<TData = ProductResponseWithCategoryDto[]> = Omit<
-  UseQueryOptions<ProductResponseWithCategoryDto[], ProblemDetailsError, TData>,
+type PaginatedProducts = PaginatedDto<ProductListItemResponseDto>;
+
+type ProductsQueryOptions<TData = PaginatedProducts> = Omit<
+  UseQueryOptions<PaginatedProducts, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
-export function createProductsQueryOptions<
-  TData = ProductResponseWithCategoryDto[],
->(
+export function createProductsQueryOptions<TData = PaginatedProducts>(
+  params: GetProductsParams = {},
   options?: ProductsQueryOptions<TData>,
-): UseQueryOptions<
-  ProductResponseWithCategoryDto[],
-  ProblemDetailsError,
-  TData
-> {
+): UseQueryOptions<PaginatedProducts, ProblemDetailsError, TData> {
   return {
     ...options,
-    queryKey: ["products"],
-    queryFn: () => getProducts(),
+    queryKey: ["products", params],
+    queryFn: () => getProducts({ data: params }),
   };
 }
 
 //
 
-export function useProducts() {
-  return useQuery(createProductsQueryOptions());
+export function useProducts(params: GetProductsParams = {}) {
+  return useQuery({
+    ...createProductsQueryOptions(params),
+    placeholderData: keepPreviousData,
+  });
 }
 
 export function useCreateProduct() {

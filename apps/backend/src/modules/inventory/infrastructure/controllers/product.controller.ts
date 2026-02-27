@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ProductService } from '../../application/product.service';
-import { CreateProductDto } from '../../application/dto/create-product.dto';
-import { ProductResponseDto } from '@repo/schemas';
+import { CreateProductDto } from '../../application/dto/products/create-product.dto';
+import { PaginatedDto, ProductListItemResponseDto } from '@repo/schemas';
+import { GetProductsQueryDto } from '../../application/dto/products/get-product-list-query.dto';
+import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 
 @Controller('products')
 export class ProductController {
@@ -13,7 +15,8 @@ export class ProductController {
   }
 
   @Get()
-  async getAllWithCategory(@Query('categoryId') categoryId?: string): Promise<ProductResponseDto[]> {
-    return await this.productService.findAllWithCategory({ categoryId });
+  @Paginated()
+  async getAllWithCategory(@Query() query: GetProductsQueryDto): Promise<PaginatedDto<ProductListItemResponseDto>> {
+    return await this.productService.findAllWithCategory(query);
   }
 }

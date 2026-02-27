@@ -8,7 +8,7 @@
     "lint": "turbo run lint",
     "clean": "turbo run clean && rm -rf node_modules"
   },
-  "packageManager": "pnpm@10.0.0",
+  "packageManager": "pnpm@10.30.3",
   "license": "ISC",
   "devDependencies": {
     "turbo": "latest",

@@ -2,10 +2,9 @@ import { Prisma, PricingTier as PrismaPricingTier } from 'src/generated/prisma/c
 import { Product, ProductProps } from '../../../domain/entities/product.entity';
 import { PricingTier, PricingTierProps } from '../../../domain/entities/pricing-tier.entity';
 import { TrackingType } from '@repo/types';
-import { PricingTierResponseDto, ProductResponseDto, ProductResponseWithCategoryDto } from '@repo/schemas';
+import { PricingTierResponseDto, ProductListItemResponseDto, ProductResponseDto } from '@repo/schemas';
 import { IncludedItem } from 'src/modules/inventory/domain/value-objects/included-item';
-import { CategoryMapper } from './category.mapper';
-import { Category } from 'src/modules/inventory/domain/entities/category.entity';
+import { ProductListItem } from 'src/modules/inventory/domain/ports/product.repository.port';
 
 export type PrismaProductBase = Prisma.ProductGetPayload<{
   include: { pricingTiers: true };
@@ -65,10 +64,16 @@ export class ProductMapper {
     };
   }
 
-  public static toResponseWithCategory(entity: Product, category: Category | null): ProductResponseWithCategoryDto {
+  public static listItemToResponse(item: ProductListItem): ProductListItemResponseDto {
     return {
-      ...ProductMapper.toResponse(entity),
-      category: category ? CategoryMapper.toResponse(category) : null,
+      id: item.id,
+      name: item.name,
+      trackingType: item.trackingType,
+      attributes: item.attributes,
+      includedItems: [...item.includedItems],
+      category: item.category,
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
     };
   }
 

@@ -2,18 +2,30 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service'; // Assuming you have a global Prisma service
 import { Product } from '../../domain/entities/product.entity';
 import {
-  findAllWithCategoryFilters,
+  FindAllWithCategoryFilters,
+  PaginatedProducts,
   ProductRepositoryPort,
-  ProductsWithCategory,
 } from '../../domain/ports/product.repository.port';
 import { ProductMapper } from './mappers/product.mapper';
 import { RentalProductQueryPort, RentalProductView } from 'src/modules/rental/domain/ports/rental-product.port';
 import { TrackingType } from '@repo/types';
-import { CategoryMapper } from './mappers/category.mapper';
+import { Prisma } from 'src/generated/prisma/client';
+import { IncludedItem } from '../../domain/value-objects/included-item';
 
 @Injectable()
 export class PrismaProductRepository implements ProductRepositoryPort, RentalProductQueryPort {
   constructor(private readonly prisma: PrismaService) {}
+
+  // DOMAIN
+  async save(product: Product): Promise<string> {
+    const data = ProductMapper.toPersistence(product);
+
+    const created = await this.prisma.client.product.create({ data });
+
+    return created.id;
+  }
+
+  // READ
 
   async findTrackingType(id: string): Promise<TrackingType | null> {
     const product = await this.prisma.client.product.findUnique({
@@ -30,26 +42,43 @@ export class PrismaProductRepository implements ProductRepositoryPort, RentalPro
     return product.trackingType as TrackingType;
   }
 
-  async findAllWithCategory(filters: findAllWithCategoryFilters): Promise<ProductsWithCategory> {
-    const { categoryId } = filters;
+  async findAllWithCategory(filters: FindAllWithCategoryFilters): Promise<PaginatedProducts> {
+    const { categoryId, trackingType, page, limit } = filters;
 
-    const rows = await this.prisma.client.product.findMany({
-      where: { ...(categoryId ? { categoryId } : {}) },
-      include: { pricingTiers: true, category: true },
-    });
+    const where: Prisma.ProductWhereInput = {
+      ...(categoryId ? { categoryId } : {}),
+      ...(trackingType ? { trackingType } : {}),
+    };
 
-    return rows.map((row) => ({
-      product: ProductMapper.toDomain(row),
-      category: row.category ? CategoryMapper.toDomain(row.category) : null,
-    }));
-  }
+    const [rows, total] = await this.prisma.client.$transaction([
+      this.prisma.client.product.findMany({
+        where,
+        include: { category: true },
+        orderBy: { name: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.client.product.count({ where }),
+    ]);
 
-  async save(product: Product): Promise<string> {
-    const data = ProductMapper.toPersistence(product);
-
-    const created = await this.prisma.client.product.create({ data });
-
-    return created.id;
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        trackingType: row.trackingType as TrackingType,
+        attributes: row.attributes as Record<string, unknown>,
+        includedItems: (row.includedItems as unknown as IncludedItem[]) ?? [],
+        category: row.category ? { id: row.category.id, name: row.category.name } : null,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      })),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findRentalProductById(id: string): Promise<RentalProductView | null> {

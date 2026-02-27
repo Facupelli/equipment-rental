@@ -1,8 +1,10 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchPaginated } from "@/lib/api";
 import {
   createProductSchema,
+  GetProductsQuerySchema,
   type CreateProductDto,
-  type ProductResponseWithCategoryDto,
+  type PaginatedDto,
+  type ProductListItemResponseDto,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -19,12 +21,27 @@ export const createProduct = createServerFn({ method: "POST" })
     return result;
   });
 
-export const getProducts = createServerFn({ method: "GET" }).handler(
-  async (): Promise<ProductResponseWithCategoryDto[]> => {
-    const result = await apiFetch<ProductResponseWithCategoryDto[]>(apiUrl, {
-      method: "GET",
-    });
+export interface GetProductsParams {
+  page?: number;
+  limit?: number;
+  categoryId?: string;
+  trackingType?: string;
+}
 
-    return result;
-  },
-);
+export const getProducts = createServerFn({ method: "GET" })
+  .inputValidator((data: GetProductsParams) =>
+    GetProductsQuerySchema.parse(data),
+  )
+  .handler(
+    async ({ data }): Promise<PaginatedDto<ProductListItemResponseDto>> => {
+      const result = await apiFetchPaginated<ProductListItemResponseDto>(
+        apiUrl,
+        {
+          method: "GET",
+          params: data,
+        },
+      );
+
+      return result;
+    },
+  );

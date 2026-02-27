@@ -1,11 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProductsTable } from "@/features/inventory/products/components/products-table";
 import {
   createProductsQueryOptions,
   useProducts,
 } from "@/features/inventory/products/products.queries";
 import { Link } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
+import type { PaginationState } from "@tanstack/react-table";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/dashboard/inventory/products/")({
   loader: ({ context: { queryClient } }) =>
@@ -13,10 +16,28 @@ export const Route = createFileRoute("/_authed/dashboard/inventory/products/")({
   component: ProductsPage,
 });
 
-function ProductsPage() {
-  const { data: products } = useProducts();
+const DEFAULT_PAGINATION: PaginationState = {
+  pageIndex: 0,
+  pageSize: 20,
+};
 
-  console.log({ products });
+function ProductsPage() {
+  const [pagination, setPagination] =
+    useState<PaginationState>(DEFAULT_PAGINATION);
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+
+  const { data: products, isFetching } = useProducts({
+    page: pagination.pageIndex + 1, // TanStack Table is 0-indexed; API is 1-indexed
+    limit: pagination.pageSize,
+    categoryId,
+  });
+
+  // When a filter changes, reset to first page to avoid landing on a
+  // non-existent page (e.g. was on page 5, filter now yields only 2 pages)
+  function handleCategoryChange(nextCategoryId: string | undefined) {
+    setCategoryId(nextCategoryId);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }
 
   return (
     <>
@@ -29,21 +50,21 @@ function ProductsPage() {
           }
         />
       </header>
-      <div className="p-6">
-        <p>Product Catalog</p>
-        <div className="text-black">
-          {products?.map((product) => (
-            <div key={product.id} className="flex gap-10 items-center">
-              <p>{product.name}</p>
-              <Link
-                to={`/dashboard/inventory/items/new/$productId`}
-                params={{ productId: product.id }}
-              >
-                add inventory item
-              </Link>
-            </div>
-          ))}
-        </div>
+
+      <div className="p-6 space-y-2">
+        <h1 className="text-lg font-semibold">Product Catalog</h1>
+
+        <ProductsTable
+          products={products?.data ?? []}
+          meta={
+            products?.meta ?? { total: 0, page: 1, limit: 20, totalPages: 1 }
+          }
+          pagination={pagination}
+          categoryId={categoryId}
+          onPaginationChange={setPagination}
+          onCategoryChange={handleCategoryChange}
+          isLoading={isFetching}
+        />
       </div>
     </>
   );

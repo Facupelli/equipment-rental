@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { findAllWithCategoryFilters, ProductRepositoryPort } from '../domain/ports/product.repository.port';
+import { ProductRepositoryPort } from '../domain/ports/product.repository.port';
 import { Product } from '../domain/entities/product.entity';
-import { CreateProductDto, ProductResponseWithCategoryDto } from '@repo/schemas';
+import { CreateProductDto, PaginatedDto, ProductListItemResponseDto } from '@repo/schemas';
 import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
 import { TrackingType } from '@repo/types';
 import { ProductMapper } from '../infrastructure/persistance/mappers/product.mapper';
+import { GetProductsQueryDto } from './dto/products/get-product-list-query.dto';
 
 @Injectable()
 export class ProductService {
@@ -17,10 +18,13 @@ export class ProductService {
     return await this.productRepository.findTrackingType(id);
   }
 
-  async findAllWithCategory(filters: findAllWithCategoryFilters): Promise<ProductResponseWithCategoryDto[]> {
-    const results = await this.productRepository.findAllWithCategory(filters);
+  async findAllWithCategory(filters: GetProductsQueryDto): Promise<PaginatedDto<ProductListItemResponseDto>> {
+    const result = await this.productRepository.findAllWithCategory(filters);
 
-    return results.map(({ product, category }) => ProductMapper.toResponseWithCategory(product, category));
+    return {
+      data: result.data.map(ProductMapper.listItemToResponse),
+      meta: result.meta,
+    };
   }
 
   async save(dto: CreateProductDto): Promise<string> {

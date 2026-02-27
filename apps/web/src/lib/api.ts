@@ -1,17 +1,18 @@
-import { problemDetailsSchema } from "@repo/schemas";
+import { problemDetailsSchema, type PaginatedDto } from "@repo/schemas";
 import { useAppSession } from "./session";
 import { ProblemDetailsError } from "@/shared/errors";
 
 type ApiFetchOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
+  params?: Record<string, unknown>;
   authenticated?: boolean;
 };
 
-export async function apiFetch<T>(
+async function apiFetchRaw<T>(
   path: string,
   options: ApiFetchOptions = {},
 ): Promise<T> {
-  const { body, headers, authenticated = true, ...rest } = options;
+  const { body, headers, params, authenticated = true, ...rest } = options;
 
   const authHeader: Record<string, string> = {};
 
@@ -33,8 +34,17 @@ export async function apiFetch<T>(
 
   let response: Response;
 
+  const url = new URL(`${process.env.NESTJS_API_URL}${path}`);
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.set(key, String(value));
+      }
+    });
+  }
+
   try {
-    response = await fetch(`${process.env.NESTJS_API_URL}${path}`, {
+    response = await fetch(url, {
       ...rest,
       headers: {
         "Content-Type": "application/json",
@@ -44,7 +54,6 @@ export async function apiFetch<T>(
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch (error) {
-    // Network-level failure (no response at all)
     throw new ProblemDetailsError({
       type: "about:blank",
       title: "Network Error",
@@ -60,8 +69,6 @@ export async function apiFetch<T>(
     const raw = await response.json().catch(() => null);
     const parsed = problemDetailsSchema.safeParse(raw);
 
-    // If NestJS returned a valid ProblemDetails shape, use it.
-    // Otherwise, build a fallback from the HTTP status.
     throw new ProblemDetailsError(
       parsed.success
         ? parsed.data
@@ -74,6 +81,21 @@ export async function apiFetch<T>(
     );
   }
 
-  const successResponse = await response.json();
-  return successResponse.data as T;
+  return response.json() as Promise<T>;
+}
+
+export async function apiFetch<T>(
+  path: string,
+  options: ApiFetchOptions = {},
+): Promise<T> {
+  const body = await apiFetchRaw<{ data: T }>(path, options);
+  return body.data;
+}
+
+export async function apiFetchPaginated<T>(
+  path: string,
+  options: ApiFetchOptions = {},
+): Promise<PaginatedDto<T>> {
+  const body = await apiFetchRaw<PaginatedDto<T>>(path, options);
+  return body;
 }

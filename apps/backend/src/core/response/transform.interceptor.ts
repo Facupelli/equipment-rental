@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { RESPONSE_MESSAGE_KEY } from '../decorators/response-message.decorator';
+import { IS_PAGINATED_KEY } from '../decorators/paginated-response.decorator';
 
 @Injectable()
 export class TransformInterceptor implements NestInterceptor {
@@ -14,13 +15,29 @@ export class TransformInterceptor implements NestInterceptor {
       context.getClass(),
     ]);
 
+    const isPaginated = this.reflector.getAllAndOverride<boolean>(IS_PAGINATED_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
     return next.handle().pipe(
-      map((data) => {
-        const response: Record<string, unknown> = { data: data ?? null };
-        if (message) {
-          response.message = message;
+      map((payload) => {
+        if (isPaginated) {
+          const result: Record<string, unknown> = {
+            data: payload.data,
+            meta: payload.meta,
+          };
+          if (message) {
+            result.message = message;
+          }
+          return result;
         }
-        return response;
+
+        const result: Record<string, unknown> = { data: payload ?? null };
+        if (message) {
+          result.message = message;
+        }
+        return result;
       }),
     );
   }
