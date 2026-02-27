@@ -9,7 +9,7 @@ const sidebarItems = [
   { name: "Bookings", href: "/dashboard/bookings" },
   { name: "Customers", href: "/dashboard/users" },
   { name: "Categories", href: "/dashboard/inventory/categories" },
-  { name: "Assets", href: "/dashboard/inventory/items" },
+  { name: "Physical Assets", href: "/dashboard/inventory/items" },
   { name: "Products", href: "/dashboard/inventory/products" },
 ];
 

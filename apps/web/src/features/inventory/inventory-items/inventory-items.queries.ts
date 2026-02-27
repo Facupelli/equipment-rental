@@ -1,38 +1,57 @@
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
-import { createInventoryItem, getInventoryItems } from "./inventory-items.api";
+import {
+  createInventoryItem,
+  getInventoryItems,
+  type GetInventoryItemsParams,
+} from "./inventory-items.api";
 import type {
   CreateInventoryItemDto,
-  InventoryItemResponseDto,
+  InventoryItemListItemDto,
+  PaginatedDto,
 } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
-type InventoryItemsOptions<TData = InventoryItemResponseDto[]> = Omit<
-  UseQueryOptions<InventoryItemResponseDto[], ProblemDetailsError, TData>,
+type PaginatedInventoryItems = PaginatedDto<InventoryItemListItemDto>;
+
+type InventoryItemsOptions<TData = PaginatedInventoryItems> = Omit<
+  UseQueryOptions<PaginatedInventoryItems, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
+// -----------------------------------------------------
+
 export function createInventoryItemsQueryOptions<
-  TData = InventoryItemResponseDto[],
+  TData = PaginatedInventoryItems,
 >(
+  params: GetInventoryItemsParams = {},
   options?: InventoryItemsOptions<TData>,
-): UseQueryOptions<InventoryItemResponseDto[], ProblemDetailsError, TData> {
+): UseQueryOptions<PaginatedInventoryItems, ProblemDetailsError, TData> {
   return {
     ...options,
-    queryKey: ["inventory-items"],
-    queryFn: () => getInventoryItems(),
+    queryKey: ["inventory-items", params],
+    queryFn: () => getInventoryItems({ data: params }),
   };
 }
 
 //
 
-export function useInventoryItems() {
-  return useQuery(createInventoryItemsQueryOptions());
+export function useInventoryItems<TData = PaginatedInventoryItems>(
+  params: GetInventoryItemsParams = {},
+  options?: InventoryItemsOptions<TData>,
+) {
+  return useQuery({
+    ...createInventoryItemsQueryOptions(params, options),
+    placeholderData: keepPreviousData,
+  });
 }
+
+//
 
 export function useCreateInventoryItem() {
   const queryClient = useQueryClient();

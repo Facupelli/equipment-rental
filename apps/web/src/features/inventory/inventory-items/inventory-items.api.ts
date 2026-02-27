@@ -1,9 +1,12 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchPaginated } from "@/lib/api";
 import {
   createInventoryItemSchema,
+  getInventoryItemsQuerySchema,
   type CreateInventoryItemDto,
-  type InventoryItemResponseDto,
+  type InventoryItemListItemDto,
+  type PaginatedDto,
 } from "@repo/schemas";
+import type { InventoryItemStatus } from "@repo/types";
 import { createServerFn } from "@tanstack/react-start";
 
 const apiUrl = "/inventory-items";
@@ -21,12 +24,27 @@ export const createInventoryItem = createServerFn({ method: "POST" })
     return result;
   });
 
-export const getInventoryItems = createServerFn({ method: "GET" }).handler(
-  async (): Promise<InventoryItemResponseDto[]> => {
-    const result = await apiFetch<InventoryItemResponseDto[]>(apiUrl, {
-      method: "GET",
-    });
+export interface GetInventoryItemsParams {
+  search?: string;
+  categoryId?: string;
+  locationId?: string;
+  status?: InventoryItemStatus;
+  includeRetired?: boolean;
+  page?: number;
+  limit?: number;
+}
 
-    return result;
-  },
-);
+export const getInventoryItems = createServerFn({ method: "GET" })
+  .inputValidator((data: GetInventoryItemsParams) =>
+    getInventoryItemsQuerySchema.parse(data),
+  )
+  .handler(
+    async ({ data }): Promise<PaginatedDto<InventoryItemListItemDto>> => {
+      const result = await apiFetchPaginated<InventoryItemListItemDto>(apiUrl, {
+        method: "GET",
+        params: data,
+      });
+
+      return result;
+    },
+  );

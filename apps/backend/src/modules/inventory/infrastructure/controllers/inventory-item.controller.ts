@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { InventoryItemService } from '../../application/inventory-item.service';
-import { CreateInventoryItemDto } from '../../application/dto/create-inventory-item.dto';
+import { CreateInventoryItemDto } from '../../application/dto/items/create-inventory-item.dto';
 import { CreateBlackoutPeriodDto } from '../../application/dto/create-blackout-period.dto';
 import { CreateBlackoutPeriodCommand } from '../../application/create-blackout-period.command';
 import { InventoryItemListItemDto, PaginatedDto } from '@repo/schemas';

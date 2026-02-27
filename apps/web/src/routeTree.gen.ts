@@ -20,6 +20,7 @@ import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashb
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as AuthedDashboardInventoryProductsIndexRouteImport } from './routes/_authed/dashboard/inventory/products/index'
+import { Route as AuthedDashboardInventoryItemsIndexRouteImport } from './routes/_authed/dashboard/inventory/items/index'
 import { Route as AuthedDashboardInventoryCategoriesIndexRouteImport } from './routes/_authed/dashboard/inventory/categories/index'
 import { Route as AuthedDashboardInventoryProductsNewRouteImport } from './routes/_authed/dashboard/inventory/products/new'
 import { Route as AuthedDashboardInventoryProductsProductIdRouteImport } from './routes/_authed/dashboard/inventory/products/$productId'
@@ -80,6 +81,12 @@ const AuthedDashboardInventoryProductsIndexRoute =
     path: '/inventory/products/',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
+const AuthedDashboardInventoryItemsIndexRoute =
+  AuthedDashboardInventoryItemsIndexRouteImport.update({
+    id: '/inventory/items/',
+    path: '/inventory/items/',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
 const AuthedDashboardInventoryCategoriesIndexRoute =
   AuthedDashboardInventoryCategoriesIndexRouteImport.update({
     id: '/inventory/categories/',
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/dashboard/inventory/categories/': typeof AuthedDashboardInventoryCategoriesIndexRoute
+  '/dashboard/inventory/items/': typeof AuthedDashboardInventoryItemsIndexRoute
   '/dashboard/inventory/products/': typeof AuthedDashboardInventoryProductsIndexRoute
   '/dashboard/inventory/items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
@@ -133,6 +141,7 @@ export interface FileRoutesByTo {
   '/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/dashboard/inventory/categories': typeof AuthedDashboardInventoryCategoriesIndexRoute
+  '/dashboard/inventory/items': typeof AuthedDashboardInventoryItemsIndexRoute
   '/dashboard/inventory/products': typeof AuthedDashboardInventoryProductsIndexRoute
   '/dashboard/inventory/items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
@@ -151,6 +160,7 @@ export interface FileRoutesById {
   '/_authed/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/_authed/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/_authed/dashboard/inventory/categories/': typeof AuthedDashboardInventoryCategoriesIndexRoute
+  '/_authed/dashboard/inventory/items/': typeof AuthedDashboardInventoryItemsIndexRoute
   '/_authed/dashboard/inventory/products/': typeof AuthedDashboardInventoryProductsIndexRoute
   '/_authed/dashboard/inventory/items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/dashboard/inventory/products/$productId'
     | '/dashboard/inventory/products/new'
     | '/dashboard/inventory/categories/'
+    | '/dashboard/inventory/items/'
     | '/dashboard/inventory/products/'
     | '/dashboard/inventory/items/new/$productId'
   fileRoutesByTo: FileRoutesByTo
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/dashboard/inventory/products/$productId'
     | '/dashboard/inventory/products/new'
     | '/dashboard/inventory/categories'
+    | '/dashboard/inventory/items'
     | '/dashboard/inventory/products'
     | '/dashboard/inventory/items/new/$productId'
   id:
@@ -201,6 +213,7 @@ export interface FileRouteTypes {
     | '/_authed/dashboard/inventory/products/$productId'
     | '/_authed/dashboard/inventory/products/new'
     | '/_authed/dashboard/inventory/categories/'
+    | '/_authed/dashboard/inventory/items/'
     | '/_authed/dashboard/inventory/products/'
     | '/_authed/dashboard/inventory/items/new/$productId'
   fileRoutesById: FileRoutesById
@@ -295,6 +308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardInventoryProductsIndexRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
+    '/_authed/dashboard/inventory/items/': {
+      id: '/_authed/dashboard/inventory/items/'
+      path: '/inventory/items'
+      fullPath: '/dashboard/inventory/items/'
+      preLoaderRoute: typeof AuthedDashboardInventoryItemsIndexRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
     '/_authed/dashboard/inventory/categories/': {
       id: '/_authed/dashboard/inventory/categories/'
       path: '/inventory/categories'
@@ -331,6 +351,7 @@ interface AuthedDashboardRouteRouteChildren {
   AuthedDashboardInventoryProductsProductIdRoute: typeof AuthedDashboardInventoryProductsProductIdRoute
   AuthedDashboardInventoryProductsNewRoute: typeof AuthedDashboardInventoryProductsNewRoute
   AuthedDashboardInventoryCategoriesIndexRoute: typeof AuthedDashboardInventoryCategoriesIndexRoute
+  AuthedDashboardInventoryItemsIndexRoute: typeof AuthedDashboardInventoryItemsIndexRoute
   AuthedDashboardInventoryProductsIndexRoute: typeof AuthedDashboardInventoryProductsIndexRoute
   AuthedDashboardInventoryItemsNewProductIdRoute: typeof AuthedDashboardInventoryItemsNewProductIdRoute
 }
@@ -343,6 +364,8 @@ const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
     AuthedDashboardInventoryProductsNewRoute,
   AuthedDashboardInventoryCategoriesIndexRoute:
     AuthedDashboardInventoryCategoriesIndexRoute,
+  AuthedDashboardInventoryItemsIndexRoute:
+    AuthedDashboardInventoryItemsIndexRoute,
   AuthedDashboardInventoryProductsIndexRoute:
     AuthedDashboardInventoryProductsIndexRoute,
   AuthedDashboardInventoryItemsNewProductIdRoute:
