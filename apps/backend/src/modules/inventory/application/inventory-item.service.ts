@@ -1,14 +1,21 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InventoryItemRepositoryPort } from '../domain/ports/inventory.repository.port';
-import { CreateInventoryItemDto } from '@repo/schemas';
+import {
+  CreateInventoryItemDto,
+  GetInventoryItemsQueryDto,
+  InventoryItemListItemDto,
+  PaginatedDto,
+} from '@repo/schemas';
 import { InventoryItem } from '../domain/entities/inventory-item.entity';
 import { ProductService } from './product.service';
 import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
+import { InventoryItemQueryPort } from '../domain/ports/item-query.port';
 
 @Injectable()
 export class InventoryItemService {
   constructor(
     private readonly inventoryItemRepository: InventoryItemRepositoryPort,
+    private readonly inventoryQueryRepository: InventoryItemQueryPort,
     private readonly productService: ProductService,
     private readonly tenantContext: TenantContextService,
   ) {}
@@ -17,8 +24,8 @@ export class InventoryItemService {
     return await this.inventoryItemRepository.findById(id);
   }
 
-  async findAll(): Promise<InventoryItem[]> {
-    return await this.inventoryItemRepository.findAll();
+  async findAll(filters: GetInventoryItemsQueryDto): Promise<PaginatedDto<InventoryItemListItemDto>> {
+    return await this.inventoryQueryRepository.findAll(filters);
   }
 
   async save(dto: CreateInventoryItemDto): Promise<string> {

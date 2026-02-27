@@ -18,6 +18,8 @@ import { CategoryService } from './application/category.service';
 import { CategoryController } from './infrastructure/controllers/category.controller';
 import { ProductQueryPort } from './domain/ports/product-query.port';
 import { PrismaProductQueryRepository } from './infrastructure/persistance/prisma-product-query.repository';
+import { InventoryItemQueryPort } from './domain/ports/item-query.port';
+import { PrismaInventoryItemQueryRepository } from './infrastructure/persistance/prisma-item-query.repository';
 
 const repositories = [
   {
@@ -35,6 +37,10 @@ const repositories = [
   {
     provide: InventoryItemRepositoryPort,
     useClass: PrismaInventoryItemRepository,
+  },
+  {
+    provide: InventoryItemQueryPort,
+    useClass: PrismaInventoryItemQueryRepository,
   },
   {
     provide: CategoryRepositoryPort,

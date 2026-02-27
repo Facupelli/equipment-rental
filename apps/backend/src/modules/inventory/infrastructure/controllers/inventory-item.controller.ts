@@ -1,10 +1,11 @@
-import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { InventoryItemService } from '../../application/inventory-item.service';
 import { CreateInventoryItemDto } from '../../application/dto/create-inventory-item.dto';
 import { CreateBlackoutPeriodDto } from '../../application/dto/create-blackout-period.dto';
 import { CreateBlackoutPeriodCommand } from '../../application/create-blackout-period.command';
-import { InventoryItemMapper } from '../persistance/mappers/inventory-item.mapper';
-import { InventoryItemResponseDto } from '@repo/schemas';
+import { InventoryItemListItemDto, PaginatedDto } from '@repo/schemas';
+import { GetInventoryItemsQueryDto } from '../../application/dto/items/get-item-list-query.dto';
+import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 
 @Controller('inventory-items')
 export class InventoryItemController {
@@ -24,19 +25,14 @@ export class InventoryItemController {
   }
 
   @Get()
-  async getAll(): Promise<InventoryItemResponseDto[]> {
-    const items = await this.inventoryItemService.findAll();
-    return items.map((item) => InventoryItemMapper.toResponse(item));
+  @Paginated()
+  async getAll(@Query() filters: GetInventoryItemsQueryDto): Promise<PaginatedDto<InventoryItemListItemDto>> {
+    return await this.inventoryItemService.findAll(filters);
   }
 
-  @Get(':id')
-  async getById(@Param('id') id: string): Promise<InventoryItemResponseDto> {
-    const item = await this.inventoryItemService.findById(id);
+  // @Get(':id')
+  // async getById(@Param('id') id: string): Promise<InventoryItemResponseDto> {
+  //   const item = await this.inventoryItemService.findById(id);
 
-    if (!item) {
-      throw new NotFoundException('Inventory item not found');
-    }
-
-    return InventoryItemMapper.toResponse(item);
-  }
+  // }
 }

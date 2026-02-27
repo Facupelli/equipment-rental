@@ -38,11 +38,6 @@ export class PrismaInventoryItemRepository extends InventoryItemRepositoryPort {
     return InventoryItemMapper.toDomain(item, blackouts);
   }
 
-  async findAll(): Promise<InventoryItem[]> {
-    const items = await this.prisma.client.inventoryItem.findMany();
-    return items.map((item) => InventoryItemMapper.toDomain(item, []));
-  }
-
   async save(item: InventoryItem): Promise<string> {
     const persistenceData = InventoryItemMapper.toPersistence(item);
     const newBlackouts = item.NewBlackouts;
