@@ -4,9 +4,11 @@ import {
   GetProductsQuerySchema,
   type CreateProductDto,
   type PaginatedDto,
+  type ProductDetailDto,
   type ProductListItemResponseDto,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
+import z from "zod";
 
 const apiUrl = "/products";
 
@@ -17,6 +19,29 @@ export const createProduct = createServerFn({ method: "POST" })
       method: "POST",
       body: data,
     });
+
+    return result;
+  });
+
+export interface GetProductDetailParams {
+  productId: string;
+}
+
+const productDetailParamsSchema = z.object({
+  productId: z.uuid(),
+});
+
+export const getProductDetail = createServerFn({ method: "GET" })
+  .inputValidator((data: GetProductDetailParams) =>
+    productDetailParamsSchema.parse(data),
+  )
+  .handler(async ({ data }): Promise<ProductDetailDto> => {
+    const result = await apiFetch<ProductDetailDto>(
+      `${apiUrl}/${data.productId}`,
+      {
+        method: "GET",
+      },
+    );
 
     return result;
   });

@@ -45,7 +45,7 @@ export const productDetailSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   trackingType: z.enum(TrackingType),
-  attributes: z.record(z.string(), z.unknown()),
+  attributes: z.record(z.string(), z.any()),
   includedItems: z.array(IncludedItemSchema),
   category: categorySummarySchema.nullable(),
   pricingTiers: z.array(pricingTierDetailSchema),
