@@ -1,0 +1,53 @@
+import { Button } from "@/components/ui/button";
+import { CreateOwnerDialog } from "@/features/owners/components/create-owner-dialog";
+import { ownerColumns } from "@/features/owners/components/owners-columns";
+import { OwnersDataTable } from "@/features/owners/components/owners-table";
+import { useOwners } from "@/features/owners/owners.queries";
+import { createFileRoute } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+
+export const Route = createFileRoute("/_authed/dashboard/owners/")({
+  component: OwnersPage,
+});
+
+function OwnersPage() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { data: owners = [], isPending, isError } = useOwners();
+
+  return (
+    <div className="space-y-6 p-8">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Asset Owners
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Manage external entities owning rental inventory.
+          </p>
+        </div>
+        <Button onClick={() => setDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Owner
+        </Button>
+      </div>
+
+      {isError ? (
+        <p className="text-sm text-destructive">
+          Failed to load owners. Please try again.
+        </p>
+      ) : isPending ? (
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      ) : (
+        <OwnersDataTable
+          columns={ownerColumns}
+          data={owners}
+          searchColumn="name"
+          searchPlaceholder="Search owners..."
+        />
+      )}
+
+      <CreateOwnerDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+    </div>
+  );
+}

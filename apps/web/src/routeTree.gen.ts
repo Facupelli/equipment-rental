@@ -19,6 +19,8 @@ import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashb
 import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashboard/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
+import { Route as AuthedDashboardOwnersIndexRouteImport } from './routes/_authed/dashboard/owners/index'
+import { Route as AuthedDashboardLocationsIndexRouteImport } from './routes/_authed/dashboard/locations/index'
 import { Route as AuthedDashboardBookingsIndexRouteImport } from './routes/_authed/dashboard/bookings/index'
 import { Route as AuthedDashboardInventoryProductsIndexRouteImport } from './routes/_authed/dashboard/inventory/products/index'
 import { Route as AuthedDashboardInventoryItemsIndexRouteImport } from './routes/_authed/dashboard/inventory/items/index'
@@ -76,6 +78,18 @@ const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
   path: '/demo/form/address',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedDashboardOwnersIndexRoute =
+  AuthedDashboardOwnersIndexRouteImport.update({
+    id: '/owners/',
+    path: '/owners/',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
+const AuthedDashboardLocationsIndexRoute =
+  AuthedDashboardLocationsIndexRouteImport.update({
+    id: '/locations/',
+    path: '/locations/',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
 const AuthedDashboardBookingsIndexRoute =
   AuthedDashboardBookingsIndexRouteImport.update({
     id: '/bookings/',
@@ -130,6 +144,8 @@ export interface FileRoutesByFullPath {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/': typeof AuthedDashboardIndexRoute
   '/dashboard/bookings/': typeof AuthedDashboardBookingsIndexRoute
+  '/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
+  '/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
   '/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/dashboard/inventory/categories/': typeof AuthedDashboardInventoryCategoriesIndexRoute
@@ -147,6 +163,8 @@ export interface FileRoutesByTo {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard': typeof AuthedDashboardIndexRoute
   '/dashboard/bookings': typeof AuthedDashboardBookingsIndexRoute
+  '/dashboard/locations': typeof AuthedDashboardLocationsIndexRoute
+  '/dashboard/owners': typeof AuthedDashboardOwnersIndexRoute
   '/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/dashboard/inventory/categories': typeof AuthedDashboardInventoryCategoriesIndexRoute
@@ -167,6 +185,8 @@ export interface FileRoutesById {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
   '/_authed/dashboard/bookings/': typeof AuthedDashboardBookingsIndexRoute
+  '/_authed/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
+  '/_authed/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
   '/_authed/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/_authed/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/_authed/dashboard/inventory/categories/': typeof AuthedDashboardInventoryCategoriesIndexRoute
@@ -187,6 +207,8 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/dashboard/'
     | '/dashboard/bookings/'
+    | '/dashboard/locations/'
+    | '/dashboard/owners/'
     | '/dashboard/inventory/products/$productId'
     | '/dashboard/inventory/products/new'
     | '/dashboard/inventory/categories/'
@@ -204,6 +226,8 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/dashboard'
     | '/dashboard/bookings'
+    | '/dashboard/locations'
+    | '/dashboard/owners'
     | '/dashboard/inventory/products/$productId'
     | '/dashboard/inventory/products/new'
     | '/dashboard/inventory/categories'
@@ -223,6 +247,8 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/_authed/dashboard/'
     | '/_authed/dashboard/bookings/'
+    | '/_authed/dashboard/locations/'
+    | '/_authed/dashboard/owners/'
     | '/_authed/dashboard/inventory/products/$productId'
     | '/_authed/dashboard/inventory/products/new'
     | '/_authed/dashboard/inventory/categories/'
@@ -314,6 +340,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoFormAddressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/dashboard/owners/': {
+      id: '/_authed/dashboard/owners/'
+      path: '/owners'
+      fullPath: '/dashboard/owners/'
+      preLoaderRoute: typeof AuthedDashboardOwnersIndexRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
+    '/_authed/dashboard/locations/': {
+      id: '/_authed/dashboard/locations/'
+      path: '/locations'
+      fullPath: '/dashboard/locations/'
+      preLoaderRoute: typeof AuthedDashboardLocationsIndexRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
     '/_authed/dashboard/bookings/': {
       id: '/_authed/dashboard/bookings/'
       path: '/bookings'
@@ -369,6 +409,8 @@ declare module '@tanstack/react-router' {
 interface AuthedDashboardRouteRouteChildren {
   AuthedDashboardIndexRoute: typeof AuthedDashboardIndexRoute
   AuthedDashboardBookingsIndexRoute: typeof AuthedDashboardBookingsIndexRoute
+  AuthedDashboardLocationsIndexRoute: typeof AuthedDashboardLocationsIndexRoute
+  AuthedDashboardOwnersIndexRoute: typeof AuthedDashboardOwnersIndexRoute
   AuthedDashboardInventoryProductsProductIdRoute: typeof AuthedDashboardInventoryProductsProductIdRoute
   AuthedDashboardInventoryProductsNewRoute: typeof AuthedDashboardInventoryProductsNewRoute
   AuthedDashboardInventoryCategoriesIndexRoute: typeof AuthedDashboardInventoryCategoriesIndexRoute
@@ -380,6 +422,8 @@ interface AuthedDashboardRouteRouteChildren {
 const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
   AuthedDashboardIndexRoute: AuthedDashboardIndexRoute,
   AuthedDashboardBookingsIndexRoute: AuthedDashboardBookingsIndexRoute,
+  AuthedDashboardLocationsIndexRoute: AuthedDashboardLocationsIndexRoute,
+  AuthedDashboardOwnersIndexRoute: AuthedDashboardOwnersIndexRoute,
   AuthedDashboardInventoryProductsProductIdRoute:
     AuthedDashboardInventoryProductsProductIdRoute,
   AuthedDashboardInventoryProductsNewRoute:

@@ -11,6 +11,8 @@ const sidebarItems = [
   { name: "Categories", href: "/dashboard/inventory/categories" },
   { name: "Physical Assets", href: "/dashboard/inventory/items" },
   { name: "Products", href: "/dashboard/inventory/products" },
+  { name: "Owners", href: "/dashboard/owners" },
+  { name: "Locations", href: "/dashboard/locations" },
 ];
 
 function DashboardLayout() {

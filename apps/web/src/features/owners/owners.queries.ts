@@ -2,19 +2,27 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type MutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { createOwner, getOwners } from "./owners.api";
 import type { CreateOwnerDto, OwnerResponseDto } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
-type OwnerOptions<TData = OwnerResponseDto[]> = Omit<
+type OwnerQueryOptions<TData = OwnerResponseDto[]> = Omit<
   UseQueryOptions<OwnerResponseDto[], ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
+type OwnerMutationOptions = Omit<
+  MutationOptions<string, ProblemDetailsError, CreateOwnerDto>,
+  "mutationFn" | "mutationKey"
+>;
+
+// -----------------------------------------------------
+
 export function createOwnerQueryOptions<TData = OwnerResponseDto[]>(
-  options?: OwnerOptions<TData>,
+  options?: OwnerQueryOptions<TData>,
 ): UseQueryOptions<OwnerResponseDto[], ProblemDetailsError, TData> {
   return {
     ...options,
@@ -23,28 +31,31 @@ export function createOwnerQueryOptions<TData = OwnerResponseDto[]>(
   };
 }
 
-//
+// -----------------------------------------------------
 
-export function useOwners() {
-  return useQuery(createOwnerQueryOptions());
+export function useOwners<TData = OwnerResponseDto[]>(
+  options?: OwnerQueryOptions<TData>,
+) {
+  return useQuery(createOwnerQueryOptions(options));
 }
 
-export function useCreateOwner() {
+//
+
+export function useCreateOwner(options?: OwnerMutationOptions) {
   const queryClient = useQueryClient();
 
   return useMutation<string, ProblemDetailsError, CreateOwnerDto>({
+    ...options,
     mutationFn: (data) => createOwner({ data }),
-    onSuccess: async () => {
+    onSuccess: async (data, variables, onMutateResult, context) => {
       await queryClient.invalidateQueries({
         queryKey: createOwnerQueryOptions().queryKey,
       });
+
+      await options?.onSuccess?.(data, variables, onMutateResult, context);
     },
-    onError: (error) => {
-      // error is fully typed as ProblemDetailsError here.
-      // You can log, toast, or handle it however you like.
-      console.error(
-        `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
-      );
+    onError: async (error, variables, onMutateResult, context) => {
+      await options?.onError?.(error, variables, onMutateResult, context);
     },
   });
 }
