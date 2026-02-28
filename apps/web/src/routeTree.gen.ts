@@ -19,6 +19,7 @@ import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashb
 import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashboard/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
+import { Route as AuthedDashboardBookingsIndexRouteImport } from './routes/_authed/dashboard/bookings/index'
 import { Route as AuthedDashboardInventoryProductsIndexRouteImport } from './routes/_authed/dashboard/inventory/products/index'
 import { Route as AuthedDashboardInventoryItemsIndexRouteImport } from './routes/_authed/dashboard/inventory/items/index'
 import { Route as AuthedDashboardInventoryCategoriesIndexRouteImport } from './routes/_authed/dashboard/inventory/categories/index'
@@ -75,6 +76,12 @@ const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
   path: '/demo/form/address',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedDashboardBookingsIndexRoute =
+  AuthedDashboardBookingsIndexRouteImport.update({
+    id: '/bookings/',
+    path: '/bookings/',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
 const AuthedDashboardInventoryProductsIndexRoute =
   AuthedDashboardInventoryProductsIndexRouteImport.update({
     id: '/inventory/products/',
@@ -122,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/': typeof AuthedDashboardIndexRoute
+  '/dashboard/bookings/': typeof AuthedDashboardBookingsIndexRoute
   '/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/dashboard/inventory/categories/': typeof AuthedDashboardInventoryCategoriesIndexRoute
@@ -138,6 +146,7 @@ export interface FileRoutesByTo {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard': typeof AuthedDashboardIndexRoute
+  '/dashboard/bookings': typeof AuthedDashboardBookingsIndexRoute
   '/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/dashboard/inventory/categories': typeof AuthedDashboardInventoryCategoriesIndexRoute
@@ -157,6 +166,7 @@ export interface FileRoutesById {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
+  '/_authed/dashboard/bookings/': typeof AuthedDashboardBookingsIndexRoute
   '/_authed/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
   '/_authed/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
   '/_authed/dashboard/inventory/categories/': typeof AuthedDashboardInventoryCategoriesIndexRoute
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard/'
+    | '/dashboard/bookings/'
     | '/dashboard/inventory/products/$productId'
     | '/dashboard/inventory/products/new'
     | '/dashboard/inventory/categories/'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard'
+    | '/dashboard/bookings'
     | '/dashboard/inventory/products/$productId'
     | '/dashboard/inventory/products/new'
     | '/dashboard/inventory/categories'
@@ -210,6 +222,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/_authed/dashboard/'
+    | '/_authed/dashboard/bookings/'
     | '/_authed/dashboard/inventory/products/$productId'
     | '/_authed/dashboard/inventory/products/new'
     | '/_authed/dashboard/inventory/categories/'
@@ -301,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoFormAddressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/dashboard/bookings/': {
+      id: '/_authed/dashboard/bookings/'
+      path: '/bookings'
+      fullPath: '/dashboard/bookings/'
+      preLoaderRoute: typeof AuthedDashboardBookingsIndexRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
     '/_authed/dashboard/inventory/products/': {
       id: '/_authed/dashboard/inventory/products/'
       path: '/inventory/products'
@@ -348,6 +368,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthedDashboardRouteRouteChildren {
   AuthedDashboardIndexRoute: typeof AuthedDashboardIndexRoute
+  AuthedDashboardBookingsIndexRoute: typeof AuthedDashboardBookingsIndexRoute
   AuthedDashboardInventoryProductsProductIdRoute: typeof AuthedDashboardInventoryProductsProductIdRoute
   AuthedDashboardInventoryProductsNewRoute: typeof AuthedDashboardInventoryProductsNewRoute
   AuthedDashboardInventoryCategoriesIndexRoute: typeof AuthedDashboardInventoryCategoriesIndexRoute
@@ -358,6 +379,7 @@ interface AuthedDashboardRouteRouteChildren {
 
 const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
   AuthedDashboardIndexRoute: AuthedDashboardIndexRoute,
+  AuthedDashboardBookingsIndexRoute: AuthedDashboardBookingsIndexRoute,
   AuthedDashboardInventoryProductsProductIdRoute:
     AuthedDashboardInventoryProductsProductIdRoute,
   AuthedDashboardInventoryProductsNewRoute:
