@@ -2,19 +2,27 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type MutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { createLocation, getLocations } from "./locations.api";
 import type { CreateLocationDto, LocationResponseDto } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
-type LocationOptions<TData = LocationResponseDto[]> = Omit<
+type LocationQueryOptions<TData = LocationResponseDto[]> = Omit<
   UseQueryOptions<LocationResponseDto[], ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
+type LocationMutationOptions = Omit<
+  MutationOptions<string, ProblemDetailsError, CreateLocationDto>,
+  "mutationFn" | "mutationKey"
+>;
+
+// -----------------------------------------------------
+
 export function createLocationQueryOptions<TData = LocationResponseDto[]>(
-  options?: LocationOptions<TData>,
+  options?: LocationQueryOptions<TData>,
 ): UseQueryOptions<LocationResponseDto[], ProblemDetailsError, TData> {
   return {
     ...options,
@@ -23,28 +31,31 @@ export function createLocationQueryOptions<TData = LocationResponseDto[]>(
   };
 }
 
-//
+// -----------------------------------------------------
 
-export function useLocations() {
-  return useQuery(createLocationQueryOptions());
+export function useLocations<TData = LocationResponseDto[]>(
+  options?: LocationQueryOptions<TData>,
+) {
+  return useQuery(createLocationQueryOptions(options));
 }
 
-export function useCreateLocation() {
+//
+
+export function useCreateLocation(options?: LocationMutationOptions) {
   const queryClient = useQueryClient();
 
   return useMutation<string, ProblemDetailsError, CreateLocationDto>({
+    ...options,
     mutationFn: (data) => createLocation({ data }),
-    onSuccess: async () => {
+    onSuccess: async (data, variables, onMutateResult, context) => {
       await queryClient.invalidateQueries({
         queryKey: createLocationQueryOptions().queryKey,
       });
+
+      await options?.onSuccess?.(data, variables, onMutateResult, context);
     },
-    onError: (error) => {
-      // error is fully typed as ProblemDetailsError here.
-      // You can log, toast, or handle it however you like.
-      console.error(
-        `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
-      );
+    onError: async (error, variables, onMutateResult, context) => {
+      await options?.onError?.(error, variables, onMutateResult, context);
     },
   });
 }
