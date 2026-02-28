@@ -1,4 +1,9 @@
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  getRouteApi,
+  Link,
+  Outlet,
+} from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/dashboard")({
   component: DashboardLayout,
@@ -15,8 +20,10 @@ const sidebarItems = [
   { name: "Locations", href: "/dashboard/locations" },
 ];
 
+const authedRoute = getRouteApi("/_authed");
+
 function DashboardLayout() {
-  const { user, tenant } = Route.useRouteContext();
+  const { user, tenant } = authedRoute.useLoaderData();
 
   return (
     <div className="grid h-screen grid-cols-[280px_1fr]">

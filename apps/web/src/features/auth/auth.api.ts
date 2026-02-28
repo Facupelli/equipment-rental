@@ -12,6 +12,7 @@ import {
   type LoginDto,
   type LoginResponseDto,
 } from "./auth.schema";
+import { ACCESS_TOKEN_TTL_MS } from "./auth.constants";
 
 export const registerTenantUser = createServerFn({ method: "POST" })
   .inputValidator((data: CreateTenantUserDto) =>
@@ -39,8 +40,8 @@ export const loginUser = createServerFn({ method: "POST" })
     const session = await useAppSession();
     await session.update({
       accessToken: result.access_token,
-      // userId: result.data.userId,
-      // email: result.data.email,
+      refreshToken: result.refresh_token,
+      accessTokenExpiresAt: Date.now() + ACCESS_TOKEN_TTL_MS,
     });
 
     return { success: true };

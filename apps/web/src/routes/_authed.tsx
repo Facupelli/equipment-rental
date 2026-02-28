@@ -1,22 +1,22 @@
 import { getCurrentUser } from "@/features/auth/auth.api";
+import { ensureValidSession } from "@/features/auth/get-session";
 import { getCurrentTenant } from "@/features/tenancy/tenancy.api";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed")({
-  beforeLoad: async ({ location }) => {
+  beforeLoad: async () => {
+    const { accessToken } = await ensureValidSession();
+    return { accessToken };
+  },
+  loader: async () => {
     const [user, tenant] = await Promise.all([
       getCurrentUser(),
       getCurrentTenant(),
     ]);
 
     if (!user || !tenant) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
-      });
+      throw Error("User or Tenant not found");
     }
-
-    // Pass user to child routes
     return { user, tenant };
   },
 });

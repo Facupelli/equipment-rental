@@ -1,6 +1,7 @@
 import { problemDetailsSchema, type PaginatedDto } from "@repo/schemas";
-import { useAppSession } from "./session";
 import { ProblemDetailsError } from "@/shared/errors";
+import { useAppSession } from "./session";
+import { refreshSession } from "@/features/auth/refresh-session";
 
 type ApiFetchOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -8,31 +9,24 @@ type ApiFetchOptions = Omit<RequestInit, "body"> & {
   authenticated?: boolean;
 };
 
+// ── apiFetchRaw ───────────────────────────────────────────────────────────────
+// Core fetch wrapper. Proactive token refresh is handled upstream by
+// ensureValidSession() in the _authed layout beforeLoad — by the time any
+// server function calls apiFetch, the session is already guaranteed fresh.
+//
+// This function retains a reactive 401 fallback as a safety net for edge cases:
+// revoked tokens, clock skew, or any request that somehow bypasses beforeLoad.
+//
+// The loop runs at most twice:
+//   Attempt 1: use current token from session
+//   On 401:    call refreshSession() once → attempt 2 with fresh token
+//   Attempt 2: if 401 again, surface the error — something is genuinely wrong
+
 async function apiFetchRaw<T>(
   path: string,
   options: ApiFetchOptions = {},
 ): Promise<T> {
   const { body, headers, params, authenticated = true, ...rest } = options;
-
-  const authHeader: Record<string, string> = {};
-
-  if (authenticated) {
-    const session = await useAppSession();
-    const token = session.data.accessToken;
-
-    if (!token) {
-      throw new ProblemDetailsError({
-        type: "about:blank",
-        title: "Unauthorized",
-        status: 401,
-        detail: "No active session. Please log in.",
-      });
-    }
-
-    authHeader["Authorization"] = `Bearer ${token}`;
-  }
-
-  let response: Response;
 
   const url = new URL(`${process.env.NESTJS_API_URL}${path}`);
   if (params) {
@@ -43,46 +37,87 @@ async function apiFetchRaw<T>(
     });
   }
 
-  try {
-    response = await fetch(url, {
-      ...rest,
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader,
-        ...headers,
-      },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-  } catch (error) {
-    throw new ProblemDetailsError({
-      type: "about:blank",
-      title: "Network Error",
-      status: 0,
-      detail:
-        error instanceof Error
-          ? error.message
-          : "An unexpected network error occurred",
-    });
+  let currentToken: string | undefined;
+  let hasRetried = false;
+
+  while (true) {
+    const authHeader: Record<string, string> = {};
+
+    if (authenticated) {
+      if (!currentToken) {
+        const session = await useAppSession();
+        currentToken = session.data.accessToken;
+      }
+
+      if (!currentToken) {
+        throw new ProblemDetailsError({
+          type: "about:blank",
+          title: "Unauthorized",
+          status: 401,
+          detail: "No active session. Please log in.",
+        });
+      }
+
+      authHeader["Authorization"] = `Bearer ${currentToken}`;
+    }
+
+    let response: Response;
+
+    try {
+      response = await fetch(url, {
+        ...rest,
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeader,
+          ...headers,
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+    } catch (error) {
+      throw new ProblemDetailsError({
+        type: "about:blank",
+        title: "Network Error",
+        status: 0,
+        detail:
+          error instanceof Error
+            ? error.message
+            : "An unexpected network error occurred",
+      });
+    }
+
+    // ── Reactive 401 Fallback ─────────────────────────────────────────────────
+    if (response.status === 401 && authenticated && !hasRetried) {
+      const refreshed = await refreshSession();
+
+      if (refreshed) {
+        currentToken = undefined; // force re-read from session on next iteration
+        hasRetried = true;
+        continue;
+      }
+      // refreshSession() returned false (network failure) — fall through to error
+    }
+
+    if (!response.ok) {
+      const raw = await response.json().catch(() => null);
+      const parsed = problemDetailsSchema.safeParse(raw);
+
+      throw new ProblemDetailsError(
+        parsed.success
+          ? parsed.data
+          : {
+              type: "about:blank",
+              title: response.statusText || "Request Failed",
+              status: response.status,
+              detail: `Request to ${path} failed with status ${response.status}`,
+            },
+      );
+    }
+
+    return response.json() as Promise<T>;
   }
-
-  if (!response.ok) {
-    const raw = await response.json().catch(() => null);
-    const parsed = problemDetailsSchema.safeParse(raw);
-
-    throw new ProblemDetailsError(
-      parsed.success
-        ? parsed.data
-        : {
-            type: "about:blank",
-            title: response.statusText || "Request Failed",
-            status: response.status,
-            detail: `Request to ${path} failed with status ${response.status}`,
-          },
-    );
-  }
-
-  return response.json() as Promise<T>;
 }
+
+// ── Public API ────────────────────────────────────────────────────────────────
 
 export async function apiFetch<T>(
   path: string,

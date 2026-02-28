@@ -2,8 +2,8 @@ import { useSession } from "@tanstack/react-start/server";
 
 export interface SessionData {
   accessToken?: string;
-  userId?: string;
-  email?: string;
+  refreshToken?: string; // stored server-side only, never sent to the browser
+  accessTokenExpiresAt?: number; // Unix timestamp ms — used by middleware for proactive refresh
 }
 
 type AppSession = Awaited<ReturnType<typeof useSession<SessionData>>>;

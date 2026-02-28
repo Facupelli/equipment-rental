@@ -2,7 +2,6 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Request } from 'express';
 import { Env } from 'src/config/env.schema';
 import { PrismaService } from 'src/core/database/prisma.service';
 
@@ -29,8 +28,7 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
     private readonly prisma: PrismaService,
   ) {
     super({
-      // Extract the raw JWT from the httpOnly cookie named 'refresh_token'.
-      jwtFromRequest: ExtractJwt.fromExtractors([(req: Request) => req?.cookies?.['refresh_token'] ?? null]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.get('JWT_REFRESH_SECRET'),
       // passReqToCallback is NOT needed here — we read the cookie via the

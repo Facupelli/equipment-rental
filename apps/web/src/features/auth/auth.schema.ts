@@ -8,4 +8,5 @@ export const loginSchema = z.object({
 export type LoginDto = z.infer<typeof loginSchema>;
 export interface LoginResponseDto {
   access_token: string;
+  refresh_token: string;
 }
