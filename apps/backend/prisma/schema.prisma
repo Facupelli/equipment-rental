@@ -86,7 +86,7 @@ model Tenant {
   slug             String     @unique
   planTier         String     @map("plan_tier")
   isActive         Boolean    @default(true) @map("is_active")
-  pricingConfig    Json?      @map("pricing_config") 
+  config           Json?       
 
   users            User[]
   roles            Role[]

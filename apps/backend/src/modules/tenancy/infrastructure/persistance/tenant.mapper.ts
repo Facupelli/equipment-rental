@@ -1,7 +1,7 @@
 import { Tenant, TenantProps } from '../../domain/entities/tenant.entity';
 import { BillingUnit } from '../../domain/entities/billing-unit.entity';
 import { Prisma, BillingUnit as PrismaBillingUnit } from 'src/generated/prisma/client';
-import { TenantPricingConfig } from '../../domain/value-objects/pricing-config.type';
+import { TenantConfig } from '../../domain/value-objects/pricing-config.type';
 import { TenantResponseDto } from '@repo/schemas';
 
 export class TenantMapper {
@@ -12,7 +12,7 @@ export class TenantMapper {
       slug: raw.slug,
       planTier: raw.planTier,
       isActive: raw.isActive,
-      pricingConfig: raw.pricingConfig as TenantPricingConfig,
+      config: raw.pricingConfig as TenantConfig,
       billingUnits: raw.billingUnits.map(TenantMapper.billingUnitToDomain),
       createdAt: raw.createdAt,
     };
@@ -27,7 +27,7 @@ export class TenantMapper {
       slug: entity.slug,
       planTier: entity.planTier,
       isActive: entity.isActive,
-      pricingConfig: entity.pricingConfig as unknown as Prisma.InputJsonValue,
+      config: entity.config as unknown as Prisma.InputJsonValue,
       createdAt: entity.createdAt,
       billingUnits: {
         create: entity.billingUnits.map(TenantMapper.billingUnitToPersistenceCreate),
@@ -42,7 +42,7 @@ export class TenantMapper {
       slug: entity.slug,
       planTier: entity.planTier,
       isActive: entity.isActive,
-      pricingConfig: entity.pricingConfig,
+      config: entity.config as unknown as TenantConfig,
       createdAt: entity.createdAt,
       billingUnits: entity.billingUnits.map(TenantMapper.billingUnitToResponse),
     };

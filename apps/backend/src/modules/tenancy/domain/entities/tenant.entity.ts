@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { BillingUnit, CreateBillingUnitProps } from './billing-unit.entity';
-import { DEFAULT_BILLING_UNITS_PROPS, DEFAULT_PRICING_CONFIG } from '../../infrastructure/config/tenancy.defaults';
-import { TenantPricingConfig } from '../value-objects/pricing-config.type';
+import { DEFAULT_BILLING_UNITS_PROPS, DEFAULT_CONFIG } from '../../infrastructure/config/tenancy.defaults';
+import { TenantConfig } from '../value-objects/pricing-config.type';
 
 export interface TenantProps {
   id: string;
@@ -9,7 +9,7 @@ export interface TenantProps {
   slug: string;
   planTier: string;
   isActive: boolean;
-  pricingConfig: TenantPricingConfig;
+  config: TenantConfig;
   billingUnits: BillingUnit[];
   createdAt: Date;
 }
@@ -20,7 +20,7 @@ export class Tenant {
   private _slug: string;
   private _planTier: string;
   private _isActive: boolean;
-  private _pricingConfig: TenantPricingConfig;
+  private _config: TenantConfig;
   private _billingUnits: BillingUnit[];
   private readonly _createdAt: Date;
 
@@ -30,7 +30,7 @@ export class Tenant {
     this._slug = props.slug;
     this._planTier = props.planTier;
     this._isActive = props.isActive;
-    this._pricingConfig = props.pricingConfig;
+    this._config = props.config;
     this._billingUnits = props.billingUnits;
     this._createdAt = props.createdAt;
   }
@@ -46,7 +46,7 @@ export class Tenant {
       slug,
       planTier,
       isActive: true,
-      pricingConfig: { ...DEFAULT_PRICING_CONFIG },
+      config: DEFAULT_CONFIG,
       billingUnits: [],
       createdAt: new Date(),
     });
@@ -63,12 +63,12 @@ export class Tenant {
   }
 
   // --- Behavior ---
-  public updatePricingConfig(config: Partial<TenantPricingConfig>): void {
-    if (config.maxOverRentThreshold !== undefined && config.maxOverRentThreshold < 0) {
+  public updateConfig(config: Partial<TenantConfig>): void {
+    if (config.pricing?.maxOverRentThreshold !== undefined && config.pricing.maxOverRentThreshold < 0) {
       throw new Error('maxOverRentThreshold must be non-negative.');
     }
 
-    this._pricingConfig = { ...this._pricingConfig, ...config };
+    this._config = { ...this._config, ...config };
   }
 
   public deactivate(): void {
@@ -117,8 +117,8 @@ export class Tenant {
   get isActive(): boolean {
     return this._isActive;
   }
-  get pricingConfig(): TenantPricingConfig {
-    return { ...this._pricingConfig };
+  get config(): TenantConfig {
+    return { ...this._config };
   }
   get billingUnits(): ReadonlyArray<BillingUnit> {
     return this._billingUnits;

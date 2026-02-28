@@ -1,6 +1,8 @@
 import { RoundingRule } from '@repo/types';
+import { TenantConfig } from '../value-objects/pricing-config.type';
 
 export abstract class TenantConfigPort {
+  abstract getConfig(tenantId: string): Promise<TenantConfig>;
   /**
    * Returns the pricing inputs required by PricingEngine.
    * Includes TenantPricingConfig and all configured BillingUnits.

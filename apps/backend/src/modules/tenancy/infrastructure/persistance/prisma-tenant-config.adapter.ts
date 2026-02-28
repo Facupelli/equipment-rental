@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RentalTenancyPricingView, TenantConfigPort } from '../../domain/ports/tenant-config.port';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { TenantPricingConfig } from '../../domain/value-objects/pricing-config.type';
+import { TenantConfig } from '../../domain/value-objects/pricing-config.type';
 
 export class BillingUnitReadModel {
   constructor(
@@ -18,26 +18,35 @@ export class PrismaTenantConfigAdapter extends TenantConfigPort {
     super();
   }
 
-  async findPricingInputs(tenantId: string): Promise<RentalTenancyPricingView | null> {
+  async getConfig(tenantId: string): Promise<TenantConfig> {
     const rawTenant = await this.prisma.client.tenant.findUnique({
       where: { id: tenantId },
-      select: { pricingConfig: true, billingUnits: true },
+      select: { config: true },
     });
 
     if (!rawTenant) {
       throw new NotFoundException(`Tenant not found.`);
     }
 
-    const pricingConfig = rawTenant.pricingConfig as unknown as TenantPricingConfig;
+    const config = rawTenant.config as unknown as TenantConfig;
+
+    return config;
+  }
+
+  async findPricingInputs(tenantId: string): Promise<RentalTenancyPricingView> {
+    const rawTenant = await this.prisma.client.tenant.findUnique({
+      where: { id: tenantId },
+      select: { config: true, billingUnits: true },
+    });
+
+    if (!rawTenant) {
+      throw new NotFoundException(`Tenant not found.`);
+    }
+
+    const config = rawTenant.config as unknown as TenantConfig;
 
     return {
-      pricingConfig: {
-        weekendCountsAsOne: pricingConfig.weekendCountsAsOne,
-        roundingRule: pricingConfig.roundingRule,
-        overRentalEnabled: pricingConfig.overRentalEnabled,
-        maxOverRentThreshold: pricingConfig.maxOverRentThreshold,
-        defaultCurrency: pricingConfig.defaultCurrency,
-      },
+      pricingConfig: config.pricing,
       billingUnits: rawTenant.billingUnits.map((bu) => ({
         id: bu.id,
         name: bu.name,
