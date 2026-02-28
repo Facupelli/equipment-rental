@@ -9,6 +9,9 @@ export const EnvSchema = z.object({
 
   JWT_SECRET: z.string(),
   JWT_EXPIRATION_TIME_SECONDS: z.coerce.number().default(3600),
+
+  JWT_REFRESH_SECRET: z.string(),
+  JWT_REFRESH_EXPIRATION_TIME_SECONDS: z.coerce.number().default(604800), // 7 days
 });
 
 export type Env = z.infer<typeof EnvSchema>;

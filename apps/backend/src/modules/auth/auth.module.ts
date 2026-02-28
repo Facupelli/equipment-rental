@@ -9,6 +9,7 @@ import { Env } from 'src/config/env.schema';
 import { LocalStrategy } from './infrastructure/strategies/local.strategy';
 import { AuthService } from './application/auth.service';
 import { TenancyModule } from '../tenancy/tenancy.module';
+import { RefreshTokenStrategy } from './infrastructure/strategies/jwt-refresh.strategy';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { TenancyModule } from '../tenancy/tenancy.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, RefreshTokenStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

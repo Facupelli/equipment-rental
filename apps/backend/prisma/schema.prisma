@@ -21,9 +21,24 @@ model User {
   
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
   role         Role     @relation(fields: [roleId], references: [id])
+  refreshTokens RefreshToken[]
 
   @@index([tenantId]) // Critical for RLS
   @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @map("token_hash")
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model Role {
