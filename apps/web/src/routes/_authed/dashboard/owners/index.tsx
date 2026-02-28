@@ -13,7 +13,6 @@ export const Route = createFileRoute("/_authed/dashboard/owners/")({
 
 function OwnersPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { data: owners = [], isPending, isError } = useOwners();
 
   return (
     <div className="space-y-6 p-8">
@@ -32,22 +31,34 @@ function OwnersPage() {
         </Button>
       </div>
 
-      {isError ? (
-        <p className="text-sm text-destructive">
-          Failed to load owners. Please try again.
-        </p>
-      ) : isPending ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      ) : (
-        <OwnersDataTable
-          columns={ownerColumns}
-          data={owners}
-          searchColumn="name"
-          searchPlaceholder="Search owners..."
-        />
-      )}
+      <OwnersTable />
 
       <CreateOwnerDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
+  );
+}
+
+function OwnersTable() {
+  const { data: owners = [], isPending, isError } = useOwners();
+
+  if (isError) {
+    return (
+      <p className="text-sm text-destructive">
+        Failed to load owners. Please try again.
+      </p>
+    );
+  }
+
+  if (isPending) {
+    return <p className="text-sm text-muted-foreground">Loading...</p>;
+  }
+
+  return (
+    <OwnersDataTable
+      columns={ownerColumns}
+      data={owners}
+      searchColumn="name"
+      searchPlaceholder="Search owners..."
+    />
   );
 }

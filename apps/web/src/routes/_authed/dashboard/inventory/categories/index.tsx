@@ -26,37 +26,86 @@ import { createCategorySchema } from "@repo/schemas";
 import { useForm } from "@tanstack/react-form";
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authed/dashboard/inventory/categories/")({
+export const Route = createFileRoute(
+  "/_authed/dashboard/inventory/categories/",
+)({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(createCategoryQueryOptions()),
   component: CategoriesPage,
 });
 
 function CategoriesPage() {
-  const { data: categories } = useCategories();
-
   return (
-    <div>
-      <p>Hello "/_authed/dashboard/categories/"!</p>
-      <div>
+    <div className="space-y-6 p-8">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Categories</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage categories for organizing your products.
+          </p>
+        </div>
+
         <CreateCategoryDialog />
       </div>
-      <div className="text-black">
-        {categories?.map((category) => (
-          <div key={category.id} className="flex gap-10 items-center">
-            <p>{category.name}</p>
-            <p>{category.description}</p>
-          </div>
-        ))}
+
+      <CategoriesTable />
+    </div>
+  );
+}
+
+function CategoriesTable() {
+  const { data: categories = [], isPending, isError } = useCategories();
+
+  if (isError) {
+    return (
+      <p className="text-sm text-destructive">
+        Failed to load categories. Please try again.
+      </p>
+    );
+  }
+
+  if (isPending) {
+    return <p className="text-sm text-muted-foreground">Loading...</p>;
+  }
+
+  if (categories.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">No categories found.</p>
+    );
+  }
+
+  return (
+    <div className="rounded-md border">
+      <div className="grid grid-cols-[1fr_2fr_auto] items-center px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground border-b">
+        <span>Category Name</span>
+        <span>Description</span>
+        <span>Actions</span>
       </div>
+
+      {categories.map((category, index) => (
+        <div
+          key={category.id}
+          className={cn(
+            "grid grid-cols-[1fr_2fr_auto] items-start gap-4 px-4 py-5",
+            index !== categories.length - 1 && "border-b",
+          )}
+        >
+          <p className="font-medium">{category.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {category.description}
+          </p>
+          <div className="w-16" /> {/* actions placeholder */}
+        </div>
+      ))}
     </div>
   );
 }
 
 const formId = "create-category";
 
-export function CreateCategoryDialog() {
+function CreateCategoryDialog() {
   const [open, setOpen] = useState(false);
   const { mutate: createCategory, isPending } = useCreateCategory();
 
@@ -89,8 +138,8 @@ export function CreateCategoryDialog() {
       <DialogTrigger
         render={
           <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Category
+            <Plus className="mr-2 h-4 w-4" />
+            Add Category
           </Button>
         }
       />

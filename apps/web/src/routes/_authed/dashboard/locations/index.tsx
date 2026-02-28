@@ -13,7 +13,6 @@ export const Route = createFileRoute("/_authed/dashboard/locations/")({
 
 function LocationsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { data: locations = [], isPending, isError } = useLocations();
 
   return (
     <div className="space-y-6 p-8">
@@ -30,22 +29,34 @@ function LocationsPage() {
         </Button>
       </div>
 
-      {isError ? (
-        <p className="text-sm text-destructive">
-          Failed to load locations. Please try again.
-        </p>
-      ) : isPending ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      ) : (
-        <OwnersDataTable
-          columns={locationColumns}
-          data={locations}
-          searchColumn="name"
-          searchPlaceholder="Search locations..."
-        />
-      )}
+      <LocationsTable />
 
       <CreateLocationDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
+  );
+}
+
+function LocationsTable() {
+  const { data: locations = [], isPending, isError } = useLocations();
+
+  if (isError) {
+    return (
+      <p className="text-sm text-destructive">
+        Failed to load locations. Please try again.
+      </p>
+    );
+  }
+
+  if (isPending) {
+    return <p className="text-sm text-muted-foreground">Loading...</p>;
+  }
+
+  return (
+    <OwnersDataTable
+      columns={locationColumns}
+      data={locations}
+      searchColumn="name"
+      searchPlaceholder="Search locations..."
+    />
   );
 }
