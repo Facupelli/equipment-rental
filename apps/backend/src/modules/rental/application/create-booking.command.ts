@@ -1,6 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { RentalCustomerQueryPort } from '../domain/ports/rental-customer.port';
 import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
 import { RentalTenancyPricingView, TenantConfigPort } from 'src/modules/tenancy/domain/ports/tenant-config.port';
 import { RentalProductQueryPort, RentalProductView } from '../domain/ports/rental-product.port';
@@ -16,6 +15,7 @@ import { BookingRepository } from '../domain/ports/booking.repository';
 import { CandidateItem } from '../domain/ports/rental-inventory-read.port';
 import { AppLogger } from 'src/core/logger/app-logger.service';
 import { LogContext } from 'src/core/logger/log-context';
+import { CustomerQueryPort } from 'src/modules/customer/application/ports/customer-query.port';
 
 /**
  * Represents a fully resolved line after all pre-transaction I/O:
@@ -54,7 +54,7 @@ export class CreateBookingCommand {
   constructor(
     private readonly logger: AppLogger,
     private readonly tenantContext: TenantContextService,
-    private readonly customerQuery: RentalCustomerQueryPort,
+    private readonly customerQuery: CustomerQueryPort,
     private readonly tenancyQuery: TenantConfigPort,
     private readonly productQuery: RentalProductQueryPort,
     private readonly availabilityService: AvailabilityService,
@@ -77,7 +77,7 @@ export class CreateBookingCommand {
     // ─────────────────────────────────────────────────────────────────────
 
     const [customer, tenancyPricingInputs] = await Promise.all([
-      this.customerQuery.findById(customerId),
+      this.customerQuery.getCustomer(customerId),
       this.tenancyQuery.findPricingInputs(tenantId),
     ]);
 

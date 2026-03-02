@@ -1,5 +1,5 @@
 import { Prisma, Customer as PrismaCustomer } from 'src/generated/prisma/client';
-import { Customer, CustomerProps } from './customer.entity';
+import { Customer, CustomerProps } from './domain/customer.entity';
 import { CustomerStatus } from '@repo/types';
 
 export class CustomerMapper {

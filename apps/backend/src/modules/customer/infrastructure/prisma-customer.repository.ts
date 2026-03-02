@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { CustomerRepository } from './ports/customer.repository';
-import { RentalCustomerQueryPort } from '../rental/domain/ports/rental-customer.port';
-import { Customer } from './customer.entity';
-import { CustomerMapper } from './customer.mapper';
+import { CustomerRepositoryPort } from '../application/ports/customer.repository.port';
+import { Customer } from '../domain/customer.entity';
+import { CustomerMapper } from '../domain/customer.mapper';
+import { CustomerQueryPort } from '../application/ports/customer-query.port';
 
 @Injectable()
-export class PrismaCustomerRepository implements CustomerRepository, RentalCustomerQueryPort {
+export class PrismaCustomerRepository implements CustomerRepositoryPort, CustomerQueryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   async save(customer: Customer): Promise<string> {
@@ -22,7 +22,7 @@ export class PrismaCustomerRepository implements CustomerRepository, RentalCusto
     return result.id;
   }
 
-  async findById(id: string): Promise<Customer | null> {
+  async getCustomer(id: string): Promise<Customer | null> {
     const result = await this.prisma.client.customer.findUnique({
       where: { id },
     });

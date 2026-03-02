@@ -1,5 +1,5 @@
 import { Prisma } from 'src/generated/prisma/browser';
 
-export abstract class CustomerRepository {
+export abstract class CustomerRepositoryPort {
   abstract save(data: Prisma.CustomerUncheckedCreateInput): Promise<string>;
 }
