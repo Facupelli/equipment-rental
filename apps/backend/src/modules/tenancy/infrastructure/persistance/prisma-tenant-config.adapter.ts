@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RentalTenancyPricingView, TenantConfigPort } from '../../domain/ports/tenant-config.port';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { TenantConfig } from '../../domain/value-objects/pricing-config.type';
+import { TenantConfig } from '../../domain/value-objects/tenant-config.vo';
 
 export class BillingUnitReadModel {
   constructor(

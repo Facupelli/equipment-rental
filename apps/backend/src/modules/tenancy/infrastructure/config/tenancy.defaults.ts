@@ -1,6 +1,6 @@
 import { RoundingRule } from '@repo/types';
+import { TenantConfig } from '../../domain/value-objects/tenant-config.vo';
 import { CreateBillingUnitProps } from '../../domain/entities/billing-unit.entity';
-import { TenantConfig } from '../../domain/value-objects/pricing-config.type';
 
 export const DEFAULT_CONFIG: TenantConfig = {
   pricing: {

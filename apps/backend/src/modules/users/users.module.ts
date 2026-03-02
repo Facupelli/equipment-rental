@@ -4,14 +4,14 @@ import { UserValidator } from 'src/modules/auth/domain/port/user-validator.port'
 import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
 import { UsersService } from './application/users.service';
 import { UsersController } from './infrastructure/controllers/users.controller';
-import { UsersRepository } from './domain/repositories/users.repository';
 import { PrismaRoleRepository } from './infrastructure/persistence/prisma-role.repository';
 import { RolesService } from './application/roles.service';
-import { RoleRepository } from './domain/repositories/role.repository';
+import { RoleRepositoryPort } from './domain/ports/role.repository.port';
+import { UsersRepositoryPort } from './domain/ports/users.repository.port';
 
 const repositories = [
-  { provide: UsersRepository, useClass: PrismaUserRepository },
-  { provide: RoleRepository, useClass: PrismaRoleRepository },
+  { provide: UsersRepositoryPort, useClass: PrismaUserRepository },
+  { provide: RoleRepositoryPort, useClass: PrismaRoleRepository },
 ];
 
 const services = [RolesService, UsersService, { provide: UserValidator, useClass: BcryptUserValidator }];

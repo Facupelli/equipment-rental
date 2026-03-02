@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RoleRepository } from '../../domain/repositories/role.repository';
+import { RoleRepository } from '../../domain/ports/role.repository.port';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { Role } from '../../domain/entities/role.entity';
 import { RoleMapper } from './role.mapper';

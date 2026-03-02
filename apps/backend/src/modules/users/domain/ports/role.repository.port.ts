@@ -1,6 +1,6 @@
 import { Role } from '../entities/role.entity';
 
-export abstract class RoleRepository {
+export abstract class RoleRepositoryPort {
   /**
    * Finds a role by id, scoped to a specific tenant.
    * Returns null if the role does not exist or belongs to a different tenant.

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UserAuthPort } from 'src/modules/auth/domain/port/user-auth.port';
 import { User } from '../domain/entities/user.entity';
-import { UsersRepository } from '../domain/repositories/users.repository';
+import { UsersRepository } from '../domain/ports/users.repository.port';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'node:crypto';
 

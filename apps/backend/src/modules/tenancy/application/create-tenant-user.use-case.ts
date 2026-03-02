@@ -2,14 +2,15 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateTenantUserDto, RegisterResponseDto } from '@repo/schemas';
 import { UsersService } from 'src/modules/users/application/users.service';
 import { RolesService } from 'src/modules/users/application/roles.service';
-import { TenancyService } from './tenancy.service';
+import { TenancyRepositoryPort } from '../domain/ports/tenancy.repository.port';
+import { Tenant } from '../domain/entities/tenant.entity';
 
 @Injectable()
-export class CreateTenantUserCommand {
+export class CreateTenantUserUseCase {
   constructor(
     private readonly usersService: UsersService,
     private readonly rolesService: RolesService,
-    private readonly tenancyService: TenancyService,
+    private readonly tenancyRepository: TenancyRepositoryPort,
   ) {}
 
   async execute(dto: CreateTenantUserDto): Promise<RegisterResponseDto> {
@@ -18,7 +19,10 @@ export class CreateTenantUserCommand {
       throw new ConflictException('Email already in use');
     }
 
-    const tenantId = await this.tenancyService.create(dto);
+    // TODO: implement orchestration in a transaction
+    const tenantId = await this.createTenant({
+      companyName: dto.companyName,
+    });
 
     const roleId = await this.rolesService.create({
       tenantId,
@@ -36,5 +40,23 @@ export class CreateTenantUserCommand {
     });
 
     return { userId, tenantId };
+  }
+
+  private async createTenant({ companyName }: { companyName: string }): Promise<string> {
+    const companySlug = companyName.toLowerCase().replaceAll(' ', '-');
+
+    const isSlugTaken = await this.tenancyRepository.isSlugTaken(companySlug);
+    if (isSlugTaken) {
+      throw new ConflictException('Company name already in use');
+    }
+
+    const tenant = Tenant.create({
+      name: companyName,
+      slug: companySlug,
+      planTier: 'free',
+    });
+
+    const tenantId = await this.tenancyRepository.save(tenant);
+    return tenantId;
   }
 }

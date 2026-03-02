@@ -1,17 +1,16 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Post } from '@nestjs/common';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { TenancyService } from '../../application/tenancy.service';
-import { CreateTenantUserCommand } from '../../application/create-tenant-user.command';
 import { Public } from 'src/modules/auth/infrastructure/is-public.decorator';
 import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
 import { CreateTenantUserDto, CreateTenantUserResponseDto } from '../../application/dto/create-tenant-user.dto';
-import { TenantMapper } from '../persistance/tenant.mapper';
 import { TenantResponseDto } from '@repo/schemas';
+import { CreateTenantUserUseCase } from '../../application/create-tenant-user.use-case';
 
 @Controller('tenancy')
 export class TenancyController {
   constructor(
-    private readonly createTenantUserCommand: CreateTenantUserCommand,
+    private readonly createTenantUserUseCase: CreateTenantUserUseCase,
     private readonly tenancyService: TenancyService,
   ) {}
 
@@ -19,7 +18,7 @@ export class TenancyController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: CreateTenantUserDto): Promise<CreateTenantUserResponseDto> {
-    const result = await this.createTenantUserCommand.execute(dto);
+    const result = await this.createTenantUserUseCase.execute(dto);
     return result;
   }
 
@@ -31,6 +30,6 @@ export class TenancyController {
       throw new NotFoundException('Tenant not found');
     }
 
-    return TenantMapper.toResponse(result);
+    return result;
   }
 }

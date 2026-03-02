@@ -97,14 +97,14 @@ export class CreateBookingUseCase {
 
 We use a modular monolith. Do not create cross-module database dependencies.
 
-| Module          | Responsibility                                                                    |
-| --------------- | --------------------------------------------------------------------------------- |
-| TenancyModule   | Platform config, tenant onboarding, billing units                                 |
-| UsersModule     | User management, role assignment                                                  |
-| AuthModule      | JWT authentication, session management, guards                                    |
-| InventoryModule | Products (Serialized/Bulk), stock levels, inventory items, owners, revenue splits |
-| RentalModule    | Rental orders, booking lifecycle, availability checks, pricing engine             |
-| CustomerModule  | CRM integration, booking discounts                                                |
+| Module          | Responsibility                                                                                                       |
+| --------------- | -------------------------------------------------------------------------------------------------------------------- |
+| TenancyModule   | Platform config, tenant onboarding                                                                                   |
+| UsersModule     | User management, role assignment, permissions (CASL)                                                                 |
+| AuthModule      | JWT authentication, session management, refresh tokens, guards                                                       |
+| InventoryModule | Products (Serialized/Bulk), categories, locations, inventory items, blackout periods, owners, revenue splits         |
+| RentalModule    | Rental orders, booking lifecycle, availability checks, pricing engine, pricing tiers, billing units, product bundles |
+| CustomerModule  | CRM integration, customer lifecycle                                                                                  |
 
 **Cross-module interaction rule:** Use the target module's public Service/Use Case API or emit a Domain Event. Never query another module's tables directly.
 

@@ -1,6 +1,6 @@
 import { User } from '../entities/user.entity';
 
-export abstract class UsersRepository {
+export abstract class UsersRepositoryPort {
   abstract findMany(): Promise<User[]>;
   abstract findById(id: string): Promise<User | null>;
 

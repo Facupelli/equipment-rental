@@ -154,6 +154,8 @@ model BillingUnit {
   @@map("billing_units")
 }
 
+// 
+
 model Location {
   id        String    @id @default(uuid())
   tenantId  String    @map("tenant_id")

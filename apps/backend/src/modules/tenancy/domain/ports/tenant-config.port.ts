@@ -1,5 +1,5 @@
 import { RoundingRule } from '@repo/types';
-import { TenantConfig } from '../value-objects/pricing-config.type';
+import { TenantConfig } from '../value-objects/tenant-config.vo';
 
 export abstract class TenantConfigPort {
   abstract getConfig(tenantId: string): Promise<TenantConfig>;

@@ -9,13 +9,6 @@ export const createTenantUserSchema = z.object({
 
   // Tenant fields
   companyName: z.string().min(2, "Company name is required"),
-  companySlug: z
-    .string()
-    .min(2)
-    .regex(
-      /^[a-z0-9-]+$/,
-      "Slug can only contain lowercase letters, numbers, and hyphens",
-    ),
 });
 
 export type CreateTenantUserDto = z.infer<typeof createTenantUserSchema>;
