@@ -10,6 +10,7 @@ export * from "./inventory/products/product-response.schema";
 export * from "./inventory/products/product-list-response.schema";
 export * from "./inventory/products/product-detail-response.schema";
 export * from "./inventory/products/create-pricing-tier.schema";
+export * from "./inventory/product-bundles/create-product-bundle.schema";
 export * from "./inventory/items/create-inventory-item.schema";
 export * from "./inventory/items/inventory-item-response.schema";
 export * from "./inventory/items/items-list-response.schema";

@@ -20,6 +20,10 @@ import { ProductQueryPort } from './domain/ports/product-query.port';
 import { PrismaProductQueryRepository } from './infrastructure/persistance/prisma-product-query.repository';
 import { InventoryItemQueryPort } from './domain/ports/item-query.port';
 import { PrismaInventoryItemQueryRepository } from './infrastructure/persistance/prisma-item-query.repository';
+import { BundleRepositoryPort } from './domain/ports/product-bundle.repository.port';
+import { PrismaBundleRepository } from './infrastructure/persistance/prisma-product-bundle.repository';
+import { ProductBundleController } from './infrastructure/controllers/product-bundle.controller';
+import { ProductBundleService } from './application/product-bundle.service';
 
 const repositories = [
   {
@@ -33,6 +37,10 @@ const repositories = [
   {
     provide: RentalProductQueryPort,
     useClass: PrismaProductRepository,
+  },
+  {
+    provide: BundleRepositoryPort,
+    useClass: PrismaBundleRepository,
   },
   {
     provide: InventoryItemRepositoryPort,
@@ -52,11 +60,17 @@ const repositories = [
   },
 ];
 
-const providers = [ProductService, InventoryItemService, CreateBlackoutPeriodCommand, CategoryService];
+const providers = [
+  ProductService,
+  ProductBundleService,
+  InventoryItemService,
+  CreateBlackoutPeriodCommand,
+  CategoryService,
+];
 
 @Module({
   imports: [TenancyModule],
-  controllers: [ProductController, InventoryItemController, CategoryController],
+  controllers: [ProductController, ProductBundleController, InventoryItemController, CategoryController],
   providers: [...repositories, ...providers],
   exports: [RentalProductQueryPort, RentalInventoryReadPort],
 })

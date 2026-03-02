@@ -120,6 +120,9 @@ model Tenant {
   billingUnits     BillingUnit[]
   pricingTiers     PricingTier[]
   blackoutPeriods  BlackoutPeriod[] 
+  productBundles    ProductBundle[]
+  bundleComponents  BundleComponent[]
+  bundlePricingTiers BundlePricingTier[]
 
   @@map("tenants")
 }
@@ -192,11 +195,68 @@ model Product {
   category          Category?       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   inventoryItems    InventoryItem[]
+  bundleComponents  BundleComponent[]
   pricingTiers      PricingTier[] 
   bookingLineItems  BookingLineItem[] 
 
   @@index([tenantId])
   @@map("products")
+}
+
+model ProductBundle {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  components     BundleComponent[]
+  pricingTiers   BundlePricingTier[]
+  lineItems      BookingLineItem[]
+
+  @@index([tenantId])
+  @@map("product_bundles")
+}
+
+model BundleComponent {
+  id          String @id @default(uuid())
+  tenantId    String @map("tenant_id")
+  bundleId    String @map("bundle_id")
+  productId   String @map("product_id")
+  quantity    Int
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bundle      ProductBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  product     Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([bundleId, productId])
+  @@index([bundleId])
+  @@index([tenantId])
+  @@map("bundle_components")
+}
+
+model BundlePricingTier {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  bundleId      String   @map("bundle_id")
+  billingUnitId String   @map("billing_unit_id")
+  fromUnit      Decimal  @map("from_unit") @db.Decimal(5, 2)
+  pricePerUnit  Decimal  @map("price_per_unit") @db.Decimal(10, 2)
+  currency      String   @db.Char(3)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bundle      ProductBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  billingUnit BillingUnit   @relation(fields: [billingUnitId], references: [id])
+
+  @@unique([bundleId, billingUnitId, fromUnit])
+  @@index([bundleId])
+  @@index([tenantId])
+  @@map("bundle_pricing_tiers")
 }
 
 model InventoryItem {
@@ -239,7 +299,8 @@ model BillingUnit {
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  pricingTiers  PricingTier[]
+  pricingTiers       PricingTier[]
+  bundlePricingTiers BundlePricingTier[]
   tenant        Tenant        @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, name])
@@ -363,9 +424,12 @@ model Booking {
 
 model BookingLineItem {
   id                  String        @id @default(uuid())
+  bookingId           String        @map("booking_id")
 
-  productId           String        @map("product_id")
+  productId           String?        @map("product_id")
+  bundleId            String?       @map("bundle_id") 
   inventoryItemId     String?       @map("inventory_item_id")
+  parentLineItemId    String?       @map("parent_line_item_id")
 
   status              BookingStatus @default(RESERVED)
   quantityRented      Int           @map("quantity_rented")
@@ -376,18 +440,22 @@ model BookingLineItem {
   isExternallySourced Boolean       @default(false) @map("is_externally_sourced")
   priceBreakdown      Json?         @map("price_breakdown")
 
-  booking         Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  bookingId       String         @map("booking_id")
-  product         Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
-  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  owner           Owner?         @relation(fields: [ownerId], references: [id])
+  booking         Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  product         Product?           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  bundle          ProductBundle?    @relation(fields: [bundleId], references: [id], onDelete: Restrict)
+  inventoryItem   InventoryItem?    @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  owner           Owner?            @relation(fields: [ownerId], references: [id])
+
+  parent          BookingLineItem?  @relation("LineItemComponents", fields: [parentLineItemId], references: [id])
+  children        BookingLineItem[] @relation("LineItemComponents")
+
 
   @@index([bookingId])
   @@index([productId])
+  @@index([bundleId])
   @@index([inventoryItemId])
   @@index([ownerId])
-  // Note: EXCLUDE constraint (double booking prevention) and CHECK constraint (XOR logic)
-  // must be added via raw SQL migration
+  @@index([parentLineItemId])
   @@map("booking_line_items")
 }
 
