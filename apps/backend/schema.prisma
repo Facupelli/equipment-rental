@@ -1,0 +1,255 @@
+// =============================================================================
+// Prisma Schema — Equipment Rental SaaS
+// =============================================================================
+// Notes:
+//   - Every table is tenant-scoped via tenantId.
+//   - booking_range (tstzrange) is NOT representable in Prisma's type system.
+//     It is defined via a raw migration. The field is intentionally omitted here
+//     and accessed exclusively through $queryRaw / $executeRaw.
+//   - Check constraints and GiST indexes are also defined in raw migrations.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// TENANCY
+// =============================================================================
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  products      Product[]
+  bundles       Bundle[]
+  owners        Owner[]
+  rentalOrders  RentalOrder[]
+  bookings      Booking[]
+
+  @@map("tenants")
+}
+
+// =============================================================================
+// INVENTORY
+// =============================================================================
+
+enum TrackingType {
+  SERIALIZED
+  BULK
+}
+
+model Product {
+  id           String       @id @default(uuid())
+  tenantId     String       @map("tenant_id")
+  name         String
+  description  String?
+  trackingType TrackingType @map("tracking_type")
+
+  // Only populated for BULK products. Null for SERIALIZED.
+  // Enforced by check constraint in migration:
+  //   (tracking_type = 'BULK' AND total_stock IS NOT NULL) OR
+  //   (tracking_type = 'SERIALIZED' AND total_stock IS NULL)
+  totalStock   Int?         @map("total_stock")
+
+  dailyRate    Decimal      @map("daily_rate") @db.Decimal(10, 2)
+
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  inventoryItems  InventoryItem[]
+  bookings        Booking[]
+  bundleComponents BundleComponent[]
+
+  @@index([tenantId])
+  @@map("products")
+}
+
+enum InventoryItemStatus {
+  AVAILABLE
+  IN_MAINTENANCE
+  DAMAGED
+  RETIRED
+}
+
+model InventoryItem {
+  id           String              @id @default(uuid())
+  tenantId     String              @map("tenant_id")
+  productId    String              @map("product_id")
+  serialNumber String              @map("serial_number")
+  status       InventoryItemStatus @default(AVAILABLE)
+
+  // Null means owned by the tenant.
+  ownerId      String?             @map("owner_id")
+
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  product       Product        @relation(fields: [productId], references: [id])
+  owner         Owner?         @relation(fields: [ownerId], references: [id])
+  revenueSplit  RevenueSplit?
+  bookings      Booking[]
+
+  @@unique([tenantId, serialNumber])
+  @@index([tenantId, productId])
+  @@map("inventory_items")
+}
+
+// =============================================================================
+// OWNERS & REVENUE SPLITS
+// =============================================================================
+
+model Owner {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  email     String?
+  phone     String?
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  inventoryItems InventoryItem[]
+  revenueSplits  RevenueSplit[]
+
+  @@index([tenantId])
+  @@map("owners")
+}
+
+// One revenue split rule per inventory item.
+// The tenant keeps (100 - ownerPercentage)%.
+model RevenueSplit {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  inventoryItemId String   @unique @map("inventory_item_id")
+  ownerId         String   @map("owner_id")
+
+  // e.g. 30.00 means the owner receives 30% of the booking revenue for this item.
+  ownerPercentage Decimal  @map("owner_percentage") @db.Decimal(5, 2)
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  owner         Owner         @relation(fields: [ownerId], references: [id])
+
+  @@index([tenantId])
+  @@map("revenue_splits")
+}
+
+// =============================================================================
+// BUNDLES
+// =============================================================================
+
+model Bundle {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+
+  // If set, this price is used as-is by PriceEngine.
+  // If null, PriceEngine sums component prices and applies discountPercentage.
+  priceOverride      Decimal? @map("price_override") @db.Decimal(10, 2)
+
+  // Only relevant when priceOverride is null.
+  discountPercentage Decimal? @map("discount_percentage") @db.Decimal(5, 2)
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id])
+  components BundleComponent[]
+
+  @@index([tenantId])
+  @@map("bundles")
+}
+
+model BundleComponent {
+  id        String @id @default(uuid())
+  bundleId  String @map("bundle_id")
+  productId String @map("product_id")
+  quantity  Int    @default(1)
+
+  bundle  Bundle  @relation(fields: [bundleId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([bundleId, productId])
+  @@map("bundle_components")
+}
+
+// =============================================================================
+// RENTAL ORDERS & BOOKINGS
+// =============================================================================
+
+enum RentalOrderStatus {
+  DRAFT
+  CONFIRMED
+  ACTIVE       // equipment is currently out
+  COMPLETED
+  CANCELLED
+}
+
+// booking_range (tstzrange) is intentionally absent from this model.
+// It cannot be expressed in Prisma's type system and must be handled via
+// raw SQL in all reads and writes. See domain.md — Bookings & Rental Orders.
+model RentalOrder {
+  id         String            @id @default(uuid())
+  tenantId   String            @map("tenant_id")
+  status     RentalOrderStatus @default(DRAFT)
+  notes      String?
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  bookings Booking[]
+
+  @@index([tenantId])
+  @@map("rental_orders")
+}
+
+// A booking is one line within a rental order:
+//   - SERIALIZED product: inventoryItemId is set, quantity is null.
+//   - BULK product:       quantity is set,         inventoryItemId is null.
+//
+// This mutual exclusivity is enforced by a check constraint in the migration:
+//   (inventory_item_id IS NOT NULL AND quantity IS NULL) OR
+//   (inventory_item_id IS NULL     AND quantity IS NOT NULL)
+model Booking {
+  id            String  @id @default(uuid())
+  tenantId      String  @map("tenant_id")
+  rentalOrderId String  @map("rental_order_id")
+  productId     String  @map("product_id")
+
+  // SERIALIZED only
+  inventoryItemId String? @map("inventory_item_id")
+
+  // BULK only
+  quantity        Int?
+
+  unitPrice     Decimal  @map("unit_price") @db.Decimal(10, 2)
+  totalPrice    Decimal  @map("total_price") @db.Decimal(10, 2)
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  rentalOrder   RentalOrder    @relation(fields: [rentalOrderId], references: [id])
+  product       Product        @relation(fields: [productId], references: [id])
+  inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+
+  @@index([tenantId, productId])
+  @@index([tenantId, rentalOrderId])
+  @@map("bookings")
+}
