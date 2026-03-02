@@ -1,26 +1,23 @@
-import { Injectable } from '@nestjs/common';
-import { UserAuthPort } from 'src/modules/auth/domain/port/user-auth.port';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { User } from '../domain/entities/user.entity';
-import { UsersRepository } from '../domain/ports/users.repository.port';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'node:crypto';
+import { UserQueryPort } from './ports/user-query.port';
+import { UsersRepositoryPort } from './ports/users.repository.port';
+import { UserCommandPort } from './ports/user-command.port';
 
 @Injectable()
-export class UsersService extends UserAuthPort {
-  constructor(private readonly userRepository: UsersRepository) {
-    super();
-  }
+export class UsersService implements UserQueryPort, UserCommandPort {
+  constructor(private readonly userRepository: UsersRepositoryPort) {}
 
-  testMe() {
-    return this.userRepository.findMany();
-  }
+  async findById(id: string): Promise<User> {
+    const user = await this.userRepository.load(id);
 
-  async findById(id: string): Promise<User | null> {
-    return await this.userRepository.findById(id);
-  }
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return await this.userRepository.findByEmail(email);
+    return user;
   }
 
   async create(dto: {
@@ -44,5 +41,10 @@ export class UsersService extends UserAuthPort {
     );
 
     return await this.userRepository.save(user);
+  }
+
+  // query port
+  async isEmailTaken(email: string): Promise<boolean> {
+    return await this.userRepository.isEmailTaken(email);
   }
 }

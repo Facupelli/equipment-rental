@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { RoleRepository } from '../../domain/ports/role.repository.port';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { Role } from '../../domain/entities/role.entity';
 import { RoleMapper } from './role.mapper';
+import { RoleRepositoryPort } from '../../application/ports/role.repository.port';
 
 @Injectable()
-export class PrismaRoleRepository implements RoleRepository {
+export class PrismaRoleRepository implements RoleRepositoryPort {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByIdAndTenantId(id: string, tenantId: string): Promise<Role | null> {
+  async load(id: string): Promise<Role | null> {
     const raw = await this.prisma.client.role.findFirst({
-      where: { id, tenantId },
+      where: { id },
     });
 
     return raw ? RoleMapper.toDomain(raw) : null;

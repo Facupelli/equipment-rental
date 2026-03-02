@@ -6,8 +6,11 @@ import { UsersService } from './application/users.service';
 import { UsersController } from './infrastructure/controllers/users.controller';
 import { PrismaRoleRepository } from './infrastructure/persistence/prisma-role.repository';
 import { RolesService } from './application/roles.service';
-import { RoleRepositoryPort } from './domain/ports/role.repository.port';
-import { UsersRepositoryPort } from './domain/ports/users.repository.port';
+import { UserQueryPort } from './application/ports/user-query.port';
+import { UsersRepositoryPort } from './application/ports/users.repository.port';
+import { RoleRepositoryPort } from './application/ports/role.repository.port';
+import { UserCommandPort } from './application/ports/user-command.port';
+import { RoleCommandPort } from './application/ports/role-command.port';
 
 const repositories = [
   { provide: UsersRepositoryPort, useClass: PrismaUserRepository },
@@ -19,6 +22,11 @@ const services = [RolesService, UsersService, { provide: UserValidator, useClass
 @Module({
   controllers: [UsersController],
   providers: [...repositories, ...services],
-  exports: [{ provide: UserValidator, useClass: BcryptUserValidator }, UsersService, RolesService],
+  exports: [
+    { provide: UserValidator, useClass: BcryptUserValidator },
+    { provide: UserQueryPort, useClass: UsersService },
+    { provide: UserCommandPort, useClass: UsersService },
+    { provide: RoleCommandPort, useClass: RolesService },
+  ],
 })
 export class UsersModule {}

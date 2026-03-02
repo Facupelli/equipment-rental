@@ -1,21 +1,23 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateTenantUserDto, RegisterResponseDto } from '@repo/schemas';
-import { UsersService } from 'src/modules/users/application/users.service';
-import { RolesService } from 'src/modules/users/application/roles.service';
 import { TenancyRepositoryPort } from '../domain/ports/tenancy.repository.port';
 import { Tenant } from '../domain/entities/tenant.entity';
+import { UserQueryPort } from 'src/modules/users/application/ports/user-query.port';
+import { UserCommandPort } from 'src/modules/users/application/ports/user-command.port';
+import { RoleCommandPort } from 'src/modules/users/application/ports/role-command.port';
 
 @Injectable()
 export class CreateTenantUserUseCase {
   constructor(
-    private readonly usersService: UsersService,
-    private readonly rolesService: RolesService,
+    private readonly usersQuery: UserQueryPort,
+    private readonly usersCommand: UserCommandPort,
+    private readonly rolesCommand: RoleCommandPort,
     private readonly tenancyRepository: TenancyRepositoryPort,
   ) {}
 
   async execute(dto: CreateTenantUserDto): Promise<RegisterResponseDto> {
-    const existing = await this.usersService.findByEmail(dto.email);
-    if (existing) {
+    const isEmailTaken = await this.usersQuery.isEmailTaken(dto.email);
+    if (isEmailTaken) {
       throw new ConflictException('Email already in use');
     }
 
@@ -24,13 +26,13 @@ export class CreateTenantUserUseCase {
       companyName: dto.companyName,
     });
 
-    const roleId = await this.rolesService.create({
+    const roleId = await this.rolesCommand.create({
       tenantId,
       name: 'Admin',
       description: 'Default administrator role',
     });
 
-    const userId = await this.usersService.create({
+    const userId = await this.usersCommand.create({
       email: dto.email,
       password: dto.password,
       firstName: dto.firstName,

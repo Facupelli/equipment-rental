@@ -9,11 +9,6 @@ import { UserMapper } from '../persistence/user.mapper';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get('me/test')
-  async test() {
-    return this.usersService.testMe();
-  }
-
   @Get('me')
   async me(@CurrentUser() user: ReqUser): Promise<MeResponseDto> {
     const userEntity = await this.usersService.findById(user.id);
