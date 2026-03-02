@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { CreateOwnerDto } from '@repo/schemas';
 import { TenantContextService } from '../tenancy/tenant-context.service';
-import { OwnerRepositoryPort } from './ports/owner-repository.port';
-import { Owner } from './entities/owner.entity';
+import { Owner } from './domain/entities/owner.entity';
+import { OwnerRepositoryPort } from './application/ports/owner-repository.port';
 
 @Injectable()
 export class OwnerService {

@@ -2,13 +2,16 @@ import { TrackingType } from '@repo/types';
 import { randomUUID } from 'node:crypto';
 import { PricingTier, CreatePricingTierProps } from './pricing-tier.entity';
 import { IncludedItem } from '../value-objects/included-item';
+import { InvalidProductTrackingConfigException } from '../exceptions/product.exceptions';
 
 export interface ProductProps {
   id: string;
   tenantId: string;
   categoryId: string | null;
+  locationId: string | null;
   name: string;
   trackingType: TrackingType;
+  totalStock: number | null;
   attributes: Record<string, unknown>;
   pricingTiers: PricingTier[];
   includedItems: IncludedItem[];
@@ -26,9 +29,11 @@ export class Product {
   private readonly _id: string;
   private readonly _tenantId: string;
   private readonly _categoryId: string | null;
+  private readonly _locationId: string | null;
   private _name: string;
-  private _attributes: Record<string, unknown>;
   private readonly _trackingType: TrackingType;
+  private readonly _totalStock: number | null;
+  private _attributes: Record<string, unknown>;
   private _pricingTiers: PricingTier[];
   private _includedItems: IncludedItem[];
   private readonly _createdAt: Date;
@@ -38,8 +43,10 @@ export class Product {
     this._id = props.id;
     this._tenantId = props.tenantId;
     this._categoryId = props.categoryId;
+    this._locationId = props.locationId;
     this._name = props.name;
     this._trackingType = props.trackingType;
+    this._totalStock = props.totalStock;
     this._attributes = props.attributes;
     this._pricingTiers = props.pricingTiers;
     this._includedItems = props.includedItems ?? [];
@@ -48,6 +55,22 @@ export class Product {
   }
 
   public static create(props: CreateProductProps): Product {
+    if (props.trackingType === TrackingType.BULK && props.locationId == null) {
+      throw new InvalidProductTrackingConfigException('BULK products require a locationId.');
+    }
+
+    if (props.trackingType === TrackingType.BULK && props.totalStock == null) {
+      throw new InvalidProductTrackingConfigException('BULK products require a totalStock.');
+    }
+
+    if (props.trackingType === TrackingType.SERIALIZED && props.locationId != null) {
+      throw new InvalidProductTrackingConfigException('SERIALIZED products cannot have a locationId.');
+    }
+
+    if (props.trackingType === TrackingType.SERIALIZED && props.totalStock != null) {
+      throw new InvalidProductTrackingConfigException('SERIALIZED products cannot have a totalStock.');
+    }
+
     const id = randomUUID();
     const now = new Date();
 
@@ -62,8 +85,10 @@ export class Product {
       id,
       tenantId: props.tenantId,
       categoryId: props.categoryId,
+      locationId: props.locationId,
       name: props.name,
       trackingType: props.trackingType,
+      totalStock: props.totalStock ?? null,
       attributes: props.attributes,
       includedItems: props.includedItems,
       pricingTiers: [baseTier],
@@ -77,6 +102,7 @@ export class Product {
   }
 
   // --- Behavior ---
+
   public updateDetails(name: string, attributes: Record<string, unknown>): void {
     this._name = name;
     this._attributes = attributes;
@@ -141,6 +167,7 @@ export class Product {
   }
 
   // --- Getters ---
+
   get id(): string {
     return this._id;
   }
@@ -150,11 +177,17 @@ export class Product {
   get categoryId(): string | null {
     return this._categoryId;
   }
+  get locationId(): string | null {
+    return this._locationId;
+  }
   get name(): string {
     return this._name;
   }
   get trackingType(): TrackingType {
     return this._trackingType;
+  }
+  get totalStock(): number | null {
+    return this._totalStock;
   }
   get attributes(): Record<string, unknown> {
     return this._attributes;
@@ -171,6 +204,8 @@ export class Product {
   get updatedAt(): Date {
     return this._updatedAt;
   }
+
+  // --- Private helpers ---
 
   private findTierOrThrow(tierId: string): PricingTier {
     const tier = this._pricingTiers.find((t) => t.id === tierId);

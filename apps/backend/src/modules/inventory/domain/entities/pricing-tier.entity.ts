@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 export interface PricingTierProps {
   id: string;
   tenantId: string;
-  productId: string;
+  productId: string | null;
   /** When set, this tier is an item-level override. Null = product-level tier. */
   inventoryItemId: string | null;
   billingUnitId: string;
@@ -21,7 +21,7 @@ export type CreatePricingTierProps = Omit<PricingTierProps, 'id' | 'createdAt' |
 export class PricingTier {
   private readonly _id: string;
   private readonly _tenantId: string;
-  private readonly _productId: string;
+  private readonly _productId: string | null;
   private readonly _inventoryItemId: string | null;
   private readonly _billingUnitId: string;
   private _fromUnit: number;
@@ -81,7 +81,7 @@ export class PricingTier {
   get tenantId(): string {
     return this._tenantId;
   }
-  get productId(): string {
+  get productId(): string | null {
     return this._productId;
   }
   get inventoryItemId(): string | null {

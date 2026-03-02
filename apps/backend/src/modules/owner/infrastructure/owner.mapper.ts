@@ -1,5 +1,5 @@
 import { Prisma, Owner as PrismaOwner } from 'src/generated/prisma/client';
-import { Owner } from './entities/owner.entity';
+import { Owner } from './domain/entities/owner.entity';
 import { OwnerResponseDto } from '@repo/schemas';
 
 export class OwnerMapper {

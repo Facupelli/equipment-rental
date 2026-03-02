@@ -45,12 +45,13 @@ export class BundleMapper {
         create: entity.pricingTiers.map(BundleMapper.tierToPersistenceCreate),
       },
       components: {
-        create: entity.components.map((c) => BundleMapper.componentToPersistenceCreate(c, entity.tenantId)),
+        create: entity.components.map(BundleMapper.componentToPersistenceCreate),
       },
     };
   }
 
   // --- Tier helpers ---
+
   private static tierToDomain(prismaTier: PrismaBundlePricingTier): BundlePricingTier {
     const props: BundlePricingTierProps = {
       id: prismaTier.id,
@@ -97,11 +98,9 @@ export class BundleMapper {
 
   private static componentToPersistenceCreate(
     component: BundleComponent,
-    tenantId: string,
   ): Prisma.BundleComponentUncheckedCreateWithoutBundleInput {
     return {
       id: randomUUID(), // surrogate key generated here — never in the domain
-      tenantId,
       productId: component.productId,
       quantity: component.quantity,
     };

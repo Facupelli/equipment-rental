@@ -1,4 +1,4 @@
-import { InventoryItem } from '../entities/inventory-item.entity';
+import { InventoryItem } from '../../domain/entities/inventory-item.entity';
 
 export abstract class InventoryItemRepositoryPort {
   abstract findById(id: string): Promise<InventoryItem | null>;

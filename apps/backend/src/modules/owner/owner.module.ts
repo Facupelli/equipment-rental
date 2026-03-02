@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { OwnerController } from './owner.controller';
 import { OwnerService } from './owner.service';
 import { TenancyModule } from '../tenancy/tenancy.module';
-import { OwnerRepositoryPort } from './ports/owner-repository.port';
-import { PrismaOwnerRepository } from './prisma-owner.repository';
+import { PrismaOwnerRepository } from './infrastructure/prisma-owner.repository';
+import { OwnerController } from './infrastructure/owner.controller';
+import { OwnerRepositoryPort } from './application/ports/owner-repository.port';
 
 @Module({
   imports: [TenancyModule],

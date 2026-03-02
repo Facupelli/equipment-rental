@@ -13,7 +13,6 @@ export class InventoryItemMapper {
       locationId: prismaItem.locationId,
       ownerId: prismaItem.ownerId,
       status: prismaItem.status as InventoryItemStatus,
-      totalQuantity: prismaItem.totalQuantity,
       serialNumber: prismaItem.serialNumber,
       purchaseDate: prismaItem.purchaseDate,
       purchaseCost: prismaItem.purchaseCost ? prismaItem.purchaseCost.toNumber() : null,
@@ -25,20 +24,19 @@ export class InventoryItemMapper {
     return InventoryItem.reconstitute(props);
   }
 
-  public static toPersistence(inventoryItem: InventoryItem): Prisma.InventoryItemUncheckedCreateInput {
+  public static toPersistence(entity: InventoryItem): Prisma.InventoryItemUncheckedCreateInput {
     return {
-      id: inventoryItem.Id,
-      tenantId: inventoryItem.TenantId,
-      productId: inventoryItem.ProductId,
-      locationId: inventoryItem.LocationId,
-      ownerId: inventoryItem.OwnerId,
-      status: inventoryItem.Status,
-      totalQuantity: inventoryItem.TotalQuantity,
-      serialNumber: inventoryItem.SerialNumber,
-      purchaseDate: inventoryItem.PurchaseDate,
-      purchaseCost: inventoryItem.PurchaseCost,
-      createdAt: inventoryItem.CreatedAt,
-      updatedAt: inventoryItem.UpdatedAt,
+      id: entity.id,
+      tenantId: entity.tenantId,
+      productId: entity.productId,
+      locationId: entity.locationId,
+      ownerId: entity.ownerId,
+      status: entity.status,
+      serialNumber: entity.serialNumber,
+      purchaseDate: entity.purchaseDate,
+      purchaseCost: entity.purchaseCost,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
     };
   }
 }

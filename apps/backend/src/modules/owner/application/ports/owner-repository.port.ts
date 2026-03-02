@@ -1,4 +1,4 @@
-import { Owner } from '../entities/owner.entity';
+import { Owner } from '../../domain/entities/owner.entity';
 
 export abstract class OwnerRepositoryPort {
   abstract save(location: Owner): Promise<string>;

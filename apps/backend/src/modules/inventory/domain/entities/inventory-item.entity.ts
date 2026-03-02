@@ -2,15 +2,15 @@ import { InventoryItemStatus, TrackingType } from '@repo/types';
 import { randomUUID } from 'node:crypto';
 import { BlackoutPeriod } from './blackout-period.entity';
 import { DateRange } from '../value-objects/date-range.vo';
+import { InvalidInventoryItemException } from '../exceptions/inventory-item.exceptions';
 
 export interface InventoryItemProps {
   id: string;
   tenantId: string;
   productId: string;
   locationId: string;
-  ownerId: string;
+  ownerId: string | null;
   status: InventoryItemStatus;
-  totalQuantity: number;
   serialNumber: string | null;
   purchaseDate: Date | null;
   purchaseCost: number | null;
@@ -30,71 +30,51 @@ export interface AddBlackoutProps {
 }
 
 export class InventoryItem {
-  private readonly id: string;
-  private readonly tenantId: string;
-  private readonly productId: string;
-
+  private readonly _id: string;
+  private readonly _tenantId: string;
+  private readonly _productId: string;
   private _locationId: string;
-  private _ownerId: string;
+  private _ownerId: string | null;
   private _status: InventoryItemStatus;
-  private _totalQuantity: number;
   private _serialNumber: string | null;
   private _blackouts: BlackoutPeriod[];
   private _newBlackouts: BlackoutPeriod[] = [];
-
-  private readonly purchaseDate: Date | null;
+  private readonly _purchaseDate: Date | null;
   private _purchaseCost: number | null;
-
-  private readonly createdAt: Date;
+  private readonly _createdAt: Date;
   private _updatedAt: Date;
 
   private constructor(props: InventoryItemProps) {
-    this.id = props.id;
-    this.tenantId = props.tenantId;
-    this.productId = props.productId;
+    this._id = props.id;
+    this._tenantId = props.tenantId;
+    this._productId = props.productId;
     this._locationId = props.locationId;
     this._ownerId = props.ownerId;
     this._status = props.status;
-    this._totalQuantity = props.totalQuantity;
     this._serialNumber = props.serialNumber;
     this._blackouts = props.blackouts;
-    this.purchaseDate = props.purchaseDate;
+    this._purchaseDate = props.purchaseDate;
     this._purchaseCost = props.purchaseCost;
-    this.createdAt = props.createdAt;
+    this._createdAt = props.createdAt;
     this._updatedAt = props.updatedAt;
   }
 
   public static create(props: CreateInventoryItemProps, productTrackingType: TrackingType): InventoryItem {
-    const id = randomUUID();
-    const now = new Date();
-
-    // Invariant: Serialized items must have a quantity of 1
-    if (productTrackingType === TrackingType.SERIALIZED) {
-      if (props.totalQuantity !== 1) {
-        throw new Error('Serialized items must have a quantity of exactly 1.');
-      }
-      if (!props.serialNumber) {
-        throw new Error('Serialized items require a serial number.');
-      }
+    if (productTrackingType === TrackingType.SERIALIZED && !props.serialNumber) {
+      throw new InvalidInventoryItemException('Serialized items require a serial number.');
     }
 
-    // Invariant: Bulk items cannot have a serial number
     if (productTrackingType === TrackingType.BULK && props.serialNumber) {
-      throw new Error('Bulk items cannot be assigned a serial number.');
-    }
-
-    // Invariant: Quantity must be positive
-    if (props.totalQuantity < 1) {
-      throw new Error('Total quantity must be at least 1.');
+      throw new InvalidInventoryItemException('Bulk items cannot be assigned a serial number.');
     }
 
     return new InventoryItem({
-      id,
+      id: randomUUID(),
       ...props,
       status: props.status ?? InventoryItemStatus.OPERATIONAL,
       blackouts: [],
-      createdAt: now,
-      updatedAt: now,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
   }
 
@@ -113,19 +93,20 @@ export class InventoryItem {
    */
   public addBlackout(props: AddBlackoutProps): void {
     if (this._status === InventoryItemStatus.RETIRED) {
-      throw new Error('Cannot add a blackout period to a retired item.');
+      throw new InvalidInventoryItemException('Cannot add a blackout period to a retired item.');
     }
 
     const hasOverlap = this._blackouts.some((existing) => existing.conflictsWith(props.blockedPeriod));
-
     if (hasOverlap) {
-      throw new Error('The requested blackout period overlaps with an existing one on this item.');
+      throw new InvalidInventoryItemException(
+        'The requested blackout period overlaps with an existing one on this item.',
+      );
     }
 
     const blackout = BlackoutPeriod.create({
       id: props.id,
-      tenantId: this.tenantId,
-      inventoryItemId: this.id,
+      tenantId: this._tenantId,
+      inventoryItemId: this._id,
       reason: props.reason,
       blockedPeriod: props.blockedPeriod,
     });
@@ -137,7 +118,7 @@ export class InventoryItem {
 
   public moveTo(newLocationId: string): void {
     if (this._status === InventoryItemStatus.RETIRED) {
-      throw new Error('Cannot move a retired item.');
+      throw new InvalidInventoryItemException('Cannot move a retired item.');
     }
     this._locationId = newLocationId;
     this._updatedAt = new Date();
@@ -148,9 +129,13 @@ export class InventoryItem {
     this._updatedAt = new Date();
   }
 
+  public releaseOwnership(): void {
+    this._ownerId = null;
+    this._updatedAt = new Date();
+  }
+
   public markForMaintenance(): void {
     if (this._status === InventoryItemStatus.MAINTENANCE) return;
-
     this._status = InventoryItemStatus.MAINTENANCE;
     this._updatedAt = new Date();
   }
@@ -165,59 +150,48 @@ export class InventoryItem {
     this._updatedAt = new Date();
   }
 
-  // Adjust quantity for BULK items only
-  public adjustQuantity(newQuantity: number): void {
-    if (this._serialNumber) {
-      throw new Error('Cannot adjust quantity of a serialized item.');
-    }
-    if (newQuantity < 0) {
-      throw new Error('Quantity cannot be negative.');
-    }
-    this._totalQuantity = newQuantity;
-    this._updatedAt = new Date();
-  }
-
   // --- Getters ---
-  get Id(): string {
-    return this.id;
+
+  get id(): string {
+    return this._id;
   }
-  get TenantId(): string {
-    return this.tenantId;
+  get tenantId(): string {
+    return this._tenantId;
   }
-  get ProductId(): string {
-    return this.productId;
+  get productId(): string {
+    return this._productId;
   }
-  get LocationId(): string {
+  get locationId(): string {
     return this._locationId;
   }
-  get OwnerId(): string {
+  get ownerId(): string | null {
     return this._ownerId;
   }
-  get Status(): InventoryItemStatus {
+  get isOwnedByTenant(): boolean {
+    return this._ownerId === null;
+  }
+  get status(): InventoryItemStatus {
     return this._status;
   }
-  get TotalQuantity(): number {
-    return this._totalQuantity;
-  }
-  get SerialNumber(): string | null {
+  get serialNumber(): string | null {
     return this._serialNumber;
   }
-  get Blackouts(): ReadonlyArray<BlackoutPeriod> {
+  get blackouts(): ReadonlyArray<BlackoutPeriod> {
     return this._blackouts;
   }
-  get NewBlackouts(): ReadonlyArray<BlackoutPeriod> {
+  get newBlackouts(): ReadonlyArray<BlackoutPeriod> {
     return this._newBlackouts;
   }
-  get PurchaseDate(): Date | null {
-    return this.purchaseDate;
+  get purchaseDate(): Date | null {
+    return this._purchaseDate;
   }
-  get PurchaseCost(): number | null {
+  get purchaseCost(): number | null {
     return this._purchaseCost;
   }
-  get CreatedAt(): Date {
-    return this.createdAt;
+  get createdAt(): Date {
+    return this._createdAt;
   }
-  get UpdatedAt(): Date {
+  get updatedAt(): Date {
     return this._updatedAt;
   }
 }

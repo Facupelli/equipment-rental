@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { BundlePricingTier, CreateBundlePricingTierProps } from './bundle-pricing-tier.entity';
 import { BundleComponent } from '../value-objects/bundle-component.vo';
+import { InvalidProductBundleException } from '../exceptions/product-bundle.exception';
 
 export interface ProductBundleProps {
   id: string;
@@ -183,7 +184,9 @@ export class ProductBundle {
   private findTierOrThrow(tierId: string): BundlePricingTier {
     const tier = this._pricingTiers.find((t) => t.id === tierId);
     if (!tier) {
-      throw new Error(`BundlePricingTier "${tierId}" not found on ProductBundle "${this._id}".`);
+      throw new InvalidProductBundleException(
+        `BundlePricingTier "${tierId}" not found on ProductBundle "${this._id}".`,
+      );
     }
     return tier;
   }
@@ -191,14 +194,16 @@ export class ProductBundle {
   private assertCurrencyConsistency(currency: string): void {
     const existing = this._pricingTiers[0]?.currency;
     if (existing && existing !== currency) {
-      throw new Error(`Currency mismatch: bundle uses "${existing}" but new tier specifies "${currency}".`);
+      throw new InvalidProductBundleException(
+        `Currency mismatch: bundle uses "${existing}" but new tier specifies "${currency}".`,
+      );
     }
   }
 
   private assertTierUniqueness(billingUnitId: string, fromUnit: number): void {
     const duplicate = this._pricingTiers.some((t) => t.billingUnitId === billingUnitId && t.fromUnit === fromUnit);
     if (duplicate) {
-      throw new Error(
+      throw new InvalidProductBundleException(
         `A tier with billingUnitId "${billingUnitId}" and fromUnit "${fromUnit}" already exists on this bundle.`,
       );
     }
@@ -206,7 +211,7 @@ export class ProductBundle {
 
   private static assertHasComponents(components: BundleComponent[]): void {
     if (components.length === 0) {
-      throw new Error('A bundle must have at least one component.');
+      throw new InvalidProductBundleException('A bundle must have at least one component.');
     }
   }
 
@@ -214,7 +219,7 @@ export class ProductBundle {
     const productIds = components.map((c) => c.productId);
     const unique = new Set(productIds);
     if (unique.size !== productIds.length) {
-      throw new Error('A bundle cannot contain duplicate products.');
+      throw new InvalidProductBundleException('A bundle cannot contain duplicate products.');
     }
   }
 }

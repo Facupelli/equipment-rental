@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { InventoryItemRepositoryPort } from '../domain/ports/inventory.repository.port';
 import { DateRange } from '../domain/value-objects/date-range.vo';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateBlackoutPeriodDto } from './dto/create-blackout-period.dto';
+import { InventoryItemRepositoryPort } from './ports/inventory.repository.port';
 
 @Injectable()
-export class CreateBlackoutPeriodCommand {
+export class CreateBlackoutPeriodUseCase {
   constructor(private readonly inventoryItemRepository: InventoryItemRepositoryPort) {}
 
   async execute(dto: CreateBlackoutPeriodDto): Promise<string> {
