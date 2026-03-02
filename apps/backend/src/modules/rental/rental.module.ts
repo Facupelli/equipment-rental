@@ -1,33 +1,33 @@
 import { Module } from '@nestjs/common';
 import { PricingEngine } from './application/pricing-engine/pricing-engine';
-import { CreateBookingCommand } from './application/create-booking.command';
 import { AvailabilityService } from './application/availability.service';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { CustomerModule } from '../customer/customer.module';
-import { BookingRepository } from './domain/ports/booking.repository';
-import { PrismaBookingRepository } from './infrastructure/persistence/prisma-booking.repository';
-import { BookingController } from './infrastructure/controllers/booking.controller';
+import { OrdersController } from './infrastructure/controllers/orders.controller';
 import { BookingQueryService } from './application/booking-query.service';
-import { PrismaBookingQueryRepository } from './infrastructure/persistence/prisma-booking-query.repository';
-import { BookingQueryPort } from './domain/ports/booking-query.port';
+import { CreateOrderUseCase } from './application/create-order.use-case';
+import { OrderRepositoryPort } from './application/ports/order.repository.port';
+import { PrismaOrderRepository } from './infrastructure/persistence/prisma-order.repository';
+import { OrdersQueryPort } from './application/ports/booking-query.port';
+import { PrismaOrderQueryRepository } from './infrastructure/persistence/prisma-order-query.repository';
 
 @Module({
   imports: [TenancyModule, InventoryModule, CustomerModule],
-  controllers: [BookingController],
+  controllers: [OrdersController],
   providers: [
     AvailabilityService,
-    CreateBookingCommand,
+    CreateOrderUseCase,
     BookingQueryService,
     PricingEngine,
 
     {
-      provide: BookingRepository,
-      useClass: PrismaBookingRepository,
+      provide: OrderRepositoryPort,
+      useClass: PrismaOrderRepository,
     },
     {
-      provide: BookingQueryPort,
-      useClass: PrismaBookingQueryRepository,
+      provide: OrdersQueryPort,
+      useClass: PrismaOrderQueryRepository,
     },
   ],
 })

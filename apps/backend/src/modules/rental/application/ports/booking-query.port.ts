@@ -1,6 +1,6 @@
 import { GetTodayOverviewResponse, GetUpcomingScheduleResponse } from '@repo/schemas';
 
-export abstract class BookingQueryPort {
+export abstract class OrdersQueryPort {
   /**
    * Returns today's operational snapshot for the given tenant:
    * pick-up and return counts, scheduled out list, and due back list.

@@ -1,10 +1,10 @@
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
-import { Booking } from '../entities/booking.entity';
 import { TrackingType } from '@repo/types';
+import { Order } from '../../domain/entities/order.entity';
 
-export abstract class BookingRepository {
-  abstract findById(id: string, currency: string): Promise<Booking | null>;
-  abstract save(booking: Booking): Promise<string>;
+export abstract class OrderRepositoryPort {
+  abstract findById(id: string, currency: string): Promise<Order | null>;
+  abstract save(booking: Order): Promise<string>;
 
   /**
    * Returns the total quantity already booked for a product within the given range,

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { BookingQueryPort } from '../../domain/ports/booking-query.port';
 import {
   BookingCard,
   GetTodayOverviewResponse,
@@ -9,6 +8,7 @@ import {
   ReturnCard,
   UpcomingBooking,
 } from '@repo/schemas';
+import { OrdersQueryPort } from '../../application/ports/booking-query.port';
 
 // ─── Raw SQL Row Types ─────────────────────────────────────────────────────────
 // These types represent the raw rows returned by $queryRaw before mapping.
@@ -40,7 +40,7 @@ interface UpcomingBookingRow {
 // ─── Repository ────────────────────────────────────────────────────────────────
 
 @Injectable()
-export class PrismaBookingQueryRepository implements BookingQueryPort {
+export class PrismaOrderQueryRepository implements OrdersQueryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   // ─── getTodayOverview ──────────────────────────────────────────────────────

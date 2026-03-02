@@ -1,20 +1,20 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { CreateBookingCommand } from '../../application/create-booking.command';
+import { CreateOrderUseCase } from '../../application/create-order.use-case';
 import { CreateBookingDto } from '../../application/dto/create-booking.dto';
 import { GetTodayOverviewResponse, GetUpcomingScheduleResponse } from '@repo/schemas';
 import { BookingQueryService } from '../../application/booking-query.service';
 
-@Controller('bookings')
-export class BookingController {
+@Controller('orders')
+export class OrdersController {
   constructor(
     private readonly bookingQueryService: BookingQueryService,
-    private readonly createBookingCommand: CreateBookingCommand,
+    private readonly createOrderUseCase: CreateOrderUseCase,
   ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createBooking(@Body() command: CreateBookingDto): Promise<string> {
-    return this.createBookingCommand.execute(command);
+  async createOrder(@Body() dto: CreateBookingDto): Promise<string> {
+    return this.createOrderUseCase.execute(dto);
   }
 
   @Get('today-overview')
