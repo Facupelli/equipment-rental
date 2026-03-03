@@ -1,11 +1,11 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { CreateTenantUserDto, RegisterResponseDto } from '@repo/schemas';
 import { Tenant } from '../domain/entities/tenant.entity';
 import { TenantReadService, TenantRepositoryPort } from '../domain/ports/tenant.repository.port';
 import { UsersPublicApi } from 'src/modules/users/application/users-public-api';
 import { Role } from 'src/modules/users/domain/entities/role.entity';
 import { User } from 'src/modules/users/domain/entities/user.entity';
 import { BcryptService } from 'src/modules/auth/application/bcript.service';
+import { CreateTenantUserDto } from './dto/create-tenant-user.dto';
 
 @Injectable()
 export class CreateTenantUserUseCase {
@@ -16,16 +16,18 @@ export class CreateTenantUserUseCase {
     private readonly usersApi: UsersPublicApi,
   ) {}
 
-  async execute(dto: CreateTenantUserDto): Promise<RegisterResponseDto> {
-    const isEmailTaken = await this.usersApi.isEmailTaken(dto.email);
+  async execute(dto: CreateTenantUserDto) {
+    const { user, tenant } = dto;
+
+    const isEmailTaken = await this.usersApi.isEmailTaken(user.email);
     if (isEmailTaken) {
       throw new ConflictException('Email already in use');
     }
 
     // TODO: implement orchestration in a transaction
-    const tenantId = await this.createTenant(dto.companyName);
+    const tenantId = await this.createTenant(tenant.name);
     const roleId = await this.createRole(tenantId);
-    const userId = await this.createUserAndAssignRole(dto, roleId, tenantId);
+    const userId = await this.createUserAndAssignRole(user, roleId, tenantId);
 
     return { userId, tenantId };
   }
@@ -58,14 +60,18 @@ export class CreateTenantUserUseCase {
     return roleId;
   }
 
-  private async createUserAndAssignRole(dto: CreateTenantUserDto, roleId: string, tenantId: string): Promise<string> {
-    const hashedPassword = await this.bccryptService.hashPassword(dto.password);
+  private async createUserAndAssignRole(
+    userDto: CreateTenantUserDto['user'],
+    roleId: string,
+    tenantId: string,
+  ): Promise<string> {
+    const hashedPassword = await this.bccryptService.hashPassword(userDto.password);
 
     const user = User.create({
-      email: dto.email,
+      email: userDto.email,
       passwordHash: hashedPassword,
-      firstName: dto.firstName,
-      lastName: dto.lastName,
+      firstName: userDto.firstName,
+      lastName: userDto.lastName,
       tenantId,
     });
 

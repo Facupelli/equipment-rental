@@ -9,3 +9,4 @@ export * from "./enums/tracking-mode.enum";
 export * from "./enums/assignments.enum";
 export * from "./enums/order.enum";
 export * from "./enums/permissions.enum";
+export * from "./enums/pricing.enum";

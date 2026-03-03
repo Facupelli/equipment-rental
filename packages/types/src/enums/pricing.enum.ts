@@ -1,0 +1,13 @@
+export enum PricingRuleType {
+  SEASONAL = "SEASONAL",
+  VOLUME = "VOLUME",
+  COUPON = "COUPON",
+  CUSTOMER_SPECIFIC = "CUSTOMER_SPECIFIC",
+}
+
+export enum PricingRuleScope {
+  ORDER = "ORDER",
+  PRODUCT_TYPE = "PRODUCT_TYPE",
+  CATEGORY = "CATEGORY",
+  BUNDLE = "BUNDLE",
+}

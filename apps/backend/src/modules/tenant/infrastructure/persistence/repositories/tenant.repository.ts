@@ -3,7 +3,7 @@ import { PrismaService } from 'src/core/database/prisma.service';
 import { TenantReadService, TenantRepositoryPort } from 'src/modules/tenant/domain/ports/tenant.repository.port';
 import { TenantBillingUnitMapper, TenantMapper } from '../mappers/tenant.mapper';
 import { Tenant } from 'src/modules/tenant/domain/entities/tenant.entity';
-import { TenantResponseDto } from '@repo/schemas';
+import { TenantWithBillingUnits } from '@repo/schemas';
 import { TenantConfig } from 'src/modules/tenant/domain/value-objects/tenant-config.vo';
 
 @Injectable()
@@ -67,7 +67,7 @@ export class TenantRepository implements TenantRepositoryPort, TenantReadService
     return count > 0;
   }
 
-  async findById(id: string): Promise<TenantResponseDto | null> {
+  async findById(id: string): Promise<TenantWithBillingUnits | null> {
     const tenant = await this.prisma.client.tenant.findUnique({
       where: { id },
       include: {
