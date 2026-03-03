@@ -25,12 +25,11 @@ const ownerProjectionSchema = z.object({
 export const inventoryItemListItemSchema = z.object({
   id: z.uuid(),
   serialNumber: z.string().nullable(),
-  totalQuantity: z.number().int().positive(),
   status: z.enum(InventoryItemStatus),
   product: productProjectionSchema,
   category: categoryProjectionSchema.nullable(),
   location: locationProjectionSchema,
-  owner: ownerProjectionSchema,
+  owner: ownerProjectionSchema.nullable(),
 });
 
 export type InventoryItemListItemDto = z.infer<

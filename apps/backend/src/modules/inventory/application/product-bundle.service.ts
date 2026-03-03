@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { BundleRepositoryPort } from '../domain/ports/product-bundle.repository.port';
 import { ProductBundle } from '../domain/entities/product-bundle.entity';
-import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
+import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
 import { CreateProductBundleDto } from './dto/product-bundles/create-product-bundle.dto';
 import { BundleComponent } from '../domain/value-objects/bundle-component.vo';
+import { BundleRepositoryPort } from './ports/product-bundle.repository.port';
 
 @Injectable()
 export class ProductBundleService {

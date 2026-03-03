@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepositoryPort } from '../domain/ports/product-repository.port';
 import { Product } from '../domain/entities/product.entity';
 import { CreateProductDto, PaginatedDto, ProductDetailDto, ProductListItemResponseDto } from '@repo/schemas';
-import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
+import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
 import { TrackingType } from '@repo/types';
 import { GetProductsQueryDto } from './dto/products/get-product-list-query.dto';
-import { ProductQueryPort } from '../domain/ports/product-query.port';
+import { ProductRepositoryPort } from './ports/product-repository.port';
+import { ProductQueryPort } from './ports/product-query.port';
 
 @Injectable()
 export class ProductService {
@@ -41,7 +41,9 @@ export class ProductService {
       ...dto,
       tenantId,
       categoryId: dto.categoryId ?? null,
-      baseTier: dto.pricingTiers[0],
+      baseTier: dto.baseTier,
+      locationId: dto.locationId ?? null,
+      totalStock: dto.totalStock ?? null,
     });
 
     return await this.productRepository.save(product);

@@ -1,50 +1,42 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { UserCredentials, UsersPublicApi } from './users-public-api';
+import { UserReadService, UserRepositoryPort } from '../domain/ports/user.repository.port';
+import { MeResponseDto } from '@repo/schemas';
 import { User } from '../domain/entities/user.entity';
-import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'node:crypto';
-import { UserQueryPort } from './ports/user-query.port';
-import { UsersRepositoryPort } from './ports/users.repository.port';
-import { UserCommandPort } from './ports/user-command.port';
+import { Role } from '../domain/entities/role.entity';
+import { RoleRepositoryPort } from '../domain/ports/role.repository.port';
 
 @Injectable()
-export class UsersService implements UserQueryPort, UserCommandPort {
-  constructor(private readonly userRepository: UsersRepositoryPort) {}
+export class UsersService implements UsersPublicApi {
+  constructor(
+    private readonly userRepository: UserRepositoryPort,
+    private readonly roleRepository: RoleRepositoryPort,
+    private readonly readService: UserReadService,
+  ) {}
 
-  async findById(id: string): Promise<User> {
-    const user = await this.userRepository.load(id);
+  async getMe(userId: string): Promise<MeResponseDto> {
+    const user = await this.readService.findById(userId);
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
     return user;
   }
 
-  async create(dto: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    tenantId: string;
-    roleId: string;
-  }): Promise<string> {
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-
-    const user = User.create(
-      randomUUID(),
-      dto.email,
-      passwordHash,
-      dto.firstName,
-      dto.lastName,
-      dto.tenantId,
-      dto.roleId,
-    );
-
-    return await this.userRepository.save(user);
+  // PUBLIC API
+  async create(dto: User): Promise<string> {
+    return await this.userRepository.save(dto);
   }
 
-  // query port
+  async createRole(dto: Role): Promise<string> {
+    return await this.roleRepository.save(dto);
+  }
+
+  async findCredentialsByEmail(email: string): Promise<UserCredentials | null> {
+    return await this.readService.findCredentialsByEmail(email);
+  }
+
   async isEmailTaken(email: string): Promise<boolean> {
-    return await this.userRepository.isEmailTaken(email);
+    return await this.readService.isEmailTaken(email);
   }
 }

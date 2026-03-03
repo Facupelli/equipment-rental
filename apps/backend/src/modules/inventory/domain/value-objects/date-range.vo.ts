@@ -1,3 +1,5 @@
+import { InvalidDateRangeException } from '../exceptions/date-range.exceptions';
+
 /**
  * Encapsulates a time-bounded interval with an inclusive start and exclusive end,
  * mirroring PostgreSQL's default tstzrange semantics: [start, end).
@@ -16,7 +18,7 @@ export class DateRange {
 
   static create(start: Date, end: Date): DateRange {
     if (start >= end) {
-      throw new Error(`Invalid DateRange: start (${start.toISOString()}) must be before end (${end.toISOString()}).`);
+      throw new InvalidDateRangeException(start, end);
     }
     return new DateRange(start, end);
   }

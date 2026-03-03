@@ -34,29 +34,55 @@ const baseTierField = {
  * BULK: locationId and totalStock are required.
  * SERIALIZED: locationId and totalStock must not be present.
  */
-export const createProductSchema = z.discriminatedUnion("trackingType", [
-  productSchema.extend({
-    trackingType: z.literal(TrackingType.BULK),
-    locationId: z.uuid({
-      message: "BULK products require a valid locationId.",
-    }),
+export const createProductSchema = z
+  .object({
+    ...productSchema.shape,
+    ...baseTierField,
+    trackingType: z.enum(TrackingType),
+    locationId: z
+      .uuid({ message: "locationId must be a valid UUID." })
+      .optional(),
     totalStock: z
       .number()
       .int()
-      .positive({ message: "BULK products require a positive totalStock." }),
-    ...baseTierField,
-  }),
-  productSchema.extend({
-    trackingType: z.literal(TrackingType.SERIALIZED),
-    locationId: z
-      .never({ message: "SERIALIZED products cannot have a locationId." })
+      .positive({ message: "totalStock must be a positive integer." })
       .optional(),
-    totalStock: z
-      .never({ message: "SERIALIZED products cannot have a totalStock." })
-      .optional(),
-    ...baseTierField,
-  }),
-]);
+  })
+  .superRefine((data, ctx) => {
+    if (data.trackingType === TrackingType.BULK) {
+      if (!data.locationId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["locationId"],
+          message: "BULK products require a valid locationId.",
+        });
+      }
+      if (data.totalStock === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["totalStock"],
+          message: "BULK products require a positive totalStock.",
+        });
+      }
+    }
+
+    if (data.trackingType === TrackingType.SERIALIZED) {
+      if (data.locationId !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["locationId"],
+          message: "SERIALIZED products cannot have a locationId.",
+        });
+      }
+      if (data.totalStock !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["totalStock"],
+          message: "SERIALIZED products cannot have a totalStock.",
+        });
+      }
+    }
+  });
 
 export type IncludedItemDto = z.infer<typeof IncludedItemSchema>;
 export type CreateProductDto = z.infer<typeof createProductSchema>;

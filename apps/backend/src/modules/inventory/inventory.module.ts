@@ -3,11 +3,10 @@ import { InventoryItemController } from './infrastructure/controllers/inventory-
 import { ProductController } from './infrastructure/controllers/product.controller';
 import { ProductService } from './application/product.service';
 import { PrismaProductRepository } from './infrastructure/persistance/prisma-product.repository';
-import { TenancyModule } from '../tenancy/tenancy.module';
-import { PrismaInventoryItemRepository } from './infrastructure/persistance/prisma-inventory-item.repository';
+import { TenancyModule } from '../tenant/tenant.module';
+import { PrismaInventoryItemRepository } from './infrastructure/persistance/repositories/asset.repository';
 import { InventoryItemService } from './application/inventory-item.service';
 import { CreateBlackoutPeriodUseCase } from './application/create-blackout-period.use-case';
-import { PrismaInventoryReadAdapter } from './infrastructure/persistance/prisma-rental-read.repository';
 import { PrismaCategoryRepository } from './infrastructure/persistance/prisma-category.repository';
 import { CategoryService } from './application/category.service';
 import { CategoryController } from './infrastructure/controllers/category.controller';
@@ -18,12 +17,11 @@ import { ProductBundleController } from './infrastructure/controllers/product-bu
 import { ProductBundleService } from './application/product-bundle.service';
 import { ProductRepositoryPort } from './application/ports/product-repository.port';
 import { ProductQueryPort } from './application/ports/product-query.port';
-import { RentalProductQueryPort } from '../rental/application/ports/rental-product.port';
+import { RentalProductQueryPort } from '../order/application/ports/rental-product.port';
 import { BundleRepositoryPort } from './application/ports/product-bundle.repository.port';
 import { InventoryItemRepositoryPort } from './application/ports/inventory.repository.port';
 import { InventoryItemQueryPort } from './application/ports/item-query.port';
 import { CategoryRepositoryPort } from './application/ports/category.repository.port';
-import { RentalInventoryReadPort } from '../rental/application/ports/rental-inventory-read.port';
 
 const repositories = [
   {
@@ -54,10 +52,6 @@ const repositories = [
     provide: CategoryRepositoryPort,
     useClass: PrismaCategoryRepository,
   },
-  {
-    provide: RentalInventoryReadPort,
-    useClass: PrismaInventoryReadAdapter,
-  },
 ];
 
 const providers = [
@@ -72,6 +66,6 @@ const providers = [
   imports: [TenancyModule],
   controllers: [ProductController, ProductBundleController, InventoryItemController, CategoryController],
   providers: [...repositories, ...providers],
-  exports: [RentalProductQueryPort, RentalInventoryReadPort],
+  exports: [RentalProductQueryPort],
 })
 export class InventoryModule {}

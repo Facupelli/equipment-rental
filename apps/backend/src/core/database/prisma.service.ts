@@ -3,7 +3,7 @@ import { PrismaClient } from '../../generated/prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { Env } from 'src/config/env.schema';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
+import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
 import { LogContext } from '../logger/log-context';
 
 const TENANT_EXCLUDED_MODELS = new Set(['Tenant', 'Permission', 'BookingLineItem']);

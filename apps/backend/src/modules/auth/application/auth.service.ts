@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserValidator } from '../domain/port/user-validator.port';
 import { User } from 'src/modules/users/domain/entities/user.entity';
 import { JwtPayload } from '../infrastructure/strategies/jwt.strategy';
 import { randomUUID } from 'node:crypto';
@@ -16,27 +15,9 @@ const BCRYPT_ROUNDS = 10;
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly userValidator: UserValidator,
     private readonly configService: ConfigService<Env, true>,
     private readonly prisma: PrismaService,
   ) {}
-
-  async validateUser(email: string, pass: string): Promise<any> {
-    return await this.userValidator.validateUser(email, pass);
-  }
-
-  // async login(user: User) {
-  //   const payload: JwtPayload = {
-  //     sub: user.id,
-  //     email: user.email,
-  //     tenantId: user.tenantId,
-  //     roleId: user.roleId,
-  //   };
-
-  //   return {
-  //     access_token: this.jwtService.sign(payload),
-  //   };
-  // }
 
   // Issues both tokens. The access token is returned in the response body.
   // The refresh token is returned raw so the controller can set it as a cookie.
@@ -68,11 +49,11 @@ export class AuthService {
     // Atomic: revoke old token + insert new token in one transaction.
     // If the INSERT fails, the UPDATE rolls back — client can retry with the old token.
     await this.prisma.client.$transaction([
-      this.prisma.client.refreshToken.update({
+      this.prisma.client.userRefreshToken.update({
         where: { id: oldTokenId },
         data: { revokedAt: new Date() },
       }),
-      this.prisma.client.refreshToken.create({
+      this.prisma.client.userRefreshToken.create({
         data: {
           id: newTokenId,
           tokenHash,
@@ -87,7 +68,7 @@ export class AuthService {
 
   // Revokes all refresh tokens for the user — logs out all devices.
   async logout(userId: string): Promise<void> {
-    await this.prisma.client.refreshToken.updateMany({
+    await this.prisma.client.userRefreshToken.updateMany({
       where: {
         userId,
         revokedAt: null, // only touch still-active tokens
@@ -98,14 +79,13 @@ export class AuthService {
 
   // -----------------------------------------------------------------------------
 
-  private signAccessToken(user: Pick<User, 'id' | 'email' | 'tenantId' | 'roleId'>): {
+  private signAccessToken(user: Pick<User, 'id' | 'email' | 'tenantId'>): {
     accessToken: string;
   } {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       tenantId: user.tenantId,
-      roleId: user.roleId,
     };
 
     return {
@@ -114,7 +94,7 @@ export class AuthService {
     };
   }
 
-  private signRefreshToken(user: Pick<User, 'id' | 'email' | 'tenantId' | 'roleId'>): {
+  private signRefreshToken(user: Pick<User, 'id' | 'email' | 'tenantId'>): {
     refreshToken: string;
     tokenId: string;
   } {
@@ -124,7 +104,6 @@ export class AuthService {
       id: user.id,
       email: user.email,
       tenantId: user.tenantId,
-      roleId: user.roleId,
       jti: tokenId,
     };
 
@@ -140,7 +119,7 @@ export class AuthService {
     const tokenHash = await bcrypt.hash(rawToken, BCRYPT_ROUNDS);
     const expiresAt = this.refreshTokenExpiresAt();
 
-    await this.prisma.client.refreshToken.create({
+    await this.prisma.client.userRefreshToken.create({
       data: {
         id: tokenId,
         tokenHash,

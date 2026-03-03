@@ -8,13 +8,12 @@ import { ConfigService } from '@nestjs/config';
 import { Env } from 'src/config/env.schema';
 import { LocalStrategy } from './infrastructure/strategies/local.strategy';
 import { AuthService } from './application/auth.service';
-import { TenancyModule } from '../tenancy/tenancy.module';
 import { RefreshTokenStrategy } from './infrastructure/strategies/jwt-refresh.strategy';
+import { BcryptService } from './application/bcript.service';
 
 @Module({
   imports: [
     UsersModule,
-    TenancyModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -25,7 +24,7 @@ import { RefreshTokenStrategy } from './infrastructure/strategies/jwt-refresh.st
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, RefreshTokenStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, RefreshTokenStrategy, BcryptService],
   exports: [AuthService],
 })
 export class AuthModule {}

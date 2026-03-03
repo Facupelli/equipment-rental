@@ -2,31 +2,27 @@ import { Module } from '@nestjs/common';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DatabaseModule } from './core/database/database.module';
-import { TenancyModule } from './modules/tenancy/tenancy.module';
 import { AppConfigModule } from './config/config.module';
-import { LocationModule } from './modules/location/location.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/infrastructure/guards/jwt-auth.guard';
-import { TenantInterceptor } from './modules/tenancy/tenant.interceptor';
-import { OwnerModule } from './modules/owner/owner.module';
-import { InventoryModule } from './modules/inventory/inventory.module';
-import { CustomerModule } from './modules/customer/customer.module';
-import { RentalModule } from './modules/rental/rental.module';
+import { TenantInterceptor } from './modules/tenant/tenant.interceptor';
 import { LoggerModule } from './core/logger/logger.module';
+// import { TenantModule } from './modules/tenant/tenant.module';
+// import { InventoryModule } from './modules/inventory/inventory.module';
+// import { CustomerModule } from './modules/customer/customer.module';
+// import { OrderModule } from './modules/order/order.module';
 
 @Module({
   imports: [
     LoggerModule,
     AppConfigModule,
     DatabaseModule,
-    TenancyModule,
+    // TenantModule,
     AuthModule,
     UsersModule,
-    LocationModule,
-    OwnerModule,
-    InventoryModule,
-    CustomerModule,
-    RentalModule,
+    // InventoryModule,
+    // CustomerModule,
+    // OrderModule,
   ],
   providers: [
     {

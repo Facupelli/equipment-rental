@@ -30,10 +30,9 @@ const pricingTierDetailSchema = z.object({
 const inventoryItemDetailSchema = z.object({
   id: z.uuid(),
   serialNumber: z.string().nullable(),
-  totalQuantity: z.number().int().positive(),
   status: z.enum(InventoryItemStatus),
   location: z.object({ id: z.uuid(), name: z.string() }),
-  owner: z.object({ id: z.uuid(), name: z.string() }),
+  owner: z.object({ id: z.uuid(), name: z.string() }).nullable(),
   createdAt: z.coerce.date(),
 });
 
@@ -47,6 +46,8 @@ export const productDetailSchema = z.object({
   trackingType: z.enum(TrackingType),
   attributes: z.record(z.string(), z.any()),
   includedItems: z.array(IncludedItemSchema),
+  totalStock: z.number().int().positive().nullable(),
+  location: z.object({ id: z.uuid(), name: z.string() }).nullable(),
   category: categorySummarySchema.nullable(),
   pricingTiers: z.array(pricingTierDetailSchema),
   inventoryItems: z.array(inventoryItemDetailSchema),

@@ -1,0 +1,13 @@
+export enum OrderStatus {
+  PENDING_SOURCING = "PENDING_SOURCING",
+  SOURCED = "SOURCED",
+  CONFIRMED = "CONFIRMED",
+  ACTIVE = "ACTIVE",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED",
+}
+
+export enum OrderItemType {
+  PRODUCT = "PRODUCT",
+  BUNDLE = "BUNDLE",
+}

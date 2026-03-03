@@ -1,103 +1,133 @@
+import { randomUUID } from 'crypto';
+import { InvalidUserNameException } from '../expcetions/user.exceptions';
+import { CreateUserRoleProps, UserRole } from './user-role.entity';
+import { DuplicateRoleAssignmentException } from '../expcetions/role.exceptions';
+
+export interface CreateUserProps {
+  tenantId: string;
+  email: string;
+  passwordHash: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface ReconstituteUserProps {
+  id: string;
+  tenantId: string;
+  email: string;
+  passwordHash: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  deletedAt: Date | null;
+  userRoles: UserRole[];
+}
+
 export class User {
-  // 1. Private properties ensure encapsulation.
-  // Naming convention: underscore prefix to distinguish from getters.
   private constructor(
-    private readonly _id: string,
-    private _email: string,
-    private _passwordHash: string,
-    private _firstName: string,
-    private _lastName: string,
-    private _isActive: boolean,
-    private readonly _tenantId: string,
-    private _roleId: string,
+    public readonly id: string,
+    public readonly tenantId: string,
+    public readonly email: string,
+    private readonly passwordHash: string,
+    public readonly firstName: string,
+    public readonly lastName: string,
+    private isActive: boolean,
+    private deletedAt: Date | null,
+    private userRoles: UserRole[],
   ) {}
 
-  // 2. Factory Method: The only way to create a NEW user.
-  // Enforces business rules (invariants) at creation time.
-  public static create(
-    id: string,
-    email: string,
-    passwordHash: string,
-    firstName: string,
-    lastName: string,
-    tenantId: string,
-    roleId: string,
-  ): User {
-    if (!email.includes('@')) {
-      throw new Error('Invalid email format'); // Or a custom DomainException
+  static create(props: CreateUserProps): User {
+    if (!props.firstName || props.firstName.trim().length === 0) {
+      throw new InvalidUserNameException('first');
+    }
+    if (!props.lastName || props.lastName.trim().length === 0) {
+      throw new InvalidUserNameException('last');
+    }
+    return new User(
+      randomUUID(),
+      props.tenantId,
+      props.email,
+      props.passwordHash,
+      props.firstName.trim(),
+      props.lastName.trim(),
+      true,
+      null,
+      [],
+    );
+  }
+
+  static reconstitute(props: ReconstituteUserProps): User {
+    return new User(
+      props.id,
+      props.tenantId,
+      props.email,
+      props.passwordHash,
+      props.firstName,
+      props.lastName,
+      props.isActive,
+      props.deletedAt,
+      props.userRoles,
+    );
+  }
+
+  get roles(): UserRole[] {
+    // Return a copy to prevent external mutation
+    return [...this.userRoles];
+  }
+
+  get active(): boolean {
+    return this.isActive;
+  }
+
+  get deleted(): boolean {
+    return this.deletedAt !== null;
+  }
+
+  get deletedOn(): Date | null {
+    return this.deletedAt;
+  }
+
+  get currentPasswordHash(): string {
+    return this.passwordHash;
+  }
+
+  assignRole(props: CreateUserRoleProps): void {
+    if (!this.isActive) {
+      throw new Error('Cannot assign roles to an inactive user.');
     }
 
-    return new User(id, email, passwordHash, firstName, lastName, true, tenantId, roleId);
-  }
+    const isDuplicate = this.userRoles.some(
+      (ur) => ur.roleId === props.roleId && ur.locationId === (props.locationId ?? null),
+    );
 
-  public static reconstitute(
-    id: string,
-    email: string,
-    passwordHash: string,
-    firstName: string,
-    lastName: string,
-    isActive: boolean,
-    tenantId: string,
-    roleId: string,
-  ): User {
-    return new User(id, email, passwordHash, firstName, lastName, isActive, tenantId, roleId);
-  }
-
-  get id(): string {
-    return this._id;
-  }
-  get email(): string {
-    return this._email;
-  }
-  get passwordHash(): string {
-    return this._passwordHash;
-  }
-  get firstName(): string {
-    return this._firstName;
-  }
-  get lastName(): string {
-    return this._lastName;
-  }
-  get isActive(): boolean {
-    return this._isActive;
-  }
-  get tenantId(): string {
-    return this._tenantId;
-  }
-  get roleId(): string {
-    return this._roleId;
-  }
-
-  // Computed property (not in DB, but derived from domain)
-  get fullName(): string {
-    return `${this._firstName} ${this._lastName}`;
-  }
-
-  // 4. Behavior Methods: How the state changes.
-  // No `setEmail` or `setIsActive`! Use intention-revealing methods.
-
-  public updateProfile(firstName: string, lastName: string): void {
-    this._firstName = firstName;
-    this._lastName = lastName;
-    // In a real app, you might emit a domain event here:
-    // this.addDomainEvent(new UserProfileUpdatedEvent(this.id));
-  }
-
-  public deactivate(): void {
-    if (!this._isActive) {
-      return;
+    if (isDuplicate) {
+      throw new DuplicateRoleAssignmentException();
     }
-    this._isActive = false;
+
+    const userRole = UserRole.create({
+      ...props,
+      userId: this.id,
+    });
+
+    this.userRoles.push(userRole);
   }
 
-  public activate(): void {
-    if (this._isActive) {
-      return;
+  removeRole(roleId: string, locationId?: string): void {
+    const index = this.userRoles.findIndex((ur) => ur.roleId === roleId && ur.locationId === (locationId ?? null));
+
+    if (index === -1) {
+      throw new Error('Role assignment not found.');
     }
-    this._isActive = true;
+
+    this.userRoles.splice(index, 1);
   }
 
-  public changePassword(newHash: string): void {
-    this._passwordHash = newHash;
+  deactivate(): void {
+    this.isActive = false;
+  }
+
+  softDelete(): void {
+    this.deletedAt = new Date();
+    this.isActive = false;
   }
 }

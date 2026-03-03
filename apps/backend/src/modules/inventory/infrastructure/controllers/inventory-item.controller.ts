@@ -2,16 +2,16 @@ import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { InventoryItemService } from '../../application/inventory-item.service';
 import { CreateInventoryItemDto } from '../../application/dto/items/create-inventory-item.dto';
 import { CreateBlackoutPeriodDto } from '../../application/dto/create-blackout-period.dto';
-import { CreateBlackoutPeriodCommand } from '../../application/create-blackout-period.use-case';
 import { InventoryItemListItemDto, PaginatedDto } from '@repo/schemas';
 import { GetInventoryItemsQueryDto } from '../../application/dto/items/get-item-list-query.dto';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
+import { CreateBlackoutPeriodUseCase } from '../../application/create-blackout-period.use-case';
 
 @Controller('inventory-items')
 export class InventoryItemController {
   constructor(
     private readonly inventoryItemService: InventoryItemService,
-    private readonly createBlackoutPeriodCommand: CreateBlackoutPeriodCommand,
+    private readonly createBlackoutPeriodCommand: CreateBlackoutPeriodUseCase,
   ) {}
 
   @Post()

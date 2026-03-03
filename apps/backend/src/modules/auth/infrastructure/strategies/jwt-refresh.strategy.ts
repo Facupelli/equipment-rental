@@ -11,7 +11,6 @@ export interface RefreshTokenPayload {
   id: string; // userId
   email: string;
   tenantId: string;
-  roleId: string;
   jti: string; // RefreshToken.id in the DB
 }
 
@@ -38,7 +37,7 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
   }
 
   async validate(payload: RefreshTokenPayload): Promise<RefreshTokenUser> {
-    const tokenRecord = await this.prisma.client.refreshToken.findUnique({
+    const tokenRecord = await this.prisma.client.userRefreshToken.findUnique({
       where: { id: payload.jti },
     });
 
@@ -52,7 +51,7 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
     // we have a potential theft scenario. Nuclear response: revoke ALL sessions
     // for this user and force a full re-login.
     if (tokenRecord.revokedAt !== null) {
-      await this.prisma.client.refreshToken.updateMany({
+      await this.prisma.client.userRefreshToken.updateMany({
         where: { userId: payload.id },
         data: { revokedAt: new Date() },
       });
@@ -64,7 +63,7 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
     // authoritative source — this allows us to force-expire tokens server-side
     // even if the JWT hasn't expired yet (e.g. forced logout, security incident).
     if (tokenRecord.expiresAt < new Date()) {
-      await this.prisma.client.refreshToken.update({
+      await this.prisma.client.userRefreshToken.update({
         where: { id: tokenRecord.id },
         data: { revokedAt: new Date() },
       });

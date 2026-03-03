@@ -1,5 +1,4 @@
-import { RentalProductView } from 'src/modules/rental/application/ports/rental-product.port';
-import { BundlePricingTierView } from 'src/modules/rental/application/pricing-engine/pricing-engine';
+import { RentalProductView } from 'src/modules/order/application/ports/rental-product.port';
 
 export interface BundleComponentView {
   productId: string;
@@ -12,6 +11,15 @@ export interface BundleView {
   tenantId: string;
   pricingTiers: BundlePricingTierView[];
   components: BundleComponentView[];
+}
+
+export interface BundlePricingTierView {
+  id: string;
+  billingUnitId: string;
+  fromUnit: number;
+  pricePerUnit: number;
+  currency: string;
+  inventoryItemId: null;
 }
 
 export abstract class BundleQueryPort {

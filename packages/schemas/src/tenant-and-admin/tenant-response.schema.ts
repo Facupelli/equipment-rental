@@ -14,22 +14,18 @@ export const TenantConfigSchema = z.object({
 
 export const BillingUnitResponseSchema = z.object({
   id: z.uuid(),
-  name: z.string(),
-  durationHours: z.number(),
-  sortOrder: z.number(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  label: z.string(),
+  durationMinutes: z.number().int(),
+  sortOrder: z.number().int(),
 });
 
 export const TenantResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   slug: z.string(),
-  planTier: z.string(),
-  isActive: z.boolean(),
+  createdAt: z.date(),
   config: TenantConfigSchema,
   billingUnits: z.array(BillingUnitResponseSchema),
-  createdAt: z.date(),
 });
 
 export type TenantResponseDto = z.infer<typeof TenantResponseSchema>;

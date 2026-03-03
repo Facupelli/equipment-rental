@@ -1,15 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { InventoryItemRepositoryPort } from '../domain/ports/inventory.repository.port';
 import {
   CreateInventoryItemDto,
   GetInventoryItemsQueryDto,
   InventoryItemListItemDto,
   PaginatedDto,
 } from '@repo/schemas';
-import { InventoryItem } from '../domain/entities/inventory-item.entity';
+import { InventoryItem } from '../domain/entities/asset.entity';
 import { ProductService } from './product.service';
-import { TenantContextService } from 'src/modules/tenancy/tenant-context.service';
-import { InventoryItemQueryPort } from '../domain/ports/item-query.port';
+import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
+import { InventoryItemRepositoryPort } from './ports/inventory.repository.port';
+import { InventoryItemQueryPort } from './ports/item-query.port';
 
 @Injectable()
 export class InventoryItemService {
@@ -40,6 +40,7 @@ export class InventoryItemService {
     const item = InventoryItem.create(
       {
         ...dto,
+        ownerId: dto.ownerId ?? null,
         serialNumber: dto.serialNumber ? dto.serialNumber : null,
         purchaseDate: dto.purchaseDate ? dto.purchaseDate : null,
         purchaseCost: dto.purchaseCost ? dto.purchaseCost : null,

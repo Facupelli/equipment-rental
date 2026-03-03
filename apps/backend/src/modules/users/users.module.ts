@@ -1,32 +1,25 @@
 import { Module } from '@nestjs/common';
-import { BcryptUserValidator } from './infrastructure/adapters/bcript-user-validator.service';
-import { UserValidator } from 'src/modules/auth/domain/port/user-validator.port';
-import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
 import { UsersService } from './application/users.service';
 import { UsersController } from './infrastructure/controllers/users.controller';
-import { PrismaRoleRepository } from './infrastructure/persistence/prisma-role.repository';
-import { RolesService } from './application/roles.service';
-import { UserQueryPort } from './application/ports/user-query.port';
-import { UsersRepositoryPort } from './application/ports/users.repository.port';
-import { RoleRepositoryPort } from './application/ports/role.repository.port';
-import { UserCommandPort } from './application/ports/user-command.port';
-import { RoleCommandPort } from './application/ports/role-command.port';
+import { UsersRepositoryPort } from 'dist/src/modules/users/application/ports/users.repository.port';
+import { UserRepository } from './infrastructure/persistence/repositories/user.repository';
+import { RoleRepositoryPort } from './domain/ports/role.repository.port';
+import { RoleRepository } from './infrastructure/persistence/repositories/role.repository';
+import { InvitationRepositoryPort } from './domain/ports/invitation.repository.port';
+import { InvitationRepository } from './infrastructure/persistence/repositories/invitation.repository';
+import { UsersPublicApi } from './application/users-public-api';
 
 const repositories = [
-  { provide: UsersRepositoryPort, useClass: PrismaUserRepository },
-  { provide: RoleRepositoryPort, useClass: PrismaRoleRepository },
+  { provide: UsersRepositoryPort, useClass: UserRepository },
+  { provide: RoleRepositoryPort, useClass: RoleRepository },
+  { provide: InvitationRepositoryPort, useClass: InvitationRepository },
 ];
 
-const services = [RolesService, UsersService, { provide: UserValidator, useClass: BcryptUserValidator }];
+const services = [UsersService];
 
 @Module({
   controllers: [UsersController],
   providers: [...repositories, ...services],
-  exports: [
-    { provide: UserValidator, useClass: BcryptUserValidator },
-    { provide: UserQueryPort, useClass: UsersService },
-    { provide: UserCommandPort, useClass: UsersService },
-    { provide: RoleCommandPort, useClass: RolesService },
-  ],
+  exports: [{ provide: UsersPublicApi, useClass: UsersService }],
 })
 export class UsersModule {}
