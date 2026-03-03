@@ -1,89 +1,87 @@
 import { Injectable } from '@nestjs/common';
-import { CandidateItem, RentalInventoryReadPort } from '../domain/ports/rental-inventory-read.port';
+import {
+  AvailabilityRepositoryPort,
+  BookingCandidate,
+  ResolvedCandidate,
+  ResolvedSerializedCandidate,
+  SerializedCandidate,
+} from './ports/availability-repository.port';
+import { AvailabilityConflict, AvailabilityException } from './exceptions/availability.exceptions';
+import { formatPostgresRange } from 'src/core/utils/postgres-range.util';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
-import { TenantConfigPort } from '../../tenancy/domain/ports/tenant-config.port';
-import { BookingRepository } from '../domain/ports/booking.repository';
-import { TrackingType } from '@repo/types';
-
-export interface CheckAvailabilityParams {
-  productId: string;
-  tenantId: string;
-  requestedQuantity: number;
-  range: DateRange;
-  trackingType: TrackingType;
-}
-
-export enum AvailabilityStatus {
-  AVAILABLE = 'AVAILABLE',
-  OVERBOOK_WARNING = 'OVERBOOK_WARNING',
-  UNAVAILABLE = 'UNAVAILABLE',
-}
-
-export type AvailabilityResult =
-  | { status: AvailabilityStatus.AVAILABLE; availableQuantity: number; candidateItems: CandidateItem[] }
-  | { status: AvailabilityStatus.OVERBOOK_WARNING; deficit: number }
-  | { status: AvailabilityStatus.UNAVAILABLE; reason: string };
 
 @Injectable()
 export class AvailabilityService {
-  constructor(
-    private readonly inventoryRead: RentalInventoryReadPort,
-    private readonly tenancyQuery: TenantConfigPort,
-    private readonly bookingRepository: BookingRepository,
-  ) {}
+  constructor(private readonly availabilityRepo: AvailabilityRepositoryPort) {}
 
-  async check(params: CheckAvailabilityParams): Promise<AvailabilityResult> {
-    const { productId, tenantId, requestedQuantity, range, trackingType } = params;
+  /**
+   * Checks availability for every candidate and, for SERIALIZED candidates
+   * without a pre-selected unit, auto-assigns the first available one.
+   *
+   * Collects ALL conflicts before throwing — never short-circuits — so the
+   * caller receives a complete picture of what is unavailable.
+   *
+   * @returns Fully resolved candidates (no null inventoryItemId).
+   * @throws  AvailabilityException carrying every AvailabilityConflict found.
+   */
+  async checkAndResolve(
+    candidates: BookingCandidate[],
+    bookingRange: DateRange,
+    tenantId: string,
+  ): Promise<ResolvedCandidate[]> {
+    if (candidates.length === 0) return [];
 
-    // Step 1 — Total rentable supply (excludes RETIRED items)
-    const totalQuantity = await this.inventoryRead.getTotalQuantity(productId, tenantId);
+    const range = formatPostgresRange(bookingRange);
 
-    // Step 2 — Units blocked by blackout periods in the requested range
-    const blackedOutQuantity = await this.inventoryRead.getBlackedOutQuantity(productId, tenantId, range);
+    // Track units assigned within this call to prevent assigning the same
+    // physical unit to two candidates (e.g. same product in bundle + direct).
+    const assignedUnitIds = new Set<string>();
 
-    // Step 3 — Units already committed in confirmed bookings overlapping the range
-    const bookedQuantity = await this.bookingRepository.getBookedQuantity(productId, tenantId, range, trackingType);
+    // Run all checks concurrently and collect results.
+    const results = await Promise.all(
+      candidates.map((candidate) =>
+        candidate.trackingType === 'SERIALIZED'
+          ? this.checkSerialized(candidate, range, tenantId, assignedUnitIds)
+          : this.availabilityRepo.checkBulk(candidate, range, tenantId),
+      ),
+    );
 
-    // Step 4 — Net available units
-    const netAvailable = totalQuantity - blackedOutQuantity - bookedQuantity;
+    // Separate resolved candidates from conflicts.
+    const conflicts: AvailabilityConflict[] = [];
+    const resolved: ResolvedCandidate[] = [];
 
-    // Step 5a — Sufficient stock: straightforward approval
-    if (netAvailable >= requestedQuantity) {
-      const candidateItems: CandidateItem[] = [];
-
-      if (trackingType === TrackingType.SERIALIZED) {
-        const items = await this.inventoryRead.getCandidateItems(productId, tenantId, range);
-        candidateItems.push(...items);
+    for (const result of results) {
+      if ('conflict' in result) {
+        conflicts.push(result.conflict);
+      } else {
+        resolved.push(result.candidate);
       }
-
-      return {
-        status: AvailabilityStatus.AVAILABLE,
-        availableQuantity: netAvailable,
-        candidateItems,
-      };
     }
 
-    // Step 5b — Insufficient stock: consult tenant config for over-rental rules
-    const tenantConfig = await this.tenancyQuery.findPricingInputs(tenantId);
-    const config = tenantConfig?.pricingConfig;
-
-    if (!config?.overRentalEnabled) {
-      return {
-        status: AvailabilityStatus.UNAVAILABLE,
-        reason: `Insufficient stock. Requested ${requestedQuantity}, available ${netAvailable}.`,
-      };
+    if (conflicts.length > 0) {
+      throw new AvailabilityException(conflicts);
     }
 
-    const deficit = requestedQuantity - netAvailable;
+    return resolved;
+  }
 
-    // TODO: The Threshold Logic (Absolute vs. Percentage) this is assuming absolute value. what if it is a procetnage?
-    if (deficit > config.maxOverRentThreshold) {
-      return {
-        status: AvailabilityStatus.UNAVAILABLE,
-        reason: `Over-rental threshold exceeded. Deficit of ${deficit} surpasses the maximum allowed threshold of ${config.maxOverRentThreshold}.`,
-      };
+  // ---------------------------------------------------------------------------
+  // SERIALIZED
+  // ---------------------------------------------------------------------------
+
+  private async checkSerialized(
+    candidate: SerializedCandidate,
+    range: string,
+    tenantId: string,
+    assignedUnitIds: Set<string>,
+  ): Promise<{ candidate: ResolvedSerializedCandidate } | { conflict: AvailabilityConflict }> {
+    if (candidate.inventoryItemId === null) {
+      return this.availabilityRepo.autoAssign(candidate, range, tenantId, assignedUnitIds);
     }
-
-    return { status: AvailabilityStatus.OVERBOOK_WARNING, deficit };
+    return this.availabilityRepo.checkPreSelectedUnit(
+      candidate as SerializedCandidate & { inventoryItemId: string },
+      range,
+      tenantId,
+    );
   }
 }

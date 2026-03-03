@@ -5,20 +5,26 @@ import { resolveTier } from './tier-resolution';
 import { calculateAmount } from './amount-calculation';
 import { PriceBreakdown } from '../../domain/value-objects/price-breakdown.vo';
 import { BillingUnitReadModel } from 'src/modules/tenancy/infrastructure/persistance/prisma-tenant-config.adapter';
-import { RentalPricingTierView } from '../../domain/ports/rental-product.port';
 import { TenantPricingConfig } from 'src/modules/tenancy/domain/value-objects/tenant-config.vo';
+import { RentalPricingTierView } from '../ports/rental-product.port';
 
-/**
- * Everything the engine needs to compute a price.
- * The application layer (CreateBookingHandler) is responsible for fetching
- * tiers and units from the DB before calling the engine.
- */
 export interface PricingEngineInput {
   startDate: Date;
   endDate: Date;
 
-  /** Pre-fetched tiers for this product/item. Includes both product-level
-   *  and any item-level overrides — the engine handles precedence internally. */
+  /**
+   * The specific inventory item being priced.
+   * - SERIALIZED: set to the assigned inventoryItemId so the engine can apply
+   *   item-level tier precedence over product-level tiers.
+   * - BULK: null — product-level tiers always apply.
+   */
+  inventoryItemId: string | null;
+
+  /**
+   * All pricing tiers for this product — both product-level
+   * (inventoryItemId: null) and item-level (inventoryItemId: string).
+   * The engine applies precedence internally: item-level wins if present.
+   */
   tiers: readonly RentalPricingTierView[];
 
   /** All billing units configured for this tenant. */
@@ -27,40 +33,44 @@ export interface PricingEngineInput {
   config: TenantPricingConfig;
 }
 
-/** The engine returns the PriceBreakdown VO directly — it is already the complete snapshot. */
+export interface BundlePricingEngineInput {
+  startDate: Date;
+  endDate: Date;
+
+  /** Bundle-specific pricing tiers — no item-level concept exists for bundles. */
+  tiers: readonly BundlePricingTierView[];
+
+  units: BillingUnitReadModel[];
+  config: TenantPricingConfig;
+}
+
+export interface BundlePricingTierView {
+  id: string;
+  billingUnitId: string;
+  fromUnit: number;
+  pricePerUnit: number;
+  currency: string;
+}
+
 export type PricingEngineResult = PriceBreakdown;
 
-/**
- * A single calendar rule application, persisted in the snapshot so
- * disputes can be resolved without re-running the engine.
- */
 export interface CalendarAdjustment {
   type: 'WEEKEND_MERGED';
-  /** ISO date string of the Saturday that triggered the merge. */
   saturdayDate: string;
-  /** Hours removed from the billable total (always 24 — one day). */
   hoursDeducted: number;
 }
 
 @Injectable()
 export class PricingEngine {
   /**
-   * Entry point. Runs the full pricing pipeline:
-   *   1. Calendar rules  → billable hours
-   *   2. Decomposition   → unit quantities
-   *   3. Tier resolution → matched rate
-   *   4. Amount calc     → line items + total
-   *
-   * This method is pure in intent: given the same inputs it always produces
-   * the same output. The @Injectable decorator is the only NestJS concern here.
+   * Prices a direct product booking (SERIALIZED or BULK).
+   * Applies item-level tier precedence when inventoryItemId is set.
    */
   calculate(input: PricingEngineInput): PricingEngineResult {
     this.validateDateRange(input.startDate, input.endDate);
 
-    // --- Stage 1a: raw duration ---
     const rawDurationHours = this.computeRawHours(input.startDate, input.endDate);
 
-    // --- Stage 1b: apply calendar rules ---
     const { billableHours, adjustments } = this.applyCalendarRules(
       input.startDate,
       input.endDate,
@@ -68,27 +78,78 @@ export class PricingEngine {
       input.config,
     );
 
-    // --- Stage 2: decompose into billing units ---
     const decomposition = decomposeIntoUnits(billableHours, input.units, input.config.roundingRule);
 
-    // --- Stage 3: resolve the matching tier ---
-    const tierResolution = resolveTier(decomposition, input.tiers, input.units);
+    // Apply precedence: prefer item-level tiers if this is a SERIALIZED booking
+    // with an assigned unit. Fall back to product-level tiers if none exist.
+    const resolvedTiers = this.resolveProductTiers(input.tiers, input.inventoryItemId);
 
-    // --- Stage 4: calculate amounts and assemble the PriceBreakdown VO ---
+    const tierResolution = resolveTier(decomposition, resolvedTiers, input.units);
+
     return calculateAmount(decomposition, tierResolution, input.units, rawDurationHours, adjustments);
   }
 
-  // =============================================================================
-  // Private — Calendar Rules
-  // =============================================================================
+  /**
+   * Prices a bundle booking.
+   * Bundles have their own BundlePricingTier rows — no item-level concept applies.
+   * The pipeline is identical; only the tier input shape differs.
+   */
+  calculateForBundle(input: BundlePricingEngineInput): PricingEngineResult {
+    this.validateDateRange(input.startDate, input.endDate);
+
+    const rawDurationHours = this.computeRawHours(input.startDate, input.endDate);
+
+    const { billableHours, adjustments } = this.applyCalendarRules(
+      input.startDate,
+      input.endDate,
+      rawDurationHours,
+      input.config,
+    );
+
+    const decomposition = decomposeIntoUnits(billableHours, input.units, input.config.roundingRule);
+
+    // Bundle tiers have no inventoryItemId concept — pass through directly.
+    const tierResolution = resolveTier(decomposition, input.tiers, input.units);
+
+    return calculateAmount(decomposition, tierResolution, input.units, rawDurationHours, adjustments);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tier precedence
+  // ---------------------------------------------------------------------------
 
   /**
-   * Applies tenant calendar rules to produce a billable hour count.
+   * Applies the item-level override rule:
+   *   1. If inventoryItemId is set, collect tiers scoped to that specific unit.
+   *   2. If any item-level tiers exist — use them exclusively.
+   *   3. If none exist (or inventoryItemId is null) — fall back to product-level tiers.
    *
-   * weekendCountsAsOne: for every Saturday–Sunday pair fully contained within
-   * the booking window, deduct 24 billable hours (one day). A lone Saturday
-   * or Sunday at the boundary is not deducted — the pair must be complete.
+   * This means a partial item-level override (e.g. only a "week" tier defined
+   * at item level) will shadow ALL product-level tiers. Tier sets should always
+   * be complete for a given billing unit scope.
    */
+  private resolveProductTiers(
+    tiers: readonly RentalPricingTierView[],
+    inventoryItemId: string | null,
+  ): readonly RentalPricingTierView[] {
+    if (inventoryItemId === null) {
+      return tiers.filter((t) => t.inventoryItemId === null);
+    }
+
+    const itemTiers = tiers.filter((t) => t.inventoryItemId === inventoryItemId);
+
+    if (itemTiers.length > 0) {
+      return itemTiers;
+    }
+
+    // No item-level tiers for this unit — fall back to product-level.
+    return tiers.filter((t) => t.inventoryItemId === null);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Calendar rules
+  // ---------------------------------------------------------------------------
+
   private applyCalendarRules(
     startDate: Date,
     endDate: Date,
@@ -103,7 +164,6 @@ export class PricingEngine {
 
     let deductedHours = 0;
 
-    // Iterate day-by-day through the booking window looking for Sat+Sun pairs.
     const cursor = new Date(startDate);
     cursor.setUTCHours(0, 0, 0, 0);
 
@@ -111,22 +171,19 @@ export class PricingEngine {
     endDay.setUTCHours(0, 0, 0, 0);
 
     while (cursor < endDay) {
-      const dayOfWeek = cursor.getUTCDay(); // 0=Sun, 6=Sat
+      const dayOfWeek = cursor.getUTCDay();
 
       if (dayOfWeek === 6) {
-        // Found a Saturday — check if Sunday is also within the window.
         const sunday = new Date(cursor);
         sunday.setUTCDate(sunday.getUTCDate() + 1);
 
         if (sunday < endDay) {
-          // Complete weekend found: deduct one day (24h).
           deductedHours += 24;
           adjustments.push({
             type: 'WEEKEND_MERGED',
             saturdayDate: cursor.toISOString().split('T')[0],
             hoursDeducted: 24,
           });
-          // Skip Sunday — already accounted for.
           cursor.setUTCDate(cursor.getUTCDate() + 2);
           continue;
         }
@@ -140,6 +197,10 @@ export class PricingEngine {
       adjustments,
     };
   }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
 
   private computeRawHours(startDate: Date, endDate: Date): number {
     const ms = endDate.getTime() - startDate.getTime();

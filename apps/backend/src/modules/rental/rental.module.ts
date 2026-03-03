@@ -5,7 +5,7 @@ import { TenancyModule } from '../tenancy/tenancy.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { CustomerModule } from '../customer/customer.module';
 import { OrdersController } from './infrastructure/controllers/orders.controller';
-import { BookingQueryService } from './application/booking-query.service';
+import { OrdersQueryService } from './application/orders-query.service';
 import { CreateOrderUseCase } from './application/create-order.use-case';
 import { OrderRepositoryPort } from './application/ports/order.repository.port';
 import { PrismaOrderRepository } from './infrastructure/persistence/prisma-order.repository';
@@ -18,7 +18,7 @@ import { PrismaOrderQueryRepository } from './infrastructure/persistence/prisma-
   providers: [
     AvailabilityService,
     CreateOrderUseCase,
-    BookingQueryService,
+    OrdersQueryService,
     PricingEngine,
 
     {

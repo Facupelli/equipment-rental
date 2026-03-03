@@ -133,6 +133,7 @@ model Tenant {
   blackoutPeriods    BlackoutPeriod[] 
   productBundles     ProductBundle[]
   bundlePricingTiers BundlePricingTier[]
+  orderBundles       OrderBundle[]
 
   @@map("tenants")
 }
@@ -222,6 +223,8 @@ model Product {
   bundleComponents  BundleComponent[]
   pricingTiers      PricingTier[] 
   bookings          Booking[]
+  blackoutPeriods   BlackoutPeriod[]
+
 
   @@index([tenantId])
   @@map("products")
@@ -286,16 +289,18 @@ model PricingTier {
 model BlackoutPeriod {
   id              String                    @id @default(uuid())
   tenantId        String                    @map("tenant_id")
-  inventoryItemId String                    @map("inventory_item_id")
+  inventoryItemId String?                   @map("inventory_item_id") // SERIALIZED only
+  productId       String?                   @map("product_id")        // BULK only
+  blockedQuantity Int                       @map("blocked_quantity")  // always 1 for SERIALIZED, 1..totalStock for BULK
   reason          String
   blockedPeriod   Unsupported("tstzrange")? @map("blocked_period") // Native Postgres Range Type
-  blockedQuantity Int                       @default(1) @map("blocked_quantity")
   createdAt       DateTime                  @default(now()) @map("created_at")
   updatedAt       DateTime                  @updatedAt @map("updated_at")
 
   // Relations
   tenant        Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem               @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem?              @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  product       Product?                    @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([inventoryItemId])
@@ -338,6 +343,7 @@ model ProductBundle {
   components     BundleComponent[]
   pricingTiers   BundlePricingTier[]
   bookings       Booking[]
+  orderBundles   OrderBundle[]
 
   @@index([tenantId])
   @@map("product_bundles")
@@ -426,6 +432,7 @@ model Order {
   tenant        Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer      Customer                 @relation(fields: [customerId], references: [id], onDelete: Restrict)
   bookings      Booking[]
+  orderBundles  OrderBundle[]
 
   @@index([tenantId])
   @@index([customerId])
@@ -451,6 +458,9 @@ model Booking {
   // BULK only
   quantity            Int?
 
+  // denormalized booking_range — used in availability checks
+  bookingRange        Unsupported("tstzrange") @map("booking_range")
+
   unitPrice           Decimal       @map("unit_price") @db.Decimal(10, 2)
 
   priceBreakdown      Json?         @map("price_breakdown")
@@ -464,4 +474,24 @@ model Booking {
   @@index([tenantId, productId])
   @@index([tenantId, orderId])
   @@map("bookings")
+}
+
+
+model OrderBundle {
+  id             String        @id @default(uuid())
+  tenantId       String        @map("tenant_id")
+  orderId        String        @map("order_id")
+  bundleId       String        @map("bundle_id")
+  bundlePrice    Decimal       @map("bundle_price") @db.Decimal(10, 2)
+  priceBreakdown Json          @map("price_breakdown")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  tenant  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order   Order         @relation(fields: [orderId],  references: [id], onDelete: Cascade)
+  bundle  ProductBundle @relation(fields: [bundleId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([tenantId])
+  @@map("order_bundles")
 }

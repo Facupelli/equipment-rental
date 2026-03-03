@@ -1,8 +1,8 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { CreateOrderUseCase } from '../../application/create-order.use-case';
-import { CreateBookingDto } from '../../application/dto/create-booking.dto';
+import { CreateBookingDto } from '../../application/dto/create-order.dto';
 import { GetTodayOverviewResponse, GetUpcomingScheduleResponse } from '@repo/schemas';
-import { BookingQueryService } from '../../application/booking-query.service';
+import { BookingQueryService } from '../../application/orders-query.service';
 
 @Controller('orders')
 export class OrdersController {

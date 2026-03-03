@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service'; // Assuming you have a global Prisma service
 import { Product } from '../../domain/entities/product.entity';
-import { ProductRepositoryPort } from '../../domain/ports/product-repository.port';
 import { ProductMapper } from './mappers/product.mapper';
-import { RentalProductQueryPort, RentalProductView } from 'src/modules/rental/domain/ports/rental-product.port';
 import { TrackingType } from '@repo/types';
+import { ProductRepositoryPort } from '../../application/ports/product-repository.port';
+import { RentalProductQueryPort, RentalProductView } from 'src/modules/rental/application/ports/rental-product.port';
 
 @Injectable()
 export class PrismaProductRepository implements ProductRepositoryPort, RentalProductQueryPort {
@@ -39,6 +39,8 @@ export class PrismaProductRepository implements ProductRepositoryPort, RentalPro
         id: true,
         tenantId: true,
         trackingType: true,
+        totalStock: true,
+        // Product-level tiers (inventoryItemId: null)
         pricingTiers: {
           select: {
             id: true,
@@ -49,6 +51,22 @@ export class PrismaProductRepository implements ProductRepositoryPort, RentalPro
             currency: true,
           },
         },
+        // Item-level override tiers, fetched via each InventoryItem's pricingTiers.
+        // Only relevant for SERIALIZED products — BULK products have no InventoryItems.
+        inventoryItems: {
+          select: {
+            pricingTiers: {
+              select: {
+                id: true,
+                billingUnitId: true,
+                inventoryItemId: true,
+                fromUnit: true,
+                pricePerUnit: true,
+                currency: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -56,11 +74,16 @@ export class PrismaProductRepository implements ProductRepositoryPort, RentalPro
       return null;
     }
 
+    // Flatten product-level and all item-level tiers into a single array.
+    // PricingEngine uses inventoryItemId to apply precedence at pricing time.
+    const itemLevelTiers = product.inventoryItems.flatMap((item) => item.pricingTiers);
+
     return {
       id: product.id,
       tenantId: product.tenantId,
       trackingType: product.trackingType as TrackingType,
-      pricingTiers: product.pricingTiers.map((tier) => ({
+      totalStock: product.totalStock,
+      pricingTiers: [...product.pricingTiers, ...itemLevelTiers].map((tier) => ({
         id: tier.id,
         billingUnitId: tier.billingUnitId,
         inventoryItemId: tier.inventoryItemId,

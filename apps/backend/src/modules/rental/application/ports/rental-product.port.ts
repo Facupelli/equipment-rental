@@ -12,6 +12,7 @@ export interface RentalProductView {
   id: string;
   tenantId: string;
   trackingType: TrackingType;
+  totalStock: number | null;
 
   /**
    * All pricing tiers for this product.
