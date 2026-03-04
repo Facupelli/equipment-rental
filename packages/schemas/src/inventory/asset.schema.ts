@@ -1,16 +1,17 @@
 import z from "zod";
+import { nullableOptional } from "../shared";
 
 export const AssetSchema = z.object({
   id: z.uuid(),
   locationId: z.uuid(),
   productTypeId: z.uuid(),
-  ownerId: z.uuid().nullable().optional(),
-  serialNumber: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
+  ownerId: nullableOptional(z.uuid()),
+  serialNumber: nullableOptional(z.string()),
+  notes: nullableOptional(z.string()),
   isActive: z.boolean().default(true),
   createdAt: z.date().default(() => new Date()),
   updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
+  deletedAt: nullableOptional(z.date()),
 });
 
 export const AssetCreateSchema = AssetSchema.omit({

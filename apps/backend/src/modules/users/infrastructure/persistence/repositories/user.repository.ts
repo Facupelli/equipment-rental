@@ -12,10 +12,17 @@ export class UserRepository implements UserRepositoryPort, UserReadService {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(id: string): Promise<User | null> {
-    const raw = await this.prisma.client.user.findUnique({ where: { id } });
+    const raw = await this.prisma.client.user.findUnique({
+      where: { id },
+      include: {
+        userRoles: true,
+      },
+    });
+
     if (!raw) {
       return null;
     }
+
     return UserMapper.toDomain(raw);
   }
 

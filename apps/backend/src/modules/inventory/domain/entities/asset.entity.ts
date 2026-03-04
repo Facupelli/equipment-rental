@@ -5,9 +5,9 @@ import { AssetAssignmentNotFoundException } from '../exceptions/asset.exceptions
 export interface CreateAssetProps {
   locationId: string;
   productTypeId: string;
-  ownerId?: string;
-  serialNumber?: string;
-  notes?: string;
+  ownerId: string | null;
+  serialNumber: string | null;
+  notes: string | null;
 }
 
 export interface ReconstituteAssetProps {

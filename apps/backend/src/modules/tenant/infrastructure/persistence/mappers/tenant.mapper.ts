@@ -1,3 +1,4 @@
+import { InputJsonValue } from '@prisma/client/runtime/client';
 import {
   Tenant as PrismaTenant,
   TenantBillingUnit as PrismaTenantBillingUnit,
@@ -5,6 +6,7 @@ import {
 } from 'src/generated/prisma/client';
 import { TenantBillingUnit } from 'src/modules/tenant/domain/entities/tenant-billing-unit.entity';
 import { Tenant } from 'src/modules/tenant/domain/entities/tenant.entity';
+import { TenantConfig } from 'src/modules/tenant/domain/value-objects/tenant-config.vo';
 
 type PrismaTenantWithRelations = PrismaTenant & {
   billingUnits: PrismaTenantBillingUnit[];
@@ -35,6 +37,7 @@ export class TenantMapper {
       id: raw.id,
       name: raw.name,
       slug: raw.slug,
+      config: raw.config as unknown as TenantConfig,
       billingUnits,
     });
   }
@@ -44,6 +47,7 @@ export class TenantMapper {
       id: entity.id,
       name: entity.name,
       slug: entity.slug,
+      config: entity.config as unknown as InputJsonValue,
     };
   }
 }

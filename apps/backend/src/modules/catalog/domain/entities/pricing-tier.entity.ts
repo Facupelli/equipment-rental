@@ -6,12 +6,12 @@ import {
 import Decimal from 'decimal.js';
 
 export interface CreatePricingTierProps {
-  productTypeId?: string;
-  bundleId?: string;
-  locationId?: string;
+  productTypeId: string | null;
+  bundleId: string | null;
+  locationId: string | null;
   fromUnit: number;
-  toUnit?: number;
-  pricePerUnit: Decimal;
+  toUnit: number | null;
+  pricePerUnit: number;
 }
 
 export interface ReconstitutePricingTierProps {
@@ -36,13 +36,15 @@ export class PricingTier {
   ) {}
 
   static create(props: CreatePricingTierProps): PricingTier {
+    const price = new Decimal(props.pricePerUnit);
+
     if (props.fromUnit <= 0) {
       throw new InvalidPricingTierRangeException('fromUnit must be greater than zero.');
     }
-    if (props.toUnit !== undefined && props.toUnit <= props.fromUnit) {
+    if (props.toUnit !== null && props.toUnit <= props.fromUnit) {
       throw new InvalidPricingTierRangeException('toUnit must be greater than fromUnit.');
     }
-    if (props.pricePerUnit.lessThanOrEqualTo(0)) {
+    if (price.lessThanOrEqualTo(0)) {
       throw new InvalidPricingTierPriceException();
     }
     return new PricingTier(
@@ -52,7 +54,7 @@ export class PricingTier {
       props.locationId ?? null,
       props.fromUnit,
       props.toUnit ?? null,
-      props.pricePerUnit,
+      price,
     );
   }
 

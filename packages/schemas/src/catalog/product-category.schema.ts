@@ -1,10 +1,11 @@
 import z from "zod";
+import { nullableOptional } from "../shared";
 
 export const ProductCategorySchema = z.object({
   id: z.uuid(),
   tenantId: z.uuid(),
   name: z.string(),
-  description: z.string().nullable().optional(),
+  description: nullableOptional(z.string()),
   createdAt: z.date().default(() => new Date()),
   updatedAt: z.date(),
 });

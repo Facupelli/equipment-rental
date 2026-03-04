@@ -1,4 +1,3 @@
-import { TenantResponseDto } from '@repo/schemas';
 import { Tenant } from '../entities/tenant.entity';
 
 export abstract class TenantRepositoryPort {
@@ -8,5 +7,5 @@ export abstract class TenantRepositoryPort {
 
 export abstract class TenantReadService {
   abstract isSlugTaken(slug: string): Promise<boolean>;
-  abstract findById(id: string): Promise<TenantResponseDto | null>;
+  abstract findById(id: string): Promise<any | null>;
 }

@@ -11,7 +11,7 @@ import { CreateTenantUserDto } from './dto/create-tenant-user.dto';
 export class CreateTenantUserUseCase {
   constructor(
     private readonly tenancyRepository: TenantRepositoryPort,
-    private readonly bccryptService: BcryptService,
+    private readonly bcryptService: BcryptService,
     private readonly tenantService: TenantReadService,
     private readonly usersApi: UsersPublicApi,
   ) {}
@@ -65,7 +65,7 @@ export class CreateTenantUserUseCase {
     roleId: string,
     tenantId: string,
   ): Promise<string> {
-    const hashedPassword = await this.bccryptService.hashPassword(userDto.password);
+    const hashedPassword = await this.bcryptService.hashPassword(userDto.password);
 
     const user = User.create({
       email: userDto.email,

@@ -1,6 +1,6 @@
+import { PricingRuleScope, PricingRuleType } from '@repo/types';
 import { PricingRule as PrismaPricingRule, Prisma } from 'src/generated/prisma/client';
 import { PricingRule } from 'src/modules/pricing/domain/entities/pricing-rule.entity';
-import { PricingRuleScope, PricingRuleType } from 'src/modules/pricing/domain/enums/pricing-rule.enum';
 import { PricingRuleCondition, PricingRuleEffect } from 'src/modules/pricing/domain/types/pricing-rule.types';
 
 export class PricingRuleMapper {

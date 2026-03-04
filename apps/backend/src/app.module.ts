@@ -7,22 +7,24 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/infrastructure/guards/jwt-auth.guard';
 import { TenantInterceptor } from './modules/tenant/tenant.interceptor';
 import { LoggerModule } from './core/logger/logger.module';
-// import { TenantModule } from './modules/tenant/tenant.module';
-// import { InventoryModule } from './modules/inventory/inventory.module';
-// import { CustomerModule } from './modules/customer/customer.module';
-// import { OrderModule } from './modules/order/order.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { TenantModule } from './modules/tenant/tenant.module';
+import { CustomerModule } from './modules/customer/customer.module';
+import { OrderModule } from './modules/order/order.module';
 
 @Module({
   imports: [
     LoggerModule,
     AppConfigModule,
     DatabaseModule,
-    // TenantModule,
+    TenantModule,
     AuthModule,
     UsersModule,
-    // InventoryModule,
-    // CustomerModule,
-    // OrderModule,
+    CatalogModule,
+    InventoryModule,
+    CustomerModule,
+    OrderModule,
   ],
   providers: [
     {

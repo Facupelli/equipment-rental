@@ -4,10 +4,7 @@ import { decomposeIntoUnits } from './unit-decomposition';
 import { resolveTier } from './tier-resolution';
 import { calculateAmount } from './amount-calculation';
 import { PriceBreakdown } from '../../domain/value-objects/price-breakdown.vo';
-import { BillingUnitReadModel } from 'src/modules/tenant/infrastructure/persistence/prisma-tenant-config.adapter';
 import { TenantPricingConfig } from 'src/modules/tenant/domain/value-objects/tenant-config.vo';
-import { RentalPricingTierView } from '../ports/rental-product.port';
-import { BundlePricingTierView } from 'src/modules/inventory/application/ports/bundle-query.port';
 
 export interface PricingEngineInput {
   startDate: Date;
@@ -26,10 +23,10 @@ export interface PricingEngineInput {
    * (inventoryItemId: null) and item-level (inventoryItemId: string).
    * The engine applies precedence internally: item-level wins if present.
    */
-  tiers: readonly RentalPricingTierView[];
+  tiers: readonly any[];
 
   /** All billing units configured for this tenant. */
-  units: BillingUnitReadModel[];
+  units: any[];
 
   config: TenantPricingConfig;
 }
@@ -39,9 +36,9 @@ export interface BundlePricingEngineInput {
   endDate: Date;
 
   /** Bundle-specific pricing tiers — no item-level concept exists for bundles. */
-  tiers: readonly BundlePricingTierView[];
+  tiers: readonly any[];
 
-  units: BillingUnitReadModel[];
+  units: any[];
   config: TenantPricingConfig;
 }
 
@@ -121,10 +118,7 @@ export class PricingEngine {
    * at item level) will shadow ALL product-level tiers. Tier sets should always
    * be complete for a given billing unit scope.
    */
-  private resolveProductTiers(
-    tiers: readonly RentalPricingTierView[],
-    inventoryItemId: string | null,
-  ): readonly RentalPricingTierView[] {
+  private resolveProductTiers(tiers: readonly any[], inventoryItemId: string | null): readonly any[] {
     if (inventoryItemId === null) {
       return tiers.filter((t) => t.inventoryItemId === null);
     }

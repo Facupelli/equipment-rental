@@ -14,7 +14,7 @@ export const DEFAULT_CONFIG: TenantConfig = {
 };
 
 export const DEFAULT_BILLING_UNITS_PROPS: Omit<CreateBillingUnitProps, 'tenantId'>[] = [
-  { name: 'Hour', durationHours: 1, sortOrder: 30 },
-  { name: 'Day', durationHours: 24, sortOrder: 20 },
-  { name: 'Week', durationHours: 168, sortOrder: 10 },
+  { label: 'Hour', durationMinutes: 60, sortOrder: 30 },
+  { label: 'Day', durationMinutes: 1440, sortOrder: 20 },
+  { label: 'Week', durationMinutes: 10080, sortOrder: 10 },
 ];

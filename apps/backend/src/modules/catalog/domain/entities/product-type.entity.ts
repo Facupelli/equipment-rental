@@ -6,13 +6,14 @@ import { DuplicatePricingTierException, PricingTierNotFoundException } from '../
 
 export interface CreateProductTypeProps {
   tenantId: string;
-  categoryId?: string;
+  categoryId: string | null;
   billingUnitId: string;
   name: string;
-  description?: string;
+  description: string | null;
   trackingMode: TrackingMode;
-  attributes?: Record<string, unknown>;
-  includedItems?: unknown[];
+  attributes: Record<string, unknown> | null;
+  includedItems: unknown[] | null;
+  pricingTiers: PricingTier[];
 }
 
 export interface ReconstituteProductTypeProps {
@@ -59,7 +60,7 @@ export class ProductType {
       true,
       props.attributes ?? {},
       props.includedItems ?? [],
-      [],
+      props.pricingTiers,
     );
   }
 

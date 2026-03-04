@@ -1,71 +1,22 @@
 import { Module } from '@nestjs/common';
-import { InventoryItemController } from './infrastructure/controllers/inventory-item.controller';
-import { ProductController } from './infrastructure/controllers/product.controller';
-import { ProductService } from './application/product.service';
-import { PrismaProductRepository } from './infrastructure/persistance/prisma-product.repository';
-import { TenancyModule } from '../tenant/tenant.module';
-import { PrismaInventoryItemRepository } from './infrastructure/persistance/repositories/asset.repository';
-import { InventoryItemService } from './application/inventory-item.service';
-import { CreateBlackoutPeriodUseCase } from './application/create-blackout-period.use-case';
-import { PrismaCategoryRepository } from './infrastructure/persistance/prisma-category.repository';
-import { CategoryService } from './application/category.service';
-import { CategoryController } from './infrastructure/controllers/category.controller';
-import { PrismaProductQueryRepository } from './infrastructure/persistance/prisma-product-query.repository';
-import { PrismaInventoryItemQueryRepository } from './infrastructure/persistance/prisma-item-query.repository';
-import { PrismaBundleRepository } from './infrastructure/persistance/prisma-product-bundle.repository';
-import { ProductBundleController } from './infrastructure/controllers/product-bundle.controller';
-import { ProductBundleService } from './application/product-bundle.service';
-import { ProductRepositoryPort } from './application/ports/product-repository.port';
-import { ProductQueryPort } from './application/ports/product-query.port';
-import { RentalProductQueryPort } from '../order/application/ports/rental-product.port';
-import { BundleRepositoryPort } from './application/ports/product-bundle.repository.port';
-import { InventoryItemRepositoryPort } from './application/ports/inventory.repository.port';
-import { InventoryItemQueryPort } from './application/ports/item-query.port';
-import { CategoryRepositoryPort } from './application/ports/category.repository.port';
+import { AssetRepositoryPort } from './domain/ports/asset.repository.port';
+import { AssetRepository } from './infrastructure/persistance/repositories/asset.repository';
+import { TenantModule } from '../tenant/tenant.module';
+import { AssetController } from './infrastructure/controllers/asset.controller';
+import { AssetService } from './application/asset.service';
 
 const repositories = [
   {
-    provide: ProductRepositoryPort,
-    useClass: PrismaProductRepository,
-  },
-  {
-    provide: ProductQueryPort,
-    useClass: PrismaProductQueryRepository,
-  },
-  {
-    provide: RentalProductQueryPort,
-    useClass: PrismaProductRepository,
-  },
-  {
-    provide: BundleRepositoryPort,
-    useClass: PrismaBundleRepository,
-  },
-  {
-    provide: InventoryItemRepositoryPort,
-    useClass: PrismaInventoryItemRepository,
-  },
-  {
-    provide: InventoryItemQueryPort,
-    useClass: PrismaInventoryItemQueryRepository,
-  },
-  {
-    provide: CategoryRepositoryPort,
-    useClass: PrismaCategoryRepository,
+    provide: AssetRepositoryPort,
+    useClass: AssetRepository,
   },
 ];
 
-const providers = [
-  ProductService,
-  ProductBundleService,
-  InventoryItemService,
-  CreateBlackoutPeriodUseCase,
-  CategoryService,
-];
+const providers = [AssetService];
 
 @Module({
-  imports: [TenancyModule],
-  controllers: [ProductController, ProductBundleController, InventoryItemController, CategoryController],
+  imports: [TenantModule],
+  controllers: [AssetController],
   providers: [...repositories, ...providers],
-  exports: [RentalProductQueryPort],
 })
 export class InventoryModule {}

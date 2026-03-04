@@ -7,10 +7,10 @@ export interface CreateCustomerProps {
   passwordHash: string;
   firstName: string;
   lastName: string;
-  phone?: string;
-  isCompany?: boolean;
-  companyName?: string;
-  taxId?: string;
+  phone: string | null;
+  isCompany: boolean | null;
+  companyName: string | null;
+  taxId: string | null;
 }
 
 export interface ReconstituteCustomerProps {

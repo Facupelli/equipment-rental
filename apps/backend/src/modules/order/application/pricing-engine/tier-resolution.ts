@@ -1,13 +1,11 @@
-import { BillingUnitReadModel } from 'src/modules/tenant/infrastructure/persistence/prisma-tenant-config.adapter';
 import { UnitDecomposition, decompositionToHours } from './unit-decomposition';
-import { RentalPricingTierView } from '../ports/rental-product.port';
 
 /**
  * The result of tier resolution: the matched tier plus the resolved threshold
  * in hours (persisted in the snapshot for auditability).
  */
 export interface TierResolutionResult {
-  tier: RentalPricingTierView;
+  tier: any;
   thresholdHours: number; // the fromUnit converted to hours for the matched tier
   totalBillableHours: number;
 }
@@ -32,8 +30,8 @@ export interface TierResolutionResult {
  */
 export function resolveTier(
   decomposition: UnitDecomposition,
-  tiers: readonly RentalPricingTierView[],
-  units: BillingUnitReadModel[],
+  tiers: readonly any[],
+  units: any[],
 ): TierResolutionResult {
   if (tiers.length === 0) {
     throw new Error('No pricing tiers provided. Ensure the product has at least one tier configured.');

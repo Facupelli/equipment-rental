@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { BillingUnitRepositoryPort } from '../../domain/ports/billing-unit.repository.port';
+import { BillingUnit } from '@repo/schemas';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { BillingUnit } from '../../domain/entities/billing-unit.entity';
-import { BillingUnitMapper } from './mappers/billing-unit.mapper';
+import { BillingUnitRepositoryPort } from 'src/modules/tenant/domain/ports/billing-unit.repository.port';
+import { BillingUnitMapper } from '../mappers/billing-unit.mapper';
 
 @Injectable()
 export class BillingUnitRepository implements BillingUnitRepositoryPort {

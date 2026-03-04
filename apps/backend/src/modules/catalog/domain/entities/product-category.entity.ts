@@ -4,7 +4,7 @@ import { InvalidProductCategoryNameException } from '../exceptions/product-categ
 export interface CreateProductCategoryProps {
   tenantId: string;
   name: string;
-  description?: string;
+  description: string | null;
 }
 
 export interface ReconstituteProductCategoryProps {

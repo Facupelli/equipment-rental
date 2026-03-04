@@ -1,5 +1,4 @@
 import { RoundingRule } from '@repo/types';
-import { BillingUnitReadModel } from 'src/modules/tenant/infrastructure/persistence/prisma-tenant-config.adapter';
 
 /**
  * The decomposition result: a map from BillingUnit.name → quantity.
@@ -25,11 +24,7 @@ export type UnitDecomposition = Record<string, number>;
  * @throws {Error} if totalHours is negative.
  * @throws {Error} if units array is empty.
  */
-export function decomposeIntoUnits(
-  totalHours: number,
-  units: BillingUnitReadModel[],
-  roundingRule: RoundingRule,
-): UnitDecomposition {
+export function decomposeIntoUnits(totalHours: number, units: any[], roundingRule: RoundingRule): UnitDecomposition {
   if (totalHours < 0) {
     throw new Error(`totalHours must be non-negative, received: ${totalHours}`);
   }
@@ -76,7 +71,7 @@ export function decomposeIntoUnits(
  *
  * e.g. { full_day: 2, half_day: 1 } with units → 48 + 12 = 60h
  */
-export function decompositionToHours(decomposition: UnitDecomposition, units: BillingUnitReadModel[]): number {
+export function decompositionToHours(decomposition: UnitDecomposition, units: any[]): number {
   const unitMap = new Map(units.map((u) => [u.name, u]));
 
   return Object.entries(decomposition).reduce((total, [name, quantity]) => {

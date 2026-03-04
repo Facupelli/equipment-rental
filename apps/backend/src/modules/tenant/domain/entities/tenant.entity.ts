@@ -6,6 +6,8 @@ import {
   BillingUnitNotActiveException,
 } from '../exceptions/tenant.exceptions';
 import { TenantBillingUnit } from './tenant-billing-unit.entity';
+import { TenantConfig } from '../value-objects/tenant-config.vo';
+import { DEFAULT_CONFIG } from '../../infrastructure/config/tenancy.defaults';
 
 export interface CreateTenantProps {
   name: string;
@@ -16,6 +18,7 @@ export interface ReconstituteTenantProps {
   id: string;
   name: string;
   slug: string;
+  config: TenantConfig;
   billingUnits: TenantBillingUnit[];
 }
 
@@ -24,6 +27,7 @@ export class Tenant {
     public readonly id: string,
     public readonly name: string,
     public readonly slug: string,
+    public readonly config: TenantConfig,
     private readonly billingUnits: TenantBillingUnit[],
   ) {}
 
@@ -34,11 +38,11 @@ export class Tenant {
     if (!props.slug || props.slug.trim().length === 0) {
       throw new InvalidTenantSlugException();
     }
-    return new Tenant(randomUUID(), props.name.trim(), props.slug.trim(), []);
+    return new Tenant(randomUUID(), props.name.trim(), props.slug.trim(), DEFAULT_CONFIG, []);
   }
 
   static reconstitute(props: ReconstituteTenantProps): Tenant {
-    return new Tenant(props.id, props.name, props.slug, props.billingUnits);
+    return new Tenant(props.id, props.name, props.slug, props.config, props.billingUnits);
   }
 
   getActiveBillingUnits(): TenantBillingUnit[] {

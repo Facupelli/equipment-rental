@@ -1,33 +1,19 @@
 import { Module } from '@nestjs/common';
 import { PricingEngine } from './application/pricing-engine/pricing-engine';
-import { AvailabilityService } from './application/availability.service';
-import { TenancyModule } from '../tenant/tenant.module';
-import { InventoryModule } from '../inventory/inventory.module';
-import { CustomerModule } from '../customer/customer.module';
 import { OrdersController } from './infrastructure/controllers/orders.controller';
-import { OrdersQueryService } from './application/orders-query.service';
-import { CreateOrderUseCase } from './application/create-order.use-case';
-import { OrderRepositoryPort } from './application/ports/order.repository.port';
-import { PrismaOrderRepository } from './infrastructure/persistence/prisma-order.repository';
-import { OrdersQueryPort } from './application/ports/booking-query.port';
-import { PrismaOrderQueryRepository } from './infrastructure/persistence/prisma-order-query.repository';
+import { TenantModule } from '../tenant/tenant.module';
+import { OrderRepositoryPort } from './domain/ports/order.repository.port';
+import { OrderRepository } from './infrastructure/persistence/repositories/order.repository';
 
 @Module({
-  imports: [TenancyModule, InventoryModule, CustomerModule],
+  imports: [TenantModule],
   controllers: [OrdersController],
   providers: [
-    AvailabilityService,
-    CreateOrderUseCase,
-    OrdersQueryService,
     PricingEngine,
 
     {
       provide: OrderRepositoryPort,
-      useClass: PrismaOrderRepository,
-    },
-    {
-      provide: OrdersQueryPort,
-      useClass: PrismaOrderQueryRepository,
+      useClass: OrderRepository,
     },
   ],
 })

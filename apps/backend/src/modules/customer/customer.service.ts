@@ -8,12 +8,7 @@ export class CustomerService {
   constructor(private readonly customerRepository: CustomerRepositoryPort) {}
 
   async create(data: CreateCustomerDto): Promise<string> {
-    const customer = Customer.create({
-      tenantId: data.tenantId,
-      name: data.name,
-      email: data.email,
-      phone: data.phone ? data.phone : null,
-    });
+    const customer = Customer.create(data);
 
     return await this.customerRepository.save(customer);
   }

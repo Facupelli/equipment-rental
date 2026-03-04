@@ -3,7 +3,6 @@ import { PriceBreakdown } from '../../domain/value-objects/price-breakdown.vo';
 import { TierResolutionResult } from './tier-resolution';
 import { UnitDecomposition } from './unit-decomposition';
 import { CalendarAdjustment } from './pricing-engine';
-import { BillingUnitReadModel } from 'src/modules/tenant/infrastructure/persistence/prisma-tenant-config.adapter';
 
 /**
  * Calculates the total rental cost and assembles the immutable PriceBreakdown VO.
@@ -23,7 +22,7 @@ import { BillingUnitReadModel } from 'src/modules/tenant/infrastructure/persiste
 export function calculateAmount(
   decomposition: UnitDecomposition,
   tierResolution: TierResolutionResult,
-  units: BillingUnitReadModel[],
+  units: any[],
   rawDurationHours: number,
   calendarAdjustments: CalendarAdjustment[],
 ): PriceBreakdown {

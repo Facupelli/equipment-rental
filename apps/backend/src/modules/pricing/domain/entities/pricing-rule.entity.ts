@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { PricingRuleCondition, PricingRuleEffect } from '../types/pricing-rule.types';
-import { PricingRuleScope, PricingRuleType } from '../enums/pricing-rule.enum';
 import { InvalidPricingRulePriorityException } from '../exceptions/pricing-rule.exceptions';
+import { PricingRuleScope, PricingRuleType } from '@repo/types';
 
 export interface CreatePricingRuleProps {
   tenantId: string;
