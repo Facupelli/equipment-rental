@@ -475,6 +475,7 @@ model PricingTier {
   id            String   @id @default(uuid())
   productTypeId String?  @map("product_type_id")
   bundleId      String?  @map("bundle_id")
+  // pricing tied to specific location
   locationId    String?  @map("location_id")
   fromUnit      Int      @map("from_unit")
   toUnit        Int?     @map("to_unit")

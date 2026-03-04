@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  createTenantUserSchema,
-  type RegisterResponseDto,
-} from "@repo/schemas";
+import { CreateTenantUserSchema } from "@repo/schemas";
 import { useForm } from "@tanstack/react-form";
 import {
   Card,
@@ -21,7 +18,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { registerTenantUser } from "@/features/auth/auth.api";
+import { useCreateTenantUser } from "@/features/auth/auth.queries";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -30,33 +27,40 @@ export const Route = createFileRoute("/register")({
 const formId = "register-user-tenant";
 
 function RegisterPage() {
-  const form = useForm({
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      companyName: "",
-      companySlug: "",
+  const { mutate: createTenantUser, isPending } = useCreateTenantUser({
+    onSuccess: (data) => {
+      setSuccessData(data);
     },
-    validators: {
-      onChange: createTenantUserSchema,
-    },
-    onSubmit: async ({ value }) => {
-      const result = await registerTenantUser({ data: value });
-
-      if (!result.success) {
-        setServerError(result.error.detail);
-        return;
-      }
-
-      setSuccessData(result.data);
+    onError: (error) => {
+      console.log({ error });
+      setServerError(error.message);
     },
   });
 
-  const [successData, setSuccessData] = useState<RegisterResponseDto | null>(
-    null,
-  );
+  const form = useForm({
+    defaultValues: {
+      user: {
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+      },
+      tenant: {
+        name: "",
+      },
+    },
+    validators: {
+      onChange: CreateTenantUserSchema,
+    },
+    onSubmit: async ({ value }) => {
+      await createTenantUser(value);
+    },
+  });
+
+  const [successData, setSuccessData] = useState<{
+    userId: string;
+    tenantId: string;
+  } | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
 
   if (successData) {
@@ -89,7 +93,7 @@ function RegisterPage() {
           >
             <FieldGroup>
               <form.Field
-                name="firstName"
+                name="user.firstName"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
@@ -114,7 +118,7 @@ function RegisterPage() {
                 }}
               />
               <form.Field
-                name="lastName"
+                name="user.lastName"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
@@ -139,7 +143,7 @@ function RegisterPage() {
                 }}
               />
               <form.Field
-                name="email"
+                name="user.email"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
@@ -163,7 +167,7 @@ function RegisterPage() {
                 }}
               />
               <form.Field
-                name="password"
+                name="user.password"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
@@ -190,7 +194,7 @@ function RegisterPage() {
 
             <FieldGroup>
               <form.Field
-                name="companyName"
+                name="tenant.name"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
@@ -198,31 +202,6 @@ function RegisterPage() {
                     <Field data-invalid={isInvalid}>
                       <FieldLabel htmlFor={field.name}>
                         Company Name:
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              />
-              <form.Field
-                name="companySlug"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Company Slug:
                       </FieldLabel>
                       <Input
                         id={field.name}
@@ -255,7 +234,11 @@ function RegisterPage() {
                 >
                   Reset
                 </Button>
-                <Button type="submit" form={formId}>
+                <Button
+                  type="submit"
+                  form={formId}
+                  disabled={!canSubmit || isPending}
+                >
                   {isSubmitting ? "..." : "Submit"}
                 </Button>
               </Field>

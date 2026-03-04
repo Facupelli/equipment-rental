@@ -24,6 +24,10 @@ export class BundleComponentMapper {
   }
 
   static toPersistence(entity: BundleComponent): Prisma.BundleComponentUncheckedCreateInput {
+    if (!entity.bundleId) {
+      throw new Error('BundleComponent must be part of a Bundle.');
+    }
+
     return {
       id: entity.id,
       bundleId: entity.bundleId,

@@ -13,7 +13,6 @@ export interface CreateProductTypeProps {
   trackingMode: TrackingMode;
   attributes: Record<string, unknown> | null;
   includedItems: unknown[] | null;
-  pricingTiers: PricingTier[];
 }
 
 export interface ReconstituteProductTypeProps {
@@ -60,7 +59,7 @@ export class ProductType {
       true,
       props.attributes ?? {},
       props.includedItems ?? [],
-      props.pricingTiers,
+      [], // tiers added via addPricingTier()
     );
   }
 

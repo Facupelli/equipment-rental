@@ -14,7 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useCategories } from "@/features/inventory/categories/categories.queries";
 import { useNavigate } from "@tanstack/react-router";
 import {
   flexRender,
@@ -24,14 +23,19 @@ import {
 } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { productColumns } from "./products-columns";
-import type { PaginationMeta, ProductListItemResponseDto } from "@repo/schemas";
+import type {
+  PaginationMeta,
+  ProductTypeListResponse,
+  ProductTypeResponse,
+} from "@repo/schemas";
+import { useCategories } from "../../product-categories/categories.queries";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 interface ProductsTableProps {
-  products: ProductListItemResponseDto[];
+  products: ProductTypeListResponse;
   meta: PaginationMeta;
   pagination: PaginationState;
   categoryId: string | undefined;
@@ -89,7 +93,7 @@ export function ProductsTable({
     );
   }
 
-  function handleRowClick(product: ProductListItemResponseDto) {
+  function handleRowClick(product: ProductTypeResponse) {
     navigate({
       to: "/dashboard/inventory/products/$productId",
       params: { productId: product.id },

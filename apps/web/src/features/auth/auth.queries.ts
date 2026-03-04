@@ -1,9 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type MutationOptions,
+} from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getCurrentUser, loginUser } from "./auth.api";
+import { getCurrentUser, loginUser, registerTenantUser } from "./auth.api";
 import type { LoginDto } from "./auth.schema";
 import type { ProblemDetailsError } from "@/shared/errors";
 import { useRouter } from "@tanstack/react-router";
+import type { CreaetTenantUserResponse, TenantUserCreate } from "@repo/schemas";
 
 export const authQueryKey = {
   currentUser: ["currentUser"] as const,
@@ -39,6 +45,34 @@ export function useLogin() {
       console.error(
         `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
       );
+    },
+  });
+}
+
+// REGISTER
+
+type OwnerMutationOptions = Omit<
+  MutationOptions<
+    CreaetTenantUserResponse,
+    ProblemDetailsError,
+    TenantUserCreate
+  >,
+  "mutationFn" | "mutationKey"
+>;
+
+export function useCreateTenantUser(options?: OwnerMutationOptions) {
+  return useMutation<
+    CreaetTenantUserResponse,
+    ProblemDetailsError,
+    TenantUserCreate
+  >({
+    ...options,
+    mutationFn: (data) => registerTenantUser({ data }),
+    onSuccess: async (data, variables, onMutateResult, context) => {
+      await options?.onSuccess?.(data, variables, onMutateResult, context);
+    },
+    onError: async (error, variables, onMutateResult, context) => {
+      await options?.onError?.(error, variables, onMutateResult, context);
     },
   });
 }

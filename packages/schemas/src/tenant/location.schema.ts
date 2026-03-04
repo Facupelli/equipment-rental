@@ -25,3 +25,6 @@ export const LocationUpdateSchema = LocationSchema.partial().omit({
 export type Location = z.infer<typeof LocationSchema>;
 export type LocationCreate = z.infer<typeof LocationCreateSchema>;
 export type LocationUpdate = z.infer<typeof LocationUpdateSchema>;
+
+export const LocationListResponseSchema = z.array(LocationSchema);
+export type LocationListResponse = z.infer<typeof LocationListResponseSchema>;

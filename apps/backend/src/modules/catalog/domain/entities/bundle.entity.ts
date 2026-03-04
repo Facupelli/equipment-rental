@@ -64,7 +64,7 @@ export class Bundle {
     if (duplicate) {
       throw new DuplicateBundleComponentException(productTypeId);
     }
-    const component = BundleComponent.create({ bundleId: this.id, productTypeId, quantity });
+    const component = BundleComponent.create({ productTypeId, quantity });
     this.components.push(component);
   }
 

@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/features/auth/auth.api";
 import { ensureValidSession } from "@/features/auth/get-session";
-import { getCurrentTenant } from "@/features/tenancy/tenancy.api";
+import { getCurrentTenant } from "@/features/tenant/tenant.api";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed")({

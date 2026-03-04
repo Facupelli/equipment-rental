@@ -12,22 +12,21 @@ import {
   type GetProductsParams,
 } from "./products.api";
 import type {
-  CreateProductDto,
   PaginatedDto,
-  ProductDetailDto,
-  ProductListItemResponseDto,
+  ProductTypeCreate,
+  ProductTypeResponse,
 } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
-type PaginatedProducts = PaginatedDto<ProductListItemResponseDto>;
+type PaginatedProducts = PaginatedDto<ProductTypeResponse>;
 
 type ProductsQueryOptions<TData = PaginatedProducts> = Omit<
   UseQueryOptions<PaginatedProducts, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
-type ProductDetailQueryOptions<TData = ProductDetailDto> = Omit<
-  UseQueryOptions<ProductDetailDto, ProblemDetailsError, TData>,
+type ProductDetailQueryOptions<TData = ProductTypeResponse> = Omit<
+  UseQueryOptions<ProductTypeResponse, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
@@ -44,10 +43,10 @@ export function createProductsQueryOptions<TData = PaginatedProducts>(
   };
 }
 
-export function createProductDetailQueryOptions<TData = ProductDetailDto>(
+export function createProductDetailQueryOptions<TData = ProductTypeResponse>(
   id: string,
   options?: ProductDetailQueryOptions<TData>,
-): UseQueryOptions<ProductDetailDto, ProblemDetailsError, TData> {
+): UseQueryOptions<ProductTypeResponse, ProblemDetailsError, TData> {
   return {
     ...options,
     queryKey: ["products", id],
@@ -67,7 +66,7 @@ export function useProducts<TData = PaginatedProducts>(
   });
 }
 
-export function useProductDetail<TData = ProductDetailDto>(
+export function useProductDetail<TData = ProductTypeResponse>(
   id: string,
   options?: ProductDetailQueryOptions<TData>,
 ) {
@@ -77,7 +76,7 @@ export function useProductDetail<TData = ProductDetailDto>(
 export function useCreateProduct() {
   const queryClient = useQueryClient();
 
-  return useMutation<string, ProblemDetailsError, CreateProductDto>({
+  return useMutation<string, ProblemDetailsError, ProductTypeCreate>({
     mutationFn: (data) => createProduct({ data }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({

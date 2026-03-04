@@ -6,24 +6,24 @@ import {
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { createOwner, getOwners } from "./owners.api";
-import type { CreateOwnerDto, OwnerResponseDto } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
+import type { OwnerCreate, OwnerListResponse } from "@repo/schemas";
 
-type OwnerQueryOptions<TData = OwnerResponseDto[]> = Omit<
-  UseQueryOptions<OwnerResponseDto[], ProblemDetailsError, TData>,
+type OwnerQueryOptions<TData = OwnerListResponse> = Omit<
+  UseQueryOptions<OwnerListResponse, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
 type OwnerMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, CreateOwnerDto>,
+  MutationOptions<string, ProblemDetailsError, OwnerCreate>,
   "mutationFn" | "mutationKey"
 >;
 
 // -----------------------------------------------------
 
-export function createOwnerQueryOptions<TData = OwnerResponseDto[]>(
+export function createOwnerQueryOptions<TData = OwnerListResponse>(
   options?: OwnerQueryOptions<TData>,
-): UseQueryOptions<OwnerResponseDto[], ProblemDetailsError, TData> {
+): UseQueryOptions<OwnerListResponse, ProblemDetailsError, TData> {
   return {
     ...options,
     queryKey: ["owners"],
@@ -33,7 +33,7 @@ export function createOwnerQueryOptions<TData = OwnerResponseDto[]>(
 
 // -----------------------------------------------------
 
-export function useOwners<TData = OwnerResponseDto[]>(
+export function useOwners<TData = OwnerListResponse>(
   options?: OwnerQueryOptions<TData>,
 ) {
   return useQuery(createOwnerQueryOptions(options));
@@ -44,7 +44,7 @@ export function useOwners<TData = OwnerResponseDto[]>(
 export function useCreateOwner(options?: OwnerMutationOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation<string, ProblemDetailsError, CreateOwnerDto>({
+  return useMutation<string, ProblemDetailsError, OwnerCreate>({
     ...options,
     mutationFn: (data) => createOwner({ data }),
     onSuccess: async (data, variables, onMutateResult, context) => {

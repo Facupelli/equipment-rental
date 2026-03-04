@@ -6,5 +6,7 @@ export class GetAssetsQuery implements IQuery {
     public readonly productTypeId?: string,
     public readonly isActive?: boolean,
     public readonly search?: string,
+    public readonly page?: number,
+    public readonly limit?: number,
   ) {}
 }

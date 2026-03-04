@@ -1,11 +1,10 @@
 import { apiFetch, apiFetchPaginated } from "@/lib/api";
 import {
-  createProductSchema,
-  GetProductsQuerySchema,
-  type CreateProductDto,
+  ProductTypeCreateSchema,
+  GetProductTypesQuerySchema,
+  type ProductTypeCreate,
+  type ProductTypeResponse,
   type PaginatedDto,
-  type ProductDetailDto,
-  type ProductListItemResponseDto,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
@@ -13,7 +12,9 @@ import z from "zod";
 const apiUrl = "/products";
 
 export const createProduct = createServerFn({ method: "POST" })
-  .inputValidator((data: CreateProductDto) => createProductSchema.parse(data))
+  .inputValidator((data: ProductTypeCreate) =>
+    ProductTypeCreateSchema.parse(data),
+  )
   .handler(async ({ data }): Promise<string> => {
     const result = await apiFetch<string>(apiUrl, {
       method: "POST",
@@ -35,8 +36,8 @@ export const getProductDetail = createServerFn({ method: "GET" })
   .inputValidator((data: GetProductDetailParams) =>
     productDetailParamsSchema.parse(data),
   )
-  .handler(async ({ data }): Promise<ProductDetailDto> => {
-    const result = await apiFetch<ProductDetailDto>(
+  .handler(async ({ data }): Promise<ProductTypeResponse> => {
+    const result = await apiFetch<ProductTypeResponse>(
       `${apiUrl}/${data.productId}`,
       {
         method: "GET",
@@ -55,18 +56,13 @@ export interface GetProductsParams {
 
 export const getProducts = createServerFn({ method: "GET" })
   .inputValidator((data: GetProductsParams) =>
-    GetProductsQuerySchema.parse(data),
+    GetProductTypesQuerySchema.parse(data),
   )
-  .handler(
-    async ({ data }): Promise<PaginatedDto<ProductListItemResponseDto>> => {
-      const result = await apiFetchPaginated<ProductListItemResponseDto>(
-        apiUrl,
-        {
-          method: "GET",
-          params: data,
-        },
-      );
+  .handler(async ({ data }): Promise<PaginatedDto<ProductTypeResponse>> => {
+    const result = await apiFetchPaginated<ProductTypeResponse>(apiUrl, {
+      method: "GET",
+      params: data,
+    });
 
-      return result;
-    },
-  );
+    return result;
+  });

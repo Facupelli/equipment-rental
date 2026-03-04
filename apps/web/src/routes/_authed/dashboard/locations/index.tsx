@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { CreateLocationDialog } from "@/features/locations/components/create-location-dialog";
-import { locationColumns } from "@/features/locations/components/locations-column";
-import { useLocations } from "@/features/locations/locations.queries";
-import { OwnersDataTable } from "@/features/owners/components/owners-table";
+import { CreateLocationDialog } from "@/features/tenant/locations/components/create-location-dialog";
+import { locationColumns } from "@/features/tenant/locations/components/locations-column";
+import { useLocations } from "@/features/tenant/locations/locations.queries";
+import { OwnersDataTable } from "@/features/tenant/owners/components/owners-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState } from "react";

@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { CreateOwnerDialog } from "@/features/owners/components/create-owner-dialog";
-import { ownerColumns } from "@/features/owners/components/owners-columns";
-import { OwnersDataTable } from "@/features/owners/components/owners-table";
-import { useOwners } from "@/features/owners/owners.queries";
+import { CreateOwnerDialog } from "@/features/tenant/owners/components/create-owner-dialog";
+import { ownerColumns } from "@/features/tenant/owners/components/owners-columns";
+import { OwnersDataTable } from "@/features/tenant/owners/components/owners-table";
+import { useOwners } from "@/features/tenant/owners/owners.queries";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState } from "react";

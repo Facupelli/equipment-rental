@@ -21,28 +21,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCategories } from "@/features/inventory/categories/categories.queries";
-import { useCreateProduct } from "@/features/inventory/products/products.queries";
-import {
-  createProductSchema,
-  type CreatePricingTierDto,
-  type IncludedItemDto,
-} from "@repo/schemas";
-import { TrackingType } from "@repo/types";
+import { useCategories } from "@/features/catalog/product-categories/categories.queries";
+import { useCreateProduct } from "@/features/catalog/product-types/products.queries";
+import { ProductTypeCreateSchema } from "@repo/schemas";
+import { TrackingMode } from "@repo/types";
 import { useForm } from "@tanstack/react-form";
+import { getRouteApi } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 
-export const Route = createFileRoute("/_authed/dashboard/inventory/products/new")({
+export const Route = createFileRoute(
+  "/_authed/dashboard/inventory/products/new",
+)({
   component: CreateProductPage,
 });
+
+const authedRoute = getRouteApi("/_authed");
 
 const formId = "create-product";
 
 function CreateProductPage() {
   const {
     tenant: { billingUnits },
-  } = Route.useRouteContext();
+  } = authedRoute.useLoaderData();
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories();
   const { mutate: createProduct, isPending } = useCreateProduct();
@@ -50,17 +51,26 @@ function CreateProductPage() {
   const form = useForm({
     defaultValues: {
       categoryId: "",
+      billingUnitId: "",
       name: "",
-      trackingType: undefined as unknown as TrackingType,
+      description: "",
+      trackingMode: undefined as unknown as TrackingMode,
       attributes: {} as Record<string, string>,
-      includedItems: [] as IncludedItemDto[],
-      pricingTiers: [] as CreatePricingTierDto[],
+      includedItems: [] as any[],
+      pricingTiers: [] as {
+        productTypeId?: string | null;
+        bundleId: string | null;
+        locationId: string | null;
+        fromUnit: number;
+        toUnit: number | null;
+        pricePerUnit: number;
+      }[],
     },
     validators: {
-      onChange: createProductSchema,
+      onChange: ProductTypeCreateSchema,
     },
     onSubmit: async ({ value }) => {
-      createProduct(value);
+      createProduct({ ...value, isActive: true });
     },
   });
 
@@ -129,6 +139,44 @@ function CreateProductPage() {
                 }}
               />
 
+              {/* Billing Unit Field */}
+              <form.Field
+                name="billingUnitId"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Billing Unit</FieldLabel>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={(value) =>
+                          value && field.handleChange(value)
+                        }
+                        items={billingUnits.map((unit) => ({
+                          value: unit.id,
+                          label: unit.label,
+                        }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a billing unit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {billingUnits.map((unit) => (
+                            <SelectItem key={unit.id} value={unit.id}>
+                              {unit.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              />
+
               {/* Name Field */}
               <form.Field
                 name="name"
@@ -155,30 +203,61 @@ function CreateProductPage() {
                 }}
               />
 
-              {/* Tracking Type Field (Select) */}
+              {/* Description Field */}
               <form.Field
-                name="trackingType"
+                name="description"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
                       <FieldLabel htmlFor={field.name}>
-                        Tracking Type
+                        Description{" "}
+                        <span className="text-muted-foreground text-xs">
+                          (optional)
+                        </span>
+                      </FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value ?? ""}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        type="text"
+                      />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              />
+
+              {/* Tracking Mode Field */}
+              <form.Field
+                name="trackingMode"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>
+                        Tracking Mode
                       </FieldLabel>
                       <Select
                         value={field.state.value}
                         onValueChange={(value) =>
-                          field.handleChange(value as TrackingType)
+                          field.handleChange(value as TrackingMode)
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a type" />
+                          <SelectValue placeholder="Select a tracking mode" />
                         </SelectTrigger>
                         <SelectContent>
-                          {Object.values(TrackingType).map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
+                          {Object.values(TrackingMode).map((mode) => (
+                            <SelectItem key={mode} value={mode}>
+                              {mode}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -208,7 +287,6 @@ function CreateProductPage() {
                               onChange={(e) => {
                                 const newKey = e.target.value;
                                 const newState = { ...field.state.value };
-                                // Rename key logic
                                 if (newKey !== key) {
                                   delete newState[key];
                                   newState[newKey] = value;
@@ -262,7 +340,6 @@ function CreateProductPage() {
                 />
               </div>
 
-              {/* Included Items Field (Array) */}
               {/* Included Items Field (Array) */}
               <div className="space-y-2">
                 <FieldLabel>Included Items</FieldLabel>
@@ -423,54 +500,6 @@ function CreateProductPage() {
                           </Button>
 
                           <form.Field
-                            name={`pricingTiers[${index}].billingUnitId`}
-                            children={(field) => {
-                              const isInvalid =
-                                field.state.meta.isTouched &&
-                                !field.state.meta.isValid;
-                              return (
-                                <Field data-invalid={isInvalid}>
-                                  <FieldLabel htmlFor={field.name}>
-                                    Billing unit
-                                  </FieldLabel>
-                                  <Select
-                                    value={field.state.value}
-                                    onValueChange={(value) => {
-                                      if (!value) {
-                                        return;
-                                      }
-                                      field.handleChange(value);
-                                    }}
-                                    items={billingUnits.map((unit) => ({
-                                      value: unit.id,
-                                      label: unit.name,
-                                    }))}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select a type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {billingUnits.map((unit) => (
-                                        <SelectItem
-                                          key={unit.id}
-                                          value={unit.id}
-                                        >
-                                          {unit.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  {isInvalid && (
-                                    <FieldError
-                                      errors={field.state.meta.errors}
-                                    />
-                                  )}
-                                </Field>
-                              );
-                            }}
-                          />
-
-                          <form.Field
                             name={`pricingTiers[${index}].fromUnit`}
                             children={(subField) => {
                               const isInvalid =
@@ -485,6 +514,42 @@ function CreateProductPage() {
                                     onChange={(e) =>
                                       subField.handleChange(
                                         Number(e.target.value),
+                                      )
+                                    }
+                                    onBlur={subField.handleBlur}
+                                  />
+                                  {isInvalid && (
+                                    <FieldError
+                                      errors={subField.state.meta.errors}
+                                    />
+                                  )}
+                                </Field>
+                              );
+                            }}
+                          />
+
+                          <form.Field
+                            name={`pricingTiers[${index}].toUnit`}
+                            children={(subField) => {
+                              const isInvalid =
+                                subField.state.meta.isTouched &&
+                                !subField.state.meta.isValid;
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <FieldLabel>
+                                    To unit{" "}
+                                    <span className="text-muted-foreground text-xs">
+                                      (optional)
+                                    </span>
+                                  </FieldLabel>
+                                  <Input
+                                    type="number"
+                                    value={subField.state.value ?? ""}
+                                    onChange={(e) =>
+                                      subField.handleChange(
+                                        e.target.value === ""
+                                          ? null
+                                          : Number(e.target.value),
                                       )
                                     }
                                     onBlur={subField.handleBlur}
@@ -527,48 +592,9 @@ function CreateProductPage() {
                               );
                             }}
                           />
-
-                          <form.Field
-                            name={`pricingTiers[${index}].currency`}
-                            children={(field) => {
-                              const isInvalid =
-                                field.state.meta.isTouched &&
-                                !field.state.meta.isValid;
-                              return (
-                                <Field data-invalid={isInvalid}>
-                                  <FieldLabel htmlFor={field.name}>
-                                    Currency
-                                  </FieldLabel>
-                                  <Select
-                                    value={field.state.value}
-                                    onValueChange={(value) => {
-                                      if (!value) {
-                                        return;
-                                      }
-                                      field.handleChange(value);
-                                    }}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select a type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value={"ARS"}>ARS</SelectItem>
-                                      <SelectItem value={"USD"}>USD</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  {isInvalid && (
-                                    <FieldError
-                                      errors={field.state.meta.errors}
-                                    />
-                                  )}
-                                </Field>
-                              );
-                            }}
-                          />
                         </div>
                       ))}
 
-                      {/* Validation error for the whole array (e.g. min 1 item) */}
                       {field.state.meta.isTouched &&
                         !field.state.meta.isValid && (
                           <FieldError errors={field.state.meta.errors} />
@@ -579,10 +605,11 @@ function CreateProductPage() {
                         variant="outline"
                         onClick={() =>
                           field.pushValue({
-                            billingUnitId: "",
                             fromUnit: 0,
+                            toUnit: null,
                             pricePerUnit: 0,
-                            currency: "ARS",
+                            locationId: null,
+                            bundleId: null,
                           })
                         }
                       >

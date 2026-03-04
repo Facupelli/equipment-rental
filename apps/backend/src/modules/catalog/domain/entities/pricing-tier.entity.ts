@@ -6,8 +6,6 @@ import {
 import Decimal from 'decimal.js';
 
 export interface CreatePricingTierProps {
-  productTypeId: string | null;
-  bundleId: string | null;
   locationId: string | null;
   fromUnit: number;
   toUnit: number | null;
@@ -47,10 +45,11 @@ export class PricingTier {
     if (price.lessThanOrEqualTo(0)) {
       throw new InvalidPricingTierPriceException();
     }
+
     return new PricingTier(
       randomUUID(),
-      props.productTypeId ?? null,
-      props.bundleId ?? null,
+      null, // productTypeId — injected by mapper at persistence time
+      null, // bundleId — injected by mapper at persistence time
       props.locationId ?? null,
       props.fromUnit,
       props.toUnit ?? null,

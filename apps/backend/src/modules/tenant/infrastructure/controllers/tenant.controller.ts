@@ -47,14 +47,14 @@ export class TenantController {
 
   @Get('me')
   async me(@CurrentUser() reqUser: ReqUser) {
-    const user = await this.queryBus.execute<GetTenantQuery, TenantWithBillingUnits | null>(
+    const tenant = await this.queryBus.execute<GetTenantQuery, TenantWithBillingUnits | null>(
       new GetTenantQuery(reqUser.tenantId),
     );
 
-    if (!user) {
+    if (!tenant) {
       throw new NotFoundException('Tenant not found');
     }
 
-    return user;
+    return tenant;
   }
 }

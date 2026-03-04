@@ -1,15 +1,15 @@
 import { apiFetch } from "@/lib/api";
 import {
-  CreateLocationSchema,
-  type CreateLocationDto,
-  type LocationResponseDto,
+  LocationCreateSchema,
+  type LocationCreate,
+  type LocationListResponse,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 
 const apiUrl = "/locations";
 
 export const createLocation = createServerFn({ method: "POST" })
-  .inputValidator((data: CreateLocationDto) => CreateLocationSchema.parse(data))
+  .inputValidator((data: LocationCreate) => LocationCreateSchema.parse(data))
   .handler(async ({ data }): Promise<string> => {
     const result = await apiFetch<string>(apiUrl, {
       method: "POST",
@@ -20,8 +20,8 @@ export const createLocation = createServerFn({ method: "POST" })
   });
 
 export const getLocations = createServerFn({ method: "GET" }).handler(
-  async (): Promise<LocationResponseDto[]> => {
-    const result = await apiFetch<LocationResponseDto[]>(apiUrl, {
+  async (): Promise<LocationListResponse> => {
+    const result = await apiFetch<LocationListResponse>(apiUrl, {
       method: "GET",
     });
 

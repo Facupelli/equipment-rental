@@ -6,24 +6,24 @@ import {
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { createLocation, getLocations } from "./locations.api";
-import type { CreateLocationDto, LocationResponseDto } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
+import type { LocationCreate, LocationListResponse } from "@repo/schemas";
 
-type LocationQueryOptions<TData = LocationResponseDto[]> = Omit<
-  UseQueryOptions<LocationResponseDto[], ProblemDetailsError, TData>,
+type LocationQueryOptions<TData = LocationListResponse> = Omit<
+  UseQueryOptions<LocationListResponse, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
 type LocationMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, CreateLocationDto>,
+  MutationOptions<string, ProblemDetailsError, LocationCreate>,
   "mutationFn" | "mutationKey"
 >;
 
 // -----------------------------------------------------
 
-export function createLocationQueryOptions<TData = LocationResponseDto[]>(
+export function createLocationQueryOptions<TData = LocationListResponse>(
   options?: LocationQueryOptions<TData>,
-): UseQueryOptions<LocationResponseDto[], ProblemDetailsError, TData> {
+): UseQueryOptions<LocationListResponse, ProblemDetailsError, TData> {
   return {
     ...options,
     queryKey: ["locations"],
@@ -33,7 +33,7 @@ export function createLocationQueryOptions<TData = LocationResponseDto[]>(
 
 // -----------------------------------------------------
 
-export function useLocations<TData = LocationResponseDto[]>(
+export function useLocations<TData = LocationListResponse>(
   options?: LocationQueryOptions<TData>,
 ) {
   return useQuery(createLocationQueryOptions(options));
@@ -44,7 +44,7 @@ export function useLocations<TData = LocationResponseDto[]>(
 export function useCreateLocation(options?: LocationMutationOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation<string, ProblemDetailsError, CreateLocationDto>({
+  return useMutation<string, ProblemDetailsError, LocationCreate>({
     ...options,
     mutationFn: (data) => createLocation({ data }),
     onSuccess: async (data, variables, onMutateResult, context) => {

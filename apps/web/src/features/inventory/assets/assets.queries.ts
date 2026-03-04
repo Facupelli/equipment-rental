@@ -9,15 +9,11 @@ import {
   createInventoryItem,
   getInventoryItems,
   type GetInventoryItemsParams,
-} from "./inventory-items.api";
-import type {
-  CreateInventoryItemDto,
-  InventoryItemListItemDto,
-  PaginatedDto,
-} from "@repo/schemas";
+} from "./assets.api";
+import type { AssetCreate, AssetResponse, PaginatedDto } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
-type PaginatedInventoryItems = PaginatedDto<InventoryItemListItemDto>;
+type PaginatedInventoryItems = PaginatedDto<AssetResponse>;
 
 type InventoryItemsOptions<TData = PaginatedInventoryItems> = Omit<
   UseQueryOptions<PaginatedInventoryItems, ProblemDetailsError, TData>,
@@ -26,9 +22,7 @@ type InventoryItemsOptions<TData = PaginatedInventoryItems> = Omit<
 
 // -----------------------------------------------------
 
-export function createInventoryItemsQueryOptions<
-  TData = PaginatedInventoryItems,
->(
+export function createAssetQueryOptions<TData = PaginatedInventoryItems>(
   params: GetInventoryItemsParams = {},
   options?: InventoryItemsOptions<TData>,
 ): UseQueryOptions<PaginatedInventoryItems, ProblemDetailsError, TData> {
@@ -41,26 +35,26 @@ export function createInventoryItemsQueryOptions<
 
 //
 
-export function useInventoryItems<TData = PaginatedInventoryItems>(
+export function useAssets<TData = PaginatedInventoryItems>(
   params: GetInventoryItemsParams = {},
   options?: InventoryItemsOptions<TData>,
 ) {
   return useQuery({
-    ...createInventoryItemsQueryOptions(params, options),
+    ...createAssetQueryOptions(params, options),
     placeholderData: keepPreviousData,
   });
 }
 
 //
 
-export function useCreateInventoryItem() {
+export function useCreateAsset() {
   const queryClient = useQueryClient();
 
-  return useMutation<string, ProblemDetailsError, CreateInventoryItemDto>({
+  return useMutation<string, ProblemDetailsError, AssetCreate>({
     mutationFn: (data) => createInventoryItem({ data }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: createInventoryItemsQueryOptions().queryKey,
+        queryKey: createAssetQueryOptions().queryKey,
       });
     },
     onError: (error) => {

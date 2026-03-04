@@ -15,8 +15,11 @@ export class CreateProductTypeCommandHandler implements ICommandHandler<CreatePr
   async execute(command: CreateProductTypeCommand) {
     const tenantId = this.tenantContextService.requireTenantId();
 
-    const pricingTiers = command.props.pricingTiers.map((t) => PricingTier.create(t));
-    const productType = ProductType.create({ ...command.props, pricingTiers, tenantId });
+    const productType = ProductType.create({ ...command.props, tenantId });
+
+    for (const tierProps of command.props.pricingTiers) {
+      productType.addPricingTier(PricingTier.create(tierProps));
+    }
 
     return await this.productTypeRepository.save(productType);
   }

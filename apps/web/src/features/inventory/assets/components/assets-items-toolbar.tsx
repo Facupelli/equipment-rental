@@ -10,10 +10,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
-import { useCategories } from "@/features/inventory/categories/categories.queries";
 import { InventoryItemStatus } from "@repo/types";
-import type { GetInventoryItemsParams } from "../inventory-items.api";
-import { useLocations } from "@/features/locations/locations.queries";
+import type { GetInventoryItemsParams } from "../assets.api";
+import { useLocations } from "@/features/tenant/locations/locations.queries";
+import { useCategories } from "@/features/catalog/product-categories/categories.queries";
 
 const STATUS_OPTIONS: { value: InventoryItemStatus; label: string }[] = [
   { value: InventoryItemStatus.OPERATIONAL, label: "Operational" },

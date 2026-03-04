@@ -9,7 +9,6 @@ export * from "./order/get-today-overview.schema";
 export * from "./order/get-upcoming-schedule.schema";
 export * from "./pricing/pricing-rule.schema";
 export * from "./tenant/tenant.schema";
-export * from "./tenant/tenant-response.schema";
 export * from "./tenant/location.schema";
 export * from "./tenant/owner.schema";
 export * from "./tenant/billing-unit.schema";

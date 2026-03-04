@@ -6,24 +6,27 @@ import {
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { createCategory, getCategories } from "./categories.api";
-import type { CategoryResponseDto, CreateCategorySchema } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
+import type {
+  ProductCategoryCreate,
+  ProductCategoryListResponse,
+} from "@repo/schemas";
 
-type CategoryQueryOptions<TData = CategoryResponseDto[]> = Omit<
-  UseQueryOptions<CategoryResponseDto[], ProblemDetailsError, TData>,
+type CategoryQueryOptions<TData = ProductCategoryListResponse> = Omit<
+  UseQueryOptions<ProductCategoryListResponse, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
 type CategoryMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, CreateCategorySchema>,
+  MutationOptions<string, ProblemDetailsError, ProductCategoryCreate>,
   "mutationFn" | "mutationKey"
 >;
 
 // -----------------------------------------------------
 
-export function createCategoryQueryOptions<TData = CategoryResponseDto[]>(
+export function createCategoryQueryOptions<TData = ProductCategoryListResponse>(
   options?: CategoryQueryOptions<TData>,
-): UseQueryOptions<CategoryResponseDto[], ProblemDetailsError, TData> {
+): UseQueryOptions<ProductCategoryListResponse, ProblemDetailsError, TData> {
   return {
     ...options,
     queryKey: ["categories"],
@@ -33,7 +36,7 @@ export function createCategoryQueryOptions<TData = CategoryResponseDto[]>(
 
 // -----------------------------------------------------
 
-export function useCategories<TData = CategoryResponseDto[]>(
+export function useCategories<TData = ProductCategoryListResponse>(
   options?: CategoryQueryOptions<TData>,
 ) {
   return useQuery(createCategoryQueryOptions(options));
@@ -44,7 +47,7 @@ export function useCategories<TData = CategoryResponseDto[]>(
 export function useCreateCategory(options?: CategoryMutationOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation<string, ProblemDetailsError, CreateCategorySchema>({
+  return useMutation<string, ProblemDetailsError, ProductCategoryCreate>({
     ...options,
     mutationFn: (data) => createCategory({ data }),
     onSuccess: async (data, variables, onMutateResult, context) => {

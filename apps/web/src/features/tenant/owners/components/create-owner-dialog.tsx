@@ -1,5 +1,4 @@
-import { useCreateOwner } from "@/features/owners/owners.queries";
-import { CreateOwnerSchema } from "@repo/schemas";
+import { useCreateOwner } from "@/features/tenant/owners/owners.queries";
 import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +16,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { OwnerCreateSchema } from "@repo/schemas";
 
 interface CreateOwnerDialogProps {
   open: boolean;
@@ -38,7 +38,7 @@ export function CreateOwnerDialog({
       name: "",
     },
     validators: {
-      onChange: CreateOwnerSchema,
+      onChange: OwnerCreateSchema,
     },
     onSubmit: async ({ value }) => {
       createOwner(value);

@@ -1,15 +1,15 @@
 import { apiFetch } from "@/lib/api";
 import {
-  CreateOwnerSchema,
-  type CreateOwnerDto,
-  type OwnerResponseDto,
+  OwnerCreateSchema,
+  type OwnerCreate,
+  type OwnerListResponse,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 
 const apiUrl = "/owners";
 
 export const createOwner = createServerFn({ method: "POST" })
-  .inputValidator((data: CreateOwnerDto) => CreateOwnerSchema.parse(data))
+  .inputValidator((data: OwnerCreate) => OwnerCreateSchema.parse(data))
   .handler(async ({ data }): Promise<string> => {
     const result = await apiFetch<string>(apiUrl, {
       method: "POST",
@@ -20,8 +20,8 @@ export const createOwner = createServerFn({ method: "POST" })
   });
 
 export const getOwners = createServerFn({ method: "GET" }).handler(
-  async (): Promise<OwnerResponseDto[]> => {
-    const result = await apiFetch<OwnerResponseDto[]>(apiUrl, {
+  async (): Promise<OwnerListResponse> => {
+    const result = await apiFetch<OwnerListResponse>(apiUrl, {
       method: "GET",
     });
 

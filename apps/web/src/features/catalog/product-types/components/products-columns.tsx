@@ -1,21 +1,21 @@
 import { Badge } from "@/components/ui/badge";
-import type { ProductListItemResponseDto } from "@repo/schemas";
+import type { ProductTypeResponse } from "@repo/schemas";
 import type { ColumnDef } from "@tanstack/react-table";
 
 // ---------------------------------------------------------------------------
 // Tracking type formatting
 // ---------------------------------------------------------------------------
 
-const TRACKING_TYPE_LABELS: Record<string, string> = {
-  SERIAL_NUMBER: "Serial Number",
-  BATCH: "Batch",
+const TRACKING_MODE_LABELS: Record<string, string> = {
+  SERIALIZED: "Serialized",
+  POOLED: "Pooled",
   NONE: "None",
   // Extend as TrackingType enum grows
 } as const;
 
 export function formatTrackingType(value: string): string {
   return (
-    TRACKING_TYPE_LABELS[value] ??
+    TRACKING_MODE_LABELS[value] ??
     value
       .toLowerCase()
       .replace(/_/g, " ")
@@ -27,7 +27,7 @@ export function formatTrackingType(value: string): string {
 // Column definitions
 // ---------------------------------------------------------------------------
 
-export const productColumns: ColumnDef<ProductListItemResponseDto>[] = [
+export const productColumns: ColumnDef<ProductTypeResponse>[] = [
   {
     id: "name",
     accessorKey: "name",

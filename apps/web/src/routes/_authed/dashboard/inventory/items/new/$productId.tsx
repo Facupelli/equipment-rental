@@ -21,11 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateInventoryItem } from "@/features/inventory/inventory-items/inventory-items.queries";
-import { useLocations } from "@/features/locations/locations.queries";
-import { useOwners } from "@/features/owners/owners.queries";
-import { createInventoryItemSchema } from "@repo/schemas";
-import { InventoryItemStatus } from "@repo/types";
+import { useCreateAsset } from "@/features/inventory/assets/assets.queries";
+import { useLocations } from "@/features/tenant/locations/locations.queries";
+import { useOwners } from "@/features/tenant/owners/owners.queries";
+import { AssetCreateSchema } from "@repo/schemas";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -35,11 +34,11 @@ export const Route = createFileRoute(
   component: CreateInventoryItemPage,
 });
 
-const formId = "create-inventory-item";
+const formId = "create-asset";
 
 function CreateInventoryItemPage() {
   const { productId } = Route.useParams();
-  const { mutate: createInventoryItem, isPending } = useCreateInventoryItem();
+  const { mutate: createAsset, isPending } = useCreateAsset();
   const { data: locations = [], isLoading: locationsLoading } = useLocations();
   const { data: owners = [], isLoading: ownersLoading } = useOwners();
 
@@ -47,20 +46,17 @@ function CreateInventoryItemPage() {
     defaultValues: {
       locationId: "",
       ownerId: "",
-      totalQuantity: 1,
       serialNumber: "",
-      purchaseDate: "",
-      purchaseCost: 0,
-      status: InventoryItemStatus.OPERATIONAL,
+      notes: "",
     },
     validators: {
-      onChange: createInventoryItemSchema.omit({ productId: true }),
+      onChange: AssetCreateSchema.omit({ productTypeId: true }),
     },
     onSubmit: async ({ value }) => {
-      createInventoryItem({
+      createAsset({
         ...value,
-        productId,
-        purchaseDate: new Date(value.purchaseDate) || null,
+        productTypeId: productId,
+        isActive: true,
       });
     },
   });
@@ -130,7 +126,7 @@ function CreateInventoryItemPage() {
                 }}
               />
 
-              {/* Owner Field */}
+              {/* Owner Field (optional) */}
               <form.Field
                 name="ownerId"
                 children={(field) => {
@@ -138,9 +134,14 @@ function CreateInventoryItemPage() {
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Owner</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        Owner{" "}
+                        <span className="text-muted-foreground text-xs">
+                          (optional)
+                        </span>
+                      </FieldLabel>
                       <Select
-                        value={field.state.value}
+                        value={field.state.value ?? ""}
                         onValueChange={(value) =>
                           value && field.handleChange(value)
                         }
@@ -161,71 +162,6 @@ function CreateInventoryItemPage() {
                           {owners.map((owner) => (
                             <SelectItem key={owner.id} value={owner.id}>
                               {owner.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              />
-
-              {/* Total Quantity Field */}
-              <form.Field
-                name="totalQuantity"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Total Quantity
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        type="number"
-                        min={1}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) =>
-                          field.handleChange(Number(e.target.value))
-                        }
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              />
-
-              {/* Status Field */}
-              <form.Field
-                name="status"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Status</FieldLabel>
-                      <Select
-                        value={field.state.value}
-                        onValueChange={(value) =>
-                          field.handleChange(value as InventoryItemStatus)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(InventoryItemStatus).map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -269,16 +205,16 @@ function CreateInventoryItemPage() {
                 }}
               />
 
-              {/* Purchase Date Field (optional) */}
+              {/* Notes Field (optional) */}
               <form.Field
-                name="purchaseDate"
+                name="notes"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
                       <FieldLabel htmlFor={field.name}>
-                        Purchase Date{" "}
+                        Notes{" "}
                         <span className="text-muted-foreground text-xs">
                           (optional)
                         </span>
@@ -286,47 +222,10 @@ function CreateInventoryItemPage() {
                       <Input
                         id={field.name}
                         name={field.name}
-                        type="date"
+                        type="text"
                         value={field.state.value ?? ""}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              />
-
-              {/* Purchase Cost Field (optional) */}
-              <form.Field
-                name="purchaseCost"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Purchase Cost{" "}
-                        <span className="text-muted-foreground text-xs">
-                          (optional)
-                        </span>
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={field.state.value ?? ""}
-                        onBlur={field.handleBlur}
-                        onChange={(e) =>
-                          field.handleChange(
-                            e.target.value as unknown as number,
-                          )
-                        }
                         aria-invalid={isInvalid}
                       />
                       {isInvalid && (

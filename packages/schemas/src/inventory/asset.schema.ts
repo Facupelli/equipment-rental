@@ -74,6 +74,8 @@ export const GetAssetsQuerySchema = z.object({
   productTypeId: z.uuid().optional(),
   isActive: z.boolean().optional(),
   search: z.string().optional(),
+  page: z.number().optional(),
+  limit: z.number().optional(),
 });
 
 export type GetAssetsQuery = z.infer<typeof GetAssetsQuerySchema>;

@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ProductsTable } from "@/features/inventory/products/components/products-table";
+import { ProductsTable } from "@/features/catalog/product-types/components/products-table";
 import {
   createProductsQueryOptions,
   useProducts,
-} from "@/features/inventory/products/products.queries";
+} from "@/features/catalog/product-types/products.queries";
+
 import { Link } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 import type { PaginationState } from "@tanstack/react-table";

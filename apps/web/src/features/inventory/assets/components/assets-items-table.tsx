@@ -16,8 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { InventoryItemsToolbar } from "./inventory-items-toolbar";
-import type { GetInventoryItemsParams } from "../inventory-items.api";
+import { InventoryItemsToolbar } from "./assets-items-toolbar";
+import type { GetInventoryItemsParams } from "../assets.api";
 
 interface InventoryItemsTableProps {
   data: InventoryItemListItemDto[];

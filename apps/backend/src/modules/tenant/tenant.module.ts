@@ -8,9 +8,10 @@ import { TenantRepository } from './infrastructure/persistence/repositories/tena
 import { TenantController } from './infrastructure/controllers/tenant.controller';
 import { AuthModule } from '../auth/auth.module';
 import { IsSlugTakenQueryHandler } from './application/queries/is-slug-taken/is-slug-taken.query-handler';
+import { GetTenantQueryHandler } from './application/queries/get-tenant/get-tenant.query-handler';
 
 const commandHandlers = [CreateTenantUserCommandHandler];
-const queryHandlers = [IsSlugTakenQueryHandler];
+const queryHandlers = [IsSlugTakenQueryHandler, GetTenantQueryHandler];
 
 const repositories = [{ provide: TenantRepositoryPort, useClass: TenantRepository }];
 const services = [TenantContextService];

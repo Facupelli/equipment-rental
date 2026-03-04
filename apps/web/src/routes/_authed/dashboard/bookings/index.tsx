@@ -1,10 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { STATUS_MAP } from "@/features/bookings/bookings.constants";
+import { STATUS_MAP } from "@/features/orders/bookings.constants";
 import {
   useTodayOverview,
   useUpcomingSchedule,
-} from "@/features/bookings/bookings.queries";
+} from "@/features/orders/bookings.queries";
 import type {
   BookingCard,
   ProductSummary,

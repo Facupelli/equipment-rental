@@ -8,3 +8,8 @@ export const CreateTenantUserSchema = z.object({
 });
 
 export type TenantUserCreate = z.infer<typeof CreateTenantUserSchema>;
+
+export interface CreaetTenantUserResponse {
+  userId: string;
+  tenantId: string;
+}

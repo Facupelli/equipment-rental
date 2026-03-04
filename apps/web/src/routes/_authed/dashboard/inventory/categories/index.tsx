@@ -1,8 +1,3 @@
-import {
-  createCategoryQueryOptions,
-  useCategories,
-  useCreateCategory,
-} from "@/features/inventory/categories/categories.queries";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,11 +17,16 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createCategorySchema } from "@repo/schemas";
 import { useForm } from "@tanstack/react-form";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import {
+  createCategoryQueryOptions,
+  useCategories,
+  useCreateCategory,
+} from "@/features/catalog/product-categories/categories.queries";
+import { ProductCategoryCreateSchema } from "@repo/schemas";
 
 export const Route = createFileRoute(
   "/_authed/dashboard/inventory/categories/",
@@ -115,7 +115,7 @@ function CreateCategoryDialog() {
       description: "",
     },
     validators: {
-      onChange: createCategorySchema,
+      onChange: ProductCategoryCreateSchema,
     },
     onSubmit: async ({ value }) => {
       createCategory(value, {

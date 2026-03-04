@@ -1,13 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PhysicalItemsTab } from "@/features/inventory/products/components/detail/assets-tab";
-import { PricingTab } from "@/features/inventory/products/components/detail/pricing-tab";
-import { SpecificationsTab } from "@/features/inventory/products/components/detail/specifications-tab";
-import { formatTrackingType } from "@/features/inventory/products/components/products-columns";
-import { useProductDetail } from "@/features/inventory/products/products.queries";
-import type { ProductDetailDto } from "@repo/schemas";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { PhysicalItemsTab } from "@/features/catalog/product-types/components/detail/assets-tab";
+import { PricingTab } from "@/features/catalog/product-types/components/detail/pricing-tab";
+import { SpecificationsTab } from "@/features/catalog/product-types/components/detail/specifications-tab";
+import { formatTrackingType } from "@/features/catalog/product-types/components/products-columns";
+import { useProductDetail } from "@/features/catalog/product-types/products.queries";
+import type { ProductTypeResponse } from "@repo/schemas";
+import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
   "/_authed/dashboard/inventory/products/$productId",
@@ -15,9 +15,11 @@ export const Route = createFileRoute(
   component: RouteComponent,
 });
 
+const authedRoute = getRouteApi("/_authed");
+
 function RouteComponent() {
   const { productId } = Route.useParams();
-  const { tenant } = Route.useRouteContext();
+  const { tenant } = authedRoute.useLoaderData();
   const { data: product, isPending } = useProductDetail(productId, {
     enabled: !!productId,
   });
@@ -62,7 +64,7 @@ function RouteComponent() {
 }
 
 interface ProductHeaderProps {
-  product: ProductDetailDto;
+  product: ProductTypeResponse;
 }
 
 function ProductHeader({ product }: ProductHeaderProps) {
@@ -78,7 +80,7 @@ function ProductHeader({ product }: ProductHeaderProps) {
             </>
           )}
           <Badge variant="outline">
-            {formatTrackingType(product.trackingType)}
+            {formatTrackingType(product.trackingMode)}
           </Badge>
         </div>
       </div>

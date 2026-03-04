@@ -1,13 +1,17 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetAssetsQuery } from './get-assets.query';
-import { AssetListResponse } from '@repo/schemas';
+import { AssetResponse, PaginatedDto } from '@repo/schemas';
 
 @QueryHandler(GetAssetsQuery)
-export class GetAssetsQueryHandler implements IQueryHandler<GetAssetsQuery, AssetListResponse> {
+export class GetAssetsQueryHandler implements IQueryHandler<GetAssetsQuery, PaginatedDto<AssetResponse>> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetAssetsQuery): Promise<AssetListResponse> {
+  async execute(query: GetAssetsQuery): Promise<PaginatedDto<AssetResponse>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
+
     const where: Record<string, unknown> = {};
 
     if (query.locationId) {
@@ -29,43 +33,56 @@ export class GetAssetsQueryHandler implements IQueryHandler<GetAssetsQuery, Asse
       ];
     }
 
-    const assets = await this.prisma.client.asset.findMany({
-      where,
-      include: {
-        location: true,
-        productType: true,
-        owner: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const [assets, total] = await Promise.all([
+      this.prisma.client.asset.findMany({
+        where,
+        include: {
+          location: true,
+          productType: true,
+          owner: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.client.asset.count({ where }),
+    ]);
 
-    return assets.map((asset) => ({
-      id: asset.id,
-      serialNumber: asset.serialNumber,
-      notes: asset.notes,
-      isActive: asset.isActive,
-      createdAt: asset.createdAt,
-      updatedAt: asset.updatedAt,
-      deletedAt: asset.deletedAt,
-      location: {
-        id: asset.location.id,
-        name: asset.location.name,
-        address: asset.location.address,
+    return {
+      data: assets.map((asset) => ({
+        id: asset.id,
+        serialNumber: asset.serialNumber,
+        notes: asset.notes,
+        isActive: asset.isActive,
+        createdAt: asset.createdAt,
+        updatedAt: asset.updatedAt,
+        deletedAt: asset.deletedAt,
+        location: {
+          id: asset.location.id,
+          name: asset.location.name,
+          address: asset.location.address,
+        },
+        productType: {
+          id: asset.productType.id,
+          name: asset.productType.name,
+          description: asset.productType.description,
+          trackingMode: asset.productType.trackingMode,
+        },
+        owner: asset.owner
+          ? {
+              id: asset.owner.id,
+              name: asset.owner.name,
+            }
+          : null,
+      })),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      productType: {
-        id: asset.productType.id,
-        name: asset.productType.name,
-        description: asset.productType.description,
-        trackingMode: asset.productType.trackingMode,
-      },
-      owner: asset.owner
-        ? {
-            id: asset.owner.id,
-            name: asset.owner.name,
-          }
-        : null,
-    }));
+    };
   }
 }

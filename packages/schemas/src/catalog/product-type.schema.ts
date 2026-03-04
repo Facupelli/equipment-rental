@@ -16,6 +16,7 @@ export const PricingTierSchema = z.object({
 
 export const PricingTierCreateSchema = PricingTierSchema.omit({
   id: true,
+  productTypeId: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -40,8 +41,8 @@ export const ProductTypeSchema = z.object({
   description: z.string().nullable().optional(),
   trackingMode: z.enum(TrackingMode),
   isActive: z.boolean().default(true),
-  attributes: z.record(z.string(), z.unknown()),
-  includedItems: z.array(z.record(z.string(), z.unknown())).default([]),
+  attributes: z.record(z.string(), z.any()),
+  includedItems: z.array(z.record(z.string(), z.any())).default([]),
   createdAt: z.date().default(() => new Date()),
   updatedAt: z.date(),
   deletedAt: z.date().nullable().optional(),
@@ -54,8 +55,8 @@ export const ProductTypeCreateSchema = z.object({
   description: nullableOptional(z.string()),
   trackingMode: z.enum(TrackingMode),
   isActive: z.boolean().default(true),
-  attributes: z.record(z.string(), z.unknown()),
-  includedItems: z.array(z.record(z.string(), z.unknown())).default([]),
+  attributes: z.record(z.string(), z.any()),
+  includedItems: z.array(z.record(z.string(), z.any())).default([]),
   pricingTiers: z.array(PricingTierCreateSchema),
 });
 
@@ -112,6 +113,8 @@ export const GetProductTypesQuerySchema = z.object({
   categoryId: z.uuid().optional(),
   isActive: z.boolean().optional(),
   search: z.string().optional(),
+  page: z.number().optional(),
+  limit: z.number().optional(),
 });
 
 export type GetProductTypesQuery = z.infer<typeof GetProductTypesQuerySchema>;

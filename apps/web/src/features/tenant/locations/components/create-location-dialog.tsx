@@ -1,4 +1,4 @@
-import { useCreateLocation } from "@/features/locations/locations.queries";
+import { useCreateLocation } from "@/features/tenant/locations/locations.queries";
 import { CreateLocationSchema } from "@repo/schemas";
 import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";

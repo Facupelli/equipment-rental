@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import {
-  type CreateTenantUserDto,
+  CreateTenantUserSchema,
+  type CreaetTenantUserResponse,
   type MeResponseDto,
-  type RegisterResponseDto,
-  createTenantUserSchema,
+  type TenantUserCreate,
 } from "@repo/schemas";
 import { apiFetch } from "@/lib/api";
 import { useAppSession } from "@/lib/session";
@@ -15,15 +15,20 @@ import {
 import { ACCESS_TOKEN_TTL_MS } from "./auth.constants";
 
 export const registerTenantUser = createServerFn({ method: "POST" })
-  .inputValidator((data: CreateTenantUserDto) =>
-    createTenantUserSchema.parse(data),
+  .inputValidator((data: TenantUserCreate) =>
+    CreateTenantUserSchema.parse(data),
   )
-  .handler(async ({ data }): Promise<RegisterResponseDto> => {
-    const result = await apiFetch<RegisterResponseDto>("/tenancy/register", {
-      method: "POST",
-      body: data,
-      authenticated: false,
-    });
+  .handler(async ({ data }): Promise<CreaetTenantUserResponse> => {
+    const result = await apiFetch<CreaetTenantUserResponse>(
+      "/tenants/register",
+      {
+        method: "POST",
+        body: data,
+        authenticated: false,
+      },
+    );
+
+    console.log({ result });
 
     return result;
   });

@@ -1,14 +1,21 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetProductTypesQuery } from './get-product-types.query';
-import { ProductTypeListResponse } from '@repo/schemas';
+import { PaginatedDto, ProductTypeResponse } from '@repo/schemas';
 import { TrackingMode } from '@repo/types';
 
 @QueryHandler(GetProductTypesQuery)
-export class GetProductTypesQueryHandler implements IQueryHandler<GetProductTypesQuery, ProductTypeListResponse> {
+export class GetProductTypesQueryHandler implements IQueryHandler<
+  GetProductTypesQuery,
+  PaginatedDto<ProductTypeResponse>
+> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetProductTypesQuery): Promise<ProductTypeListResponse> {
+  async execute(query: GetProductTypesQuery): Promise<PaginatedDto<ProductTypeResponse>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
+
     const where: Record<string, unknown> = {};
 
     if (query.categoryId !== undefined) {
@@ -26,54 +33,67 @@ export class GetProductTypesQueryHandler implements IQueryHandler<GetProductType
       ];
     }
 
-    const productTypes = await this.prisma.client.productType.findMany({
-      where,
-      include: {
-        category: true,
-        billingUnit: true,
-        pricingTiers: true,
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
+    const [productTypes, total] = await Promise.all([
+      this.prisma.client.productType.findMany({
+        where,
+        include: {
+          category: true,
+          billingUnit: true,
+          pricingTiers: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.client.productType.count({ where }),
+    ]);
 
-    return productTypes.map((pt) => ({
-      id: pt.id,
-      tenantId: pt.tenantId,
-      name: pt.name,
-      description: pt.description,
-      trackingMode: pt.trackingMode as TrackingMode,
-      isActive: pt.isActive,
-      attributes: pt.attributes as Record<string, unknown>,
-      includedItems: pt.includedItems as Record<string, unknown>[],
-      createdAt: pt.createdAt,
-      updatedAt: pt.updatedAt,
-      deletedAt: pt.deletedAt,
-      category: pt.category
-        ? {
-            id: pt.category.id,
-            name: pt.category.name,
-            description: pt.category.description,
-          }
-        : null,
-      billingUnit: {
-        id: pt.billingUnit.id,
-        label: pt.billingUnit.label,
-        durationMinutes: pt.billingUnit.durationMinutes,
-        sortOrder: pt.billingUnit.sortOrder,
-      },
-      pricingTiers: pt.pricingTiers.map((tier) => ({
-        id: tier.id,
-        productTypeId: tier.productTypeId,
-        bundleId: tier.bundleId,
-        locationId: tier.locationId,
-        fromUnit: tier.fromUnit,
-        toUnit: tier.toUnit,
-        pricePerUnit: tier.pricePerUnit.toNumber(),
-        createdAt: tier.createdAt,
-        updatedAt: tier.updatedAt,
+    return {
+      data: productTypes.map((pt) => ({
+        id: pt.id,
+        tenantId: pt.tenantId,
+        name: pt.name,
+        description: pt.description,
+        trackingMode: pt.trackingMode as TrackingMode,
+        isActive: pt.isActive,
+        attributes: pt.attributes as Record<string, unknown>,
+        includedItems: pt.includedItems as Record<string, unknown>[],
+        createdAt: pt.createdAt,
+        updatedAt: pt.updatedAt,
+        deletedAt: pt.deletedAt,
+        category: pt.category
+          ? {
+              id: pt.category.id,
+              name: pt.category.name,
+              description: pt.category.description,
+            }
+          : null,
+        billingUnit: {
+          id: pt.billingUnit.id,
+          label: pt.billingUnit.label,
+          durationMinutes: pt.billingUnit.durationMinutes,
+          sortOrder: pt.billingUnit.sortOrder,
+        },
+        pricingTiers: pt.pricingTiers.map((tier) => ({
+          id: tier.id,
+          productTypeId: tier.productTypeId,
+          bundleId: tier.bundleId,
+          locationId: tier.locationId,
+          fromUnit: tier.fromUnit,
+          toUnit: tier.toUnit,
+          pricePerUnit: tier.pricePerUnit.toNumber(),
+          createdAt: tier.createdAt,
+          updatedAt: tier.updatedAt,
+        })),
       })),
-    }));
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }
