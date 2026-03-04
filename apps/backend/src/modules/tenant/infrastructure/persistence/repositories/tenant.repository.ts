@@ -1,13 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { TenantReadService, TenantRepositoryPort } from 'src/modules/tenant/domain/ports/tenant.repository.port';
+import { TenantRepositoryPort } from 'src/modules/tenant/domain/ports/tenant.repository.port';
 import { TenantBillingUnitMapper, TenantMapper } from '../mappers/tenant.mapper';
 import { Tenant } from 'src/modules/tenant/domain/entities/tenant.entity';
-import { TenantWithBillingUnits } from '@repo/schemas';
-import { TenantConfig } from 'src/modules/tenant/domain/value-objects/tenant-config.vo';
 
 @Injectable()
-export class TenantRepository implements TenantRepositoryPort, TenantReadService {
+export class TenantRepository implements TenantRepositoryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(id: string): Promise<Tenant | null> {
@@ -58,48 +56,5 @@ export class TenantRepository implements TenantRepositoryPort, TenantReadService
     });
 
     return tenant.id;
-  }
-
-  // READ SERVICE
-
-  async isSlugTaken(slug: string): Promise<boolean> {
-    const count = await this.prisma.client.tenant.count({ where: { slug } });
-    return count > 0;
-  }
-
-  async findById(id: string): Promise<TenantWithBillingUnits | null> {
-    const tenant = await this.prisma.client.tenant.findUnique({
-      where: { id },
-      include: {
-        billingUnits: {
-          include: {
-            billingUnit: true,
-          },
-          orderBy: {
-            billingUnit: {
-              sortOrder: 'asc',
-            },
-          },
-        },
-      },
-    });
-
-    if (!tenant) {
-      return null;
-    }
-
-    return {
-      id: tenant.id,
-      name: tenant.name,
-      slug: tenant.slug,
-      createdAt: tenant.createdAt,
-      config: tenant.config as unknown as TenantConfig,
-      billingUnits: tenant.billingUnits.map((tbu) => ({
-        id: tbu.billingUnit.id,
-        label: tbu.billingUnit.label,
-        durationMinutes: tbu.billingUnit.durationMinutes,
-        sortOrder: tbu.billingUnit.sortOrder,
-      })),
-    };
   }
 }
