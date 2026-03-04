@@ -8,6 +8,8 @@ import { ProductCategoryRepository } from './infrastructure/repositories/product
 import { ProductTypeRepository } from './infrastructure/repositories/product-type.repository';
 import { CreateProductTypeCommandHandler } from './application/commands/create-product-type/create-product-type.command-handler';
 import { CreateProductCategoryHandler } from './application/commands/create-product-category/create-product-category.command-handler';
+import { GetProductTypeByIdQueryHandler } from './application/queries/get-product-type-by-id/get-product-type-by-id.query-handler';
+import { GetProductTypesQueryHandler } from './application/queries/get-product-types/get-product-types.query-handler';
 
 const repositories = [
   { provide: ProductCategoryRepositoryPort, useClass: ProductCategoryRepository },
@@ -16,9 +18,11 @@ const repositories = [
 
 const commandhandlers = [CreateProductTypeCommandHandler, CreateProductCategoryHandler];
 
+const queryHandlers = [GetProductTypeByIdQueryHandler, GetProductTypesQueryHandler];
+
 @Module({
   imports: [TenantModule],
   controllers: [ProductCategoryController, ProductTypeController],
-  providers: [...repositories, ...commandhandlers],
+  providers: [...repositories, ...commandhandlers, ...queryHandlers],
 })
 export class CatalogModule {}

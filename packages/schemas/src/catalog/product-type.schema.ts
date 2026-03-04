@@ -68,3 +68,50 @@ export const ProductTypeUpdateSchema = ProductTypeSchema.partial().omit({
 export type ProductType = z.infer<typeof ProductTypeSchema>;
 export type ProductTypeCreate = z.infer<typeof ProductTypeCreateSchema>;
 export type ProductTypeUpdate = z.infer<typeof ProductTypeUpdateSchema>;
+
+// ----------------------------------------------------------
+// Response schemas (with relations)
+
+export const BillingUnitResponseSchema = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  durationMinutes: z.number().int(),
+  sortOrder: z.number().int(),
+});
+
+export const ProductCategoryResponseSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+});
+
+export const ProductTypeResponseSchema = ProductTypeSchema.extend({
+  category: ProductCategoryResponseSchema.nullable().optional(),
+  billingUnit: BillingUnitResponseSchema,
+  pricingTiers: z.array(PricingTierSchema),
+}).omit({
+  categoryId: true,
+  billingUnitId: true,
+});
+
+export const ProductTypeListResponseSchema = z.array(ProductTypeResponseSchema);
+
+export type BillingUnitResponse = z.infer<typeof BillingUnitResponseSchema>;
+export type ProductCategoryResponse = z.infer<
+  typeof ProductCategoryResponseSchema
+>;
+export type ProductTypeResponse = z.infer<typeof ProductTypeResponseSchema>;
+export type ProductTypeListResponse = z.infer<
+  typeof ProductTypeListResponseSchema
+>;
+
+// ----------------------------------------------------------
+// Query schemas
+
+export const GetProductTypesQuerySchema = z.object({
+  categoryId: z.uuid().optional(),
+  isActive: z.boolean().optional(),
+  search: z.string().optional(),
+});
+
+export type GetProductTypesQuery = z.infer<typeof GetProductTypesQuerySchema>;
