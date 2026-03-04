@@ -10,6 +10,7 @@ import { CreateProductTypeCommandHandler } from './application/commands/create-p
 import { CreateProductCategoryHandler } from './application/commands/create-product-category/create-product-category.command-handler';
 import { GetProductTypeByIdQueryHandler } from './application/queries/get-product-type-by-id/get-product-type-by-id.query-handler';
 import { GetProductTypesQueryHandler } from './application/queries/get-product-types/get-product-types.query-handler';
+import { GetProductCategoriesQueryHandler } from './application/queries/get-product-categories/get-product-categories.query-handler';
 
 const repositories = [
   { provide: ProductCategoryRepositoryPort, useClass: ProductCategoryRepository },
@@ -18,7 +19,7 @@ const repositories = [
 
 const commandhandlers = [CreateProductTypeCommandHandler, CreateProductCategoryHandler];
 
-const queryHandlers = [GetProductTypeByIdQueryHandler, GetProductTypesQueryHandler];
+const queryHandlers = [GetProductTypeByIdQueryHandler, GetProductTypesQueryHandler, GetProductCategoriesQueryHandler];
 
 @Module({
   imports: [TenantModule],

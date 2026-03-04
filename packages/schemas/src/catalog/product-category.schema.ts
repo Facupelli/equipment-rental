@@ -28,3 +28,8 @@ export const ProductCategoryUpdateSchema = ProductCategorySchema.partial().omit(
 export type ProductCategory = z.infer<typeof ProductCategorySchema>;
 export type ProductCategoryCreate = z.infer<typeof ProductCategoryCreateSchema>;
 export type ProductCategoryUpdate = z.infer<typeof ProductCategoryUpdateSchema>;
+
+export const ProductCategoryListResponseSchema = z.array(ProductCategorySchema);
+export type ProductCategoryListResponse = z.infer<
+  typeof ProductCategoryListResponseSchema
+>;
