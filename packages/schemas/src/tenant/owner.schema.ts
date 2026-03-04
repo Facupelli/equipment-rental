@@ -30,5 +30,13 @@ export type Owner = z.infer<typeof OwnerSchema>;
 export type OwnerCreate = z.infer<typeof OwnerCreateSchema>;
 export type OwnerUpdate = z.infer<typeof OwnerUpdateSchema>;
 
-export const OwnerListResponseSchema = z.array(OwnerSchema);
+// RESPONSE SCHEMA
+
+export const OwnerListItemSchema = OwnerSchema.pick({
+  id: true,
+  name: true,
+  isActive: true,
+  createdAt: true,
+});
+export const OwnerListResponseSchema = z.array(OwnerListItemSchema);
 export type OwnerListResponse = z.infer<typeof OwnerListResponseSchema>;

@@ -29,7 +29,7 @@ import {
 import { ProductCategoryCreateSchema } from "@repo/schemas";
 
 export const Route = createFileRoute(
-  "/_authed/dashboard/inventory/categories/",
+  "/_authed/dashboard/catalog/categories/",
 )({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(createCategoryQueryOptions()),

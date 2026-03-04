@@ -26,6 +26,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   searchColumn?: string;
   searchPlaceholder?: string;
+  noDataMessage?: string;
 }
 
 export function OwnersDataTable<TData, TValue>({
@@ -33,6 +34,7 @@ export function OwnersDataTable<TData, TValue>({
   data,
   searchColumn,
   searchPlaceholder = "Search...",
+  noDataMessage = "No owners found.",
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -113,7 +115,7 @@ export function OwnersDataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No owners found.
+                  {noDataMessage}
                 </TableCell>
               </TableRow>
             )}

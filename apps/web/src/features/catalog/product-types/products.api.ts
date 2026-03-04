@@ -5,11 +5,12 @@ import {
   type ProductTypeCreate,
   type ProductTypeResponse,
   type PaginatedDto,
+  type GetProductTypesQuery,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
 
-const apiUrl = "/products";
+const apiUrl = "/product-types";
 
 export const createProduct = createServerFn({ method: "POST" })
   .inputValidator((data: ProductTypeCreate) =>
@@ -47,15 +48,8 @@ export const getProductDetail = createServerFn({ method: "GET" })
     return result;
   });
 
-export interface GetProductsParams {
-  page?: number;
-  limit?: number;
-  categoryId?: string;
-  trackingType?: string;
-}
-
 export const getProducts = createServerFn({ method: "GET" })
-  .inputValidator((data: GetProductsParams) =>
+  .inputValidator((data: GetProductTypesQuery) =>
     GetProductTypesQuerySchema.parse(data),
   )
   .handler(async ({ data }): Promise<PaginatedDto<ProductTypeResponse>> => {

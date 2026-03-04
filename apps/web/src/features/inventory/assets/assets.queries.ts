@@ -5,38 +5,34 @@ import {
   useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
-import {
-  createInventoryItem,
-  getInventoryItems,
-  type GetInventoryItemsParams,
-} from "./assets.api";
+import { createAsset, getAssets, type GetAssetsParams } from "./assets.api";
 import type { AssetCreate, AssetResponse, PaginatedDto } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
-type PaginatedInventoryItems = PaginatedDto<AssetResponse>;
+type PaginatedAssets = PaginatedDto<AssetResponse>;
 
-type InventoryItemsOptions<TData = PaginatedInventoryItems> = Omit<
-  UseQueryOptions<PaginatedInventoryItems, ProblemDetailsError, TData>,
+type InventoryItemsOptions<TData = PaginatedAssets> = Omit<
+  UseQueryOptions<PaginatedAssets, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
 // -----------------------------------------------------
 
-export function createAssetQueryOptions<TData = PaginatedInventoryItems>(
-  params: GetInventoryItemsParams = {},
+export function createAssetQueryOptions<TData = PaginatedAssets>(
+  params: GetAssetsParams = {},
   options?: InventoryItemsOptions<TData>,
-): UseQueryOptions<PaginatedInventoryItems, ProblemDetailsError, TData> {
+): UseQueryOptions<PaginatedAssets, ProblemDetailsError, TData> {
   return {
     ...options,
-    queryKey: ["inventory-items", params],
-    queryFn: () => getInventoryItems({ data: params }),
+    queryKey: ["assets", params],
+    queryFn: () => getAssets({ data: params }),
   };
 }
 
 //
 
-export function useAssets<TData = PaginatedInventoryItems>(
-  params: GetInventoryItemsParams = {},
+export function useAssets<TData = PaginatedAssets>(
+  params: GetAssetsParams = {},
   options?: InventoryItemsOptions<TData>,
 ) {
   return useQuery({
@@ -51,7 +47,7 @@ export function useCreateAsset() {
   const queryClient = useQueryClient();
 
   return useMutation<string, ProblemDetailsError, AssetCreate>({
-    mutationFn: (data) => createInventoryItem({ data }),
+    mutationFn: (data) => createAsset({ data }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createAssetQueryOptions().queryKey,

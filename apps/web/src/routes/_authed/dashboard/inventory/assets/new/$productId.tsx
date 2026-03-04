@@ -29,7 +29,7 @@ import { useForm } from "@tanstack/react-form";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
-  "/_authed/dashboard/inventory/items/new/$productId",
+  "/_authed/dashboard/inventory/assets/new/$productId",
 )({
   component: CreateInventoryItemPage,
 });

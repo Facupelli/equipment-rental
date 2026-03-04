@@ -25,21 +25,23 @@ export const TenantBillingUnitSchema = z.object({
   billingUnitId: z.uuid(),
 });
 
-export const TenantBillingUnitCreateSchema = TenantBillingUnitSchema.omit({
-  id: true,
-});
-
-export const TenantBillingUnitUpdateSchema =
-  TenantBillingUnitSchema.partial().omit({
-    id: true,
-    tenantId: true,
-    billingUnitId: true,
-  });
+export const SyncTenantBillingUnitsSchema = z.array(z.uuid());
 
 export type TenantBillingUnit = z.infer<typeof TenantBillingUnitSchema>;
-export type TenantBillingUnitCreate = z.infer<
-  typeof TenantBillingUnitCreateSchema
+export type SyncTenantBillingUnits = z.infer<
+  typeof SyncTenantBillingUnitsSchema
 >;
-export type TenantBillingUnitUpdate = z.infer<
-  typeof TenantBillingUnitUpdateSchema
+
+// RESPONSE SCHEMAS
+
+export const BillingUnitListResponseSchema = z.array(BillingUnitSchema);
+export type BillingUnitListResponse = z.infer<
+  typeof BillingUnitListResponseSchema
+>;
+
+export const TenantBillingUnitListResponseSchema = z.array(
+  TenantBillingUnitSchema,
+);
+export type TenantBillingUnitListResponse = z.infer<
+  typeof TenantBillingUnitListResponseSchema
 >;

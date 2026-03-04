@@ -4,7 +4,7 @@ import { InvalidLocationNameException } from '../exceptions/location.exceptions'
 export interface CreateLocationProps {
   tenantId: string;
   name: string;
-  address?: string;
+  address: string | null;
 }
 
 export interface ReconstituteLocationProps {

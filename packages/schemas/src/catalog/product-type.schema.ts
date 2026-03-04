@@ -111,10 +111,10 @@ export type ProductTypeListResponse = z.infer<
 
 export const GetProductTypesQuerySchema = z.object({
   categoryId: z.uuid().optional(),
-  isActive: z.boolean().optional(),
+  isActive: z.coerce.boolean().optional(),
   search: z.string().optional(),
-  page: z.number().optional(),
-  limit: z.number().optional(),
+  page: z.coerce.number().optional(),
+  limit: z.coerce.number().optional(),
 });
 
 export type GetProductTypesQuery = z.infer<typeof GetProductTypesQuerySchema>;

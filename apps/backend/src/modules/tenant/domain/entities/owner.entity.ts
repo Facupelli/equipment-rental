@@ -4,9 +4,9 @@ import { InvalidOwnerNameException } from '../exceptions/owner.exceptions';
 export interface CreateOwnerProps {
   tenantId: string;
   name: string;
-  email?: string;
-  phone?: string;
-  notes?: string;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
 }
 
 export interface ReconstituteOwnerProps {

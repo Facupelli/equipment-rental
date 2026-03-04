@@ -11,7 +11,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { PaginationState } from "@tanstack/react-table";
 import { useState } from "react";
 
-export const Route = createFileRoute("/_authed/dashboard/inventory/products/")({
+export const Route = createFileRoute("/_authed/dashboard/catalog/products/")({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(createProductsQueryOptions()),
   component: ProductsPage,
@@ -47,7 +47,7 @@ function ProductsPage() {
 
         <Button
           render={
-            <Link to="/dashboard/inventory/products/new">CREATE PRODUCT</Link>
+            <Link to="/dashboard/catalog/products/new">CREATE PRODUCT</Link>
           }
         />
       </header>

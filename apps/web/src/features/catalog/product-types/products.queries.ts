@@ -5,13 +5,9 @@ import {
   useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
-import {
-  createProduct,
-  getProductDetail,
-  getProducts,
-  type GetProductsParams,
-} from "./products.api";
+import { createProduct, getProductDetail, getProducts } from "./products.api";
 import type {
+  GetProductTypesQuery,
   PaginatedDto,
   ProductTypeCreate,
   ProductTypeResponse,
@@ -33,7 +29,7 @@ type ProductDetailQueryOptions<TData = ProductTypeResponse> = Omit<
 // -----------------------------------------------------
 
 export function createProductsQueryOptions<TData = PaginatedProducts>(
-  params: GetProductsParams = {},
+  params: GetProductTypesQuery = {},
   options?: ProductsQueryOptions<TData>,
 ): UseQueryOptions<PaginatedProducts, ProblemDetailsError, TData> {
   return {
@@ -57,7 +53,7 @@ export function createProductDetailQueryOptions<TData = ProductTypeResponse>(
 // -----------------------------------------------------
 
 export function useProducts<TData = PaginatedProducts>(
-  params: GetProductsParams = {},
+  params: GetProductTypesQuery = {},
   options?: ProductsQueryOptions<TData>,
 ) {
   return useQuery({

@@ -6,7 +6,7 @@ import {
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 
-const apiUrl = "/categories";
+const apiUrl = "/product-categories";
 
 export const createCategory = createServerFn({ method: "POST" })
   .inputValidator((data: ProductCategoryCreate) =>

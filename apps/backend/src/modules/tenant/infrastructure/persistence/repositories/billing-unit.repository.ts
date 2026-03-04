@@ -1,29 +1,31 @@
 import { Injectable } from '@nestjs/common';
-import { BillingUnit } from '@repo/schemas';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { BillingUnitRepositoryPort } from 'src/modules/tenant/domain/ports/billing-unit.repository.port';
-import { BillingUnitMapper } from '../mappers/billing-unit.mapper';
+import { TenantBillingUnitRepositoryPort } from 'src/modules/tenant/domain/ports/billing-unit.repository.port';
+import { TenantBillingUnit } from 'src/modules/tenant/domain/entities/tenant-billing-unit.entity';
+import { TenantBillingUnitMapper } from '../mappers/tenant.mapper';
 
 @Injectable()
-export class BillingUnitRepository implements BillingUnitRepositoryPort {
+export class TenantBillingUnitRepository implements TenantBillingUnitRepositoryPort {
   constructor(private readonly prisma: PrismaService) {}
 
-  async load(id: string): Promise<BillingUnit | null> {
-    const raw = await this.prisma.client.billingUnit.findUnique({ where: { id } });
+  async load(id: string): Promise<TenantBillingUnit | null> {
+    const raw = await this.prisma.client.tenantBillingUnit.findUnique({ where: { id } });
     if (!raw) {
       return null;
     }
 
-    return BillingUnitMapper.toDomain(raw);
+    return TenantBillingUnitMapper.toDomain(raw);
   }
 
-  async save(billingUnit: BillingUnit): Promise<string> {
-    const data = BillingUnitMapper.toPersistence(billingUnit);
-    await this.prisma.client.billingUnit.upsert({
+  async save(billingUnit: TenantBillingUnit): Promise<string> {
+    const data = TenantBillingUnitMapper.toPersistence(billingUnit);
+
+    await this.prisma.client.tenantBillingUnit.upsert({
       where: { id: billingUnit.id },
       create: data,
       update: data,
     });
+
     return billingUnit.id;
   }
 }

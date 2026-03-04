@@ -6,7 +6,22 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
 import { LogContext } from '../logger/log-context';
 
-const TENANT_EXCLUDED_MODELS = new Set(['Tenant', 'Permission', 'BookingLineItem']);
+const TENANT_EXCLUDED_MODELS = new Set([
+  'Tenant',
+  'BillingUnit', // global lookup table, no tenant scope
+  'TenantBillingUnit', // join table — tenantId is the FK, not a scope guard
+  'UserRefreshToken', // scoped through User
+  'CustomerRefreshToken', // scoped through Customer
+  'Asset', // scoped through Location
+  'AssetAssignment', // scoped through Asset
+  'OrderItem', // scoped through Order
+  'BundleComponent', // scoped through Bundle
+  'BundleSnapshot', // scoped through OrderItem
+  'BundleSnapshotComponent', // scoped through BundleSnapshot
+  'PricingTier', // scoped through ProductType or Bundle
+  'RolePermission', // scoped through Role
+  'UserRole', // scoped through User
+]);
 
 // Operations that only need WHERE injection
 const READ_OPS = new Set(['findMany', 'findFirst', 'findFirstOrThrow', 'count', 'aggregate', 'groupBy']);

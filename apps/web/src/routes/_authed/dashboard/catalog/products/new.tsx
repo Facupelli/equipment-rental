@@ -31,7 +31,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute(
-  "/_authed/dashboard/inventory/products/new",
+  "/_authed/dashboard/catalog/products/new",
 )({
   component: CreateProductPage,
 });

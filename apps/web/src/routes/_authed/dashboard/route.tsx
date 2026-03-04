@@ -13,11 +13,12 @@ const sidebarItems = [
   { name: "Dashboard", href: "/dashboard" },
   { name: "Bookings", href: "/dashboard/bookings" },
   { name: "Customers", href: "/dashboard/users" },
-  { name: "Categories", href: "/dashboard/inventory/categories" },
-  { name: "Physical Assets", href: "/dashboard/inventory/items" },
-  { name: "Products", href: "/dashboard/inventory/products" },
+  { name: "Categories", href: "/dashboard/catalog/categories" },
+  { name: "Products", href: "/dashboard/catalog/products" },
+  { name: "Assets", href: "/dashboard/inventory/assets" },
   { name: "Owners", href: "/dashboard/owners" },
   { name: "Locations", href: "/dashboard/locations" },
+  { name: "Settings", href: "/dashboard/settings" },
 ];
 
 const authedRoute = getRouteApi("/_authed");

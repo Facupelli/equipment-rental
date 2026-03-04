@@ -1,5 +1,5 @@
 import { useCreateLocation } from "@/features/tenant/locations/locations.queries";
-import { CreateLocationSchema } from "@repo/schemas";
+import { LocationCreateSchema } from "@repo/schemas";
 import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,22 +32,19 @@ export function CreateLocationDialog({
 }: CreateLocationDialogProps) {
   const { mutate: createLocation, isPending } = useCreateLocation({
     onSuccess: () => onOpenChange(false),
+    onError: (error) => {
+      console.error({ error });
+    },
   });
 
   const form = useForm({
     defaultValues: {
       name: "",
-      address: {
-        street: "",
-        city: "",
-        state: "",
-        zipCode: "",
-        country: "",
-      },
+      address: "",
       isActive: true,
     },
     validators: {
-      onChange: CreateLocationSchema,
+      onChange: LocationCreateSchema,
     },
     onSubmit: async ({ value }) => {
       createLocation(value);
@@ -109,7 +106,7 @@ export function CreateLocationDialog({
           {/* Address */}
           <FieldGroup>
             <form.Field
-              name="address.street"
+              name="address"
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
@@ -132,110 +129,6 @@ export function CreateLocationDialog({
                 );
               }}
             />
-
-            <div className="grid grid-cols-2 gap-4">
-              <form.Field
-                name="address.city"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>City</FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="New York"
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              />
-
-              <form.Field
-                name="address.state"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>State</FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="NY"
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <form.Field
-                name="address.zipCode"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Zip Code</FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="10001"
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              />
-
-              <form.Field
-                name="address.country"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Country</FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="US"
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              />
-            </div>
           </FieldGroup>
 
           {/* isActive */}

@@ -26,7 +26,7 @@ interface InventoryItemsToolbarProps {
   onFiltersChange: (filters: GetInventoryItemsParams) => void;
 }
 
-export function InventoryItemsToolbar({
+export function AssetsToolbar({
   filters,
   onFiltersChange,
 }: InventoryItemsToolbarProps) {

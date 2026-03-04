@@ -57,6 +57,7 @@ function LocationsTable() {
       data={locations}
       searchColumn="name"
       searchPlaceholder="Search locations..."
+      noDataMessage="No locations found."
     />
   );
 }

@@ -37,6 +37,7 @@ export class GetTenantQueryHandler implements IQueryHandler<GetTenantQuery, Tena
       config: tenant.config as unknown as TenantConfig,
       billingUnits: tenant.billingUnits.map((tbu) => ({
         id: tbu.billingUnit.id,
+        billingUnitId: tbu.billingUnit.id,
         label: tbu.billingUnit.label,
         durationMinutes: tbu.billingUnit.durationMinutes,
         sortOrder: tbu.billingUnit.sortOrder,

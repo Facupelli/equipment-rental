@@ -4,7 +4,11 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import type { InventoryItemListItemDto, PaginationMeta } from "@repo/schemas";
+import type {
+  AssetListResponse,
+  AssetResponse,
+  PaginationMeta,
+} from "@repo/schemas";
 import {
   Table,
   TableBody,
@@ -16,17 +20,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { InventoryItemsToolbar } from "./assets-items-toolbar";
 import type { GetInventoryItemsParams } from "../assets.api";
+import { AssetsToolbar } from "./assets-toolbar";
 
 interface InventoryItemsTableProps {
-  data: InventoryItemListItemDto[];
+  data: AssetListResponse;
   meta: PaginationMeta | undefined;
-  columns: ColumnDef<InventoryItemListItemDto>[];
-  // Pagination — controlled by table
+  columns: ColumnDef<AssetResponse>[];
   pagination: PaginationState;
   onPaginationChange: React.Dispatch<React.SetStateAction<PaginationState>>;
-  // Filters — controlled externally, passed straight to toolbar
   filters: GetInventoryItemsParams;
   onFiltersChange: (filters: GetInventoryItemsParams) => void;
   isFetching: boolean;
@@ -34,7 +36,7 @@ interface InventoryItemsTableProps {
 
 function TableSkeleton({
   rows = 8,
-  cols = 7,
+  cols = 5,
 }: {
   rows?: number;
   cols?: number;
@@ -54,7 +56,7 @@ function TableSkeleton({
   );
 }
 
-export function InventoryItemsTable({
+export function AssetsTable({
   data,
   meta,
   columns,
@@ -77,10 +79,7 @@ export function InventoryItemsTable({
 
   return (
     <div className="space-y-4">
-      <InventoryItemsToolbar
-        filters={filters}
-        onFiltersChange={onFiltersChange}
-      />
+      <AssetsToolbar filters={filters} onFiltersChange={onFiltersChange} />
 
       <div className="rounded-md border">
         <Table>
@@ -115,12 +114,7 @@ export function InventoryItemsTable({
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className={
-                    row.original.status === "RETIRED" ? "opacity-50" : undefined
-                  }
-                >
+                <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
@@ -136,7 +130,6 @@ export function InventoryItemsTable({
         </Table>
       </div>
 
-      {/* Pagination */}
       <div className="flex items-center justify-between px-1">
         <p className="text-sm text-muted-foreground">
           {meta

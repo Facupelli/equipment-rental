@@ -13,6 +13,7 @@ import { TenantModule } from './modules/tenant/tenant.module';
 import { CustomerModule } from './modules/customer/customer.module';
 import { OrderModule } from './modules/order/order.module';
 import { CqrsModule } from '@nestjs/cqrs';
+import { BillingUnitModule } from './modules/billing-unit/billing-unit.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CqrsModule } from '@nestjs/cqrs';
     InventoryModule,
     CustomerModule,
     OrderModule,
+    BillingUnitModule,
   ],
   providers: [
     {

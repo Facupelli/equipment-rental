@@ -37,6 +37,7 @@ export const TenantWithBillingUnitsSchema = z.object({
   billingUnits: z.array(
     z.object({
       id: z.uuid(),
+      billingUnitId: z.uuid(),
       label: z.string(),
       durationMinutes: z.number().int(),
       sortOrder: z.number().int(),

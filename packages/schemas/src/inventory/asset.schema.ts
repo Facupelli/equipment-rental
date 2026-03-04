@@ -72,10 +72,10 @@ export type AssetListResponse = z.infer<typeof AssetListResponseSchema>;
 export const GetAssetsQuerySchema = z.object({
   locationId: z.uuid().optional(),
   productTypeId: z.uuid().optional(),
-  isActive: z.boolean().optional(),
+  isActive: z.coerce.boolean().optional(),
   search: z.string().optional(),
-  page: z.number().optional(),
-  limit: z.number().optional(),
+  page: z.coerce.number().optional(),
+  limit: z.coerce.number().optional(),
 });
 
 export type GetAssetsQuery = z.infer<typeof GetAssetsQuerySchema>;

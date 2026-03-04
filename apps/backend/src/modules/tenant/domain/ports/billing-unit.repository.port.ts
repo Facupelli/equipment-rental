@@ -1,6 +1,6 @@
-import { BillingUnit } from '../entities/billing-unit.entity';
+import { TenantBillingUnit } from '../entities/tenant-billing-unit.entity';
 
-export abstract class BillingUnitRepositoryPort {
-  abstract load(id: string): Promise<BillingUnit | null>;
-  abstract save(billingUnit: BillingUnit): Promise<string>;
+export abstract class TenantBillingUnitRepositoryPort {
+  abstract load(id: string): Promise<TenantBillingUnit | null>;
+  abstract save(billingUnit: TenantBillingUnit): Promise<string>;
 }

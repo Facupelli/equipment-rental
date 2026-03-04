@@ -19,15 +19,16 @@ import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashb
 import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashboard/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
+import { Route as AuthedDashboardSettingsIndexRouteImport } from './routes/_authed/dashboard/settings/index'
 import { Route as AuthedDashboardOwnersIndexRouteImport } from './routes/_authed/dashboard/owners/index'
 import { Route as AuthedDashboardLocationsIndexRouteImport } from './routes/_authed/dashboard/locations/index'
 import { Route as AuthedDashboardBookingsIndexRouteImport } from './routes/_authed/dashboard/bookings/index'
-import { Route as AuthedDashboardInventoryProductsIndexRouteImport } from './routes/_authed/dashboard/inventory/products/index'
-import { Route as AuthedDashboardInventoryItemsIndexRouteImport } from './routes/_authed/dashboard/inventory/items/index'
-import { Route as AuthedDashboardInventoryCategoriesIndexRouteImport } from './routes/_authed/dashboard/inventory/categories/index'
-import { Route as AuthedDashboardInventoryProductsNewRouteImport } from './routes/_authed/dashboard/inventory/products/new'
-import { Route as AuthedDashboardInventoryProductsProductIdRouteImport } from './routes/_authed/dashboard/inventory/products/$productId'
-import { Route as AuthedDashboardInventoryItemsNewProductIdRouteImport } from './routes/_authed/dashboard/inventory/items/new/$productId'
+import { Route as AuthedDashboardInventoryAssetsIndexRouteImport } from './routes/_authed/dashboard/inventory/assets/index'
+import { Route as AuthedDashboardCatalogProductsIndexRouteImport } from './routes/_authed/dashboard/catalog/products/index'
+import { Route as AuthedDashboardCatalogCategoriesIndexRouteImport } from './routes/_authed/dashboard/catalog/categories/index'
+import { Route as AuthedDashboardCatalogProductsNewRouteImport } from './routes/_authed/dashboard/catalog/products/new'
+import { Route as AuthedDashboardCatalogProductsProductIdRouteImport } from './routes/_authed/dashboard/catalog/products/$productId'
+import { Route as AuthedDashboardInventoryAssetsNewProductIdRouteImport } from './routes/_authed/dashboard/inventory/assets/new/$productId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -78,6 +79,12 @@ const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
   path: '/demo/form/address',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedDashboardSettingsIndexRoute =
+  AuthedDashboardSettingsIndexRouteImport.update({
+    id: '/settings/',
+    path: '/settings/',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
 const AuthedDashboardOwnersIndexRoute =
   AuthedDashboardOwnersIndexRouteImport.update({
     id: '/owners/',
@@ -96,40 +103,40 @@ const AuthedDashboardBookingsIndexRoute =
     path: '/bookings/',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
-const AuthedDashboardInventoryProductsIndexRoute =
-  AuthedDashboardInventoryProductsIndexRouteImport.update({
-    id: '/inventory/products/',
-    path: '/inventory/products/',
+const AuthedDashboardInventoryAssetsIndexRoute =
+  AuthedDashboardInventoryAssetsIndexRouteImport.update({
+    id: '/inventory/assets/',
+    path: '/inventory/assets/',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
-const AuthedDashboardInventoryItemsIndexRoute =
-  AuthedDashboardInventoryItemsIndexRouteImport.update({
-    id: '/inventory/items/',
-    path: '/inventory/items/',
+const AuthedDashboardCatalogProductsIndexRoute =
+  AuthedDashboardCatalogProductsIndexRouteImport.update({
+    id: '/catalog/products/',
+    path: '/catalog/products/',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
-const AuthedDashboardInventoryCategoriesIndexRoute =
-  AuthedDashboardInventoryCategoriesIndexRouteImport.update({
-    id: '/inventory/categories/',
-    path: '/inventory/categories/',
+const AuthedDashboardCatalogCategoriesIndexRoute =
+  AuthedDashboardCatalogCategoriesIndexRouteImport.update({
+    id: '/catalog/categories/',
+    path: '/catalog/categories/',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
-const AuthedDashboardInventoryProductsNewRoute =
-  AuthedDashboardInventoryProductsNewRouteImport.update({
-    id: '/inventory/products/new',
-    path: '/inventory/products/new',
+const AuthedDashboardCatalogProductsNewRoute =
+  AuthedDashboardCatalogProductsNewRouteImport.update({
+    id: '/catalog/products/new',
+    path: '/catalog/products/new',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
-const AuthedDashboardInventoryProductsProductIdRoute =
-  AuthedDashboardInventoryProductsProductIdRouteImport.update({
-    id: '/inventory/products/$productId',
-    path: '/inventory/products/$productId',
+const AuthedDashboardCatalogProductsProductIdRoute =
+  AuthedDashboardCatalogProductsProductIdRouteImport.update({
+    id: '/catalog/products/$productId',
+    path: '/catalog/products/$productId',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
-const AuthedDashboardInventoryItemsNewProductIdRoute =
-  AuthedDashboardInventoryItemsNewProductIdRouteImport.update({
-    id: '/inventory/items/new/$productId',
-    path: '/inventory/items/new/$productId',
+const AuthedDashboardInventoryAssetsNewProductIdRoute =
+  AuthedDashboardInventoryAssetsNewProductIdRouteImport.update({
+    id: '/inventory/assets/new/$productId',
+    path: '/inventory/assets/new/$productId',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
 
@@ -146,12 +153,13 @@ export interface FileRoutesByFullPath {
   '/dashboard/bookings/': typeof AuthedDashboardBookingsIndexRoute
   '/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
   '/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
-  '/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
-  '/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
-  '/dashboard/inventory/categories/': typeof AuthedDashboardInventoryCategoriesIndexRoute
-  '/dashboard/inventory/items/': typeof AuthedDashboardInventoryItemsIndexRoute
-  '/dashboard/inventory/products/': typeof AuthedDashboardInventoryProductsIndexRoute
-  '/dashboard/inventory/items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
+  '/dashboard/settings/': typeof AuthedDashboardSettingsIndexRoute
+  '/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
+  '/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
+  '/dashboard/catalog/categories/': typeof AuthedDashboardCatalogCategoriesIndexRoute
+  '/dashboard/catalog/products/': typeof AuthedDashboardCatalogProductsIndexRoute
+  '/dashboard/inventory/assets/': typeof AuthedDashboardInventoryAssetsIndexRoute
+  '/dashboard/inventory/assets/new/$productId': typeof AuthedDashboardInventoryAssetsNewProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -165,12 +173,13 @@ export interface FileRoutesByTo {
   '/dashboard/bookings': typeof AuthedDashboardBookingsIndexRoute
   '/dashboard/locations': typeof AuthedDashboardLocationsIndexRoute
   '/dashboard/owners': typeof AuthedDashboardOwnersIndexRoute
-  '/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
-  '/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
-  '/dashboard/inventory/categories': typeof AuthedDashboardInventoryCategoriesIndexRoute
-  '/dashboard/inventory/items': typeof AuthedDashboardInventoryItemsIndexRoute
-  '/dashboard/inventory/products': typeof AuthedDashboardInventoryProductsIndexRoute
-  '/dashboard/inventory/items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
+  '/dashboard/settings': typeof AuthedDashboardSettingsIndexRoute
+  '/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
+  '/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
+  '/dashboard/catalog/categories': typeof AuthedDashboardCatalogCategoriesIndexRoute
+  '/dashboard/catalog/products': typeof AuthedDashboardCatalogProductsIndexRoute
+  '/dashboard/inventory/assets': typeof AuthedDashboardInventoryAssetsIndexRoute
+  '/dashboard/inventory/assets/new/$productId': typeof AuthedDashboardInventoryAssetsNewProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -187,12 +196,13 @@ export interface FileRoutesById {
   '/_authed/dashboard/bookings/': typeof AuthedDashboardBookingsIndexRoute
   '/_authed/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
   '/_authed/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
-  '/_authed/dashboard/inventory/products/$productId': typeof AuthedDashboardInventoryProductsProductIdRoute
-  '/_authed/dashboard/inventory/products/new': typeof AuthedDashboardInventoryProductsNewRoute
-  '/_authed/dashboard/inventory/categories/': typeof AuthedDashboardInventoryCategoriesIndexRoute
-  '/_authed/dashboard/inventory/items/': typeof AuthedDashboardInventoryItemsIndexRoute
-  '/_authed/dashboard/inventory/products/': typeof AuthedDashboardInventoryProductsIndexRoute
-  '/_authed/dashboard/inventory/items/new/$productId': typeof AuthedDashboardInventoryItemsNewProductIdRoute
+  '/_authed/dashboard/settings/': typeof AuthedDashboardSettingsIndexRoute
+  '/_authed/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
+  '/_authed/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
+  '/_authed/dashboard/catalog/categories/': typeof AuthedDashboardCatalogCategoriesIndexRoute
+  '/_authed/dashboard/catalog/products/': typeof AuthedDashboardCatalogProductsIndexRoute
+  '/_authed/dashboard/inventory/assets/': typeof AuthedDashboardInventoryAssetsIndexRoute
+  '/_authed/dashboard/inventory/assets/new/$productId': typeof AuthedDashboardInventoryAssetsNewProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -209,12 +219,13 @@ export interface FileRouteTypes {
     | '/dashboard/bookings/'
     | '/dashboard/locations/'
     | '/dashboard/owners/'
-    | '/dashboard/inventory/products/$productId'
-    | '/dashboard/inventory/products/new'
-    | '/dashboard/inventory/categories/'
-    | '/dashboard/inventory/items/'
-    | '/dashboard/inventory/products/'
-    | '/dashboard/inventory/items/new/$productId'
+    | '/dashboard/settings/'
+    | '/dashboard/catalog/products/$productId'
+    | '/dashboard/catalog/products/new'
+    | '/dashboard/catalog/categories/'
+    | '/dashboard/catalog/products/'
+    | '/dashboard/inventory/assets/'
+    | '/dashboard/inventory/assets/new/$productId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -228,12 +239,13 @@ export interface FileRouteTypes {
     | '/dashboard/bookings'
     | '/dashboard/locations'
     | '/dashboard/owners'
-    | '/dashboard/inventory/products/$productId'
-    | '/dashboard/inventory/products/new'
-    | '/dashboard/inventory/categories'
-    | '/dashboard/inventory/items'
-    | '/dashboard/inventory/products'
-    | '/dashboard/inventory/items/new/$productId'
+    | '/dashboard/settings'
+    | '/dashboard/catalog/products/$productId'
+    | '/dashboard/catalog/products/new'
+    | '/dashboard/catalog/categories'
+    | '/dashboard/catalog/products'
+    | '/dashboard/inventory/assets'
+    | '/dashboard/inventory/assets/new/$productId'
   id:
     | '__root__'
     | '/'
@@ -249,12 +261,13 @@ export interface FileRouteTypes {
     | '/_authed/dashboard/bookings/'
     | '/_authed/dashboard/locations/'
     | '/_authed/dashboard/owners/'
-    | '/_authed/dashboard/inventory/products/$productId'
-    | '/_authed/dashboard/inventory/products/new'
-    | '/_authed/dashboard/inventory/categories/'
-    | '/_authed/dashboard/inventory/items/'
-    | '/_authed/dashboard/inventory/products/'
-    | '/_authed/dashboard/inventory/items/new/$productId'
+    | '/_authed/dashboard/settings/'
+    | '/_authed/dashboard/catalog/products/$productId'
+    | '/_authed/dashboard/catalog/products/new'
+    | '/_authed/dashboard/catalog/categories/'
+    | '/_authed/dashboard/catalog/products/'
+    | '/_authed/dashboard/inventory/assets/'
+    | '/_authed/dashboard/inventory/assets/new/$productId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -340,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoFormAddressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/dashboard/settings/': {
+      id: '/_authed/dashboard/settings/'
+      path: '/settings'
+      fullPath: '/dashboard/settings/'
+      preLoaderRoute: typeof AuthedDashboardSettingsIndexRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
     '/_authed/dashboard/owners/': {
       id: '/_authed/dashboard/owners/'
       path: '/owners'
@@ -361,46 +381,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardBookingsIndexRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
-    '/_authed/dashboard/inventory/products/': {
-      id: '/_authed/dashboard/inventory/products/'
-      path: '/inventory/products'
-      fullPath: '/dashboard/inventory/products/'
-      preLoaderRoute: typeof AuthedDashboardInventoryProductsIndexRouteImport
+    '/_authed/dashboard/inventory/assets/': {
+      id: '/_authed/dashboard/inventory/assets/'
+      path: '/inventory/assets'
+      fullPath: '/dashboard/inventory/assets/'
+      preLoaderRoute: typeof AuthedDashboardInventoryAssetsIndexRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
-    '/_authed/dashboard/inventory/items/': {
-      id: '/_authed/dashboard/inventory/items/'
-      path: '/inventory/items'
-      fullPath: '/dashboard/inventory/items/'
-      preLoaderRoute: typeof AuthedDashboardInventoryItemsIndexRouteImport
+    '/_authed/dashboard/catalog/products/': {
+      id: '/_authed/dashboard/catalog/products/'
+      path: '/catalog/products'
+      fullPath: '/dashboard/catalog/products/'
+      preLoaderRoute: typeof AuthedDashboardCatalogProductsIndexRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
-    '/_authed/dashboard/inventory/categories/': {
-      id: '/_authed/dashboard/inventory/categories/'
-      path: '/inventory/categories'
-      fullPath: '/dashboard/inventory/categories/'
-      preLoaderRoute: typeof AuthedDashboardInventoryCategoriesIndexRouteImport
+    '/_authed/dashboard/catalog/categories/': {
+      id: '/_authed/dashboard/catalog/categories/'
+      path: '/catalog/categories'
+      fullPath: '/dashboard/catalog/categories/'
+      preLoaderRoute: typeof AuthedDashboardCatalogCategoriesIndexRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
-    '/_authed/dashboard/inventory/products/new': {
-      id: '/_authed/dashboard/inventory/products/new'
-      path: '/inventory/products/new'
-      fullPath: '/dashboard/inventory/products/new'
-      preLoaderRoute: typeof AuthedDashboardInventoryProductsNewRouteImport
+    '/_authed/dashboard/catalog/products/new': {
+      id: '/_authed/dashboard/catalog/products/new'
+      path: '/catalog/products/new'
+      fullPath: '/dashboard/catalog/products/new'
+      preLoaderRoute: typeof AuthedDashboardCatalogProductsNewRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
-    '/_authed/dashboard/inventory/products/$productId': {
-      id: '/_authed/dashboard/inventory/products/$productId'
-      path: '/inventory/products/$productId'
-      fullPath: '/dashboard/inventory/products/$productId'
-      preLoaderRoute: typeof AuthedDashboardInventoryProductsProductIdRouteImport
+    '/_authed/dashboard/catalog/products/$productId': {
+      id: '/_authed/dashboard/catalog/products/$productId'
+      path: '/catalog/products/$productId'
+      fullPath: '/dashboard/catalog/products/$productId'
+      preLoaderRoute: typeof AuthedDashboardCatalogProductsProductIdRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
-    '/_authed/dashboard/inventory/items/new/$productId': {
-      id: '/_authed/dashboard/inventory/items/new/$productId'
-      path: '/inventory/items/new/$productId'
-      fullPath: '/dashboard/inventory/items/new/$productId'
-      preLoaderRoute: typeof AuthedDashboardInventoryItemsNewProductIdRouteImport
+    '/_authed/dashboard/inventory/assets/new/$productId': {
+      id: '/_authed/dashboard/inventory/assets/new/$productId'
+      path: '/inventory/assets/new/$productId'
+      fullPath: '/dashboard/inventory/assets/new/$productId'
+      preLoaderRoute: typeof AuthedDashboardInventoryAssetsNewProductIdRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
   }
@@ -411,12 +431,13 @@ interface AuthedDashboardRouteRouteChildren {
   AuthedDashboardBookingsIndexRoute: typeof AuthedDashboardBookingsIndexRoute
   AuthedDashboardLocationsIndexRoute: typeof AuthedDashboardLocationsIndexRoute
   AuthedDashboardOwnersIndexRoute: typeof AuthedDashboardOwnersIndexRoute
-  AuthedDashboardInventoryProductsProductIdRoute: typeof AuthedDashboardInventoryProductsProductIdRoute
-  AuthedDashboardInventoryProductsNewRoute: typeof AuthedDashboardInventoryProductsNewRoute
-  AuthedDashboardInventoryCategoriesIndexRoute: typeof AuthedDashboardInventoryCategoriesIndexRoute
-  AuthedDashboardInventoryItemsIndexRoute: typeof AuthedDashboardInventoryItemsIndexRoute
-  AuthedDashboardInventoryProductsIndexRoute: typeof AuthedDashboardInventoryProductsIndexRoute
-  AuthedDashboardInventoryItemsNewProductIdRoute: typeof AuthedDashboardInventoryItemsNewProductIdRoute
+  AuthedDashboardSettingsIndexRoute: typeof AuthedDashboardSettingsIndexRoute
+  AuthedDashboardCatalogProductsProductIdRoute: typeof AuthedDashboardCatalogProductsProductIdRoute
+  AuthedDashboardCatalogProductsNewRoute: typeof AuthedDashboardCatalogProductsNewRoute
+  AuthedDashboardCatalogCategoriesIndexRoute: typeof AuthedDashboardCatalogCategoriesIndexRoute
+  AuthedDashboardCatalogProductsIndexRoute: typeof AuthedDashboardCatalogProductsIndexRoute
+  AuthedDashboardInventoryAssetsIndexRoute: typeof AuthedDashboardInventoryAssetsIndexRoute
+  AuthedDashboardInventoryAssetsNewProductIdRoute: typeof AuthedDashboardInventoryAssetsNewProductIdRoute
 }
 
 const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
@@ -424,18 +445,19 @@ const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
   AuthedDashboardBookingsIndexRoute: AuthedDashboardBookingsIndexRoute,
   AuthedDashboardLocationsIndexRoute: AuthedDashboardLocationsIndexRoute,
   AuthedDashboardOwnersIndexRoute: AuthedDashboardOwnersIndexRoute,
-  AuthedDashboardInventoryProductsProductIdRoute:
-    AuthedDashboardInventoryProductsProductIdRoute,
-  AuthedDashboardInventoryProductsNewRoute:
-    AuthedDashboardInventoryProductsNewRoute,
-  AuthedDashboardInventoryCategoriesIndexRoute:
-    AuthedDashboardInventoryCategoriesIndexRoute,
-  AuthedDashboardInventoryItemsIndexRoute:
-    AuthedDashboardInventoryItemsIndexRoute,
-  AuthedDashboardInventoryProductsIndexRoute:
-    AuthedDashboardInventoryProductsIndexRoute,
-  AuthedDashboardInventoryItemsNewProductIdRoute:
-    AuthedDashboardInventoryItemsNewProductIdRoute,
+  AuthedDashboardSettingsIndexRoute: AuthedDashboardSettingsIndexRoute,
+  AuthedDashboardCatalogProductsProductIdRoute:
+    AuthedDashboardCatalogProductsProductIdRoute,
+  AuthedDashboardCatalogProductsNewRoute:
+    AuthedDashboardCatalogProductsNewRoute,
+  AuthedDashboardCatalogCategoriesIndexRoute:
+    AuthedDashboardCatalogCategoriesIndexRoute,
+  AuthedDashboardCatalogProductsIndexRoute:
+    AuthedDashboardCatalogProductsIndexRoute,
+  AuthedDashboardInventoryAssetsIndexRoute:
+    AuthedDashboardInventoryAssetsIndexRoute,
+  AuthedDashboardInventoryAssetsNewProductIdRoute:
+    AuthedDashboardInventoryAssetsNewProductIdRoute,
 }
 
 const AuthedDashboardRouteRouteWithChildren =

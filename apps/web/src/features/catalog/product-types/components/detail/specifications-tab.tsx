@@ -1,7 +1,7 @@
-import type { ProductDetailDto } from "@repo/schemas";
+import type { ProductTypeResponse } from "@repo/schemas";
 
 interface SpecificationsTabProps {
-  product: ProductDetailDto;
+  product: ProductTypeResponse;
 }
 
 export function SpecificationsTab({ product }: SpecificationsTabProps) {
