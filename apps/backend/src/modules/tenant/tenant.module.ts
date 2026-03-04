@@ -7,7 +7,7 @@ import { TenantRepositoryPort } from './domain/ports/tenant.repository.port';
 import { TenantRepository } from './infrastructure/persistence/repositories/tenant.repository';
 import { TenantController } from './infrastructure/controllers/tenant.controller';
 import { AuthModule } from '../auth/auth.module';
-import { IsSlugTakenQueryHandler } from './application/queries/is-slug-taken.query-handler';
+import { IsSlugTakenQueryHandler } from './application/queries/is-slug-taken/is-slug-taken.query-handler';
 
 const commandHandlers = [CreateTenantUserCommandHandler];
 const queryHandlers = [IsSlugTakenQueryHandler];

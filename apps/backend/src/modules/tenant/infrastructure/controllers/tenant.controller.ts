@@ -16,7 +16,7 @@ import { CreateTenantUserDto } from '../../application/dto/create-tenant-user.dt
 import { CreateTenantUserCommand } from '../../application/commands/create-tenant-user.command';
 import { TenantWithBillingUnits } from '@repo/schemas';
 import { EmailAlreadyInUseError, CompanyNameAlreadyInUseError } from '../../application/errors/tenant-user.errors';
-import { GetTenantQuery } from '../../application/queries/get-tenant.query';
+import { GetTenantQuery } from '../../application/queries/get-tenant/get-tenant.query';
 
 @Controller('tenants')
 export class TenantController {

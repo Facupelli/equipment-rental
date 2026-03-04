@@ -1,7 +1,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetTenantQuery } from './get-tenant.query';
-import { TenantConfig } from '../../domain/value-objects/tenant-config.vo';
+import { TenantConfig } from '../../../domain/value-objects/tenant-config.vo';
 import { TenantWithBillingUnits } from '@repo/schemas';
 
 @QueryHandler(GetTenantQuery)
