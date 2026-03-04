@@ -72,14 +72,14 @@ export type ProductTypeUpdate = z.infer<typeof ProductTypeUpdateSchema>;
 // ----------------------------------------------------------
 // Response schemas (with relations)
 
-export const BillingUnitResponseSchema = z.object({
+const BillingUnitResponseSchema = z.object({
   id: z.uuid(),
   label: z.string(),
   durationMinutes: z.number().int(),
   sortOrder: z.number().int(),
 });
 
-export const ProductCategoryResponseSchema = z.object({
+const ProductCategoryResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   description: z.string().nullable().optional(),
