@@ -40,24 +40,50 @@ order.cancel(reason);
 order.status = OrderStatus.CONFIRMED;
 ```
 
-Rules:
+Every entity has two static factories — never an empty constructor:
 
-- Entities validate themselves on creation. Use static factory methods (`Entity.create(props)`), never empty constructors.
+```typescript
+// create() — called when the user initiates something new. Validates all inputs.
+static create(props: CreateOrderProps): Order {
+  if (!props.period) throw new InvalidRentalPeriodException();
+  return new Order(randomUUID(), props.period, OrderStatus.PENDING);
+}
+
+// reconstitute() — called only by the repository mapper. Skips validation.
+// Data from the DB is already trusted — re-validating it is incorrect and fragile.
+static reconstitute(props: ReconstitutOrderProps): Order {
+  return new Order(props.id, props.period, props.status);
+}
+```
+
+Additional rules:
+
 - Make properties that never change after creation `readonly`.
-- Equality between entities is determined by identity (`id`), not by property values.
-- Aggregates publish **Domain Events** when something meaningful happens. They do not call other services directly.
+- Equality between entities is determined by identity (`id`), not property values.
+- Aggregates publish **Domain Events** when something meaningful happens. They do not call services directly.
 - Only Aggregate Roots are retrieved directly via repositories. Internal entities are accessed through the root.
 - Cross-aggregate references use IDs only — never hold a direct object reference to another aggregate.
+
+```typescript
+// Bad — Order holds a direct reference to Asset (two aggregates coupled)
+export class Order {
+  constructor(public readonly asset: Asset) {}
+}
+
+// Good — Order references Asset by ID only
+export class Order {
+  constructor(public readonly assetId: string) {}
+}
+```
 
 ### Value Objects
 
 Value Objects have no identity. Equality is structural. They are immutable and self-validating.
 
 ```typescript
-// Wrap domain primitives in Value Objects to enforce invariants at the type level
 export class RentalPeriod extends ValueObject<{ start: Date; end: Date }> {
   constructor(start: Date, end: Date) {
-    if (end <= start) throw new InvalidRentalPeriodError();
+    if (end <= start) throw new InvalidRentalPeriodException();
     super({ start, end });
   }
 
@@ -69,6 +95,24 @@ export class RentalPeriod extends ValueObject<{ start: Date; end: Date }> {
 
 Use Value Objects for: `RentalPeriod`, `Money`, `Email`, `TrackingMode`, and any primitive that carries business rules or behavior. This eliminates primitive obsession and enforces invariants at the boundary.
 
+### Domain Services
+
+Use a Domain Service when business logic spans multiple aggregates and doesn't naturally belong to either one.
+
+```typescript
+// PricingCalculator spans ProductType, PricingTiers, and PricingRules —
+// it doesn't belong inside any single aggregate
+export class PricingCalculator {
+  calculate(period: RentalPeriod, productType: ProductType, rules: PricingRule[]): Money {
+    const units = Math.ceil(period.durationMinutes() / productType.billingUnit.durationMinutes);
+    const base = productType.resolveTier(units).pricePerUnit * units;
+    return this.applyRules(base, rules);
+  }
+}
+```
+
+Domain Services contain domain logic only — no infrastructure, no repositories, no external calls.
+
 ### Domain Events
 
 Aggregates emit Domain Events to signal that something meaningful happened. Event handlers react to them — enabling loose coupling between aggregates without direct calls.
@@ -77,50 +121,91 @@ Aggregates emit Domain Events to signal that something meaningful happened. Even
 // Inside the aggregate
 this.addEvent(new OrderConfirmedEvent({ orderId: this.id, period: this.period }));
 
-// Separate handler — no coupling to the Order aggregate
-class NotifyCustomerOnOrderConfirmed implements IDomainEventHandler {
+// Separate handler reacts — no coupling to the Order aggregate
+class SendConfirmationOnOrderConfirmed implements IDomainEventHandler {
   handle(event: OrderConfirmedEvent) { ... }
 }
 ```
 
-Domain Events are published after the aggregate is persisted (in the repository base class). All changes triggered by a single command — across multiple aggregates — are wrapped in a single transaction.
-
-Avoid long event chains (Event → Event → Event). When a workflow has many steps, use an orchestrating Application Service instead. Events are for broadcasting facts, not for sequencing complex flows.
-
-### Domain Errors
-
-Domain and Application layers never throw HTTP exceptions. They throw typed domain errors or return a `Result` type. The Presentation layer maps these to HTTP status codes.
+Domain Events are published by the **repository base class after saving** — not in the command handler. This guarantees events only fire after the aggregate is successfully persisted.
 
 ```typescript
-// Domain error
+// In the repository base class
+async save(aggregate: AggregateRoot): Promise<void> {
+  await this.persist(aggregate);
+  await this.publishEvents(aggregate.pullDomainEvents()); // ← after persist
+}
+```
+
+Avoid long event chains (Event → Event → Event). When a workflow has many ordered steps, use an orchestrating Application Service instead. Events broadcast facts — they don't sequence workflows.
+
+### Guarding vs Validating — Two Different Error Mechanisms
+
+These look similar but serve completely different purposes. Never conflate them.
+
+**Entity exceptions** guard invariants. They represent illegal states — bugs or corrupted input that slipped past validation. They always `throw`. They live in `domain/exceptions/`.
+
+```typescript
+// Illegal state — this must never happen if the system works correctly
+export class InvalidRentalPeriodException extends Error {
+  constructor() { super('Rental period end must be after start'); }
+}
+
+// Throws inside the entity — loud and immediate
+static create(props: CreateOrderProps): Order {
+  if (props.period.end <= props.period.start) throw new InvalidRentalPeriodException();
+}
+```
+
+**Business outcome errors** represent expected, valid situations where the answer is simply "no". They are returned via `Result` — never thrown. They live in `domain/errors/` or `application/errors/`.
+
+```typescript
+// Expected outcome — a user booking a taken slot is not a bug
 export class AssetNotAvailableError extends Error {
-  constructor() { super('Asset is not available for the requested period'); }
+  constructor() {
+    super('Asset is not available for the requested period');
+  }
 }
 
-// Application service returns Result, never throws HTTP errors
-async execute(command: CreateBookingCommand): Promise<Result<string, BookingError>> {
-  const asset = await this.assetRepo.load(command.assetId);
-  if (!asset.isAvailableFor(command.period)) {
-    return Err(new AssetNotAvailableError());
+// Returned, not thrown
+if (!asset.isAvailableFor(command.period)) {
+  return err(new AssetNotAvailableError());
+}
+```
+
+The rule: if it can happen in normal business operation and the user might recover from it — return it. If it means something is broken — throw it.
+
+### Domain Error Result Type
+
+```typescript
+export class Ok<T> {
+  constructor(public readonly value: T) {}
+  isOk(): this is Ok<T> {
+    return true;
   }
-  // ...
-  return Ok(order.id);
+  isErr(): this is Err<never> {
+    return false;
+  }
 }
 
-// HTTP controller maps domain errors to status codes
-const result = await this.commandBus.execute(command);
-match(result, {
-  Ok: (id) => new IdResponse(id),
-  Err: (e) => {
-    if (e instanceof AssetNotAvailableError) throw new ConflictHttpException(e.message);
-    throw e;
+export class Err<E> {
+  constructor(public readonly error: E) {}
+  isOk(): this is Ok<never> {
+    return false;
   }
-});
+  isErr(): this is Err<E> {
+    return true;
+  }
+}
+
+export type Result<T, E = Error> = Ok<T> | Err<E>;
+export const ok = <T>(value: T): Ok<T> => new Ok(value);
+export const err = <E>(error: E): Err<E> => new Err(error);
 ```
 
 ### Ports (Repository Ports)
 
-Ports are interfaces (abstract classes) that define what infrastructure must provide. Domain and Application layers depend only on the port — never on the concrete implementation.
+Ports are abstract classes that define what infrastructure must provide. Domain and Application depend only on the port — never on the concrete implementation.
 
 Repository Ports define persistence only. `load` and `save` exclusively. No query methods, no filtering, no pagination.
 
@@ -129,20 +214,15 @@ export abstract class AssetRepositoryPort {
   abstract load(id: string): Promise<Asset | null>;
   abstract save(asset: Asset): Promise<void>;
 }
-
-export abstract class OrderRepositoryPort {
-  abstract load(id: string): Promise<Order | null>;
-  abstract save(order: Order): Promise<void>;
-}
 ```
 
 ---
 
 ## Application Layer
 
-### Application Services / Use Case Handlers
+### Command Handlers
 
-Application Services orchestrate domain logic. They do not contain business rules themselves.
+Command Handlers orchestrate domain logic. They do not contain business rules themselves.
 
 Responsibilities:
 
@@ -150,68 +230,54 @@ Responsibilities:
 - Call domain methods on those aggregates
 - Coordinate multiple aggregates via Domain Services when needed
 - Persist changes back through repository ports
-- Emit integration events to external systems if needed
 
 ```typescript
-export class CreateBookingService implements ICommandHandler<CreateBookingCommand> {
+export class CreateBookingHandler implements ICommandHandler<CreateBookingCommand> {
   constructor(
     private readonly orderRepo: OrderRepositoryPort,
     private readonly inventoryApi: InventoryPublicApi,
   ) {}
 
   async execute(command: CreateBookingCommand): Promise<Result<string, BookingError>> {
-    const asset = await this.inventoryApi.reserveAsset(command);
-    if (!asset) return Err(new AssetNotAvailableError());
+    const reservation = await this.inventoryApi.reserveAsset(command);
+    if (!reservation) return err(new AssetNotAvailableError());
 
-    const order = Order.create({ ...command, assetId: asset.id });
+    const order = Order.create({ ...command, assetId: reservation.assetId });
     await this.orderRepo.save(order);
-    return Ok(order.id);
+    return ok(order.id);
   }
 }
 ```
 
-One handler per use case. Handlers must not call other Application Services — this creates hidden coupling and potential cycles. Use Domain Events for side effects instead.
+One handler per use case. Handlers must not call other Command Handlers — use Domain Events for side effects instead.
 
-### Commands and Queries (CQS)
+### Query Handlers
 
-Every use case is either a **Command** or a **Query**. Never both.
-
-**Commands** change state. They should not return business data beyond an ID or confirmation.
-
-**Queries** are read-only and bypass the domain model entirely. Query handlers query the database directly, returning flat DTOs. No aggregates, no repositories.
+Queries are read-only and bypass the domain model entirely. Query handlers go directly to the database and return flat DTOs. No aggregates, no repositories, no mappers.
 
 ```typescript
-// Query handlers go straight to DB — no domain objects, no repositories
 export class FindAvailableAssetsQueryHandler implements IQueryHandler<FindAvailableAssetsQuery> {
+  constructor(private readonly prisma: PrismaService) {}
+
   async execute(query: FindAvailableAssetsQuery) {
-    return this.db.query(
-      `
-      SELECT a.id, a.serial_number, a.product_type_id
-      FROM assets a
-      WHERE a.product_type_id = $1
-        AND a.location_id     = $2
-        AND NOT EXISTS (
-          SELECT 1 FROM asset_assignments aa
-          WHERE aa.asset_id = a.id
-            AND aa.period && $3
-        )
-    `,
-      [query.productTypeId, query.locationId, query.period],
-    );
+    return this.prisma.asset.findMany({
+      where: {
+        productTypeId: query.productTypeId,
+        locationId: query.locationId,
+        assignments: {
+          none: { period: { overlaps: query.period } },
+        },
+      },
+    });
   }
 }
 ```
 
-Use a **CommandBus** and **QueryBus** to dispatch. This decouples invokers from handlers and allows cross-module reads without direct imports.
+Use **CommandBus** and **QueryBus** to dispatch. This decouples invokers from handlers and allows cross-module access without direct imports.
 
-```typescript
-// Cross-module read — no coupling, no PublicApi needed for reads
-const available = await this.queryBus.execute(new FindAvailableAssetsQuery(productTypeId, locationId, period));
-```
+### Module Public API — Writes and Domain Decisions Only
 
-### Module Public API
-
-The cross-module **write** contract. Exposed to other modules for commands only. Lives in `application/`. Implemented by the module's Application Service.
+The cross-module contract for writes and domain-level decisions. Lives in `application/`. Implemented by the module's Application Service.
 
 ```typescript
 export abstract class InventoryPublicApi {
@@ -220,7 +286,20 @@ export abstract class InventoryPublicApi {
 }
 ```
 
-Never use PublicApi for reads — use QueryBus instead. This prevents the PublicApi from growing methods shaped by consumers rather than by the module's own domain.
+**Why this distinction matters:** module boundaries are about ownership of rules, not just separation of code. PublicApi forces domain logic to stay co-located with the data it governs.
+
+Use **PublicApi** when the target module must apply its own domain rules or change its own state. Use **QueryBus** when you just need data and the calling module makes no domain decision from it.
+
+```typescript
+// QueryBus — InventoryModule is a passive data provider, no rules enforced
+const assets = await this.queryBus.execute(new FindAvailableAssetsQuery(...));
+
+// PublicApi — InventoryModule actively enforces availability rules,
+// selects a unit based on tracking mode, creates an AssetAssignment
+const reservation = await this.inventoryApi.reserveAsset(dto);
+```
+
+If you find yourself reading raw data from another module and making a domain decision from it in the caller — that logic belongs in the source module's PublicApi, not in the caller.
 
 ---
 
@@ -228,18 +307,18 @@ Never use PublicApi for reads — use QueryBus instead. This prevents the Public
 
 ### Repositories
 
-Repositories implement the Repository Port. They map between domain aggregates and persistence models, and publish domain events after saving.
+Repositories implement the Repository Port. They map between domain aggregates and persistence models using a Mapper, and publish domain events after saving.
 
 ```typescript
 export class OrderRepository implements OrderRepositoryPort {
   async load(id: string): Promise<Order | null> {
-    const row = await this.db.query(`SELECT * FROM orders WHERE id = $1`, [id]);
+    const row = await this.prisma.order.findUnique({ where: { id } });
     return row ? OrderMapper.toDomain(row) : null;
   }
 
   async save(order: Order): Promise<void> {
     const row = OrderMapper.toPersistence(order);
-    await this.db.query(`INSERT INTO orders ... ON CONFLICT DO UPDATE ...`, [...row]);
+    await this.prisma.order.upsert({ where: { id: row.id }, update: row, create: row });
     await this.publishEvents(order.pullDomainEvents());
   }
 }
@@ -247,18 +326,22 @@ export class OrderRepository implements OrderRepositoryPort {
 
 ### Persistence Models and Mappers
 
-Domain models and database schemas are separate. A Mapper converts between them. This means database changes (normalization, column renames, table splits) do not leak into domain logic.
+Domain models and database schemas are separate. A Mapper converts between them so that database changes never leak into domain logic.
 
 ```typescript
 export class OrderMapper {
-  static toDomain(row: OrderRow): Order { ... }
+  static toDomain(row: OrderRow): Order {
+    return Order.reconstitute({ id: row.id, period: new RentalPeriod(row.periodStart, row.periodEnd), status: row.status });
+  }
   static toPersistence(order: Order): OrderRow { ... }
 }
 ```
 
+Note: mappers always call `Entity.reconstitute()` — never `Entity.create()`. Reconstitution skips creation validation since the data is already trusted from the database.
+
 ### Adapters
 
-Adapters implement ports for out-of-process concerns: email, payment gateways, external APIs, message brokers. They are never called directly — always through a port interface.
+Adapters implement ports for out-of-process concerns: email, payment gateways, external APIs, message brokers. Never called directly — always through a port interface.
 
 ---
 
@@ -268,10 +351,10 @@ Always use the abstract class as the injection token. Never use string tokens.
 
 ```typescript
 // Module providers:
-{ provide: AssetRepositoryPort,  useClass: AssetRepository },
-{ provide: InventoryPublicApi,   useClass: InventoryApplicationService },
+{ provide: AssetRepositoryPort, useClass: AssetRepository },
+{ provide: InventoryPublicApi,  useClass: InventoryApplicationService },
 
-// Consumer (constructor injection):
+// Consumer:
 constructor(
   private readonly assetRepo: AssetRepositoryPort,
   private readonly inventoryApi: InventoryPublicApi,
@@ -282,25 +365,39 @@ constructor(
 
 ## Controllers
 
-Controllers parse requests, delegate to a Use Case (via CommandBus or QueryBus or directly), and map results back to HTTP responses. No business logic ever lives in a controller.
+Controllers parse requests, delegate to a handler via CommandBus or QueryBus, and map results to HTTP responses. No business logic in controllers.
 
 One controller per use case per trigger type:
 
 ```
 create-booking.http.controller.ts      ← REST
 create-booking.cli.controller.ts       ← CLI
-create-booking.message.controller.ts   ← Message broker / microservice event
+create-booking.message.controller.ts   ← Message broker
+```
+
+Controllers map domain errors to HTTP status codes:
+
+```typescript
+const result = await this.commandBus.execute(command);
+
+if (result.isErr()) {
+  const error = result.error;
+  if (error instanceof AssetNotAvailableError) throw new ConflictException(error.message);
+  throw error; // unknown errors become 500
+}
+
+return new BookingResponseDto(result.value);
 ```
 
 ---
 
 ## DTOs
 
-**Request DTOs** define the API contract inbound. Validate with `class-validator`. Sanitize inputs. These are the first line of defense against invalid data.
+**Request DTOs** define the inbound API contract. Validate with `class-validator`. First line of defense against invalid data.
 
-**Response DTOs** whitelist what is returned. Never return an entity or persistence model directly. This prevents data leaks when internal models change.
+**Response DTOs** whitelist what is returned. Never return an entity, aggregate, or persistence model directly — this prevents data leaks when internal models change.
 
-Commands and DTOs are different things. A DTO is a data contract for the API boundary. A Command is a serializable intent passed to the domain. They may look similar but serve different purposes and must be kept separate.
+Commands and DTOs are distinct. A DTO is a data contract for the API boundary. A Command is a serializable intent for the domain. They may look similar but must be kept separate — DTOs ensure API backward compatibility independent of domain model changes.
 
 ---
 
@@ -317,14 +414,14 @@ Commands and DTOs are different things. A DTO is a data contract for the API bou
 | `user-module`      | Users, Roles, Permissions (CASL)                                          |
 | `auth-module`      | JWT, sessions, refresh tokens, guards                                     |
 
-Cross-module rule: use the target module's **PublicApi for writes**, **QueryBus for reads**. Never access another module's tables, repositories, or internal services directly.
+Cross-module rule: **PublicApi for writes and domain decisions, QueryBus for reads**. Never access another module's tables, repositories, or internal services directly.
 
 ---
 
 ## Availability & Booking — Critical Domain Rules
 
 - `AssetAssignment` is the single source of truth for availability. All availability queries target it — regardless of assignment type (`ORDER`, `BLACKOUT`, `MAINTENANCE`).
-- The `EXCLUDE USING gist (asset_id WITH =, period WITH &&)` constraint is the database-level safety net against double-booking. Domain validation runs first; the constraint catches anything that slips through concurrent writes.
+- The `EXCLUDE USING gist (asset_id WITH =, period WITH &&)` constraint is the database-level safety net. Domain validation runs first; the constraint catches anything that slips through concurrent writes.
 - All Order status transitions go through a **single state machine service**. Never set `order.status` directly in a handler or controller.
 - Bundle availability = AND condition across all component product types. If one component has no available asset, the entire bundle is unavailable.
 - Bundle composition is **snapshotted onto the OrderItem at booking time**. Changes to a Bundle definition never affect existing Orders.
@@ -341,12 +438,16 @@ The middleware must support an explicit super-admin bypass — designed intentio
 
 ## Anti-Patterns
 
-- Business logic in Controllers or Application Services — logic belongs in domain objects
+- Business logic in Controllers or Command Handlers — logic belongs in domain objects
 - Query methods on a RepositoryPort — repositories are `load`/`save` only
 - Direct imports between modules — use PublicApi or QueryBus
 - PublicApi used for reads — reads go through QueryBus
-- One Application Service calling another — use Domain Events for side effects
+- Reading another module's raw data and making a domain decision from it in the caller — push that logic into the source module's PublicApi
+- One Command Handler calling another — use Domain Events for side effects
 - Setting Order status directly — always go through the state machine
 - Returning entities or persistence models from controllers — always use Response DTOs
-- String injection tokens (`@Inject('REPO_TOKEN')`) — use abstract class as token
+- String injection tokens — use abstract class as token
+- Calling `Entity.create()` inside a repository mapper — always use `Entity.reconstitute()`
+- Throwing business outcome errors — return them via Result
+- Returning entity exception types via Result — throw them
 - Skipping the spec for non-trivial tasks

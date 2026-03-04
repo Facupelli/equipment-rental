@@ -1,13 +1,17 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { UserCredentials, UsersPublicApi } from '../../users/application/users-public-api';
+import { QueryBus } from '@nestjs/cqrs';
+import { FindCredentialsByEmailQuery } from 'src/modules/users/application/queries/find-credentials-by-email/find-credentials-by-email.query';
+import { UserCredentials } from 'src/modules/users/application/queries/find-credentials-by-email/find-credentials-by-email.query-handerl';
 
 @Injectable()
 export class BcryptService {
-  constructor(private readonly usersApi: UsersPublicApi) {}
+  constructor(private readonly queryBus: QueryBus) {}
 
   async validateUser(email: string, pass: string): Promise<UserCredentials> {
-    const user = await this.usersApi.findCredentialsByEmail(email);
+    const user = await this.queryBus.execute<FindCredentialsByEmailQuery, UserCredentials | null>(
+      new FindCredentialsByEmailQuery(email),
+    );
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');

@@ -2,13 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { User } from 'src/modules/users/domain/entities/user.entity';
 import { UserMapper } from '../mappers/user.mapper';
-import { UserReadService, UserRepositoryPort } from 'src/modules/users/domain/ports/user.repository.port';
-import { UserCredentials } from 'src/modules/users/application/users-public-api';
-import { MeResponseDto } from '@repo/schemas';
+import { UserRepositoryPort } from 'src/modules/users/domain/ports/user.repository.port';
 import { UserRoleMapper } from '../mappers/role.mapper';
 
 @Injectable()
-export class UserRepository implements UserRepositoryPort, UserReadService {
+export class UserRepository implements UserRepositoryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(id: string): Promise<User | null> {
@@ -63,88 +61,5 @@ export class UserRepository implements UserRepositoryPort, UserReadService {
     });
 
     return user.id;
-  }
-
-  // read service
-
-  async findCredentialsByEmail(email: string): Promise<UserCredentials | null> {
-    const user = await this.prisma.client.user.findFirst({
-      where: { email, deletedAt: null },
-      select: {
-        id: true,
-        tenantId: true,
-        email: true,
-        passwordHash: true,
-        isActive: true,
-        userRoles: {
-          select: {
-            locationId: true,
-            role: {
-              select: {
-                id: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!user) {
-      return null;
-    }
-
-    return {
-      id: user.id,
-      tenantId: user.tenantId,
-      email: user.email,
-      passwordHash: user.passwordHash,
-      isActive: user.isActive,
-      roles: user.userRoles.map((ur) => ({
-        id: ur.role.id,
-      })),
-    };
-  }
-
-  async findById(id: string): Promise<MeResponseDto | null> {
-    const user = await this.prisma.client.user.findUnique({
-      where: { id },
-      include: {
-        tenant: true,
-        userRoles: {
-          include: {
-            role: {
-              include: {
-                permissions: true,
-              },
-            },
-            location: true,
-          },
-        },
-      },
-    });
-
-    if (!user) {
-      return null;
-    }
-
-    return {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      fullName: user.firstName + ' ' + user.lastName,
-      isActive: user.isActive,
-      tenantId: user.tenantId,
-      roles: user.userRoles.map((ur) => ({
-        roleId: ur.role.id,
-        roleName: ur.role.name,
-        locationId: ur.locationId,
-      })),
-    };
-  }
-
-  async isEmailTaken(email: string): Promise<boolean> {
-    const count = await this.prisma.client.user.count({ where: { email } });
-    return count > 0;
   }
 }

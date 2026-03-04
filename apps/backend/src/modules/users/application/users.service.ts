@@ -1,7 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserCredentials, UsersPublicApi } from './users-public-api';
-import { UserReadService, UserRepositoryPort } from '../domain/ports/user.repository.port';
-import { MeResponseDto } from '@repo/schemas';
+import { Injectable } from '@nestjs/common';
+import { RoleDto, UserDto, UsersPublicApi } from './users-public-api';
+import { UserRepositoryPort } from '../domain/ports/user.repository.port';
 import { User } from '../domain/entities/user.entity';
 import { Role } from '../domain/entities/role.entity';
 import { RoleRepositoryPort } from '../domain/ports/role.repository.port';
@@ -11,32 +10,29 @@ export class UsersService implements UsersPublicApi {
   constructor(
     private readonly userRepository: UserRepositoryPort,
     private readonly roleRepository: RoleRepositoryPort,
-    private readonly readService: UserReadService,
   ) {}
 
-  async getMe(userId: string): Promise<MeResponseDto> {
-    const user = await this.readService.findById(userId);
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
-  }
-
   // PUBLIC API
-  async create(dto: User): Promise<string> {
-    return await this.userRepository.save(dto);
+  async create(dto: UserDto): Promise<string> {
+    const user = User.create({
+      email: dto.email,
+      passwordHash: dto.passwordHash,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      tenantId: dto.tenantId,
+    });
+
+    user.assignRole({
+      roleId: dto.roleId,
+      userId: user.id,
+    });
+
+    return await this.userRepository.save(user);
   }
 
-  async createRole(dto: Role): Promise<string> {
-    return await this.roleRepository.save(dto);
-  }
+  async createRole(dto: RoleDto): Promise<string> {
+    const role = Role.create(dto);
 
-  async findCredentialsByEmail(email: string): Promise<UserCredentials | null> {
-    return await this.readService.findCredentialsByEmail(email);
-  }
-
-  async isEmailTaken(email: string): Promise<boolean> {
-    return await this.readService.isEmailTaken(email);
+    return await this.roleRepository.save(role);
   }
 }

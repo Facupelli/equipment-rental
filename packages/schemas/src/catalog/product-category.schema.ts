@@ -12,6 +12,7 @@ export const ProductCategorySchema = z.object({
 
 export const ProductCategoryCreateSchema = ProductCategorySchema.omit({
   id: true,
+  tenantId: true,
   createdAt: true,
   updatedAt: true,
 });

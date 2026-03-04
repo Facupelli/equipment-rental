@@ -7,20 +7,24 @@ import { RoleRepository } from './infrastructure/persistence/repositories/role.r
 import { InvitationRepositoryPort } from './domain/ports/invitation.repository.port';
 import { InvitationRepository } from './infrastructure/persistence/repositories/invitation.repository';
 import { UsersPublicApi } from './application/users-public-api';
-import { UserReadService, UserRepositoryPort } from './domain/ports/user.repository.port';
+import { UserRepositoryPort } from './domain/ports/user.repository.port';
+import { FindCredentialsByEmailQueryHandler } from './application/queries/find-credentials-by-email/find-credentials-by-email.query-handerl';
+import { GetUserQueryHandler } from './application/queries/get-user/get-user.query-handler';
+import { IsEmailTakenQueryHandler } from './application/queries/is-email-taken/is-email-taken.query-handler';
 
 const repositories = [
   { provide: UserRepositoryPort, useClass: UserRepository },
-  { provide: UserReadService, useClass: UserRepository },
   { provide: RoleRepositoryPort, useClass: RoleRepository },
   { provide: InvitationRepositoryPort, useClass: InvitationRepository },
 ];
+
+const queryHandlers = [FindCredentialsByEmailQueryHandler, IsEmailTakenQueryHandler, GetUserQueryHandler];
 
 const services = [UsersService, { provide: UsersPublicApi, useClass: UsersService }];
 
 @Module({
   controllers: [UsersController],
-  providers: [...repositories, ...services],
+  providers: [...repositories, ...services, ...queryHandlers],
   exports: [{ provide: UsersPublicApi, useClass: UsersService }],
 })
 export class UsersModule {}

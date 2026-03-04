@@ -1,23 +1,19 @@
-import { Role } from '../domain/entities/role.entity';
-import { User } from '../domain/entities/user.entity';
-
 export abstract class UsersPublicApi {
-  abstract findCredentialsByEmail(email: string): Promise<UserCredentials | null>;
-  abstract isEmailTaken(email: string): Promise<boolean>;
-
-  abstract create(dto: User): Promise<string>;
-  abstract createRole(dto: Role): Promise<string>;
+  abstract create(dto: UserDto): Promise<string>;
+  abstract createRole(dto: RoleDto): Promise<string>;
 }
 
-export interface UserCredentials {
-  id: string;
-  tenantId: string;
+export interface UserDto {
   email: string;
   passwordHash: string;
-  isActive: boolean;
+  firstName: string;
+  lastName: string;
+  tenantId: string;
+  roleId: string;
+}
 
-  // Nested structure to handle Location-specific roles
-  roles: Array<{
-    id: string;
-  }>;
+export interface RoleDto {
+  name: string;
+  description?: string;
+  tenantId: string;
 }
