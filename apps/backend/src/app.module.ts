@@ -12,12 +12,14 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { CustomerModule } from './modules/customer/customer.module';
 import { OrderModule } from './modules/order/order.module';
+import { CqrsModule } from '@nestjs/cqrs';
 
 @Module({
   imports: [
     LoggerModule,
     AppConfigModule,
     DatabaseModule,
+    CqrsModule.forRoot(),
     TenantModule,
     AuthModule,
     UsersModule,
