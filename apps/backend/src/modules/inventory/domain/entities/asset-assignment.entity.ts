@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { DateRange } from '../value-objects/date-range.vo';
 import { AssignmentSource, AssignmentType } from '@repo/types';
+import { InvalidAssetAssignmentException } from '../exceptions/asset.exceptions';
 
 export interface CreateAssetAssignmentProps {
   assetId: string;
@@ -36,6 +37,18 @@ export class AssetAssignment {
   ) {}
 
   static create(props: CreateAssetAssignmentProps): AssetAssignment {
+    if (props.type === AssignmentType.ORDER) {
+      if (!props.orderId) {
+        throw new InvalidAssetAssignmentException('ORDER assignment requires orderId.');
+      }
+      if (!props.orderItemId) {
+        throw new InvalidAssetAssignmentException('ORDER assignment requires orderItemId.');
+      }
+      if (!props.source) {
+        throw new InvalidAssetAssignmentException('ORDER assignment requires source (OWNED or EXTERNAL).');
+      }
+    }
+
     return new AssetAssignment(
       randomUUID(),
       props.assetId,

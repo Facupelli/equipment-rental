@@ -4,10 +4,25 @@ import { PricingTierMapper } from 'src/modules/catalog/infrastructure/persistenc
 import { PricingRule } from '../../domain/entities/pricing-rule.entity';
 import { PricingRuleMapper } from '../persistence/mappers/pricing-rule.mapper';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { BundleMeta, PricingReadRepositoryPort, ProductTypeMeta } from '../../domain/ports/pricing-read.port';
 
+export type ProductTypeMeta = {
+  billingUnitDurationMinutes: number;
+  categoryId: string | null;
+};
+
+export type BundleMeta = {
+  billingUnitDurationMinutes: number;
+};
+
+/**
+ * Concrete infrastructure service for pricing reads.
+ *
+ * Loads pricing data (tiers, rules, product meta) needed by PricingCalculator.
+ * Not abstracted behind a port — it is internal to the pricing module
+ * with a single implementation, making the abstraction unnecessary.
+ */
 @Injectable()
-export class PricingRead implements PricingReadRepositoryPort {
+export class PricingQueryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async loadProductTypeMeta(productTypeId: string): Promise<ProductTypeMeta | null> {

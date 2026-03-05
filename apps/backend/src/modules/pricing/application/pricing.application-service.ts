@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PricingReadRepositoryPort } from '../domain/ports/pricing-read.port';
 import { Money } from 'src/modules/order/domain/value-objects/money.vo';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
 import { RuleApplicationContext } from '../domain/types/pricing-rule.types';
 import { CalculateBundlePriceDto, CalculateProductPriceDto, PricingPublicApi } from '../pricing.public-api';
 import { PricingCalculator } from '../domain/services/pricing-calculator';
+import { PricingQueryService } from '../infrastructure/services/pricing-query.service';
 
 @Injectable()
 export class PricingApplicationService implements PricingPublicApi {
@@ -12,17 +12,17 @@ export class PricingApplicationService implements PricingPublicApi {
   // no dependency injection needed.
   private readonly calculator = new PricingCalculator();
 
-  constructor(private readonly pricingRepo: PricingReadRepositoryPort) {}
+  constructor(private readonly pricingQuery: PricingQueryService) {}
 
   async calculateProductPrice(dto: CalculateProductPriceDto): Promise<Money> {
-    const meta = await this.pricingRepo.loadProductTypeMeta(dto.productTypeId);
+    const meta = await this.pricingQuery.loadProductTypeMeta(dto.productTypeId);
     if (!meta) {
       throw new NotFoundException(`ProductType "${dto.productTypeId}" not found.`);
     }
 
     const [tiers, rules] = await Promise.all([
-      this.pricingRepo.loadTiersForProduct(dto.productTypeId, dto.locationId),
-      this.pricingRepo.loadActiveRulesForTenant(dto.tenantId),
+      this.pricingQuery.loadTiersForProduct(dto.productTypeId, dto.locationId),
+      this.pricingQuery.loadActiveRulesForTenant(dto.tenantId),
     ]);
 
     const period = DateRange.create(dto.period.start, dto.period.end);
@@ -46,14 +46,14 @@ export class PricingApplicationService implements PricingPublicApi {
   }
 
   async calculateBundlePrice(dto: CalculateBundlePriceDto): Promise<Money> {
-    const meta = await this.pricingRepo.loadBundleMeta(dto.bundleId);
+    const meta = await this.pricingQuery.loadBundleMeta(dto.bundleId);
     if (!meta) {
       throw new NotFoundException(`Bundle "${dto.bundleId}" not found.`);
     }
 
     const [tiers, rules] = await Promise.all([
-      this.pricingRepo.loadTiersForBundle(dto.bundleId, dto.locationId),
-      this.pricingRepo.loadActiveRulesForTenant(dto.tenantId),
+      this.pricingQuery.loadTiersForBundle(dto.bundleId, dto.locationId),
+      this.pricingQuery.loadActiveRulesForTenant(dto.tenantId),
     ]);
 
     const period = DateRange.create(dto.period.start, dto.period.end);

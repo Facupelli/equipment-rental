@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { DateRange } from '../value-objects/date-range.vo';
 import { AssetAssignment } from './asset-assignment.entity';
 import { AssetAssignmentNotFoundException } from '../exceptions/asset.exceptions';
 
@@ -77,6 +78,18 @@ export class Asset {
 
   getAssignments(): AssetAssignment[] {
     return [...this.assignments];
+  }
+
+  /**
+   * Domain-level availability check.
+   *
+   * Returns false if any existing assignment overlaps the requested period.
+   * This runs before the DB write as a fast fail. The EXCLUDE constraint
+   * is the authoritative guard against concurrent writes — this check is
+   * best-effort only and does not replace it.
+   */
+  isAvailableFor(period: DateRange): boolean {
+    return this.assignments.every((a) => !a.period.overlaps(period));
   }
 
   deactivate(): void {
