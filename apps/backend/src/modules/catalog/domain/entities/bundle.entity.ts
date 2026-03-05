@@ -10,12 +10,14 @@ import { DuplicatePricingTierException, PricingTierNotFoundException } from '../
 
 export interface CreateBundleProps {
   tenantId: string;
+  billingUnitId: string;
   name: string;
 }
 
 export interface ReconstituteBundleProps {
   id: string;
   tenantId: string;
+  billingUnitId: string;
   name: string;
   isActive: boolean;
   components: BundleComponent[];
@@ -26,6 +28,7 @@ export class Bundle {
   private constructor(
     public readonly id: string,
     public readonly tenantId: string,
+    public readonly billingUnitId: string,
     public readonly name: string,
     private isActive: boolean,
     private readonly components: BundleComponent[],
@@ -36,11 +39,19 @@ export class Bundle {
     if (!props.name || props.name.trim().length === 0) {
       throw new InvalidBundleNameException();
     }
-    return new Bundle(randomUUID(), props.tenantId, props.name.trim(), true, [], []);
+    return new Bundle(randomUUID(), props.tenantId, props.billingUnitId, props.name.trim(), true, [], []);
   }
 
   static reconstitute(props: ReconstituteBundleProps): Bundle {
-    return new Bundle(props.id, props.tenantId, props.name, props.isActive, props.components, props.pricingTiers);
+    return new Bundle(
+      props.id,
+      props.tenantId,
+      props.billingUnitId,
+      props.name,
+      props.isActive,
+      props.components,
+      props.pricingTiers,
+    );
   }
 
   get active(): boolean {

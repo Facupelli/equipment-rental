@@ -49,6 +49,14 @@ export class DateRange {
     return this.start.getTime() === other.start.getTime() && this.end.getTime() === other.end.getTime();
   }
 
+  /**
+   * Total duration in whole minutes.
+   * Used by PricingCalculator to derive billing units from a billing unit's durationMinutes.
+   */
+  durationInMinutes(): number {
+    return (this.end.getTime() - this.start.getTime()) / (1000 * 60);
+  }
+
   durationInDays(): number {
     const ms = this.end.getTime() - this.start.getTime();
     return Math.ceil(ms / (1000 * 60 * 60 * 24));

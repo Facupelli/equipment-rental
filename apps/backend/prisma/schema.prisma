@@ -229,6 +229,7 @@ model BillingUnit {
 
   tenantBillingUnits TenantBillingUnit[]
   productTypes       ProductType[]
+  bundles            Bundle[]
 
   @@map("billing_units")
 }
@@ -238,8 +239,8 @@ model TenantBillingUnit {
   tenantId      String @map("tenant_id")
   billingUnitId String @map("billing_unit_id")
 
-  tenant      Tenant      @relation(fields: [tenantId], references: [id])
-  billingUnit BillingUnit @relation(fields: [billingUnitId], references: [id])
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  billingUnit   BillingUnit @relation(fields: [billingUnitId], references: [id])
 
   @@unique([tenantId, billingUnitId])
   @@map("tenant_billing_units")
@@ -407,17 +408,20 @@ model OrderItem {
 // ---------------------------------------------------------------------------
 
 model Bundle {
-  id        String   @id @default(uuid())
-  tenantId  String   @map("tenant_id")
-  name      String
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  billingUnitId String   @map("billing_unit_id")
+  name          String
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   tenant       Tenant            @relation(fields: [tenantId], references: [id])
+  billingUnit  BillingUnit       @relation(fields: [billingUnitId], references: [id])
   components   BundleComponent[]
   pricingTiers PricingTier[]
   orderItems   OrderItem[]
+
 
   @@index([tenantId, isActive])
   @@map("bundles")

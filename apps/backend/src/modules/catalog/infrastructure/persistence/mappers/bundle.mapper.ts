@@ -44,6 +44,7 @@ export class BundleMapper {
     return Bundle.reconstitute({
       id: raw.id,
       tenantId: raw.tenantId,
+      billingUnitId: raw.billingUnitId,
       name: raw.name,
       isActive: raw.isActive,
       components,
@@ -57,6 +58,7 @@ export class BundleMapper {
       tenantId: entity.tenantId,
       name: entity.name,
       isActive: entity.active,
+      billingUnitId: entity.billingUnitId,
     };
   }
 }

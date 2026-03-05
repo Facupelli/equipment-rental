@@ -47,6 +47,16 @@ export class Money {
     return new Money(this.amount.mul(factor), this.currency);
   }
 
+  /**
+   * Returns this value or the provided minimum — whichever is greater.
+   * Primary use case: flooring prices at zero so discounts never produce
+   * a negative amount.
+   */
+  clampAbove(min: Money): Money {
+    this.assertSameCurrency(min);
+    return this.amount.greaterThanOrEqualTo(min.amount) ? this : min;
+  }
+
   // ── Comparison ─────────────────────────────────────────────────────────────
 
   equals(other: Money): boolean {

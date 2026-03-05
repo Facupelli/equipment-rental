@@ -70,4 +70,14 @@ export class PricingTier {
       props.pricePerUnit,
     );
   }
+
+  /**
+   * Returns true if this tier covers the given unit count.
+   * toUnit being null means the tier is open-ended (no upper bound).
+   */
+  coversUnits(units: number): boolean {
+    const withinLower = units >= this.fromUnit;
+    const withinUpper = this.toUnit === null || units <= this.toUnit;
+    return withinLower && withinUpper;
+  }
 }

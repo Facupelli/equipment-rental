@@ -1,7 +1,20 @@
 import { randomUUID } from 'crypto';
-import { PricingRuleCondition, PricingRuleEffect } from '../types/pricing-rule.types';
+import { PricingRuleCondition, PricingRuleEffect, RuleApplicationContext } from '../types/pricing-rule.types';
 import { InvalidPricingRulePriorityException } from '../exceptions/pricing-rule.exceptions';
-import { PricingRuleScope, PricingRuleType } from '@repo/types';
+
+export enum PricingRuleType {
+  SEASONAL = 'SEASONAL',
+  VOLUME = 'VOLUME',
+  COUPON = 'COUPON',
+  CUSTOMER_SPECIFIC = 'CUSTOMER_SPECIFIC',
+}
+
+export enum PricingRuleScope {
+  ORDER = 'ORDER',
+  PRODUCT_TYPE = 'PRODUCT_TYPE',
+  CATEGORY = 'CATEGORY',
+  BUNDLE = 'BUNDLE',
+}
 
 export interface CreatePricingRuleProps {
   tenantId: string;
@@ -79,5 +92,45 @@ export class PricingRule {
 
   deactivate(): void {
     this.isActive = false;
+  }
+
+  /**
+   * Evaluates whether this rule applies to the given order item context.
+   *
+   * Each rule type checks its own condition shape. The discriminated union on
+   * PricingRuleCondition ensures TypeScript narrows correctly in each branch.
+   *
+   * COUPON and CUSTOMER_SPECIFIC are not yet active in the MVP but are
+   * stubbed here so the calculator doesn't need to change when they ship.
+   */
+  isApplicableTo(context: RuleApplicationContext): boolean {
+    if (!this.isActive) {
+      return false;
+    }
+
+    const condition = this.condition;
+
+    switch (condition.type) {
+      case 'SEASONAL': {
+        const from = new Date(condition.dateFrom);
+        const to = new Date(condition.dateTo);
+        // Rule applies if the rental starts within the seasonal window.
+        // A rental starting inside but ending outside still qualifies.
+        return context.period.start >= from && context.period.start <= to;
+      }
+
+      case 'VOLUME': {
+        const count = context.orderItemCountByCategory[condition.categoryId] ?? 0;
+        return count >= condition.threshold;
+      }
+
+      case 'COUPON':
+        // Not active in MVP — never matches
+        return false;
+
+      case 'CUSTOMER_SPECIFIC':
+        // Not active in MVP — never matches
+        return false;
+    }
   }
 }
