@@ -1,10 +1,8 @@
-import type { ProductTypeResponse } from "@repo/schemas";
+import { useProduct } from "./product-detail.context";
 
-interface SpecificationsTabProps {
-  product: ProductTypeResponse;
-}
+export function SpecificationsTab() {
+  const { product } = useProduct();
 
-export function SpecificationsTab({ product }: SpecificationsTabProps) {
   const attributeEntries = Object.entries(product.attributes);
   const includedItems = product.includedItems;
 

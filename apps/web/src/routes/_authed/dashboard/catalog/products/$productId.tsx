@@ -1,12 +1,15 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PhysicalItemsTab } from "@/features/catalog/product-types/components/detail/assets-tab";
+import { AssetsTab } from "@/features/catalog/product-types/components/detail/assets-tab";
 import { PricingTab } from "@/features/catalog/product-types/components/detail/pricing-tab";
+import {
+  ProductProvider,
+  useProduct,
+} from "@/features/catalog/product-types/components/detail/product-detail.context";
 import { SpecificationsTab } from "@/features/catalog/product-types/components/detail/specifications-tab";
 import { formatTrackingType } from "@/features/catalog/product-types/components/products-columns";
 import { useProductDetail } from "@/features/catalog/product-types/products.queries";
-import type { ProductTypeResponse } from "@repo/schemas";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
@@ -34,37 +37,37 @@ function RouteComponent() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <ProductHeader product={product} />
+    <ProductProvider product={product}>
+      <div className="space-y-6 p-6">
+        <ProductHeader />
 
-      <Tabs defaultValue="specifications" className="flex flex-col gap-y-10">
-        <TabsList>
-          <TabsTrigger value="specifications">Specifications</TabsTrigger>
-          <TabsTrigger value="pricing">Pricing</TabsTrigger>
-          <TabsTrigger value="physical-items">Physical Items</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="specifications" className="flex flex-col gap-y-10">
+          <TabsList>
+            <TabsTrigger value="specifications">Specifications</TabsTrigger>
+            <TabsTrigger value="pricing">Pricing</TabsTrigger>
+            <TabsTrigger value="physical-items">Physical Items</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="specifications">
-          <SpecificationsTab product={product} />
-        </TabsContent>
+          <TabsContent value="specifications">
+            <SpecificationsTab />
+          </TabsContent>
 
-        <TabsContent value="pricing">
-          <PricingTab product={product} />
-        </TabsContent>
+          <TabsContent value="pricing">
+            <PricingTab />
+          </TabsContent>
 
-        <TabsContent value="physical-items">
-          <PhysicalItemsTab productId={productId} />
-        </TabsContent>
-      </Tabs>
-    </div>
+          <TabsContent value="physical-items">
+            <AssetsTab />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </ProductProvider>
   );
 }
 
-interface ProductHeaderProps {
-  product: ProductTypeResponse;
-}
+function ProductHeader() {
+  const { product } = useProduct();
 
-function ProductHeader({ product }: ProductHeaderProps) {
   return (
     <div className="flex items-start justify-between">
       <div className="space-y-1.5">
@@ -84,6 +87,7 @@ function ProductHeader({ product }: ProductHeaderProps) {
 
       <Button
         variant="outline"
+        nativeButton={false}
         render={
           <Link
             to="/dashboard/catalog/products/$productId"

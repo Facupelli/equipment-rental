@@ -3,24 +3,35 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type MutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
-import { createAsset, getAssets, type GetAssetsParams } from "./assets.api";
-import type { AssetCreate, AssetResponse, PaginatedDto } from "@repo/schemas";
+import { createAsset, getAssets } from "./assets.api";
+import type {
+  AssetCreate,
+  AssetResponse,
+  GetAssetsQuery,
+  PaginatedDto,
+} from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
 type PaginatedAssets = PaginatedDto<AssetResponse>;
 
-type InventoryItemsOptions<TData = PaginatedAssets> = Omit<
+type AssetsOptions<TData = PaginatedAssets> = Omit<
   UseQueryOptions<PaginatedAssets, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
+>;
+
+type AssetMutationOptions = Omit<
+  MutationOptions<string, ProblemDetailsError, AssetCreate>,
+  "mutationFn" | "mutationKey"
 >;
 
 // -----------------------------------------------------
 
 export function createAssetQueryOptions<TData = PaginatedAssets>(
-  params: GetAssetsParams = {},
-  options?: InventoryItemsOptions<TData>,
+  params: GetAssetsQuery = {},
+  options?: AssetsOptions<TData>,
 ): UseQueryOptions<PaginatedAssets, ProblemDetailsError, TData> {
   return {
     ...options,
@@ -32,8 +43,8 @@ export function createAssetQueryOptions<TData = PaginatedAssets>(
 //
 
 export function useAssets<TData = PaginatedAssets>(
-  params: GetAssetsParams = {},
-  options?: InventoryItemsOptions<TData>,
+  params: GetAssetsQuery = {},
+  options?: AssetsOptions<TData>,
 ) {
   return useQuery({
     ...createAssetQueryOptions(params, options),
@@ -43,22 +54,21 @@ export function useAssets<TData = PaginatedAssets>(
 
 //
 
-export function useCreateAsset() {
+export function useCreateAsset(options?: AssetMutationOptions) {
   const queryClient = useQueryClient();
 
   return useMutation<string, ProblemDetailsError, AssetCreate>({
+    ...options,
     mutationFn: (data) => createAsset({ data }),
-    onSuccess: async () => {
+    onSuccess: async (data, variables, onMutateResult, context) => {
       await queryClient.invalidateQueries({
         queryKey: createAssetQueryOptions().queryKey,
       });
+
+      await options?.onSuccess?.(data, variables, onMutateResult, context);
     },
-    onError: (error) => {
-      // error is fully typed as ProblemDetailsError here.
-      // You can log, toast, or handle it however you like.
-      console.error(
-        `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
-      );
+    onError: async (error, variables, onMutateResult, context) => {
+      await options?.onError?.(error, variables, onMutateResult, context);
     },
   });
 }

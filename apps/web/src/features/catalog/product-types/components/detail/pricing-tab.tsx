@@ -1,10 +1,9 @@
-import type { PricingTier, ProductTypeResponse } from "@repo/schemas";
+import type { PricingTier } from "@repo/schemas";
+import { useProduct } from "./product-detail.context";
 
-interface PricingTabProps {
-  product: ProductTypeResponse;
-}
+export function PricingTab() {
+  const { product } = useProduct();
 
-export function PricingTab({ product }: PricingTabProps) {
   const tiers = product.pricingTiers;
 
   return (

@@ -6,6 +6,7 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateProductTypeCommand } from '../../application/commands/create-product-type/create-product-type.command';
 import { GetProductTypeByIdQuery } from '../../application/queries/get-product-type-by-id/get-product-type-by-id.query';
 import { GetProductTypesQuery } from '../../application/queries/get-product-types/get-product-types.query';
+import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 
 @Controller('product-types')
 export class ProductTypeController {
@@ -22,6 +23,7 @@ export class ProductTypeController {
   }
 
   @Get()
+  @Paginated()
   async getProductTypes(@Query() dto: GetProductTypesQueryDto): Promise<ProductTypeListResponseDto> {
     const query = new GetProductTypesQuery(dto.categoryId, dto.isActive, dto.search);
 

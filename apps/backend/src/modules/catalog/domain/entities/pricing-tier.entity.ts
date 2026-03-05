@@ -6,6 +6,8 @@ import {
 import Decimal from 'decimal.js';
 
 export interface CreatePricingTierProps {
+  productTypeId: string | null;
+  bundleId: string | null;
   locationId: string | null;
   fromUnit: number;
   toUnit: number | null;
@@ -48,8 +50,8 @@ export class PricingTier {
 
     return new PricingTier(
       randomUUID(),
-      null, // productTypeId — injected by mapper at persistence time
-      null, // bundleId — injected by mapper at persistence time
+      props.productTypeId,
+      props.bundleId,
       props.locationId ?? null,
       props.fromUnit,
       props.toUnit ?? null,

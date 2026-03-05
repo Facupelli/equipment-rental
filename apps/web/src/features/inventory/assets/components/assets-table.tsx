@@ -7,6 +7,7 @@ import {
 import type {
   AssetListResponse,
   AssetResponse,
+  GetAssetsQuery,
   PaginationMeta,
 } from "@repo/schemas";
 import {
@@ -20,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { GetInventoryItemsParams } from "../assets.api";
 import { AssetsToolbar } from "./assets-toolbar";
 
 interface InventoryItemsTableProps {
@@ -29,8 +29,8 @@ interface InventoryItemsTableProps {
   columns: ColumnDef<AssetResponse>[];
   pagination: PaginationState;
   onPaginationChange: React.Dispatch<React.SetStateAction<PaginationState>>;
-  filters: GetInventoryItemsParams;
-  onFiltersChange: (filters: GetInventoryItemsParams) => void;
+  filters: GetAssetsQuery;
+  onFiltersChange: (filters: GetAssetsQuery) => void;
   isFetching: boolean;
 }
 

@@ -37,5 +37,6 @@ export const LocationListItemSchema = LocationSchema.pick({
   isActive: true,
   createdAt: true,
 });
+export type LocationListItem = z.infer<typeof LocationListItemSchema>;
 export const LocationListResponseSchema = z.array(LocationListItemSchema);
 export type LocationListResponse = z.infer<typeof LocationListResponseSchema>;

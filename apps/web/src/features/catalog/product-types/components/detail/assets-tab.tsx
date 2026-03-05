@@ -1,18 +1,16 @@
 import { useAssets } from "@/features/inventory/assets/assets.queries";
+import { CreateAssetDialogForm } from "@/features/inventory/assets/components/create-asset-dialog-form";
 import type { AssetResponse } from "@repo/schemas";
+import { useProduct } from "./product-detail.context";
 
-interface AssetsTabProps {
-  productId: string;
-}
+export function AssetsTab() {
+  const {
+    product: { id },
+  } = useProduct();
 
-export function PhysicalItemsTab({ productId }: AssetsTabProps) {
   const { data: items, isPending } = useAssets({
-    productTypeId: productId,
+    productTypeId: id,
   });
-
-  if (items === undefined || items.data.length === 0) {
-    return <p>No items found.</p>;
-  }
 
   if (isPending) {
     return <p>Loading...</p>;
@@ -23,9 +21,13 @@ export function PhysicalItemsTab({ productId }: AssetsTabProps) {
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
           Units{" "}
-          <span className="ml-1 text-foreground">({items.data.length})</span>
+          <span className="ml-1 text-foreground">
+            ({items?.data.length ?? 0})
+          </span>
         </h3>
       </div>
+
+      <CreateAssetDialogForm />
 
       <div className="rounded-md border">
         <table className="w-full text-sm">
@@ -46,9 +48,20 @@ export function PhysicalItemsTab({ productId }: AssetsTabProps) {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {items.data.map((item) => (
-              <PhysicalItemRow key={item.id} item={item} />
-            ))}
+            {items === undefined || items.data.length === 0 ? (
+              <tr className="border-b bg-muted/50">
+                <td
+                  colSpan={4}
+                  className="px-4 py-3 text-center text-muted-foreground"
+                >
+                  No items found.
+                </td>
+              </tr>
+            ) : (
+              items.data.map((item) => (
+                <PhysicalItemRow key={item.id} item={item} />
+              ))
+            )}
           </tbody>
         </table>
       </div>

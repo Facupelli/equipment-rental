@@ -6,6 +6,7 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateAssetCommand } from '../../application/commands/create-asset/create-asset.command';
 import { GetAssetByIdQuery } from '../../application/queries/get-asset-by-id/get-asset-by-id.query';
 import { GetAssetsQuery } from '../../application/queries/get-assets/get-assets.query';
+import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 
 @Controller('assets')
 export class AssetController {
@@ -21,6 +22,7 @@ export class AssetController {
   }
 
   @Get()
+  @Paginated()
   async getAssets(@Query() dto: GetAssetsQueryDto): Promise<AssetListResponseDto> {
     const query = new GetAssetsQuery(dto.locationId, dto.productTypeId, dto.isActive, dto.search);
     return await this.queryBus.execute(query);

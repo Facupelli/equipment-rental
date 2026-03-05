@@ -50,9 +50,9 @@ export const productColumns: ColumnDef<ProductTypeResponse>[] = [
     },
   },
   {
-    id: "trackingType",
-    accessorKey: "trackingType",
-    header: "Tracking Type",
+    id: "trackingMode",
+    accessorKey: "trackingMode",
+    header: "Tracking Mode",
     cell: ({ getValue }) => (
       <span className="text-sm">{formatTrackingType(getValue<string>())}</span>
     ),

@@ -28,7 +28,6 @@ import { Route as AuthedDashboardCatalogProductsIndexRouteImport } from './route
 import { Route as AuthedDashboardCatalogCategoriesIndexRouteImport } from './routes/_authed/dashboard/catalog/categories/index'
 import { Route as AuthedDashboardCatalogProductsNewRouteImport } from './routes/_authed/dashboard/catalog/products/new'
 import { Route as AuthedDashboardCatalogProductsProductIdRouteImport } from './routes/_authed/dashboard/catalog/products/$productId'
-import { Route as AuthedDashboardInventoryAssetsNewProductIdRouteImport } from './routes/_authed/dashboard/inventory/assets/new/$productId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -133,12 +132,6 @@ const AuthedDashboardCatalogProductsProductIdRoute =
     path: '/catalog/products/$productId',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
-const AuthedDashboardInventoryAssetsNewProductIdRoute =
-  AuthedDashboardInventoryAssetsNewProductIdRouteImport.update({
-    id: '/inventory/assets/new/$productId',
-    path: '/inventory/assets/new/$productId',
-    getParentRoute: () => AuthedDashboardRouteRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -159,7 +152,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/catalog/categories/': typeof AuthedDashboardCatalogCategoriesIndexRoute
   '/dashboard/catalog/products/': typeof AuthedDashboardCatalogProductsIndexRoute
   '/dashboard/inventory/assets/': typeof AuthedDashboardInventoryAssetsIndexRoute
-  '/dashboard/inventory/assets/new/$productId': typeof AuthedDashboardInventoryAssetsNewProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -179,7 +171,6 @@ export interface FileRoutesByTo {
   '/dashboard/catalog/categories': typeof AuthedDashboardCatalogCategoriesIndexRoute
   '/dashboard/catalog/products': typeof AuthedDashboardCatalogProductsIndexRoute
   '/dashboard/inventory/assets': typeof AuthedDashboardInventoryAssetsIndexRoute
-  '/dashboard/inventory/assets/new/$productId': typeof AuthedDashboardInventoryAssetsNewProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -202,7 +193,6 @@ export interface FileRoutesById {
   '/_authed/dashboard/catalog/categories/': typeof AuthedDashboardCatalogCategoriesIndexRoute
   '/_authed/dashboard/catalog/products/': typeof AuthedDashboardCatalogProductsIndexRoute
   '/_authed/dashboard/inventory/assets/': typeof AuthedDashboardInventoryAssetsIndexRoute
-  '/_authed/dashboard/inventory/assets/new/$productId': typeof AuthedDashboardInventoryAssetsNewProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -225,7 +215,6 @@ export interface FileRouteTypes {
     | '/dashboard/catalog/categories/'
     | '/dashboard/catalog/products/'
     | '/dashboard/inventory/assets/'
-    | '/dashboard/inventory/assets/new/$productId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -245,7 +234,6 @@ export interface FileRouteTypes {
     | '/dashboard/catalog/categories'
     | '/dashboard/catalog/products'
     | '/dashboard/inventory/assets'
-    | '/dashboard/inventory/assets/new/$productId'
   id:
     | '__root__'
     | '/'
@@ -267,7 +255,6 @@ export interface FileRouteTypes {
     | '/_authed/dashboard/catalog/categories/'
     | '/_authed/dashboard/catalog/products/'
     | '/_authed/dashboard/inventory/assets/'
-    | '/_authed/dashboard/inventory/assets/new/$productId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -416,13 +403,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardCatalogProductsProductIdRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
-    '/_authed/dashboard/inventory/assets/new/$productId': {
-      id: '/_authed/dashboard/inventory/assets/new/$productId'
-      path: '/inventory/assets/new/$productId'
-      fullPath: '/dashboard/inventory/assets/new/$productId'
-      preLoaderRoute: typeof AuthedDashboardInventoryAssetsNewProductIdRouteImport
-      parentRoute: typeof AuthedDashboardRouteRoute
-    }
   }
 }
 
@@ -437,7 +417,6 @@ interface AuthedDashboardRouteRouteChildren {
   AuthedDashboardCatalogCategoriesIndexRoute: typeof AuthedDashboardCatalogCategoriesIndexRoute
   AuthedDashboardCatalogProductsIndexRoute: typeof AuthedDashboardCatalogProductsIndexRoute
   AuthedDashboardInventoryAssetsIndexRoute: typeof AuthedDashboardInventoryAssetsIndexRoute
-  AuthedDashboardInventoryAssetsNewProductIdRoute: typeof AuthedDashboardInventoryAssetsNewProductIdRoute
 }
 
 const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
@@ -456,8 +435,6 @@ const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
     AuthedDashboardCatalogProductsIndexRoute,
   AuthedDashboardInventoryAssetsIndexRoute:
     AuthedDashboardInventoryAssetsIndexRoute,
-  AuthedDashboardInventoryAssetsNewProductIdRoute:
-    AuthedDashboardInventoryAssetsNewProductIdRoute,
 }
 
 const AuthedDashboardRouteRouteWithChildren =

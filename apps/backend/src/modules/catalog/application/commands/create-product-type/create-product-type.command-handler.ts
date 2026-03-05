@@ -18,7 +18,7 @@ export class CreateProductTypeCommandHandler implements ICommandHandler<CreatePr
     const productType = ProductType.create({ ...command.props, tenantId });
 
     for (const tierProps of command.props.pricingTiers) {
-      productType.addPricingTier(PricingTier.create(tierProps));
+      productType.addPricingTier(PricingTier.create({ ...tierProps, productTypeId: productType.id }));
     }
 
     return await this.productTypeRepository.save(productType);

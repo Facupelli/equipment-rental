@@ -1,10 +1,10 @@
-import type { LocationResponseDto } from "@repo/schemas";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUpDown } from "lucide-react";
+import type { LocationListItem } from "@repo/schemas";
 
-export const locationColumns: ColumnDef<LocationResponseDto>[] = [
+export const locationColumns: ColumnDef<LocationListItem>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (
@@ -19,13 +19,8 @@ export const locationColumns: ColumnDef<LocationResponseDto>[] = [
     ),
   },
   {
-    id: "address",
+    accessorKey: "address",
     header: "Address",
-    accessorFn: (row) =>
-      `${row.address.street}, ${row.address.city}, ${row.address.state} ${row.address.zipCode}`,
-    cell: ({ getValue }) => (
-      <span className="text-muted-foreground">{getValue<string>()}</span>
-    ),
   },
   {
     accessorKey: "isActive",

@@ -30,10 +30,6 @@ import type {
 } from "@repo/schemas";
 import { useCategories } from "../../product-categories/categories.queries";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface ProductsTableProps {
   products: ProductTypeListResponse;
   meta: PaginationMeta;
@@ -44,15 +40,7 @@ interface ProductsTableProps {
   isLoading?: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const ALL_CATEGORIES_VALUE = "__all__";
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+const ALL_CATEGORIES_VALUE = "All";
 
 export function ProductsTable({
   products,
@@ -69,11 +57,10 @@ export function ProductsTable({
   const table = useReactTable({
     data: products,
     columns: productColumns,
-    // Delegation: tell TanStack Table the server owns pagination and filtering
+    state: { pagination },
+    pageCount: meta.totalPages,
     manualPagination: true,
     manualFiltering: true,
-    pageCount: meta.totalPages,
-    state: { pagination },
     onPaginationChange: (updater) => {
       const next =
         typeof updater === "function" ? updater(pagination) : updater;
@@ -81,10 +68,6 @@ export function ProductsTable({
     },
     getCoreRowModel: getCoreRowModel(),
   });
-
-  // ---------------------------------------------------------------------------
-  // Handlers
-  // ---------------------------------------------------------------------------
 
   function handleCategoryChange(value: string | null) {
     const categoryId = value === null ? undefined : value;
@@ -95,23 +78,15 @@ export function ProductsTable({
 
   function handleRowClick(product: ProductTypeResponse) {
     navigate({
-      to: "/dashboard/inventory/products/$productId",
+      to: "/dashboard/catalog/products/$productId",
       params: { productId: product.id },
     });
   }
-
-  // ---------------------------------------------------------------------------
-  // Derived
-  // ---------------------------------------------------------------------------
 
   const categoryList = categories ?? [];
   const { pageIndex, pageSize } = pagination;
   const firstItem = meta.total === 0 ? 0 : pageIndex * pageSize + 1;
   const lastItem = Math.min((pageIndex + 1) * pageSize, meta.total);
-
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
 
   return (
     <div className="space-y-4">
