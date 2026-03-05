@@ -20,3 +20,10 @@ export class OrderItemNotFoundException extends Error {
     this.name = 'OrderItemNotFoundException';
   }
 }
+
+export class OrderItemUnavailableError extends Error {
+  constructor() {
+    super('One or more order items are not available for the requested period.');
+    this.name = 'OrderItemUnavailableError';
+  }
+}

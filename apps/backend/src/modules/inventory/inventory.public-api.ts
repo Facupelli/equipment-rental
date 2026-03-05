@@ -1,5 +1,6 @@
 import { Result } from 'src/core/result';
 import { AssetNotAvailableError } from './domain/exceptions/asset.exceptions';
+import { PrismaTransactionClient } from '../order/domain/ports/order.repository.port';
 
 export type ReserveAssetDto = {
   productTypeId: string;
@@ -18,5 +19,8 @@ export type ReservedAssetDto = {
 };
 
 export abstract class InventoryPublicApi {
-  abstract reserveAsset(dto: ReserveAssetDto): Promise<Result<ReservedAssetDto, AssetNotAvailableError>>;
+  abstract reserveAsset(
+    dto: ReserveAssetDto,
+    tx: PrismaTransactionClient,
+  ): Promise<Result<ReservedAssetDto, AssetNotAvailableError>>;
 }

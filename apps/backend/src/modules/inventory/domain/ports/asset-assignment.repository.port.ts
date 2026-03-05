@@ -1,10 +1,6 @@
+import { PrismaTransactionClient } from 'src/modules/order/domain/ports/order.repository.port';
 import { AssetAssignment } from '../entities/asset-assignment.entity';
 
 export abstract class AssetAssignmentRepositoryPort {
-  /**
-   * Persists a new AssetAssignment.
-   * Throws PostgresExclusionViolationError if the EXCLUDE constraint fires
-   * (concurrent booking of the same asset for an overlapping period).
-   */
-  abstract save(assignment: AssetAssignment): Promise<void>;
+  abstract save(assignment: AssetAssignment, tx: PrismaTransactionClient): Promise<void>;
 }

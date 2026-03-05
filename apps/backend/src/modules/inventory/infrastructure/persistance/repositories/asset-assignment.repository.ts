@@ -1,14 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/core/database/prisma.service';
 import { mapPostgresError } from 'src/core/utils/postgres-error.mapper';
 import { formatPostgresRange } from 'src/core/utils/postgres-range.util';
 import { AssetAssignment } from 'src/modules/inventory/domain/entities/asset-assignment.entity';
 import { AssetAssignmentRepositoryPort } from 'src/modules/inventory/domain/ports/asset-assignment.repository.port';
+import { PrismaTransactionClient } from 'src/modules/order/domain/ports/order.repository.port';
 
 @Injectable()
 export class AssetAssignmentRepository implements AssetAssignmentRepositoryPort {
-  constructor(private readonly prisma: PrismaService) {}
-
   /**
    * Persists a new AssetAssignment via raw SQL.
    *
@@ -16,11 +14,11 @@ export class AssetAssignmentRepository implements AssetAssignmentRepositoryPort 
    * be raw. The EXCLUDE constraint fires here if a concurrent request
    * already claimed this asset for an overlapping period.
    */
-  async save(assignment: AssetAssignment): Promise<void> {
+  async save(assignment: AssetAssignment, tx: PrismaTransactionClient): Promise<void> {
     const period = formatPostgresRange(assignment.period);
 
     try {
-      await this.prisma.client.$executeRaw`
+      await tx.$executeRaw`
         INSERT INTO asset_assignments (
           id,
           asset_id,

@@ -34,5 +34,6 @@ const queryHandlers = [GetAssetByIdQueryHandler, GetAssetsQueryHandler];
     AssetAvailabilityService,
     { provide: InventoryPublicApi, useClass: InventoryApplicationService },
   ],
+  exports: [InventoryPublicApi],
 })
 export class InventoryModule {}

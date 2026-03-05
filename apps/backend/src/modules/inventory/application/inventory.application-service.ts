@@ -8,6 +8,7 @@ import { AssetNotAvailableError } from '../domain/exceptions/asset.exceptions';
 import { err, ok, Result } from 'src/core/result';
 import { PostgresExclusionViolationError } from 'src/core/utils/postgres-error.mapper';
 import { AssetAvailabilityService } from '../infrastructure/services/asset-availability.service';
+import { PrismaTransactionClient } from 'src/modules/order/domain/ports/order.repository.port';
 
 @Injectable()
 export class InventoryApplicationService implements InventoryPublicApi {
@@ -16,7 +17,10 @@ export class InventoryApplicationService implements InventoryPublicApi {
     private readonly availabilityService: AssetAvailabilityService,
   ) {}
 
-  async reserveAsset(dto: ReserveAssetDto): Promise<Result<ReservedAssetDto, AssetNotAvailableError>> {
+  async reserveAsset(
+    dto: ReserveAssetDto,
+    tx: PrismaTransactionClient,
+  ): Promise<Result<ReservedAssetDto, AssetNotAvailableError>> {
     const period = DateRange.create(dto.period.start, dto.period.end);
 
     // Step 1: Find an available asset — domain-level fast fail.
@@ -45,7 +49,7 @@ export class InventoryApplicationService implements InventoryPublicApi {
     // Step 3: Persist — the EXCLUDE constraint is the authoritative concurrency guard.
     // If two requests passed findAvailable simultaneously, only one insert succeeds.
     try {
-      await this.assignmentRepo.save(assignment);
+      await this.assignmentRepo.save(assignment, tx);
     } catch (error) {
       if (error instanceof PostgresExclusionViolationError) {
         return err(new AssetNotAvailableError());

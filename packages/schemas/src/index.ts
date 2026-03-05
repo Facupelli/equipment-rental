@@ -8,7 +8,7 @@ export * from "./catalog/pricing-tier.schema";
 export * from "./customer/customer.schema";
 export * from "./inventory/asset.schema";
 export * from "./inventory/asset-response.schema";
-
+export * from "./order/order.schema";
 export * from "./tenant/location/location.schema";
 export * from "./tenant/location/location-response.schema";
 export * from "./tenant/owner/owner.schema";

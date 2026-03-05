@@ -1,138 +1,139 @@
-import { OrderItemType, OrderStatus } from '@repo/types';
-import {
-  Order as PrismaOrder,
-  OrderItem as PrismaOrderItem,
-  BundleSnapshot as PrismaBundleSnapshot,
-  BundleSnapshotComponent as PrismaBundleSnapshotComponent,
-  Prisma,
-} from 'src/generated/prisma/client';
+import { OrderStatus, OrderItemType } from '@repo/types';
+import Decimal from 'decimal.js';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
 
-// ---------------------------------------------------------------------------
-// BundleSnapshotComponentMapper
-// ---------------------------------------------------------------------------
+// ── Prisma row shapes (from include queries) ──────────────────────────────────
 
-export class BundleSnapshotComponentMapper {
-  static toDomain(raw: PrismaBundleSnapshotComponent): BundleSnapshotComponent {
-    return BundleSnapshotComponent.reconstitute({
-      id: raw.id,
-      bundleSnapshotId: raw.bundleSnapshotId,
-      productTypeId: raw.productTypeId,
-      productTypeName: raw.productTypeName,
-      quantity: raw.quantity,
-    });
-  }
-
-  static toPersistence(entity: BundleSnapshotComponent): Prisma.BundleSnapshotComponentUncheckedCreateInput {
-    return {
-      id: entity.id,
-      bundleSnapshotId: entity.bundleSnapshotId,
-      productTypeId: entity.productTypeId,
-      productTypeName: entity.productTypeName,
-      quantity: entity.quantity,
-    };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// BundleSnapshotMapper
-// ---------------------------------------------------------------------------
-
-type PrismaBundleSnapshotWithRelations = PrismaBundleSnapshot & {
-  components: PrismaBundleSnapshotComponent[];
+type BundleSnapshotComponentRow = {
+  id: string;
+  bundleSnapshotId: string;
+  productTypeId: string;
+  productTypeName: string;
+  quantity: number;
 };
 
-export class BundleSnapshotMapper {
-  static toDomain(raw: PrismaBundleSnapshotWithRelations): BundleSnapshot {
-    const components = raw.components.map(BundleSnapshotComponentMapper.toDomain);
-    return BundleSnapshot.reconstitute({
-      id: raw.id,
-      orderItemId: raw.orderItemId,
-      bundleId: raw.bundleId,
-      bundleName: raw.bundleName,
-      bundlePrice: raw.bundlePrice,
-      components,
-    });
-  }
-
-  static toPersistence(entity: BundleSnapshot): Prisma.BundleSnapshotUncheckedCreateInput {
-    return {
-      id: entity.id,
-      orderItemId: entity.orderItemId,
-      bundleId: entity.bundleId,
-      bundleName: entity.bundleName,
-      bundlePrice: entity.bundlePrice,
-    };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// OrderItemMapper
-// ---------------------------------------------------------------------------
-
-type PrismaOrderItemWithRelations = PrismaOrderItem & {
-  bundleSnapshot: (PrismaBundleSnapshot & { components: PrismaBundleSnapshotComponent[] }) | null;
+type BundleSnapshotRow = {
+  id: string;
+  orderItemId: string;
+  bundleId: string;
+  bundleName: string;
+  bundlePrice: Decimal;
+  components: BundleSnapshotComponentRow[];
 };
 
-export class OrderItemMapper {
-  static toDomain(raw: PrismaOrderItemWithRelations): OrderItem {
-    const bundleSnapshot = raw.bundleSnapshot ? BundleSnapshotMapper.toDomain(raw.bundleSnapshot) : null;
-
-    return OrderItem.reconstitute({
-      id: raw.id,
-      orderId: raw.orderId,
-      type: raw.type as OrderItemType,
-      priceSnapshot: raw.priceSnapshot,
-      productTypeId: raw.productTypeId,
-      bundleId: raw.bundleId,
-      bundleSnapshot,
-    });
-  }
-
-  static toPersistence(entity: OrderItem): Prisma.OrderItemUncheckedCreateInput {
-    return {
-      id: entity.id,
-      orderId: entity.orderId,
-      type: entity.type,
-      priceSnapshot: entity.priceSnapshot,
-      productTypeId: entity.productTypeId,
-      bundleId: entity.bundleId,
-    };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// OrderMapper
-// ---------------------------------------------------------------------------
-
-type PrismaOrderWithRelations = PrismaOrder & {
-  items: PrismaOrderItemWithRelations[];
+type OrderItemRow = {
+  id: string;
+  orderId: string;
+  type: string;
+  priceSnapshot: Decimal;
+  productTypeId: string | null;
+  bundleId: string | null;
+  bundleSnapshot: BundleSnapshotRow | null;
 };
+
+type OrderRow = {
+  id: string;
+  tenantId: string;
+  locationId: string;
+  customerId: string | null;
+  status: string;
+  notes: string | null;
+  items: OrderItemRow[];
+};
+
+// ── Mapper ────────────────────────────────────────────────────────────────────
 
 export class OrderMapper {
-  static toDomain(raw: PrismaOrderWithRelations): Order {
-    const items = raw.items.map(OrderItemMapper.toDomain);
+  static toDomain(row: OrderRow): Order {
+    const items = row.items.map((itemRow) => {
+      const snapshot = itemRow.bundleSnapshot
+        ? BundleSnapshot.reconstitute({
+            id: itemRow.bundleSnapshot.id,
+            orderItemId: itemRow.bundleSnapshot.orderItemId,
+            bundleId: itemRow.bundleSnapshot.bundleId,
+            bundleName: itemRow.bundleSnapshot.bundleName,
+            bundlePrice: itemRow.bundleSnapshot.bundlePrice,
+            components: itemRow.bundleSnapshot.components.map((c) =>
+              BundleSnapshotComponent.reconstitute({
+                id: c.id,
+                bundleSnapshotId: c.bundleSnapshotId,
+                productTypeId: c.productTypeId,
+                productTypeName: c.productTypeName,
+                quantity: c.quantity,
+              }),
+            ),
+          })
+        : null;
+
+      return OrderItem.reconstitute({
+        id: itemRow.id,
+        orderId: itemRow.orderId,
+        type: itemRow.type as OrderItemType,
+        priceSnapshot: itemRow.priceSnapshot,
+        productTypeId: itemRow.productTypeId,
+        bundleId: itemRow.bundleId,
+        bundleSnapshot: snapshot,
+      });
+    });
+
     return Order.reconstitute({
-      id: raw.id,
-      tenantId: raw.tenantId,
-      locationId: raw.locationId,
-      customerId: raw.customerId,
-      status: raw.status as OrderStatus,
-      notes: raw.notes,
+      id: row.id,
+      tenantId: row.tenantId,
+      locationId: row.locationId,
+      customerId: row.customerId,
+      status: row.status as OrderStatus,
+      notes: row.notes,
       items,
     });
   }
 
-  static toPersistence(entity: Order): Prisma.OrderUncheckedCreateInput {
-    return {
-      id: entity.id,
-      tenantId: entity.tenantId,
-      locationId: entity.locationId,
-      customerId: entity.customerId,
-      status: entity.currentStatus,
-      notes: entity.currentNotes,
+  static toPersistence(order: Order) {
+    const orderRow = {
+      id: order.id,
+      tenantId: order.tenantId,
+      locationId: order.locationId,
+      customerId: order.customerId,
+      status: order.currentStatus,
+      notes: order.currentNotes,
     };
+
+    const itemRows = [];
+    const snapshotRows = [];
+    const snapshotComponentRows = [];
+
+    for (const item of order.getItems()) {
+      itemRows.push({
+        id: item.id,
+        orderId: item.orderId,
+        type: item.type,
+        priceSnapshot: item.priceSnapshot,
+        productTypeId: item.productTypeId,
+        bundleId: item.bundleId,
+      });
+
+      if (item.bundleSnapshot) {
+        snapshotRows.push({
+          id: item.bundleSnapshot.id,
+          orderItemId: item.bundleSnapshot.orderItemId,
+          bundleId: item.bundleSnapshot.bundleId,
+          bundleName: item.bundleSnapshot.bundleName,
+          bundlePrice: item.bundleSnapshot.bundlePrice,
+        });
+
+        for (const component of item.bundleSnapshot.components) {
+          snapshotComponentRows.push({
+            id: component.id,
+            bundleSnapshotId: component.bundleSnapshotId,
+            productTypeId: component.productTypeId,
+            productTypeName: component.productTypeName,
+            quantity: component.quantity,
+          });
+        }
+      }
+    }
+
+    return { orderRow, itemRows, snapshotRows, snapshotComponentRows };
   }
 }
