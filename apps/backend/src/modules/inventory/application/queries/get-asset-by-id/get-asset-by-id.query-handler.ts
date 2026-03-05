@@ -3,6 +3,7 @@ import { PrismaService } from 'src/core/database/prisma.service';
 import { GetAssetByIdQuery } from './get-asset-by-id.query';
 import { AssetResponse } from '@repo/schemas';
 import { NotFoundException } from '@nestjs/common';
+import { TrackingMode } from '@repo/types';
 
 @QueryHandler(GetAssetByIdQuery)
 export class GetAssetByIdQueryHandler implements IQueryHandler<GetAssetByIdQuery, AssetResponse> {
@@ -39,7 +40,7 @@ export class GetAssetByIdQueryHandler implements IQueryHandler<GetAssetByIdQuery
         id: asset.productType.id,
         name: asset.productType.name,
         description: asset.productType.description,
-        trackingMode: asset.productType.trackingMode,
+        trackingMode: asset.productType.trackingMode as TrackingMode,
       },
       owner: asset.owner
         ? {

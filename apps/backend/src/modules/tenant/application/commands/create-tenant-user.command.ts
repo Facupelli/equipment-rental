@@ -1,9 +1,9 @@
 import { ICommand } from '@nestjs/cqrs';
-import { CreateTenantUserDto } from '../dto/create-tenant-user.dto';
+import { RegisterDto } from '@repo/schemas';
 
 export class CreateTenantUserCommand implements ICommand {
   constructor(
-    public readonly user: CreateTenantUserDto['user'],
-    public readonly tenant: CreateTenantUserDto['tenant'],
+    public readonly user: RegisterDto['user'],
+    public readonly tenant: RegisterDto['tenant'],
   ) {}
 }

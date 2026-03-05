@@ -1,12 +1,12 @@
 import { Body, Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { CreateAssetDto } from '../../application/dto/create-asset.dto';
 import { GetAssetsQueryDto } from '../../application/dto/get-assets-query.dto';
-import { AssetListResponseDto } from '../../application/dto/asset-list-response.dto';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateAssetCommand } from '../../application/commands/create-asset/create-asset.command';
 import { GetAssetByIdQuery } from '../../application/queries/get-asset-by-id/get-asset-by-id.query';
 import { GetAssetsQuery } from '../../application/queries/get-assets/get-assets.query';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
+import { AssetResponse } from '@repo/schemas';
 
 @Controller('assets')
 export class AssetController {
@@ -23,7 +23,7 @@ export class AssetController {
 
   @Get()
   @Paginated()
-  async getAssets(@Query() dto: GetAssetsQueryDto): Promise<AssetListResponseDto> {
+  async getAssets(@Query() dto: GetAssetsQueryDto): Promise<AssetResponse[]> {
     const query = new GetAssetsQuery(dto.locationId, dto.productTypeId, dto.isActive, dto.search);
     return await this.queryBus.execute(query);
   }

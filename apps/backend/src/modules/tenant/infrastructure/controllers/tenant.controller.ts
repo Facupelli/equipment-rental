@@ -12,14 +12,14 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { Public } from 'src/modules/auth/infrastructure/is-public.decorator';
 import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
-import { CreateTenantUserDto } from '../../application/dto/create-tenant-user.dto';
+import { RegisterDto } from '../../application/dto/create-tenant-user.dto';
 import { CreateTenantUserCommand } from '../../application/commands/create-tenant-user.command';
-import { TenantBillingUnitListResponse, TenantWithBillingUnits } from '@repo/schemas';
 import { EmailAlreadyInUseError, CompanyNameAlreadyInUseError } from '../../application/errors/tenant-user.errors';
 import { GetTenantQuery } from '../../application/queries/get-tenant/get-tenant.query';
 import { GetTenantBillingUnitsQuery } from '../../application/queries/get-billing-units/get-tenant-billing-units.query';
 import { SyncTenantBillingUnitsCommand } from '../../application/commands/create-billing-unit/sync-billing-units.command-handler';
 import { SyncTenantBillingUnitsDto } from '../../application/dto/create-tenant-billing-unit.dto';
+import { TenantBillingUnitListResponse, TenantResponse } from '@repo/schemas';
 
 @Controller('tenants')
 export class TenantController {
@@ -31,7 +31,7 @@ export class TenantController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: CreateTenantUserDto): Promise<{ userId: string; tenantId: string }> {
+  async register(@Body() dto: RegisterDto): Promise<{ userId: string; tenantId: string }> {
     const command = new CreateTenantUserCommand(dto.user, dto.tenant);
     const result = await this.commandBus.execute(command);
 
@@ -50,7 +50,7 @@ export class TenantController {
 
   @Get('me')
   async me(@CurrentUser() reqUser: ReqUser) {
-    const tenant = await this.queryBus.execute<GetTenantQuery, TenantWithBillingUnits | null>(
+    const tenant = await this.queryBus.execute<GetTenantQuery, TenantResponse | null>(
       new GetTenantQuery(reqUser.tenantId),
     );
 
@@ -62,9 +62,9 @@ export class TenantController {
   }
 
   @Get('billing-units')
-  async getBillingUnits(@CurrentUser() reqUser: ReqUser) {
+  async getBillingUnits() {
     const billingUnits = await this.queryBus.execute<GetTenantBillingUnitsQuery, TenantBillingUnitListResponse | null>(
-      new GetTenantQuery(reqUser.tenantId),
+      new GetTenantBillingUnitsQuery(),
     );
 
     return billingUnits;
@@ -73,7 +73,7 @@ export class TenantController {
   @Post('billing-units')
   async createBillingUnit(@Body() dto: SyncTenantBillingUnitsDto) {
     const result = await this.commandBus.execute<SyncTenantBillingUnitsCommand, string>(
-      new SyncTenantBillingUnitsCommand(dto),
+      new SyncTenantBillingUnitsCommand(dto.billingUnitIds),
     );
 
     return result;

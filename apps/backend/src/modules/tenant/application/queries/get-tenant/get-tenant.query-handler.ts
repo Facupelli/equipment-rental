@@ -2,13 +2,13 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetTenantQuery } from './get-tenant.query';
 import { TenantConfig } from '../../../domain/value-objects/tenant-config.vo';
-import { TenantWithBillingUnits } from '@repo/schemas';
+import { TenantResponse } from '@repo/schemas';
 
 @QueryHandler(GetTenantQuery)
-export class GetTenantQueryHandler implements IQueryHandler<GetTenantQuery, TenantWithBillingUnits | null> {
+export class GetTenantQueryHandler implements IQueryHandler<GetTenantQuery, TenantResponse | null> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetTenantQuery): Promise<TenantWithBillingUnits | null> {
+  async execute(query: GetTenantQuery): Promise<TenantResponse | null> {
     const tenant = await this.prisma.client.tenant.findUnique({
       where: { id: query.tenantId },
       include: {

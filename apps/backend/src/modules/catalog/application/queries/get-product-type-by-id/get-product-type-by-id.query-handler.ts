@@ -4,6 +4,7 @@ import { GetProductTypeByIdQuery } from './get-product-type-by-id.query';
 import { ProductTypeResponse } from '@repo/schemas';
 import { NotFoundException } from '@nestjs/common';
 import { TrackingMode } from '@repo/types';
+import { IncludedItem } from 'src/modules/catalog/domain/entities/product-type.entity';
 
 @QueryHandler(GetProductTypeByIdQuery)
 export class GetProductTypeByIdQueryHandler implements IQueryHandler<GetProductTypeByIdQuery, ProductTypeResponse> {
@@ -30,8 +31,8 @@ export class GetProductTypeByIdQueryHandler implements IQueryHandler<GetProductT
       description: productType.description,
       trackingMode: productType.trackingMode as TrackingMode,
       isActive: productType.isActive,
-      attributes: productType.attributes as Record<string, unknown>,
-      includedItems: productType.includedItems as Record<string, unknown>[],
+      attributes: productType.attributes as Record<string, string>,
+      includedItems: productType.includedItems as unknown as IncludedItem[],
       createdAt: productType.createdAt,
       updatedAt: productType.updatedAt,
       deletedAt: productType.deletedAt,

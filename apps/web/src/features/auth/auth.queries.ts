@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getCurrentUser, loginUser, registerTenantUser } from "./auth.api";
-import type { LoginDto } from "./auth.schema";
+import type { LoginDto } from "./schemas/login-form.schema";
 import type { ProblemDetailsError } from "@/shared/errors";
 import { useRouter } from "@tanstack/react-router";
 import type { CreaetTenantUserResponse, TenantUserCreate } from "@repo/schemas";

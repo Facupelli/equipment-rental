@@ -4,6 +4,12 @@ import { InvalidProductTypeNameException } from '../exceptions/product-type.exce
 import { TrackingMode } from '@repo/types';
 import { DuplicatePricingTierException, PricingTierNotFoundException } from '../exceptions/pricing-tier.exceptions';
 
+export interface IncludedItem {
+  name: string;
+  quantity: number;
+  notes: string | null;
+}
+
 export interface CreateProductTypeProps {
   tenantId: string;
   categoryId: string | null;
@@ -12,7 +18,7 @@ export interface CreateProductTypeProps {
   description: string | null;
   trackingMode: TrackingMode;
   attributes: Record<string, unknown> | null;
-  includedItems: unknown[] | null;
+  includedItems: IncludedItem[] | null;
 }
 
 export interface ReconstituteProductTypeProps {

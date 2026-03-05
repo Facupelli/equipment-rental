@@ -1,81 +1,22 @@
-import z from "zod";
-import { nullableOptional } from "../shared";
+import { z } from "zod";
 
-export const AssetSchema = z.object({
-  id: z.uuid(),
+export const createAssetSchema = z.object({
   locationId: z.uuid(),
   productTypeId: z.uuid(),
-  ownerId: nullableOptional(z.uuid()),
-  serialNumber: nullableOptional(z.string()),
-  notes: nullableOptional(z.string()),
+  ownerId: z.uuid().nullable(),
+  serialNumber: z.string().nullable(),
+  notes: z.string().nullable(),
   isActive: z.boolean().default(true),
-  createdAt: z.date().default(() => new Date()),
-  updatedAt: z.date(),
-  deletedAt: nullableOptional(z.date()),
 });
 
-export const AssetCreateSchema = AssetSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  deletedAt: true,
-});
-
-export const AssetUpdateSchema = AssetSchema.partial().omit({
-  id: true,
-  createdAt: true,
-});
-
-export type Asset = z.infer<typeof AssetSchema>;
-export type AssetCreate = z.infer<typeof AssetCreateSchema>;
-export type AssetUpdate = z.infer<typeof AssetUpdateSchema>;
-
-// ----------------------------------------------------------
-// Response schemas (with relations)
-
-const LocationResponseSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  address: z.string().nullable().optional(),
-});
-
-const ProductTypeResponseSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  description: z.string().nullable().optional(),
-  trackingMode: z.enum(["IDENTIFIED", "POOLED"]),
-});
-
-const OwnerResponseSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-});
-
-export const AssetResponseSchema = AssetSchema.extend({
-  location: LocationResponseSchema,
-  productType: ProductTypeResponseSchema,
-  owner: OwnerResponseSchema.nullable().optional(),
-}).omit({
-  locationId: true,
-  productTypeId: true,
-  ownerId: true,
-});
-
-export const AssetListResponseSchema = z.array(AssetResponseSchema);
-
-export type AssetResponse = z.infer<typeof AssetResponseSchema>;
-export type AssetListResponse = z.infer<typeof AssetListResponseSchema>;
-
-// ----------------------------------------------------------
-// Query schemas
-
-export const GetAssetsQuerySchema = z.object({
+export const updateAssetSchema = z.object({
   locationId: z.uuid().optional(),
   productTypeId: z.uuid().optional(),
-  isActive: z.coerce.boolean().optional(),
-  search: z.string().optional(),
-  page: z.coerce.number().optional(),
-  limit: z.coerce.number().optional(),
+  ownerId: z.uuid().nullable().optional(),
+  serialNumber: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
 });
 
-export type GetAssetsQuery = z.infer<typeof GetAssetsQuerySchema>;
+export type CreateAssetDto = z.infer<typeof createAssetSchema>;
+export type UpdateAssetDto = z.infer<typeof updateAssetSchema>;

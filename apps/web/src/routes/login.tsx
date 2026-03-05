@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { loginSchema } from "@/features/auth/auth.schema";
+import { loginSchema } from "@/features/auth/schemas/login-form.schema";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,

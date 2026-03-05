@@ -2,6 +2,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetAssetsQuery } from './get-assets.query';
 import { AssetResponse, PaginatedDto } from '@repo/schemas';
+import { TrackingMode } from '@repo/types';
 
 @QueryHandler(GetAssetsQuery)
 export class GetAssetsQueryHandler implements IQueryHandler<GetAssetsQuery, PaginatedDto<AssetResponse>> {
@@ -68,7 +69,7 @@ export class GetAssetsQueryHandler implements IQueryHandler<GetAssetsQuery, Pagi
           id: asset.productType.id,
           name: asset.productType.name,
           description: asset.productType.description,
-          trackingMode: asset.productType.trackingMode,
+          trackingMode: asset.productType.trackingMode as TrackingMode,
         },
         owner: asset.owner
           ? {

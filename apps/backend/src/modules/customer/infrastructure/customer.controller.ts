@@ -1,13 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { CustomerService } from '../customer.service';
-import { CreateCustomerDto } from '../application/dto/create-customer.dto';
+import { Controller } from '@nestjs/common';
+// import { CustomerService } from '../customer.service';
 
 @Controller('customers')
 export class CustomerController {
-  constructor(private readonly customerService: CustomerService) {}
-
-  @Post()
-  async create(@Body() dto: CreateCustomerDto): Promise<string> {
-    return await this.customerService.create(dto);
-  }
+  // constructor(private readonly customerService: CustomerService) {}
+  // @Post()
+  // async create(@Body() dto: CreateCustomerDto): Promise<string> {
+  //   return await this.customerService.create(dto);
+  // }
 }

@@ -3,6 +3,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type MutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { createProduct, getProductDetail, getProducts } from "./products.api";
@@ -24,6 +25,11 @@ type ProductsQueryOptions<TData = PaginatedProducts> = Omit<
 type ProductDetailQueryOptions<TData = ProductTypeResponse> = Omit<
   UseQueryOptions<ProductTypeResponse, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
+>;
+
+type ProductMutationOptions = Omit<
+  MutationOptions<string, ProblemDetailsError, ProductTypeCreate>,
+  "mutationFn" | "mutationKey"
 >;
 
 // -----------------------------------------------------
@@ -69,22 +75,21 @@ export function useProductDetail<TData = ProductTypeResponse>(
   return useQuery(createProductDetailQueryOptions(id, options));
 }
 
-export function useCreateProduct() {
+export function useCreateProduct(options?: ProductMutationOptions) {
   const queryClient = useQueryClient();
 
   return useMutation<string, ProblemDetailsError, ProductTypeCreate>({
+    ...options,
     mutationFn: (data) => createProduct({ data }),
-    onSuccess: async () => {
+    onSuccess: async (data, variables, onMutateResult, context) => {
       await queryClient.invalidateQueries({
         queryKey: createProductsQueryOptions().queryKey,
       });
+
+      await options?.onSuccess?.(data, variables, onMutateResult, context);
     },
-    onError: (error) => {
-      // error is fully typed as ProblemDetailsError here.
-      // You can log, toast, or handle it however you like.
-      console.error(
-        `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
-      );
+    onError: async (error, variables, onMutateResult, context) => {
+      await options?.onError?.(error, variables, onMutateResult, context);
     },
   });
 }

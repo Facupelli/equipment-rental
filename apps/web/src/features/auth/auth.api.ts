@@ -11,7 +11,7 @@ import {
   loginSchema,
   type LoginDto,
   type LoginResponseDto,
-} from "./auth.schema";
+} from "./schemas/login-form.schema";
 import { ACCESS_TOKEN_TTL_MS } from "./auth.constants";
 
 export const registerTenantUser = createServerFn({ method: "POST" })

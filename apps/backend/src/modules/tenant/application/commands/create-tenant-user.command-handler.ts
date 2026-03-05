@@ -6,9 +6,9 @@ import { BcryptService } from '../../../auth/application/bcript.service';
 import { CreateTenantUserCommand } from './create-tenant-user.command';
 import { EmailAlreadyInUseError, CompanyNameAlreadyInUseError, TenantUserError } from '../errors/tenant-user.errors';
 import { Result, ok, err } from '../../../../core/result';
-import { CreateTenantUserDto } from '../dto/create-tenant-user.dto';
 import { IsEmailTakenQuery } from 'src/modules/users/application/queries/is-email-taken/is-email-taken.query';
 import { IsSlugTakenQuery } from '../queries/is-slug-taken/is-slug-taken.query';
+import { RegisterDto } from '@repo/schemas';
 
 export interface CreateTenantUserResponse {
   userId: string;
@@ -62,7 +62,7 @@ export class CreateTenantUserCommandHandler implements ICommandHandler<CreateTen
   }
 
   private async createUserAndAssignRole(
-    userDto: CreateTenantUserDto['user'],
+    userDto: RegisterDto['user'],
     roleId: string,
     tenantId: string,
   ): Promise<string> {

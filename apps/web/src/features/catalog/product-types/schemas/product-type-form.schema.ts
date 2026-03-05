@@ -1,0 +1,193 @@
+import { z } from "zod";
+import {
+  createProductTypeSchema,
+  updateProductTypeSchema,
+  productTypeIncludedItemSchema,
+} from "@your-monorepo/shared";
+import type {
+  CreateProductTypeDto,
+  UpdateProductTypeDto,
+  ProductTypeIncludedItemDto,
+  CreatePricingTierDto,
+} from "@your-monorepo/shared";
+import {
+  emptyToNull,
+  emptyToNullOrUndefined,
+} from "@your-monorepo/web-shared-utils";
+import { TrackingMode } from "@repo/types";
+
+export const attributeRowSchema = z.object({
+  key: z.string().min(1, "Key is required"),
+  value: z.string().min(1, "Value is required"),
+});
+
+export const includedItemRowSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  quantity: z.number().int().positive("Must be at least 1"),
+  notes: z.string().or(z.literal("")),
+});
+
+export const pricingTierRowSchema = z.object({
+  locationId: z.string().or(z.literal("")),
+  fromUnit: z.number().int().nonnegative("Must be 0 or greater"),
+  toUnit: z
+    .number()
+    .int()
+    .positive("Must be at least 1")
+    .or(z.literal(""))
+    .or(z.literal(0)),
+  pricePerUnit: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format"),
+});
+
+export const productTypeFormSchema = z.object({
+  categoryId: z.string().or(z.literal("")),
+  billingUnitId: z.string().min(1, "Billing unit is required"),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().or(z.literal("")),
+  trackingMode: z.enum(TrackingMode),
+  isActive: z.boolean(),
+  attributes: z.array(attributeRowSchema),
+  includedItems: z.array(includedItemRowSchema),
+  pricingTiers: z
+    .array(pricingTierRowSchema)
+    .min(1, "At least one pricing tier is required"),
+});
+
+export type AttributeRow = z.infer<typeof attributeRowSchema>;
+export type IncludedItemRow = z.infer<typeof includedItemRowSchema>;
+export type PricingTierRow = z.infer<typeof pricingTierRowSchema>;
+export type ProductTypeFormValues = z.infer<typeof productTypeFormSchema>;
+
+export const pricingTierRowDefaults: PricingTierRow = {
+  locationId: "",
+  fromUnit: 0,
+  toUnit: "",
+  pricePerUnit: "",
+};
+
+export const productTypeFormDefaults: ProductTypeFormValues = {
+  categoryId: "",
+  billingUnitId: "",
+  name: "",
+  description: "",
+  trackingMode: TrackingMode.IDENTIFIED,
+  isActive: true,
+  attributes: [],
+  includedItems: [],
+  pricingTiers: [pricingTierRowDefaults],
+};
+
+export function productTypeToFormValues(productType: {
+  categoryId: string | null;
+  billingUnitId: string;
+  name: string;
+  description: string | null;
+  trackingMode: TrackingMode;
+  isActive: boolean;
+  attributes: Record<string, string>;
+  includedItems: ProductTypeIncludedItemDto[];
+  pricingTiers: CreatePricingTierDto[];
+}): ProductTypeFormValues {
+  return {
+    categoryId: productType.categoryId ?? "",
+    billingUnitId: productType.billingUnitId,
+    name: productType.name,
+    description: productType.description ?? "",
+    trackingMode: productType.trackingMode,
+    isActive: productType.isActive,
+    attributes: Object.entries(productType.attributes).map(([key, value]) => ({
+      key,
+      value,
+    })),
+    includedItems: productType.includedItems.map((item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      notes: item.notes ?? "",
+    })),
+    pricingTiers: productType.pricingTiers.map((tier) => ({
+      locationId: tier.locationId ?? "",
+      fromUnit: tier.fromUnit,
+      toUnit: tier.toUnit ?? "",
+      pricePerUnit: tier.pricePerUnit,
+    })),
+  };
+}
+
+function mapAttributeRows(rows: AttributeRow[]): Record<string, string> {
+  return Object.fromEntries(
+    rows.map(({ key, value }) => [key.trim(), value.trim()]),
+  );
+}
+
+function mapIncludedItemRows(
+  rows: IncludedItemRow[],
+): ProductTypeIncludedItemDto[] {
+  return rows.map((item) => ({
+    name: item.name.trim(),
+    quantity: item.quantity,
+    notes: emptyToNull(item.notes),
+  }));
+}
+
+function mapPricingTierRows(rows: PricingTierRow[]): CreatePricingTierDto[] {
+  return rows.map((tier) => ({
+    locationId: emptyToNull(tier.locationId),
+    fromUnit: tier.fromUnit,
+    toUnit: tier.toUnit === "" || tier.toUnit === 0 ? null : tier.toUnit,
+    pricePerUnit: tier.pricePerUnit,
+  }));
+}
+
+export function toCreateProductTypeDto(
+  values: ProductTypeFormValues,
+): CreateProductTypeDto {
+  const dto = {
+    categoryId: emptyToNull(values.categoryId),
+    billingUnitId: values.billingUnitId,
+    name: values.name.trim(),
+    description: emptyToNull(values.description),
+    trackingMode: values.trackingMode,
+    isActive: values.isActive,
+    attributes: mapAttributeRows(values.attributes),
+    includedItems: mapIncludedItemRows(values.includedItems),
+    pricingTiers: mapPricingTierRows(values.pricingTiers),
+  };
+
+  return createProductTypeSchema.parse(dto);
+}
+
+export function toUpdateProductTypeDto(
+  dirtyValues: Partial<ProductTypeFormValues>,
+): UpdateProductTypeDto {
+  const dto: UpdateProductTypeDto = {};
+
+  if (dirtyValues.categoryId !== undefined) {
+    dto.categoryId = emptyToNull(dirtyValues.categoryId);
+  }
+  if (dirtyValues.billingUnitId !== undefined) {
+    dto.billingUnitId = dirtyValues.billingUnitId;
+  }
+  if (dirtyValues.name !== undefined) {
+    dto.name = dirtyValues.name.trim();
+  }
+  if (dirtyValues.description !== undefined) {
+    dto.description = emptyToNullOrUndefined(dirtyValues.description);
+  }
+  if (dirtyValues.trackingMode !== undefined) {
+    dto.trackingMode = dirtyValues.trackingMode;
+  }
+  if (dirtyValues.isActive !== undefined) {
+    dto.isActive = dirtyValues.isActive;
+  }
+  if (dirtyValues.attributes !== undefined) {
+    dto.attributes = mapAttributeRows(dirtyValues.attributes);
+  }
+  if (dirtyValues.includedItems !== undefined) {
+    dto.includedItems = mapIncludedItemRows(dirtyValues.includedItems);
+  }
+  if (dirtyValues.pricingTiers !== undefined) {
+    dto.pricingTiers = mapPricingTierRows(dirtyValues.pricingTiers);
+  }
+
+  return updateProductTypeSchema.parse(dto);
+}

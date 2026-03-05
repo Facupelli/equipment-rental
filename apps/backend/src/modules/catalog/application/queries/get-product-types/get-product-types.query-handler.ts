@@ -3,6 +3,7 @@ import { PrismaService } from 'src/core/database/prisma.service';
 import { GetProductTypesQuery } from './get-product-types.query';
 import { PaginatedDto, ProductTypeResponse } from '@repo/schemas';
 import { TrackingMode } from '@repo/types';
+import { IncludedItem } from 'src/modules/catalog/domain/entities/product-type.entity';
 
 @QueryHandler(GetProductTypesQuery)
 export class GetProductTypesQueryHandler implements IQueryHandler<
@@ -58,8 +59,8 @@ export class GetProductTypesQueryHandler implements IQueryHandler<
         description: pt.description,
         trackingMode: pt.trackingMode as TrackingMode,
         isActive: pt.isActive,
-        attributes: pt.attributes as Record<string, unknown>,
-        includedItems: pt.includedItems as Record<string, unknown>[],
+        attributes: pt.attributes as Record<string, string>,
+        includedItems: pt.includedItems as unknown as IncludedItem[],
         createdAt: pt.createdAt,
         updatedAt: pt.updatedAt,
         deletedAt: pt.deletedAt,

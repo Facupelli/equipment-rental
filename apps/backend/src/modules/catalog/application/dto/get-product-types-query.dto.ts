@@ -1,4 +1,4 @@
 import { createZodDto } from 'nestjs-zod';
-import { GetProductTypesQuerySchema } from '@repo/schemas';
+import { getProductTypesQuerySchema } from '@repo/schemas';
 
-export class GetProductTypesQueryDto extends createZodDto(GetProductTypesQuerySchema) {}
+export class GetProductTypesQueryDto extends createZodDto(getProductTypesQuerySchema) {}

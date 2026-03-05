@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CreateProductCategoryDto } from '../../application/dto/create-product-category.dto';
-import { ProductCategoryListResponseDto } from '../../application/dto/product-category-list-response.dto';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateProductCategoryCommand } from '../../application/commands/create-product-category/create-product-category.command';
 import { GetProductCategoriesQuery } from '../../application/queries/get-product-categories/get-product-categories.query';
+import { ProductCategoryResponse } from '@repo/schemas';
 
 @Controller('product-categories')
 export class ProductCategoryController {
@@ -20,7 +20,7 @@ export class ProductCategoryController {
   }
 
   @Get()
-  async getProductCategories(): Promise<ProductCategoryListResponseDto> {
+  async getProductCategories(): Promise<ProductCategoryResponse[]> {
     return await this.queryBus.execute(new GetProductCategoriesQuery());
   }
 }

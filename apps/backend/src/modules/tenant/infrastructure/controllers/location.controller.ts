@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post } from '@nestjs/common';
 import { GetLocationsQuery } from '../../application/queries/get-locations/get-locations.query';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateLocationCommand } from '../../application/commands/create-location/create-location.command';
-import { LocationCreate } from '@repo/schemas';
+import { CreateLocationDto } from '../../application/dto/create-location.dto';
 
 @Controller('locations')
 export class LocationController {
@@ -12,7 +12,7 @@ export class LocationController {
   ) {}
 
   @Post()
-  async createLocation(@Body() dto: LocationCreate): Promise<string> {
+  async createLocation(@Body() dto: CreateLocationDto): Promise<string> {
     const command = new CreateLocationCommand(dto.name, dto.address);
 
     return await this.commandBus.execute(command);

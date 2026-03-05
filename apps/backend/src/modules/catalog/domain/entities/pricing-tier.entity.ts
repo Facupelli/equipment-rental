@@ -11,7 +11,7 @@ export interface CreatePricingTierProps {
   locationId: string | null;
   fromUnit: number;
   toUnit: number | null;
-  pricePerUnit: number;
+  pricePerUnit: string;
 }
 
 export interface ReconstitutePricingTierProps {
