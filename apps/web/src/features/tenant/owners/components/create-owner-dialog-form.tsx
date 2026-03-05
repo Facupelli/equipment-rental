@@ -16,7 +16,11 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { OwnerCreateSchema } from "@repo/schemas";
+import {
+  ownerFormDefaults,
+  ownerFormSchema,
+  toCreateOwnerDto,
+} from "../schemas/owner-form.schema";
 
 interface CreateOwnerDialogProps {
   open: boolean;
@@ -34,14 +38,13 @@ export function CreateOwnerDialog({
   });
 
   const form = useForm({
-    defaultValues: {
-      name: "",
-    },
+    defaultValues: ownerFormDefaults,
     validators: {
-      onChange: OwnerCreateSchema,
+      onSubmit: ownerFormSchema,
     },
     onSubmit: async ({ value }) => {
-      createOwner(value);
+      const dto = toCreateOwnerDto(value);
+      createOwner(dto);
     },
   });
 

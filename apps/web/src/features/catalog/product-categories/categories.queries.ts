@@ -8,7 +8,7 @@ import {
 import { createCategory, getCategories } from "./categories.api";
 import type { ProblemDetailsError } from "@/shared/errors";
 import type {
-  ProductCategoryCreate,
+  CreateProductCategoryDto,
   ProductCategoryListResponse,
 } from "@repo/schemas";
 
@@ -18,7 +18,7 @@ type CategoryQueryOptions<TData = ProductCategoryListResponse> = Omit<
 >;
 
 type CategoryMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, ProductCategoryCreate>,
+  MutationOptions<string, ProblemDetailsError, CreateProductCategoryDto>,
   "mutationFn" | "mutationKey"
 >;
 
@@ -47,7 +47,7 @@ export function useCategories<TData = ProductCategoryListResponse>(
 export function useCreateCategory(options?: CategoryMutationOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation<string, ProblemDetailsError, ProductCategoryCreate>({
+  return useMutation<string, ProblemDetailsError, CreateProductCategoryDto>({
     ...options,
     mutationFn: (data) => createCategory({ data }),
     onSuccess: async (data, variables, onMutateResult, context) => {

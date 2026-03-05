@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { createOwner, getOwners } from "./owners.api";
 import type { ProblemDetailsError } from "@/shared/errors";
-import type { OwnerCreate, OwnerListResponse } from "@repo/schemas";
+import type { CreateOwnerDto, OwnerListResponse } from "@repo/schemas";
 
 type OwnerQueryOptions<TData = OwnerListResponse> = Omit<
   UseQueryOptions<OwnerListResponse, ProblemDetailsError, TData>,
@@ -15,7 +15,7 @@ type OwnerQueryOptions<TData = OwnerListResponse> = Omit<
 >;
 
 type OwnerMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, OwnerCreate>,
+  MutationOptions<string, ProblemDetailsError, CreateOwnerDto>,
   "mutationFn" | "mutationKey"
 >;
 
@@ -44,7 +44,7 @@ export function useOwners<TData = OwnerListResponse>(
 export function useCreateOwner(options?: OwnerMutationOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation<string, ProblemDetailsError, OwnerCreate>({
+  return useMutation<string, ProblemDetailsError, CreateOwnerDto>({
     ...options,
     mutationFn: (data) => createOwner({ data }),
     onSuccess: async (data, variables, onMutateResult, context) => {

@@ -2,7 +2,6 @@ import { useForm } from "@tanstack/react-form";
 import { useCreateAsset } from "../assets.queries";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
 import { useOwners } from "@/features/tenant/owners/owners.queries";
-import { AssetCreateSchema } from "@repo/schemas";
 import {
   Field,
   FieldError,
@@ -31,6 +30,11 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useProduct } from "@/features/catalog/product-types/components/detail/product-detail.context";
 import { TrackingMode } from "@repo/types";
+import {
+  assetFormDefaults,
+  assetFormSchema,
+  toCreateAssetDto,
+} from "../schemas/asset-form.schema";
 
 const formId = "create-asset";
 
@@ -46,21 +50,13 @@ export function CreateAssetDialogForm() {
   const { data: owners = [], isLoading: ownersLoading } = useOwners();
 
   const form = useForm({
-    defaultValues: {
-      locationId: "",
-      ownerId: "",
-      serialNumber: "",
-      notes: "",
-    },
+    defaultValues: assetFormDefaults,
     validators: {
-      onChange: AssetCreateSchema.omit({ productTypeId: true }),
+      onSubmit: assetFormSchema,
     },
     onSubmit: async ({ value }) => {
-      createAsset({
-        ...value,
-        productTypeId: product.id,
-        isActive: true,
-      });
+      const dto = toCreateAssetDto(value);
+      createAsset(dto);
       form.reset();
     },
   });

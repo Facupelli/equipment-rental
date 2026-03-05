@@ -10,7 +10,7 @@ import { createProduct, getProductDetail, getProducts } from "./products.api";
 import type {
   GetProductTypesQuery,
   PaginatedDto,
-  ProductTypeCreate,
+  CreateProductTypeDto,
   ProductTypeResponse,
 } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
@@ -28,7 +28,7 @@ type ProductDetailQueryOptions<TData = ProductTypeResponse> = Omit<
 >;
 
 type ProductMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, ProductTypeCreate>,
+  MutationOptions<string, ProblemDetailsError, CreateProductTypeDto>,
   "mutationFn" | "mutationKey"
 >;
 
@@ -78,7 +78,7 @@ export function useProductDetail<TData = ProductTypeResponse>(
 export function useCreateProduct(options?: ProductMutationOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation<string, ProblemDetailsError, ProductTypeCreate>({
+  return useMutation<string, ProblemDetailsError, CreateProductTypeDto>({
     ...options,
     mutationFn: (data) => createProduct({ data }),
     onSuccess: async (data, variables, onMutateResult, context) => {

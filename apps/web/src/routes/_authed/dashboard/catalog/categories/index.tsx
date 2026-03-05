@@ -26,11 +26,12 @@ import {
   useCategories,
   useCreateCategory,
 } from "@/features/catalog/product-categories/categories.queries";
-import { ProductCategoryCreateSchema } from "@repo/schemas";
+import {
+  productCategoryFormDefaults,
+  productCategoryFormSchema,
+} from "@/features/catalog/product-categories/schemas/product-categories-form.schema";
 
-export const Route = createFileRoute(
-  "/_authed/dashboard/catalog/categories/",
-)({
+export const Route = createFileRoute("/_authed/dashboard/catalog/categories/")({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(createCategoryQueryOptions()),
   component: CategoriesPage,
@@ -110,12 +111,9 @@ function CreateCategoryDialog() {
   const { mutate: createCategory, isPending } = useCreateCategory();
 
   const form = useForm({
-    defaultValues: {
-      name: "",
-      description: "",
-    },
+    defaultValues: productCategoryFormDefaults,
     validators: {
-      onChange: ProductCategoryCreateSchema,
+      onSubmit: productCategoryFormSchema,
     },
     onSubmit: async ({ value }) => {
       createCategory(value, {

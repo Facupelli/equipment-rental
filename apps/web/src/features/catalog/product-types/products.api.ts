@@ -1,11 +1,11 @@
 import { apiFetch, apiFetchPaginated } from "@/lib/api";
 import {
-  ProductTypeCreateSchema,
-  GetProductTypesQuerySchema,
-  type ProductTypeCreate,
   type ProductTypeResponse,
   type PaginatedDto,
   type GetProductTypesQuery,
+  type CreateProductTypeDto,
+  createProductTypeSchema,
+  getProductTypesQuerySchema,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
@@ -13,8 +13,8 @@ import z from "zod";
 const apiUrl = "/product-types";
 
 export const createProduct = createServerFn({ method: "POST" })
-  .inputValidator((data: ProductTypeCreate) =>
-    ProductTypeCreateSchema.parse(data),
+  .inputValidator((data: CreateProductTypeDto) =>
+    createProductTypeSchema.parse(data),
   )
   .handler(async ({ data }): Promise<string> => {
     const result = await apiFetch<string>(apiUrl, {
@@ -50,7 +50,7 @@ export const getProductDetail = createServerFn({ method: "GET" })
 
 export const getProducts = createServerFn({ method: "GET" })
   .inputValidator((data: GetProductTypesQuery) =>
-    GetProductTypesQuerySchema.parse(data),
+    getProductTypesQuerySchema.parse(data),
   )
   .handler(async ({ data }): Promise<PaginatedDto<ProductTypeResponse>> => {
     const result = await apiFetchPaginated<ProductTypeResponse>(apiUrl, {

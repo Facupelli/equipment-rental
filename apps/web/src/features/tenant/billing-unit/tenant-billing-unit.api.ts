@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import {
-  SyncTenantBillingUnitsSchema,
-  type SyncTenantBillingUnits,
+  syncTenantBillingUnitsSchema,
+  type SyncTenantBillingUnitsDto,
   type TenantBillingUnitListResponse,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
@@ -19,8 +19,8 @@ export const getTenantBillingUnits = createServerFn({ method: "GET" }).handler(
 );
 
 export const createTenantBillingUnit = createServerFn({ method: "POST" })
-  .inputValidator((data: SyncTenantBillingUnits) =>
-    SyncTenantBillingUnitsSchema.parse(data),
+  .inputValidator((data: SyncTenantBillingUnitsDto) =>
+    syncTenantBillingUnitsSchema.parse(data),
   )
   .handler(async ({ data }): Promise<string> => {
     const result = await apiFetch<string>(apiUrl, {

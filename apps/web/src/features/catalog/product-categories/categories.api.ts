@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import {
-  ProductCategoryCreateSchema,
-  type ProductCategoryCreate,
+  createProductCategorySchema,
+  type CreateProductCategoryDto,
   type ProductCategoryListResponse,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
@@ -9,8 +9,8 @@ import { createServerFn } from "@tanstack/react-start";
 const apiUrl = "/product-categories";
 
 export const createCategory = createServerFn({ method: "POST" })
-  .inputValidator((data: ProductCategoryCreate) =>
-    ProductCategoryCreateSchema.parse(data),
+  .inputValidator((data: CreateProductCategoryDto) =>
+    createProductCategorySchema.parse(data),
   )
   .handler(async ({ data }): Promise<string> => {
     const result = await apiFetch<string>(apiUrl, {

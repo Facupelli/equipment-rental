@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { createLocation, getLocations } from "./locations.api";
 import type { ProblemDetailsError } from "@/shared/errors";
-import type { LocationCreate, LocationListResponse } from "@repo/schemas";
+import type { CreateLocationDto, LocationListResponse } from "@repo/schemas";
 
 type LocationQueryOptions<TData = LocationListResponse> = Omit<
   UseQueryOptions<LocationListResponse, ProblemDetailsError, TData>,
@@ -15,7 +15,7 @@ type LocationQueryOptions<TData = LocationListResponse> = Omit<
 >;
 
 type LocationMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, LocationCreate>,
+  MutationOptions<string, ProblemDetailsError, CreateLocationDto>,
   "mutationFn" | "mutationKey"
 >;
 
@@ -44,7 +44,7 @@ export function useLocations<TData = LocationListResponse>(
 export function useCreateLocation(options?: LocationMutationOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation<string, ProblemDetailsError, LocationCreate>({
+  return useMutation<string, ProblemDetailsError, CreateLocationDto>({
     ...options,
     mutationFn: (data) => createLocation({ data }),
     onSuccess: async (data, variables, onMutateResult, context) => {

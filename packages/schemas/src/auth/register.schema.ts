@@ -19,3 +19,12 @@ export const registerSchema = z.object({
 export type CreateTenantDto = z.infer<typeof createTenantSchema>;
 export type CreateUserDto = z.infer<typeof createUserSchema>;
 export type RegisterDto = z.infer<typeof registerSchema>;
+
+// --------------------------------------------------------------------
+
+export const registerResponseSchema = z.object({
+  userId: z.string(),
+  tenantId: z.string(),
+});
+
+export type RegisterResponse = z.infer<typeof registerResponseSchema>;

@@ -1,20 +1,13 @@
 import { z } from "zod";
+import { TrackingMode } from "@repo/types";
 import {
   createProductTypeSchema,
   updateProductTypeSchema,
-  productTypeIncludedItemSchema,
-} from "@your-monorepo/shared";
-import type {
-  CreateProductTypeDto,
-  UpdateProductTypeDto,
-  ProductTypeIncludedItemDto,
-  CreatePricingTierDto,
-} from "@your-monorepo/shared";
-import {
-  emptyToNull,
-  emptyToNullOrUndefined,
-} from "@your-monorepo/web-shared-utils";
-import { TrackingMode } from "@repo/types";
+  type CreatePricingTierDto,
+  type CreateProductTypeDto,
+  type ProductTypeIncludedItemDto,
+  type UpdateProductTypeDto,
+} from "@repo/schemas";
 
 export const attributeRowSchema = z.object({
   key: z.string().min(1, "Key is required"),

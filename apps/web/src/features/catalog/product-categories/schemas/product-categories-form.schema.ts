@@ -1,8 +1,10 @@
-import { z } from "zod";
 import {
   createProductCategorySchema,
   updateProductCategorySchema,
-} from "@your-monorepo/shared";
+  type CreateProductCategoryDto,
+  type UpdateProductCategoryDto,
+} from "@repo/schemas";
+import { z } from "zod";
 
 export const productCategoryFormSchema = z.object({
   name: z.string().min(1, "Name is required"),

@@ -9,7 +9,7 @@ import { getCurrentUser, loginUser, registerTenantUser } from "./auth.api";
 import type { LoginDto } from "./schemas/login-form.schema";
 import type { ProblemDetailsError } from "@/shared/errors";
 import { useRouter } from "@tanstack/react-router";
-import type { CreaetTenantUserResponse, TenantUserCreate } from "@repo/schemas";
+import type { RegisterDto, RegisterResponse } from "@repo/schemas";
 
 export const authQueryKey = {
   currentUser: ["currentUser"] as const,
@@ -52,20 +52,12 @@ export function useLogin() {
 // REGISTER
 
 type OwnerMutationOptions = Omit<
-  MutationOptions<
-    CreaetTenantUserResponse,
-    ProblemDetailsError,
-    TenantUserCreate
-  >,
+  MutationOptions<RegisterResponse, ProblemDetailsError, RegisterDto>,
   "mutationFn" | "mutationKey"
 >;
 
 export function useCreateTenantUser(options?: OwnerMutationOptions) {
-  return useMutation<
-    CreaetTenantUserResponse,
-    ProblemDetailsError,
-    TenantUserCreate
-  >({
+  return useMutation<RegisterResponse, ProblemDetailsError, RegisterDto>({
     ...options,
     mutationFn: (data) => registerTenantUser({ data }),
     onSuccess: async (data, variables, onMutateResult, context) => {

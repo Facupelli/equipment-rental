@@ -82,10 +82,10 @@ export function ActiveBillingUnitsForm({
 
   const form = useForm({
     defaultValues: {
-      enabledUnitIds: tenant.billingUnits.map((unit) => unit.billingUnitId),
+      billingUnitIds: tenant.billingUnits.map((unit) => unit.billingUnitId),
     },
     onSubmit: ({ value }) => {
-      syncBillingUnits(value.enabledUnitIds);
+      syncBillingUnits(value);
     },
   });
 
@@ -110,7 +110,7 @@ export function ActiveBillingUnitsForm({
         className="space-y-6"
       >
         <form.Field
-          name="enabledUnitIds"
+          name="billingUnitIds"
           validators={{
             onSubmit: ({ value }) =>
               value.length === 0

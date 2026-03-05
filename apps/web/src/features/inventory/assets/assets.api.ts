@@ -1,9 +1,9 @@
 import { apiFetch, apiFetchPaginated } from "@/lib/api";
 import {
-  AssetCreateSchema,
-  GetAssetsQuerySchema,
-  type AssetCreate,
+  createAssetSchema,
+  getAssetsQuerySchema,
   type AssetResponse,
+  type CreateAssetDto,
   type GetAssetsQuery,
   type PaginatedDto,
 } from "@repo/schemas";
@@ -12,7 +12,7 @@ import { createServerFn } from "@tanstack/react-start";
 const apiUrl = "/assets";
 
 export const createAsset = createServerFn({ method: "POST" })
-  .inputValidator((data: AssetCreate) => AssetCreateSchema.parse(data))
+  .inputValidator((data: CreateAssetDto) => createAssetSchema.parse(data))
   .handler(async ({ data }): Promise<string> => {
     const result = await apiFetch<string>(apiUrl, {
       method: "POST",
@@ -23,7 +23,7 @@ export const createAsset = createServerFn({ method: "POST" })
   });
 
 export const getAssets = createServerFn({ method: "GET" })
-  .inputValidator((data: GetAssetsQuery) => GetAssetsQuerySchema.parse(data))
+  .inputValidator((data: GetAssetsQuery) => getAssetsQuerySchema.parse(data))
   .handler(async ({ data }): Promise<PaginatedDto<AssetResponse>> => {
     const result = await apiFetchPaginated<AssetResponse>(apiUrl, {
       method: "GET",

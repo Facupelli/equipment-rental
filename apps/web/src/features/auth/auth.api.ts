@@ -1,10 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import {
-  CreateTenantUserSchema,
-  type CreaetTenantUserResponse,
-  type MeResponseDto,
-  type TenantUserCreate,
-} from "@repo/schemas";
 import { apiFetch } from "@/lib/api";
 import { useAppSession } from "@/lib/session";
 import {
@@ -13,20 +7,21 @@ import {
   type LoginResponseDto,
 } from "./schemas/login-form.schema";
 import { ACCESS_TOKEN_TTL_MS } from "./auth.constants";
+import {
+  registerSchema,
+  type MeResponse,
+  type RegisterDto,
+  type RegisterResponse,
+} from "@repo/schemas";
 
 export const registerTenantUser = createServerFn({ method: "POST" })
-  .inputValidator((data: TenantUserCreate) =>
-    CreateTenantUserSchema.parse(data),
-  )
-  .handler(async ({ data }): Promise<CreaetTenantUserResponse> => {
-    const result = await apiFetch<CreaetTenantUserResponse>(
-      "/tenants/register",
-      {
-        method: "POST",
-        body: data,
-        authenticated: false,
-      },
-    );
+  .inputValidator((data: RegisterDto) => registerSchema.parse(data))
+  .handler(async ({ data }): Promise<RegisterResponse> => {
+    const result = await apiFetch<RegisterResponse>("/tenants/register", {
+      method: "POST",
+      body: data,
+      authenticated: false,
+    });
 
     console.log({ result });
 
@@ -60,14 +55,14 @@ export const logoutUser = createServerFn({ method: "POST" }).handler(
 );
 
 export const getCurrentUser = createServerFn({ method: "GET" }).handler(
-  async (): Promise<MeResponseDto | null> => {
+  async (): Promise<MeResponse | null> => {
     const session = await useAppSession();
 
     if (!session.data.accessToken) {
       return null;
     }
 
-    const result = await apiFetch<MeResponseDto>("/users/me", {
+    const result = await apiFetch<MeResponse>("/users/me", {
       method: "GET",
     });
 

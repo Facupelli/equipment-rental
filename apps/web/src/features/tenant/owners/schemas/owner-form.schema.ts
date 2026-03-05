@@ -1,3 +1,9 @@
+import {
+  createOwnerSchema,
+  updateOwnerSchema,
+  type CreateOwnerDto,
+  type UpdateOwnerDto,
+} from "@repo/schemas";
 import { z } from "zod";
 
 export const ownerFormSchema = z.object({

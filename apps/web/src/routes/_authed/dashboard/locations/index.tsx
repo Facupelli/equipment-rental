@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { CreateLocationDialog } from "@/features/tenant/locations/components/create-location-dialog";
+import { CreateLocationDialog } from "@/features/tenant/locations/components/create-location-dialog-form";
 import { locationColumns } from "@/features/tenant/locations/components/locations-column";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
 import { OwnersDataTable } from "@/features/tenant/owners/components/owners-table";

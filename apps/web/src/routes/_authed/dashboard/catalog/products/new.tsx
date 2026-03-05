@@ -23,18 +23,23 @@ import {
 } from "@/components/ui/select";
 import { useCategories } from "@/features/catalog/product-categories/categories.queries";
 import { useCreateProduct } from "@/features/catalog/product-types/products.queries";
-import { ProductTypeCreateSchema } from "@repo/schemas";
+import {
+  pricingTierRowDefaults,
+  productTypeFormDefaults,
+  productTypeFormSchema,
+  toCreateProductTypeDto,
+} from "@/features/catalog/product-types/schemas/product-type-form.schema";
 import { TrackingMode } from "@repo/types";
 import { useForm } from "@tanstack/react-form";
 import { getRouteApi } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 
-export const Route = createFileRoute(
-  "/_authed/dashboard/catalog/products/new",
-)({
-  component: CreateProductPage,
-});
+export const Route = createFileRoute("/_authed/dashboard/catalog/products/new")(
+  {
+    component: CreateProductPage,
+  },
+);
 
 const authedRoute = getRouteApi("/_authed");
 
@@ -49,28 +54,13 @@ function CreateProductPage() {
   const { mutate: createProduct, isPending } = useCreateProduct();
 
   const form = useForm({
-    defaultValues: {
-      categoryId: "",
-      billingUnitId: "",
-      name: "",
-      description: "",
-      trackingMode: undefined as unknown as TrackingMode,
-      attributes: {} as Record<string, string>,
-      includedItems: [] as any[],
-      pricingTiers: [] as {
-        productTypeId?: string | null;
-        bundleId: string | null;
-        locationId: string | null;
-        fromUnit: number;
-        toUnit: number | null;
-        pricePerUnit: number;
-      }[],
-    },
+    defaultValues: productTypeFormDefaults,
     validators: {
-      onChange: ProductTypeCreateSchema,
+      onChange: productTypeFormSchema,
     },
     onSubmit: async ({ value }) => {
-      createProduct({ ...value, isActive: true });
+      const dto = toCreateProductTypeDto(value);
+      createProduct(dto);
     },
   });
 
@@ -106,12 +96,12 @@ function CreateProductPage() {
                       <Select
                         value={field.state.value}
                         onValueChange={(value) =>
-                          value && field.handleChange(value)
+                          field.handleChange(value ?? "")
                         }
                         disabled={categoriesLoading}
-                        items={categories.map((l) => ({
-                          value: l.id,
-                          label: l.name,
+                        items={categories.map((c) => ({
+                          value: c.id,
+                          label: c.name,
                         }))}
                       >
                         <SelectTrigger>
@@ -220,7 +210,7 @@ function CreateProductPage() {
                       <Input
                         id={field.name}
                         name={field.name}
-                        value={field.state.value ?? ""}
+                        value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
@@ -270,73 +260,78 @@ function CreateProductPage() {
                 }}
               />
 
-              {/* Attributes Field (Dynamic Key-Value) */}
+              {/* Attributes Field (Dynamic Key-Value rows) */}
               <div className="space-y-2">
                 <FieldLabel>Attributes</FieldLabel>
                 <form.Field
                   name="attributes"
-                  children={(field) => {
-                    const entries = Object.entries(field.state.value);
-                    return (
-                      <div className="space-y-2">
-                        {entries.map(([key, value], idx) => (
-                          <div key={idx} className="flex gap-2 items-center">
-                            <Input
-                              placeholder="Key"
-                              value={key}
-                              onChange={(e) => {
-                                const newKey = e.target.value;
-                                const newState = { ...field.state.value };
-                                if (newKey !== key) {
-                                  delete newState[key];
-                                  newState[newKey] = value;
-                                  field.handleChange(newState);
-                                }
-                              }}
-                              className="flex-1"
-                            />
-                            <Input
-                              placeholder="Value"
-                              value={value}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                field.handleChange({
-                                  ...field.state.value,
-                                  [key]: val,
-                                });
-                              }}
-                              className="flex-1"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                const newState = { ...field.state.value };
-                                delete newState[key];
-                                field.handleChange(newState);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            field.handleChange({
-                              ...field.state.value,
-                              [`new_key_${Date.now()}`]: ``,
-                            })
-                          }
-                        >
-                          <Plus className="h-4 w-4 mr-2" /> Add Attribute
-                        </Button>
-                      </div>
-                    );
-                  }}
+                  mode="array"
+                  children={(field) => (
+                    <div className="space-y-2">
+                      {field.state.value.map((_, index) => (
+                        <div key={index} className="flex gap-2 items-start">
+                          <form.Field
+                            name={`attributes[${index}].key`}
+                            children={(subField) => (
+                              <Field className="flex-1">
+                                <Input
+                                  placeholder="Key"
+                                  value={subField.state.value}
+                                  onBlur={subField.handleBlur}
+                                  onChange={(e) =>
+                                    subField.handleChange(e.target.value)
+                                  }
+                                />
+                                {subField.state.meta.isTouched &&
+                                  !subField.state.meta.isValid && (
+                                    <FieldError
+                                      errors={subField.state.meta.errors}
+                                    />
+                                  )}
+                              </Field>
+                            )}
+                          />
+                          <form.Field
+                            name={`attributes[${index}].value`}
+                            children={(subField) => (
+                              <Field className="flex-1">
+                                <Input
+                                  placeholder="Value"
+                                  value={subField.state.value}
+                                  onBlur={subField.handleBlur}
+                                  onChange={(e) =>
+                                    subField.handleChange(e.target.value)
+                                  }
+                                />
+                                {subField.state.meta.isTouched &&
+                                  !subField.state.meta.isValid && (
+                                    <FieldError
+                                      errors={subField.state.meta.errors}
+                                    />
+                                  )}
+                              </Field>
+                            )}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => field.removeValue(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => field.pushValue({ key: "", value: "" })}
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Add Attribute
+                      </Button>
+                    </div>
+                  )}
                 />
               </div>
 
@@ -438,7 +433,7 @@ function CreateProductPage() {
                                   </FieldLabel>
                                   <Input
                                     type="text"
-                                    value={subField.state.value ?? ""}
+                                    value={subField.state.value}
                                     onBlur={subField.handleBlur}
                                     onChange={(e) =>
                                       subField.handleChange(e.target.value)
@@ -461,11 +456,7 @@ function CreateProductPage() {
                         type="button"
                         variant="outline"
                         onClick={() =>
-                          field.pushValue({
-                            name: "",
-                            quantity: 1,
-                            notes: "",
-                          })
+                          field.pushValue({ name: "", quantity: 1, notes: "" })
                         }
                       >
                         <Plus className="h-4 w-4 mr-2" /> Add Included Item
@@ -510,13 +501,14 @@ function CreateProductPage() {
                                   <FieldLabel>From unit</FieldLabel>
                                   <Input
                                     type="number"
+                                    min={0}
                                     value={subField.state.value}
+                                    onBlur={subField.handleBlur}
                                     onChange={(e) =>
                                       subField.handleChange(
                                         Number(e.target.value),
                                       )
                                     }
-                                    onBlur={subField.handleBlur}
                                   />
                                   {isInvalid && (
                                     <FieldError
@@ -544,15 +536,20 @@ function CreateProductPage() {
                                   </FieldLabel>
                                   <Input
                                     type="number"
-                                    value={subField.state.value ?? ""}
+                                    min={1}
+                                    value={
+                                      subField.state.value === ""
+                                        ? ""
+                                        : subField.state.value
+                                    }
+                                    onBlur={subField.handleBlur}
                                     onChange={(e) =>
                                       subField.handleChange(
                                         e.target.value === ""
-                                          ? null
+                                          ? ""
                                           : Number(e.target.value),
                                       )
                                     }
-                                    onBlur={subField.handleBlur}
                                   />
                                   {isInvalid && (
                                     <FieldError
@@ -574,14 +571,14 @@ function CreateProductPage() {
                                 <Field data-invalid={isInvalid}>
                                   <FieldLabel>Price per unit</FieldLabel>
                                   <Input
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
+                                    placeholder="0.00"
                                     value={subField.state.value}
-                                    onChange={(e) =>
-                                      subField.handleChange(
-                                        Number(e.target.value),
-                                      )
-                                    }
                                     onBlur={subField.handleBlur}
+                                    onChange={(e) =>
+                                      subField.handleChange(e.target.value)
+                                    }
                                   />
                                   {isInvalid && (
                                     <FieldError
@@ -603,15 +600,7 @@ function CreateProductPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() =>
-                          field.pushValue({
-                            fromUnit: 0,
-                            toUnit: null,
-                            pricePerUnit: 0,
-                            locationId: null,
-                            bundleId: null,
-                          })
-                        }
+                        onClick={() => field.pushValue(pricingTierRowDefaults)}
                       >
                         <Plus className="h-4 w-4 mr-2" /> Add Pricing Tier
                       </Button>

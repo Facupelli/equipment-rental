@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { CreateOwnerDialog } from "@/features/tenant/owners/components/create-owner-dialog";
+import { CreateOwnerDialog } from "@/features/tenant/owners/components/create-owner-dialog-form";
 import { ownerColumns } from "@/features/tenant/owners/components/owners-columns";
 import { OwnersDataTable } from "@/features/tenant/owners/components/owners-table";
 import { useOwners } from "@/features/tenant/owners/owners.queries";

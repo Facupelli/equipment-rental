@@ -1,6 +1,5 @@
+import { registerSchema, type RegisterDto } from "@repo/schemas";
 import { z } from "zod";
-import { registerSchema } from "@your-monorepo/shared";
-import type { RegisterDto } from "@your-monorepo/shared";
 
 export const registerFormSchema = z
   .object({

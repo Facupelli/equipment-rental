@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { CreateTenantUserSchema } from "@repo/schemas";
 import { useForm } from "@tanstack/react-form";
 import {
   Card,
@@ -19,6 +18,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCreateTenantUser } from "@/features/auth/auth.queries";
+import {
+  registerFormDefaults,
+  registerFormSchema,
+  toRegisterDto,
+} from "@/features/auth/schemas/register-form.schema";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -38,22 +42,13 @@ function RegisterPage() {
   });
 
   const form = useForm({
-    defaultValues: {
-      user: {
-        firstName: "",
-        lastName: "",
-        email: "",
-        password: "",
-      },
-      tenant: {
-        name: "",
-      },
-    },
+    defaultValues: registerFormDefaults,
     validators: {
-      onChange: CreateTenantUserSchema,
+      onSubmit: registerFormSchema,
     },
     onSubmit: async ({ value }) => {
-      await createTenantUser(value);
+      const dto = toRegisterDto(value);
+      await createTenantUser(dto);
     },
   });
 
@@ -93,7 +88,7 @@ function RegisterPage() {
           >
             <FieldGroup>
               <form.Field
-                name="user.firstName"
+                name="firstName"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
@@ -118,7 +113,7 @@ function RegisterPage() {
                 }}
               />
               <form.Field
-                name="user.lastName"
+                name="lastName"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
@@ -143,7 +138,7 @@ function RegisterPage() {
                 }}
               />
               <form.Field
-                name="user.email"
+                name="email"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
@@ -167,7 +162,7 @@ function RegisterPage() {
                 }}
               />
               <form.Field
-                name="user.password"
+                name="password"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;
@@ -194,7 +189,7 @@ function RegisterPage() {
 
             <FieldGroup>
               <form.Field
-                name="tenant.name"
+                name="tenantName"
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid;

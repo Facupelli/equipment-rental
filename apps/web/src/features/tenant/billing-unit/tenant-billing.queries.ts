@@ -8,7 +8,7 @@ import {
 
 import type { ProblemDetailsError } from "@/shared/errors";
 import type {
-  SyncTenantBillingUnits,
+  SyncTenantBillingUnitsDto,
   TenantBillingUnitListResponse,
 } from "@repo/schemas";
 import {
@@ -23,7 +23,7 @@ type TenantBillingUnitQueryOptions<TData = TenantBillingUnitListResponse> =
   >;
 
 type TenantBillingUnitMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, SyncTenantBillingUnits>,
+  MutationOptions<string, ProblemDetailsError, SyncTenantBillingUnitsDto>,
   "mutationFn" | "mutationKey"
 >;
 
@@ -54,7 +54,7 @@ export function useSyncTenantBillingUnits(
 ) {
   const queryClient = useQueryClient();
 
-  return useMutation<string, ProblemDetailsError, SyncTenantBillingUnits>({
+  return useMutation<string, ProblemDetailsError, SyncTenantBillingUnitsDto>({
     ...options,
     mutationFn: (data) => createTenantBillingUnit({ data }),
     onSuccess: async (data, variables, onMutateResult, context) => {

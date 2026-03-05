@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import {
-  OwnerCreateSchema,
-  type OwnerCreate,
+  createOwnerSchema,
+  type CreateOwnerDto,
   type OwnerListResponse,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
@@ -9,7 +9,7 @@ import { createServerFn } from "@tanstack/react-start";
 const apiUrl = "/owners";
 
 export const createOwner = createServerFn({ method: "POST" })
-  .inputValidator((data: OwnerCreate) => OwnerCreateSchema.parse(data))
+  .inputValidator((data: CreateOwnerDto) => createOwnerSchema.parse(data))
   .handler(async ({ data }): Promise<string> => {
     const result = await apiFetch<string>(apiUrl, {
       method: "POST",

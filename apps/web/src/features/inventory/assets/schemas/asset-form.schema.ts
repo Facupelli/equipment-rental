@@ -1,14 +1,13 @@
-import { z } from "zod";
-import { createAssetSchema, updateAssetSchema } from "@your-monorepo/shared";
-import type { CreateAssetDto, UpdateAssetDto } from "@your-monorepo/shared";
 import {
-  emptyToNull,
-  emptyToNullOrUndefined,
-} from "@your-monorepo/web-shared-utils";
+  createAssetSchema,
+  updateAssetSchema,
+  type CreateAssetDto,
+  type UpdateAssetDto,
+} from "@repo/schemas";
+import { z } from "zod";
 
 export const assetFormSchema = z.object({
   locationId: z.string().min(1, "Location is required"),
-  productTypeId: z.string().min(1, "Product type is required"),
   ownerId: z.string().or(z.literal("")),
   serialNumber: z.string().or(z.literal("")),
   notes: z.string().or(z.literal("")),
@@ -19,7 +18,6 @@ export type AssetFormValues = z.infer<typeof assetFormSchema>;
 
 export const assetFormDefaults: AssetFormValues = {
   locationId: "",
-  productTypeId: "",
   ownerId: "",
   serialNumber: "",
   notes: "",
@@ -36,7 +34,6 @@ export function assetToFormValues(asset: {
 }): AssetFormValues {
   return {
     locationId: asset.locationId,
-    productTypeId: asset.productTypeId,
     ownerId: asset.ownerId ?? "",
     serialNumber: asset.serialNumber ?? "",
     notes: asset.notes ?? "",
@@ -47,7 +44,6 @@ export function assetToFormValues(asset: {
 export function toCreateAssetDto(values: AssetFormValues): CreateAssetDto {
   const dto = {
     locationId: values.locationId,
-    productTypeId: values.productTypeId,
     ownerId: emptyToNull(values.ownerId),
     serialNumber: emptyToNull(values.serialNumber),
     notes: emptyToNull(values.notes),
@@ -64,9 +60,6 @@ export function toUpdateAssetDto(
 
   if (dirtyValues.locationId !== undefined) {
     dto.locationId = dirtyValues.locationId;
-  }
-  if (dirtyValues.productTypeId !== undefined) {
-    dto.productTypeId = dirtyValues.productTypeId;
   }
   if (dirtyValues.ownerId !== undefined) {
     dto.ownerId = emptyToNullOrUndefined(dirtyValues.ownerId);

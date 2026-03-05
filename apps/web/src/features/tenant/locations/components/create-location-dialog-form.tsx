@@ -1,5 +1,4 @@
 import { useCreateLocation } from "@/features/tenant/locations/locations.queries";
-import { LocationCreateSchema } from "@repo/schemas";
 import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,6 +17,11 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  locationFormDefaults,
+  locationFormSchema,
+  toCreateLocationDto,
+} from "../schemas/location-form.schema";
 
 interface CreateLocationDialogProps {
   open: boolean;
@@ -38,16 +42,13 @@ export function CreateLocationDialog({
   });
 
   const form = useForm({
-    defaultValues: {
-      name: "",
-      address: "",
-      isActive: true,
-    },
+    defaultValues: locationFormDefaults,
     validators: {
-      onChange: LocationCreateSchema,
+      onSubmit: locationFormSchema,
     },
     onSubmit: async ({ value }) => {
-      createLocation(value);
+      const dto = toCreateLocationDto(value);
+      createLocation(dto);
     },
   });
 

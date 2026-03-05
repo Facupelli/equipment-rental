@@ -1,16 +1,10 @@
-import { z } from "zod";
 import {
   createLocationSchema,
   updateLocationSchema,
-} from "@your-monorepo/shared";
-import type {
-  CreateLocationDto,
-  UpdateLocationDto,
-} from "@your-monorepo/shared";
-import {
-  emptyToNull,
-  emptyToNullOrUndefined,
-} from "@your-monorepo/web-shared-utils";
+  type CreateLocationDto,
+  type UpdateLocationDto,
+} from "@repo/schemas";
+import { z } from "zod";
 
 export const locationFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
