@@ -31,7 +31,7 @@ import {
   useNavigate,
   useSearch,
 } from "@tanstack/react-router";
-import { CalendarDays, CalendarIcon, Search, X } from "lucide-react";
+import { CalendarIcon, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import dayjs from "@/lib/dayjs";
@@ -44,7 +44,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { useCartActions } from "@/features/rental/cart/cart.hooks";
+import { CartPopover } from "@/features/rental/cart/components/cart-popover";
 
 export const Route = createFileRoute("/_customer/rental/")({
   validateSearch: getRentalProductQuerySchema,
@@ -92,6 +93,7 @@ function buildPageWindow(
 function RouteComponent() {
   const search = useSearch({ from: "/_customer/rental/" });
   const navigate = useNavigate({ from: "/rental/" });
+  const { addProduct } = useCartActions();
 
   const [localSearch, setLocalSearch] = useState(search.search ?? "");
   const debouncedSearch = useDebounce(localSearch, 300);
@@ -125,8 +127,13 @@ function RouteComponent() {
     setUrlParam({ page });
   }
 
-  function handleAddToCart(_product: RentalProductResponse) {
-    // TODO: implement cart/order-summary integration
+  function handleAddToCart(product: RentalProductResponse) {
+    addProduct({
+      name: product.name,
+      billingUnitLabel: "Day",
+      pricePerUnit: 10000,
+      productTypeId: product.id,
+    });
   }
 
   const totalPages = products?.meta.totalPages ?? 1;
@@ -158,6 +165,8 @@ function RouteComponent() {
               onChange={(e) => setLocalSearch(e.target.value)}
             />
           </div>
+
+          <CartPopover />
         </div>
       </header>
 
@@ -259,16 +268,6 @@ function RouteComponent() {
       </main>
     </div>
   );
-}
-
-function formatDateRange(range: DateRange | undefined): string {
-  if (!range?.from) {
-    return "Select dates";
-  }
-  if (!range.to) {
-    return dayjs(range.from).format("MMM D, YYYY");
-  }
-  return `${dayjs(range.from).format("MMM D")} – ${dayjs(range.to).format("MMM D, YYYY")}`;
 }
 
 function DateRangePicker({

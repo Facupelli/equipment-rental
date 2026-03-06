@@ -1,0 +1,119 @@
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { CartItem, CartItemKey, CartState } from "./cart.types";
+
+function matchesKey(item: CartItem, key: CartItemKey): boolean {
+  if (key.type === "PRODUCT" && item.type === "PRODUCT") {
+    return item.productTypeId === key.productTypeId;
+  }
+  if (key.type === "BUNDLE" && item.type === "BUNDLE") {
+    return item.bundleId === key.bundleId;
+  }
+  return false;
+}
+
+const useCartStore = create<CartState>()(
+  persist(
+    (set) => ({
+      period: null,
+      items: [],
+
+      actions: {
+        setPeriod: (start, end) => set({ period: { start, end } }),
+
+        clearPeriod: () => set({ period: null }),
+
+        addProduct: (product) =>
+          set((state) => {
+            const existing = state.items.find(
+              (item) =>
+                item.type === "PRODUCT" &&
+                item.productTypeId === product.productTypeId,
+            );
+
+            if (existing) {
+              return {
+                items: state.items.map((item) =>
+                  item.type === "PRODUCT" &&
+                  item.productTypeId === product.productTypeId
+                    ? { ...item, quantity: item.quantity + 1 }
+                    : item,
+                ),
+              };
+            }
+
+            return {
+              items: [
+                ...state.items,
+                { ...product, type: "PRODUCT", quantity: 1 },
+              ],
+            };
+          }),
+
+        addBundle: (bundle) =>
+          set((state) => {
+            const existing = state.items.find(
+              (item) =>
+                item.type === "BUNDLE" && item.bundleId === bundle.bundleId,
+            );
+
+            if (existing) {
+              return {
+                items: state.items.map((item) =>
+                  item.type === "BUNDLE" && item.bundleId === bundle.bundleId
+                    ? { ...item, quantity: item.quantity + 1 }
+                    : item,
+                ),
+              };
+            }
+
+            return {
+              items: [
+                ...state.items,
+                { ...bundle, type: "BUNDLE", quantity: 1 },
+              ],
+            };
+          }),
+
+        incrementQuantity: (key) =>
+          set((state) => ({
+            items: state.items.map((item) =>
+              matchesKey(item, key)
+                ? { ...item, quantity: item.quantity + 1 }
+                : item,
+            ),
+          })),
+
+        decrementQuantity: (key) =>
+          set((state) => {
+            const item = state.items.find((i) => matchesKey(i, key));
+            if (!item) return state;
+
+            if (item.quantity === 1) {
+              return { items: state.items.filter((i) => !matchesKey(i, key)) };
+            }
+
+            return {
+              items: state.items.map((i) =>
+                matchesKey(i, key) ? { ...i, quantity: i.quantity - 1 } : i,
+              ),
+            };
+          }),
+
+        removeItem: (key) =>
+          set((state) => ({
+            items: state.items.filter((item) => !matchesKey(item, key)),
+          })),
+
+        clearCart: () => set({ period: null, items: [] }),
+      },
+    }),
+    {
+      name: "rental-cart",
+      // Actions are derived — exclude them from persistence
+      partialize: (state) => ({ period: state.period, items: state.items }),
+    },
+  ),
+);
+
+export default useCartStore;
