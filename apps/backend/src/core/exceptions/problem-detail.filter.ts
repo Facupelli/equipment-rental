@@ -1,7 +1,7 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ProblemException } from '../exceptions/problem.exception';
-import { ProblemDetails } from '@repo/types';
+import { ProblemDetails } from '@repo/schemas';
 
 type HandlerResult = { status: number; problemDetails: ProblemDetails };
 

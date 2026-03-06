@@ -35,6 +35,7 @@ import {
   assetFormSchema,
   toCreateAssetDto,
 } from "../schemas/asset-form.schema";
+import { ProblemDetailsError } from "@/shared/errors";
 
 const formId = "create-asset";
 
@@ -43,9 +44,7 @@ export function CreateAssetDialogForm() {
 
   const [open, setOpen] = useState(false);
 
-  const { mutate: createAsset, isPending } = useCreateAsset({
-    onSuccess: () => setOpen(false),
-  });
+  const { mutateAsync: createAsset, isPending } = useCreateAsset();
   const { data: locations = [], isLoading: locationsLoading } = useLocations();
   const { data: owners = [], isLoading: ownersLoading } = useOwners();
 
@@ -56,10 +55,27 @@ export function CreateAssetDialogForm() {
     },
     onSubmit: async ({ value }) => {
       const dto = toCreateAssetDto(value, product.id);
-      createAsset(dto);
-      form.reset();
+      try {
+        await createAsset(dto);
+        form.reset();
+        setOpen(false);
+      } catch (error) {
+        if (
+          error instanceof ProblemDetailsError &&
+          error.problemDetails.status === 409
+        ) {
+          form.setFieldMeta("serialNumber", (prev) => ({
+            ...prev,
+            errorMap: {
+              ...prev.errorMap,
+              onSubmit: error.problemDetails.detail,
+            },
+          }));
+        }
+      }
     },
   });
+
   return (
     <Dialog open={open} onOpenChange={(next) => setOpen(next)}>
       <DialogTrigger
@@ -139,6 +155,7 @@ export function CreateAssetDialogForm() {
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
+
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>
@@ -181,12 +198,14 @@ export function CreateAssetDialogForm() {
               }}
             />
 
-            {/* Serial Number Field (optional) */}
+            {/* Serial Number Field */}
             <form.Field
               name="serialNumber"
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
+                const hasSubmitError = !!field.state.meta.errorMap?.onSubmit;
+
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>
@@ -205,8 +224,12 @@ export function CreateAssetDialogForm() {
                       onChange={(e) => field.handleChange(e.target.value)}
                       aria-invalid={isInvalid}
                     />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
+                    {(isInvalid || hasSubmitError) && (
+                      <FieldError
+                        errors={field.state.meta.errors.map((e) =>
+                          typeof e === "string" ? { message: e } : e,
+                        )}
+                      />
                     )}
                   </Field>
                 );

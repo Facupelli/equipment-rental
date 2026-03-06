@@ -1,4 +1,4 @@
-import { Body, Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
+import { Body, ConflictException, Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { CreateAssetDto } from '../../application/dto/create-asset.dto';
 import { GetAssetsQueryDto } from '../../application/dto/get-assets-query.dto';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
@@ -7,6 +7,7 @@ import { GetAssetByIdQuery } from '../../application/queries/get-asset-by-id/get
 import { GetAssetsQuery } from '../../application/queries/get-assets/get-assets.query';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 import { AssetResponse } from '@repo/schemas';
+import { DuplicateSerialNumberError, ProductTypeNotFoundError } from '../../domain/exceptions/asset.exceptions';
 
 @Controller('assets')
 export class AssetController {
@@ -18,7 +19,21 @@ export class AssetController {
   @Post()
   async createAsset(@Body() dto: CreateAssetDto): Promise<string> {
     const command = new CreateAssetCommand(dto);
-    return await this.commandBus.execute(command);
+
+    const result = await this.commandBus.execute(command);
+
+    if (result.isErr()) {
+      const error = result.error;
+      if (error instanceof ProductTypeNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      if (error instanceof DuplicateSerialNumberError) {
+        throw new ConflictException(error.message);
+      }
+      throw error;
+    }
+
+    return result;
   }
 
   @Get()

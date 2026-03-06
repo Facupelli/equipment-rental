@@ -1,4 +1,6 @@
 import { apiFetch, apiFetchPaginated } from "@/lib/api";
+import { ProblemDetailsError } from "@/shared/errors";
+import { type ProblemDetails } from "@repo/schemas";
 import {
   createAssetSchema,
   getAssetsQuerySchema,
@@ -13,13 +15,19 @@ const apiUrl = "/assets";
 
 export const createAsset = createServerFn({ method: "POST" })
   .inputValidator((data: CreateAssetDto) => createAssetSchema.parse(data))
-  .handler(async ({ data }): Promise<string> => {
-    const result = await apiFetch<string>(apiUrl, {
-      method: "POST",
-      body: data,
-    });
-
-    return result;
+  .handler(async ({ data }): Promise<string | { error: ProblemDetails }> => {
+    try {
+      const result = await apiFetch<string>(apiUrl, {
+        method: "POST",
+        body: data,
+      });
+      return result;
+    } catch (error) {
+      if (error instanceof ProblemDetailsError) {
+        return { error: error.problemDetails }; // plain serializable object — crosses boundary safely
+      }
+      throw error; // genuine unexpected errors can still throw
+    }
   });
 
 export const getAssets = createServerFn({ method: "GET" })

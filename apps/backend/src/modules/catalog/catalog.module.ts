@@ -13,6 +13,8 @@ import { GetProductTypesQueryHandler } from './application/queries/get-product-t
 import { GetProductCategoriesQueryHandler } from './application/queries/get-product-categories/get-product-categories.query-handler';
 import { GetRentalProductTypesQueryHandler } from './application/queries/get-reantal-product-types/get-rental-product-types.query-handler';
 import { RentalProductTypeController } from './infrastructure/controllers/rental-product-type.controller';
+import { CatalogPublicApi } from './catalog.public-api';
+import { CatalogApplicationService } from './application/catalog.application-service';
 
 const repositories = [
   { provide: ProductCategoryRepositoryPort, useClass: ProductCategoryRepository },
@@ -31,6 +33,12 @@ const queryHandlers = [
 @Module({
   imports: [TenantModule],
   controllers: [ProductCategoryController, ProductTypeController, RentalProductTypeController],
-  providers: [...repositories, ...commandhandlers, ...queryHandlers],
+  providers: [
+    ...repositories,
+    ...commandhandlers,
+    ...queryHandlers,
+    { provide: CatalogPublicApi, useClass: CatalogApplicationService },
+  ],
+  exports: [CatalogPublicApi],
 })
 export class CatalogModule {}

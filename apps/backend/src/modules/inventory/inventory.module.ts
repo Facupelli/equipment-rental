@@ -11,6 +11,8 @@ import { AssetAssignmentRepository } from './infrastructure/persistance/reposito
 import { InventoryPublicApi } from './inventory.public-api';
 import { InventoryApplicationService } from './application/inventory.application-service';
 import { AssetAvailabilityService } from './infrastructure/services/asset-availability.service';
+import { CatalogModule } from '../catalog/catalog.module';
+import { AssetSerialNumberService } from './infrastructure/services/asset-serial-number.service';
 
 const repositories = [
   {
@@ -25,13 +27,14 @@ const commandHandlers = [CreateAssetCommandHandler];
 const queryHandlers = [GetAssetByIdQueryHandler, GetAssetsQueryHandler];
 
 @Module({
-  imports: [TenantModule],
+  imports: [TenantModule, CatalogModule],
   controllers: [AssetController],
   providers: [
     ...repositories,
     ...commandHandlers,
     ...queryHandlers,
     AssetAvailabilityService,
+    AssetSerialNumberService,
     { provide: InventoryPublicApi, useClass: InventoryApplicationService },
   ],
   exports: [InventoryPublicApi],

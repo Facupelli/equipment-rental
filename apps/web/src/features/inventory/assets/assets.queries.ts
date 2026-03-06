@@ -13,7 +13,7 @@ import type {
   GetAssetsQuery,
   PaginatedDto,
 } from "@repo/schemas";
-import type { ProblemDetailsError } from "@/shared/errors";
+import { ProblemDetailsError } from "@/shared/errors";
 
 type PaginatedAssets = PaginatedDto<AssetResponse>;
 
@@ -59,7 +59,13 @@ export function useCreateAsset(options?: AssetMutationOptions) {
 
   return useMutation<string, ProblemDetailsError, CreateAssetDto>({
     ...options,
-    mutationFn: (data) => createAsset({ data }),
+    mutationFn: async (data) => {
+      const result = await createAsset({ data });
+      if (typeof result === "object" && "error" in result) {
+        throw new ProblemDetailsError(result.error);
+      }
+      return result;
+    },
     onSuccess: async (data, variables, onMutateResult, context) => {
       await queryClient.invalidateQueries({
         queryKey: createAssetQueryOptions().queryKey,
