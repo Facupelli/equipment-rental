@@ -69,19 +69,33 @@ export type GetProductTypesQuery = z.infer<typeof getProductTypesQuerySchema>;
 
 // RENTAL
 
-const productCatalogCategorySchema = z.object({
+export const rentalProductBillingUnitResponseSchema = z.object({
+  id: z.uuid(),
+  label: z.string(),
+});
+
+export const rentalProductPricingTierResponseSchema = z.object({
+  id: z.uuid(),
+  fromUnit: z.number().int(),
+  toUnit: z.number().int().nullable(),
+  pricePerUnit: z.number(),
+});
+
+const rentalProductCategorySchema = z.object({
   id: z.uuid(),
   name: z.string(),
 });
 
-const productCatalogItemSchema = z.object({
+const rentalProductItemSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   description: z.string().nullable(),
   attributes: productTypeAttributesSchema,
   includedItems: z.array(productTypeIncludedItemSchema),
   availableCount: z.number().int().min(1),
-  category: productCatalogCategorySchema.nullable(),
+  category: rentalProductCategorySchema.nullable(),
+  billingUnit: rentalProductBillingUnitResponseSchema,
+  pricingTiers: z.array(rentalProductPricingTierResponseSchema),
 });
 
 export const getRentalProductQuerySchema = z.object({
@@ -92,12 +106,10 @@ export const getRentalProductQuerySchema = z.object({
   limit: z.coerce.number().optional(),
 });
 
-export const productCatalogDataSchema = z.array(productCatalogItemSchema);
+export const rentalProductDataSchema = z.array(rentalProductItemSchema);
 
-export type RentalProductResponse = z.infer<typeof productCatalogItemSchema>;
-export type RentalProductListResponse = z.infer<
-  typeof productCatalogDataSchema
->;
+export type RentalProductResponse = z.infer<typeof rentalProductItemSchema>;
+export type RentalProductListResponse = z.infer<typeof rentalProductDataSchema>;
 export type GetRentalProductTypesQuery = z.infer<
   typeof getRentalProductQuerySchema
 >;

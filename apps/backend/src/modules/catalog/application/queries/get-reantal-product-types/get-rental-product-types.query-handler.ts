@@ -2,34 +2,15 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetRentalProductTypesQuery } from './get-rental-product-types.query';
 import { PaginatedDto, RentalProductResponse } from '@repo/schemas';
-import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
 import { Prisma } from 'src/generated/prisma/client';
 import { IncludedItem } from 'src/modules/catalog/domain/entities/product-type.entity';
-
-interface ProductCatalogRow {
-  id: string;
-  name: string;
-  description: string | null;
-  attributes: Prisma.JsonValue;
-  included_items: Prisma.JsonValue;
-  available_count: bigint; // Postgres COUNT returns bigint
-  category_id: string | null;
-  category_name: string | null;
-}
-
-interface CountRow {
-  total: bigint;
-}
 
 @QueryHandler(GetRentalProductTypesQuery)
 export class GetRentalProductTypesQueryHandler implements IQueryHandler<
   GetRentalProductTypesQuery,
   PaginatedDto<RentalProductResponse>
 > {
-  constructor(
-    private readonly tenantContext: TenantContextService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetRentalProductTypesQuery): Promise<PaginatedDto<RentalProductResponse>> {
     const { locationId, categoryId, search } = query;
@@ -37,84 +18,128 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
     const limit = query.limit ?? 20;
     const offset = (page - 1) * limit;
 
-    const tenantId = this.tenantContext.requireTenantId();
+    const where = this.buildWhere({ locationId, categoryId, search });
 
-    // Build optional filter fragments.
-    // Prisma.sql is a tagged template that safely parameterises values.
-    // Prisma.empty is a no-op fragment used as a fallback.
-    const categoryFilter = categoryId ? Prisma.sql`AND pt.category_id = ${categoryId}` : Prisma.empty;
+    const [rawProducts, total] = await Promise.all([
+      this.prisma.client.productType.findMany({
+        where,
+        skip: offset,
+        take: limit,
+        orderBy: { name: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          includedItems: true,
+          attributes: true,
 
-    const searchFilter = search ? Prisma.sql`AND pt.name ILIKE ${'%' + search + '%'}` : Prisma.empty;
+          // Count only assets at the requested location that are active.
+          _count: {
+            select: {
+              assets: {
+                where: {
+                  locationId,
+                  isActive: true,
+                  deletedAt: null,
+                },
+              },
+            },
+          },
 
-    const [rows, countRows] = await Promise.all([
-      this.prisma.client.$queryRaw<ProductCatalogRow[]>`
-        SELECT
-          pt.id,
-          pt.name,
-          pt.description,
-          pt.attributes,
-          pt.included_items,
-          COUNT(a.id)::int        AS available_count,
-          pc.id                   AS category_id,
-          pc.name                 AS category_name
-        FROM product_types pt
-        LEFT JOIN product_categories pc
-          ON pc.id = pt.category_id
-        INNER JOIN assets a
-          ON  a.product_type_id = pt.id
-          AND a.location_id     = ${locationId}
-          AND a.is_active       = true
-          AND a.deleted_at      IS NULL
-        WHERE pt.tenant_id  = ${tenantId}
-          AND pt.is_active  = true
-          AND pt.deleted_at IS NULL
-          ${categoryFilter}
-          ${searchFilter}
-        GROUP BY pt.id, pc.id
-        HAVING COUNT(a.id) >= 1
-        ORDER BY pt.name ASC
-        LIMIT  ${limit}
-        OFFSET ${offset}
-      `,
+          category: {
+            select: { id: true, name: true },
+          },
 
-      this.prisma.client.$queryRaw<CountRow[]>`
-        SELECT COUNT(*) AS total
-        FROM (
-          SELECT pt.id
-          FROM product_types pt
-          INNER JOIN assets a
-            ON  a.product_type_id = pt.id
-            AND a.location_id     = ${locationId}
-            AND a.is_active       = true
-            AND a.deleted_at      IS NULL
-          WHERE pt.tenant_id  = ${tenantId}
-            AND pt.is_active  = true
-            AND pt.deleted_at IS NULL
-            ${categoryFilter}
-            ${searchFilter}
-          GROUP BY pt.id
-          HAVING COUNT(a.id) >= 1
-        ) sub
-      `,
+          billingUnit: {
+            select: { id: true, label: true },
+          },
+
+          // Only tiers for this specific location — no global fallback.
+          pricingTiers: {
+            where: {
+              OR: [{ locationId }, { locationId: null }],
+            },
+            select: {
+              id: true,
+              locationId: true,
+              fromUnit: true,
+              toUnit: true,
+              pricePerUnit: true,
+            },
+            orderBy: { fromUnit: 'asc' },
+          },
+        },
+      }),
+
+      this.prisma.client.productType.count({ where }),
     ]);
 
-    const total = Number(countRows[0]?.total ?? 0);
+    const items: RentalProductResponse[] = rawProducts.map((product) => {
+      const locationTiers = product.pricingTiers.filter((t) => t.locationId === locationId);
+      const resolvedTiers =
+        locationTiers.length > 0 ? locationTiers : product.pricingTiers.filter((t) => t.locationId === null);
+
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        availableCount: product._count.assets,
+        category: product.category ?? null,
+        attributes: product.attributes as Record<string, string>,
+        includedItems: product.includedItems as unknown as IncludedItem[],
+        billingUnit: product.billingUnit,
+        pricingTiers: resolvedTiers.map((tier) => ({
+          id: tier.id,
+          fromUnit: tier.fromUnit,
+          toUnit: tier.toUnit,
+          // Prisma returns Decimal for Decimal fields — convert to JS number.
+          pricePerUnit: tier.pricePerUnit.toNumber(),
+        })),
+      };
+    });
 
     return {
-      data: rows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        attributes: row.attributes as Record<string, string>,
-        includedItems: row.included_items as unknown as IncludedItem[],
-        availableCount: Number(row.available_count), // bigint → number
-        category: row.category_id && row.category_name ? { id: row.category_id, name: row.category_name } : null,
-      })),
+      data: items,
       meta: {
         total,
         limit,
         page,
         totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  private buildWhere({
+    locationId,
+    categoryId,
+    search,
+  }: Pick<GetRentalProductTypesQuery, 'locationId' | 'categoryId' | 'search'>): Prisma.ProductTypeWhereInput {
+    return {
+      isActive: true,
+      deletedAt: null,
+
+      // Category filter — omitted entirely when not provided so Prisma doesn't
+      // add an unnecessary WHERE clause.
+      ...(categoryId ? { categoryId } : {}),
+
+      // Case-insensitive name search.
+      ...(search ? { name: { contains: search, mode: Prisma.QueryMode.insensitive } } : {}),
+
+      // Only products that have at least one active asset at this location.
+      assets: {
+        some: {
+          locationId,
+          isActive: true,
+          deletedAt: null,
+        },
+      },
+
+      // Only products that have at least one pricing tier — either location-specific
+      // or global. Products with no tiers at all are excluded.
+      pricingTiers: {
+        some: {
+          OR: [{ locationId }, { locationId: null }],
+        },
       },
     };
   }

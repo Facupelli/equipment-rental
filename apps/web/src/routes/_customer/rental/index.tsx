@@ -51,6 +51,7 @@ import z from "zod";
 const rentalPageSearchSchema = getRentalProductQuerySchema.extend({
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
+  locationId: z.string().optional(),
 });
 
 type RentalPageSearch = z.infer<typeof rentalPageSearchSchema>;
@@ -61,23 +62,25 @@ export const Route = createFileRoute("/_customer/rental/")({
     page: search.page,
     categoryId: search.categoryId,
     searchQuery: search.search,
+    locationId: search.locationId,
   }),
-  loader: ({ context: { queryClient }, deps }) =>
-    queryClient.ensureQueryData(createProductsQueryOptions(deps)),
+  loader: ({ context: { queryClient }, deps }) => {
+    if (!deps.locationId) {
+      return null;
+    }
+    queryClient.ensureQueryData(createProductsQueryOptions(deps));
+  },
   component: RentalPage,
 });
 
 function RentalPage() {
   const search = useSearch({ from: "/_customer/rental/" });
   const navigate = useNavigate({ from: "/rental/" });
-  const { addProduct } = useCartActions();
 
   const [localSearch, setLocalSearch] = useState(search.search ?? "");
   const debouncedSearch = useDebounce(localSearch, 300);
 
   const { data: locations, isPending: isPendingLocations } = useLocations();
-  const { data: products, isPending: isPendingProducts } =
-    useRentalProducts(search);
 
   function setUrlParam(patch: Partial<RentalPageSearch>) {
     navigate({ search: (prev) => ({ ...prev, ...patch }) });
@@ -97,24 +100,6 @@ function RentalPage() {
     const locationId = value === null ? undefined : value;
     setUrlParam({ locationId, page: 1 });
   }
-
-  function handlePageChange(page: number) {
-    setUrlParam({ page });
-  }
-
-  function handleAddToCart(product: RentalProductResponse) {
-    addProduct({
-      name: product.name,
-      billingUnitLabel: "Day",
-      pricePerUnit: 10000,
-      productTypeId: product.id,
-      imageUrl: "",
-      includedItems: product.includedItems,
-    });
-  }
-
-  const totalPages = products?.meta.totalPages ?? 1;
-  const currentPage = search.page ?? 1;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50/50">
@@ -199,49 +184,7 @@ function RentalPage() {
           onSelect={handleCategorySelect}
         />
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Section heading                                                  */}
-        {/* ---------------------------------------------------------------- */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold tracking-tight py-4">
-            Equipment Catalog
-          </h2>
-          <Badge variant="secondary" className="text-sm px-3 py-1">
-            {isPendingProducts
-              ? "..."
-              : `${products?.meta.total ?? 0} items available`}
-          </Badge>
-        </div>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* Product grid                                                     */}
-        {/* ---------------------------------------------------------------- */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 py-10">
-          {isPendingProducts
-            ? Array.from({ length: 8 }).map((_, i) => (
-                <ProductSkeleton key={i} />
-              ))
-            : products?.data.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onAdd={handleAddToCart}
-                />
-              ))}
-        </div>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* Pagination                                                       */}
-        {/* ---------------------------------------------------------------- */}
-        {!isPendingProducts && totalPages > 1 && (
-          <div className="mt-4 mb-10 flex justify-center">
-            <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
-          </div>
-        )}
+        <ProductCatalog setUrlParam={setUrlParam} />
       </main>
     </div>
   );
@@ -352,6 +295,88 @@ function CategoryFilter({
   );
 }
 
+function ProductCatalog({
+  setUrlParam,
+}: {
+  setUrlParam: (patch: Partial<RentalPageSearch>) => void;
+}) {
+  const search = useSearch({ from: "/_customer/rental/" });
+
+  const { addProduct } = useCartActions();
+
+  const { data: products, isPending: isPendingProducts } = useRentalProducts(
+    search,
+    {
+      enabled: search.locationId !== undefined,
+    },
+  );
+
+  function handlePageChange(page: number) {
+    setUrlParam({ page });
+  }
+
+  function handleAddToCart(product: RentalProductResponse) {
+    addProduct({
+      name: product.name,
+      billingUnitLabel: "Day",
+      pricePerUnit: 10000,
+      productTypeId: product.id,
+      imageUrl: "",
+      includedItems: product.includedItems,
+    });
+  }
+
+  const currentPage = search.page ?? 1;
+
+  const totalPages = products?.meta.totalPages ?? 1;
+
+  return (
+    <>
+      {/* ---------------------------------------------------------------- */}
+      {/* Section heading                                                  */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold tracking-tight py-4">
+          Equipment Catalog
+        </h2>
+        <Badge variant="secondary" className="text-sm px-3 py-1">
+          {isPendingProducts
+            ? "..."
+            : `${products?.meta.total ?? 0} items available`}
+        </Badge>
+      </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Product grid                                                     */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 py-10">
+        {isPendingProducts
+          ? Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)
+          : products?.data.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAdd={handleAddToCart}
+              />
+            ))}
+      </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Pagination                                                       */}
+      {/* ---------------------------------------------------------------- */}
+      {!isPendingProducts && totalPages > 1 && (
+        <div className="mt-4 mb-10 flex justify-center">
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
 function ProductCard({
   product,
   onAdd,
@@ -362,6 +387,7 @@ function ProductCard({
   // const dailyPrice = product.pricingTiers.find(
   //   (t) => t.fromUnit === 1,
   // )?.pricePerUnit;
+  console.log({ product });
 
   const dailyPrice = 10000;
   const category = product.category?.name ?? "General";
@@ -401,10 +427,10 @@ function ProductCard({
               <span className="text-lg font-bold">
                 ${dailyPrice.toFixed(2)}
               </span>
-              {/* <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {" "}
                 / {product.billingUnit.label}
-              </span> */}
+              </span>
             </>
           ) : (
             <span className="text-sm text-muted-foreground">Contact us</span>
