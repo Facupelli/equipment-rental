@@ -12,16 +12,12 @@ import {
   ShoppingBag,
   X,
 } from "lucide-react";
-import {
-  useCartIsEmpty,
-  useCartItemCount,
-  useCartItems,
-  useCartPeriod,
-} from "../cart.hooks";
+import { useCartIsEmpty, useCartItemCount, useCartItems } from "../cart.hooks";
 import type { CartItem } from "../cart.types";
 import { useRouter, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import dayjs from "@/lib/dayjs";
+import { useLocations } from "@/features/tenant/locations/locations.queries";
 
 export function CartPopover() {
   const itemCount = useCartItemCount();
@@ -88,9 +84,11 @@ export function CartPopoverHeader({ onClose }: CartPopoverHeaderProps) {
 }
 
 function CartPopoverContext() {
-  const period = useCartPeriod();
-  // const { data: location } = useLocation();
-  const location = "San Juan Warehouse";
+  const { locationId, startDate, endDate } = useSearch({
+    from: "/_customer/rental/",
+  });
+  const { data: locations } = useLocations();
+  const location = locations?.find((l) => l.id === locationId);
 
   const formatDate = (date: Date) => {
     return dayjs(date).format("MM/DD/YYYY");
@@ -101,11 +99,11 @@ function CartPopoverContext() {
       <div className="flex items-start gap-4">
         <MapPin className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 pb-1">
             Pickup Location
           </p>
           {location ? (
-            <p className="text-sm text-black">{location}</p>
+            <p className="text-sm text-black">{location.name}</p>
           ) : (
             <p className="text-sm text-neutral-300">Not selected</p>
           )}
@@ -115,12 +113,12 @@ function CartPopoverContext() {
       <div className="flex items-start gap-3">
         <Calendar className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            Rental Timeline
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 pb-1">
+            Rental Period
           </p>
-          {period ? (
+          {startDate && endDate ? (
             <p className="text-sm text-black">
-              {formatDate(period.start)} — {formatDate(period.end)}
+              {formatDate(startDate)} — {formatDate(endDate)}
             </p>
           ) : (
             <p className="text-sm text-neutral-300">No period selected</p>

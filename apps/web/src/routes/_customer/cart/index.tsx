@@ -9,7 +9,6 @@ import type {
 import {
   useCartIsEmpty,
   useCartItems,
-  useCartPeriod,
 } from "@/features/rental/cart/cart.hooks";
 import {
   AlertTriangle,
@@ -35,9 +34,9 @@ import type {
 } from "@repo/schemas";
 
 const cartPageSearchSchema = z.object({
-  startDate: z.coerce.date().optional(),
-  endDate: z.coerce.date().optional(),
-  locationId: z.string().optional(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  locationId: z.string(),
 });
 
 export const Route = createFileRoute("/_customer/cart/")({
@@ -56,8 +55,8 @@ function CartPage() {
     currency: "USD",
     locationId,
     period: {
-      start: startDate?.toISOString(),
-      end: endDate?.toISOString(),
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
     },
     items: items.map((item) => {
       if (item.type === "PRODUCT") {
@@ -78,11 +77,13 @@ function CartPage() {
   const {
     data: breakdown,
     isPending,
-    error,
     isError,
-  } = useCartPricePreview(data);
-
-  console.log({ breakdown, isPending, error });
+  } = useCartPricePreview(data, {
+    enabled:
+      startDate !== undefined &&
+      endDate !== undefined &&
+      locationId !== undefined,
+  });
 
   function handleBook() {
     // TODO: wire to order creation mutation when backend spec is ready
@@ -511,10 +512,12 @@ function CartPageSidebar({
   isError,
   onBook,
 }: CartPageSidebarProps) {
+  const { startDate, endDate } = useSearch({
+    from: "/_customer/cart/",
+  });
   const isEmpty = useCartIsEmpty();
-  const period = useCartPeriod();
 
-  const isDisabled = isEmpty || !period || isLoading || isError;
+  const isDisabled = isEmpty || !startDate || !endDate || isLoading || isError;
 
   return (
     <div className="sticky top-6 border border-neutral-200 bg-white p-6">
@@ -564,6 +567,8 @@ function CartPagePriceBreakdown({
   isLoading,
   isError,
 }: CartPagePriceBreakdownProps) {
+  const cartItems = useCartItems();
+
   if (isError) {
     return (
       <div className="flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
@@ -590,22 +595,28 @@ function CartPagePriceBreakdown({
                 <Skeleton className="h-5 w-16" />
               </div>
             ))
-          : breakdown?.lineItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-start justify-between gap-4"
-              >
-                <div>
-                  <p className="text-sm text-black">{item.id}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-                    {item.type}
+          : breakdown?.lineItems.map((item) => {
+              const cartItem = cartItems.find(
+                (i) => i.type === "PRODUCT" && i.productTypeId === item.id,
+              );
+
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-start justify-between gap-4"
+                >
+                  <div>
+                    <p className="text-sm text-black">{cartItem?.name}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                      {item.type}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-sm font-semibold text-black">
+                    {formatCurrency(item.subtotal)}
                   </p>
                 </div>
-                <p className="shrink-0 text-sm font-semibold text-black">
-                  {formatCurrency(item.subtotal)}
-                </p>
-              </div>
-            ))}
+              );
+            })}
       </div>
 
       {/* Divider */}

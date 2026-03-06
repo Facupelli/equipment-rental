@@ -15,14 +15,9 @@ function matchesKey(item: CartItem, key: CartItemKey): boolean {
 const useCartStore = create<CartState>()(
   persist(
     (set) => ({
-      period: null,
       items: [],
 
       actions: {
-        setPeriod: (start, end) => set({ period: { start, end } }),
-
-        clearPeriod: () => set({ period: null }),
-
         addProduct: (product) =>
           set((state) => {
             const existing = state.items.find(
@@ -105,12 +100,12 @@ const useCartStore = create<CartState>()(
             items: state.items.filter((item) => !matchesKey(item, key)),
           })),
 
-        clearCart: () => set({ period: null, items: [] }),
+        clearCart: () => set({ items: [] }),
       },
     }),
     {
       name: "rental-cart",
-      partialize: (state) => ({ period: state.period, items: state.items }),
+      partialize: (state) => ({ items: state.items }),
     },
   ),
 );

@@ -48,8 +48,6 @@ export type CartItemKey =
   | { type: "BUNDLE"; bundleId: string };
 
 export type CartActions = {
-  setPeriod: (start: Date, end: Date) => void;
-  clearPeriod: () => void;
   addProduct: (product: Omit<CartProductItem, "type" | "quantity">) => void;
   addBundle: (bundle: Omit<CartBundleItem, "type" | "quantity">) => void;
   incrementQuantity: (key: CartItemKey) => void;
@@ -59,7 +57,6 @@ export type CartActions = {
 };
 
 export type CartState = {
-  period: RentalPeriod | null;
   items: CartItem[];
   actions: CartActions;
 };

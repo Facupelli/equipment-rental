@@ -1,9 +1,6 @@
 import { useShallow } from "zustand/react/shallow";
 import useCartStore from "./cart.store";
-import type { CartActions, CartItem, RentalPeriod } from "./cart.types";
-
-export const useCartPeriod = (): RentalPeriod | null =>
-  useCartStore((state) => state.period);
+import type { CartActions, CartItem } from "./cart.types";
 
 export const useCartItems = (): CartItem[] =>
   useCartStore(useShallow((state) => state.items));

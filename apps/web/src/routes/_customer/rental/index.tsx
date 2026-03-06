@@ -316,10 +316,12 @@ function ProductCatalog({
   }
 
   function handleAddToCart(product: RentalProductResponse) {
+    const unitPrice = product.pricingTiers[0].pricePerUnit;
+
     addProduct({
       name: product.name,
-      billingUnitLabel: "Day",
-      pricePerUnit: 10000,
+      billingUnitLabel: product.billingUnit.label,
+      pricePerUnit: unitPrice,
       productTypeId: product.id,
       imageUrl: "",
       includedItems: product.includedItems,
@@ -384,12 +386,9 @@ function ProductCard({
   product: RentalProductResponse;
   onAdd: (product: RentalProductResponse) => void;
 }) {
-  // const dailyPrice = product.pricingTiers.find(
-  //   (t) => t.fromUnit === 1,
-  // )?.pricePerUnit;
+  const unitPrice = product.pricingTiers[0].pricePerUnit;
   console.log({ product });
 
-  const dailyPrice = 10000;
   const category = product.category?.name ?? "General";
 
   return (
@@ -422,11 +421,9 @@ function ProductCard({
       {/* Footer — Add button isolated from navigation */}
       <CardFooter className="p-4 flex items-center justify-between ">
         <div>
-          {dailyPrice != null ? (
+          {unitPrice != null ? (
             <>
-              <span className="text-lg font-bold">
-                ${dailyPrice.toFixed(2)}
-              </span>
+              <span className="text-lg font-bold">${unitPrice.toFixed(0)}</span>
               <span className="text-xs text-muted-foreground">
                 {" "}
                 / {product.billingUnit.label}
