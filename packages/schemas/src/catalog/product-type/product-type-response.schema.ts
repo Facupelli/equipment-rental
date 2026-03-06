@@ -66,3 +66,38 @@ export type ProductTypePricingTierResponse = z.infer<
 >;
 export type ProductTypeResponse = z.infer<typeof productTypeResponseSchema>;
 export type GetProductTypesQuery = z.infer<typeof getProductTypesQuerySchema>;
+
+// RENTAL
+
+const productCatalogCategorySchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+});
+
+const productCatalogItemSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  attributes: productTypeAttributesSchema,
+  includedItems: z.array(productTypeIncludedItemSchema),
+  availableCount: z.number().int().min(1),
+  category: productCatalogCategorySchema.nullable(),
+});
+
+export const getRentalProductQuerySchema = z.object({
+  locationId: z.uuid().optional(),
+  categoryId: z.uuid().optional(),
+  search: z.string().optional(),
+  page: z.coerce.number().optional(),
+  limit: z.coerce.number().optional(),
+});
+
+export const productCatalogDataSchema = z.array(productCatalogItemSchema);
+
+export type RentalProductResponse = z.infer<typeof productCatalogItemSchema>;
+export type RentalProductListResponse = z.infer<
+  typeof productCatalogDataSchema
+>;
+export type GetRentalProductTypesQuery = z.infer<
+  typeof getRentalProductQuerySchema
+>;

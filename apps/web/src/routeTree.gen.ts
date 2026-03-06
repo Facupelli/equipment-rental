@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as CustomerRouteImport } from './routes/_customer'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoPrismaRouteImport } from './routes/demo/prisma'
 import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashboard/route'
+import { Route as CustomerRentalIndexRouteImport } from './routes/_customer/rental/index'
 import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashboard/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
@@ -37,6 +39,10 @@ const RegisterRoute = RegisterRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomerRoute = CustomerRouteImport.update({
+  id: '/_customer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
@@ -62,6 +68,11 @@ const AuthedDashboardRouteRoute = AuthedDashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthedRoute,
+} as any)
+const CustomerRentalIndexRoute = CustomerRentalIndexRouteImport.update({
+  id: '/rental/',
+  path: '/rental/',
+  getParentRoute: () => CustomerRoute,
 } as any)
 const AuthedDashboardIndexRoute = AuthedDashboardIndexRouteImport.update({
   id: '/',
@@ -143,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/': typeof AuthedDashboardIndexRoute
+  '/rental/': typeof CustomerRentalIndexRoute
   '/dashboard/bookings/': typeof AuthedDashboardBookingsIndexRoute
   '/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
   '/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
@@ -162,6 +174,7 @@ export interface FileRoutesByTo {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard': typeof AuthedDashboardIndexRoute
+  '/rental': typeof CustomerRentalIndexRoute
   '/dashboard/bookings': typeof AuthedDashboardBookingsIndexRoute
   '/dashboard/locations': typeof AuthedDashboardLocationsIndexRoute
   '/dashboard/owners': typeof AuthedDashboardOwnersIndexRoute
@@ -176,6 +189,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
+  '/_customer': typeof CustomerRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_authed/dashboard': typeof AuthedDashboardRouteRouteWithChildren
@@ -184,6 +198,7 @@ export interface FileRoutesById {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
+  '/_customer/rental/': typeof CustomerRentalIndexRoute
   '/_authed/dashboard/bookings/': typeof AuthedDashboardBookingsIndexRoute
   '/_authed/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
   '/_authed/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
@@ -206,6 +221,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard/'
+    | '/rental/'
     | '/dashboard/bookings/'
     | '/dashboard/locations/'
     | '/dashboard/owners/'
@@ -225,6 +241,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard'
+    | '/rental'
     | '/dashboard/bookings'
     | '/dashboard/locations'
     | '/dashboard/owners'
@@ -238,6 +255,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authed'
+    | '/_customer'
     | '/login'
     | '/register'
     | '/_authed/dashboard'
@@ -246,6 +264,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/_authed/dashboard/'
+    | '/_customer/rental/'
     | '/_authed/dashboard/bookings/'
     | '/_authed/dashboard/locations/'
     | '/_authed/dashboard/owners/'
@@ -260,6 +279,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
+  CustomerRoute: typeof CustomerRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   DemoPrismaRoute: typeof DemoPrismaRoute
@@ -282,6 +302,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_customer': {
+      id: '/_customer'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof CustomerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed': {
@@ -318,6 +345,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthedDashboardRouteRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/_customer/rental/': {
+      id: '/_customer/rental/'
+      path: '/rental'
+      fullPath: '/rental/'
+      preLoaderRoute: typeof CustomerRentalIndexRouteImport
+      parentRoute: typeof CustomerRoute
     }
     '/_authed/dashboard/': {
       id: '/_authed/dashboard/'
@@ -451,9 +485,22 @@ const AuthedRouteChildren: AuthedRouteChildren = {
 const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
+interface CustomerRouteChildren {
+  CustomerRentalIndexRoute: typeof CustomerRentalIndexRoute
+}
+
+const CustomerRouteChildren: CustomerRouteChildren = {
+  CustomerRentalIndexRoute: CustomerRentalIndexRoute,
+}
+
+const CustomerRouteWithChildren = CustomerRoute._addFileChildren(
+  CustomerRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
+  CustomerRoute: CustomerRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   DemoPrismaRoute: DemoPrismaRoute,

@@ -11,6 +11,8 @@ import { CreateProductCategoryHandler } from './application/commands/create-prod
 import { GetProductTypeByIdQueryHandler } from './application/queries/get-product-type-by-id/get-product-type-by-id.query-handler';
 import { GetProductTypesQueryHandler } from './application/queries/get-product-types/get-product-types.query-handler';
 import { GetProductCategoriesQueryHandler } from './application/queries/get-product-categories/get-product-categories.query-handler';
+import { GetRentalProductTypesQueryHandler } from './application/queries/get-reantal-product-types/get-rental-product-types.query-handler';
+import { RentalProductTypeController } from './infrastructure/controllers/rental-product-type.controller';
 
 const repositories = [
   { provide: ProductCategoryRepositoryPort, useClass: ProductCategoryRepository },
@@ -19,11 +21,16 @@ const repositories = [
 
 const commandhandlers = [CreateProductTypeCommandHandler, CreateProductCategoryHandler];
 
-const queryHandlers = [GetProductTypeByIdQueryHandler, GetProductTypesQueryHandler, GetProductCategoriesQueryHandler];
+const queryHandlers = [
+  GetProductTypeByIdQueryHandler,
+  GetProductTypesQueryHandler,
+  GetProductCategoriesQueryHandler,
+  GetRentalProductTypesQueryHandler,
+];
 
 @Module({
   imports: [TenantModule],
-  controllers: [ProductCategoryController, ProductTypeController],
+  controllers: [ProductCategoryController, ProductTypeController, RentalProductTypeController],
   providers: [...repositories, ...commandhandlers, ...queryHandlers],
 })
 export class CatalogModule {}

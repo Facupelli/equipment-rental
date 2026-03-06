@@ -23,15 +23,11 @@ import {
 } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { productColumns } from "./products-columns";
-import type {
-  PaginationMeta,
-  ProductTypeListResponse,
-  ProductTypeResponse,
-} from "@repo/schemas";
+import type { PaginationMeta, ProductTypeResponse } from "@repo/schemas";
 import { useCategories } from "../../product-categories/categories.queries";
 
 interface ProductsTableProps {
-  products: ProductTypeListResponse;
+  products: ProductTypeResponse[];
   meta: PaginationMeta;
   pagination: PaginationState;
   categoryId: string | undefined;
