@@ -5,6 +5,7 @@ import {
   type UpdateProductCategoryDto,
 } from "@repo/schemas";
 import { z } from "zod";
+import { emptyToNull, emptyToNullOrUndefined } from "@/shared/utils/form.utils";
 
 export const productCategoryFormSchema = z.object({
   name: z.string().min(1, "Name is required"),

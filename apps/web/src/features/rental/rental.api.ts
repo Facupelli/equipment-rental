@@ -1,9 +1,12 @@
-import { apiFetchPaginated } from "@/lib/api";
+import { apiFetch, apiFetchPaginated } from "@/lib/api";
 import {
   type PaginatedDto,
   type GetProductTypesQuery,
   type RentalProductResponse,
   getRentalProductQuerySchema,
+  calculateCartPricesRequestSchema,
+  type CalculateCartPricesRequest,
+  type CartPriceResult,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -25,6 +28,19 @@ export const getRentalProducts = createServerFn({ method: "GET" })
         params: data,
       },
     );
+
+    return result;
+  });
+
+export const getCartPricePreview = createServerFn({ method: "POST" })
+  .inputValidator((data: CalculateCartPricesRequest) =>
+    calculateCartPricesRequestSchema.parse(data),
+  )
+  .handler(async ({ data }): Promise<CartPriceResult> => {
+    const result = await apiFetch<CartPriceResult>("/pricing/cart/preview", {
+      method: "POST",
+      body: data,
+    });
 
     return result;
   });

@@ -42,6 +42,34 @@ export class PricingQueryService {
     };
   }
 
+  /**
+   * Batch variant of loadProductTypeMeta.
+   *
+   * Loads meta for multiple product types in a single query — avoids N+1
+   * when pricing a full cart. Returns a Map keyed by productTypeId.
+   * Missing IDs are simply absent from the map — callers must check presence.
+   */
+  async loadProductTypeMetaBatch(productTypeIds: string[]): Promise<Map<string, ProductTypeMeta>> {
+    const rows = await this.prisma.client.productType.findMany({
+      where: { id: { in: productTypeIds } },
+      select: {
+        id: true,
+        categoryId: true,
+        billingUnit: { select: { durationMinutes: true } },
+      },
+    });
+
+    return new Map(
+      rows.map((row) => [
+        row.id,
+        {
+          billingUnitDurationMinutes: row.billingUnit.durationMinutes,
+          categoryId: row.categoryId,
+        },
+      ]),
+    );
+  }
+
   async loadBundleMeta(bundleId: string): Promise<BundleMeta | null> {
     const row = await this.prisma.client.bundle.findUnique({
       where: { id: bundleId },

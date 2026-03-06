@@ -63,21 +63,3 @@ export type CartState = {
   items: CartItem[];
   actions: CartActions;
 };
-
-// Price breakdown types — shared between cart page and useCartPriceBreakdown hook
-export type PriceBreakdownLine = {
-  id: string;
-  type: "PRODUCT" | "BUNDLE";
-  name: string;
-  sublabel: string;
-  unitPrice: number;
-  units: number;
-  quantity: number;
-  lineTotal: number;
-};
-
-export type PriceBreakdownResponse = {
-  lines: PriceBreakdownLine[];
-  subtotal: number;
-  total: number;
-};

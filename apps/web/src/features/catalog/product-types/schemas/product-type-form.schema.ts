@@ -8,6 +8,7 @@ import {
   type ProductTypeIncludedItemDto,
   type UpdateProductTypeDto,
 } from "@repo/schemas";
+import { emptyToNull, emptyToNullOrUndefined } from "@/shared/utils/form.utils";
 
 export const attributeRowSchema = z.object({
   key: z.string().min(1, "Key is required"),

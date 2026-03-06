@@ -55,7 +55,7 @@ export function CreateAssetDialogForm() {
       onSubmit: assetFormSchema,
     },
     onSubmit: async ({ value }) => {
-      const dto = toCreateAssetDto(value);
+      const dto = toCreateAssetDto(value, product.id);
       createAsset(dto);
       form.reset();
     },

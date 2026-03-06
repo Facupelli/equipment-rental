@@ -1,3 +1,4 @@
+import { emptyToNull, emptyToNullOrUndefined } from "@/shared/utils/form.utils";
 import {
   createAssetSchema,
   updateAssetSchema,
@@ -41,8 +42,12 @@ export function assetToFormValues(asset: {
   };
 }
 
-export function toCreateAssetDto(values: AssetFormValues): CreateAssetDto {
+export function toCreateAssetDto(
+  values: AssetFormValues,
+  productTypeId: string,
+): CreateAssetDto {
   const dto = {
+    productTypeId,
     locationId: values.locationId,
     ownerId: emptyToNull(values.ownerId),
     serialNumber: emptyToNull(values.serialNumber),

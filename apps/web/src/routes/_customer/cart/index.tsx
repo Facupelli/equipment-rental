@@ -1,12 +1,9 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import type {
   CartBundleComponent,
   CartBundleItem,
   CartIncludedItem,
   CartProductItem,
-  PriceBreakdownLine,
-  PriceBreakdownResponse,
   RentalPeriod,
 } from "@/features/rental/cart/cart.types";
 import {
@@ -30,26 +27,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import z from "zod";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
-
-// ---------------------------------------------------------------------------
-// Placeholder hook — replace with real API call when backend is ready
-// ---------------------------------------------------------------------------
-function useCartPriceBreakdown() {
-  const items = useCartItems();
-  const period = useCartPeriod();
-
-  return useQuery<PriceBreakdownResponse>({
-    queryKey: ["cart-price-breakdown", items, period],
-    queryFn: async () => {
-      // TODO: replace with real endpoint
-      // POST /api/pricing/cart-breakdown
-      // body: { items, period }
-      throw new Error("Not implemented");
-    },
-    enabled: items.length > 0 && !!period,
-    retry: 1,
-  });
-}
+import { useCartPricePreview } from "@/features/rental/rental.queries";
+import type {
+  CalculateCartPricesRequest,
+  CartPriceLineItem,
+  CartPriceResult,
+} from "@repo/schemas";
 
 const cartPageSearchSchema = z.object({
   startDate: z.coerce.date().optional(),
@@ -63,7 +46,43 @@ export const Route = createFileRoute("/_customer/cart/")({
 });
 
 function CartPage() {
-  const { data: breakdown, isLoading, isError } = useCartPriceBreakdown();
+  const { startDate, endDate, locationId } = useSearch({
+    from: "/_customer/cart/",
+  });
+
+  const items = useCartItems();
+
+  const data: CalculateCartPricesRequest = {
+    currency: "USD",
+    locationId,
+    period: {
+      start: startDate?.toISOString(),
+      end: endDate?.toISOString(),
+    },
+    items: items.map((item) => {
+      if (item.type === "PRODUCT") {
+        return {
+          type: "PRODUCT",
+          productTypeId: item.productTypeId,
+          quantity: item.quantity,
+        };
+      }
+      return {
+        type: "BUNDLE",
+        bundleId: item.bundleId,
+        quantity: item.quantity,
+      };
+    }),
+  };
+
+  const {
+    data: breakdown,
+    isPending,
+    error,
+    isError,
+  } = useCartPricePreview(data);
+
+  console.log({ breakdown, isPending, error });
 
   function handleBook() {
     // TODO: wire to order creation mutation when backend spec is ready
@@ -96,14 +115,14 @@ function CartPage() {
           {/* Left column */}
 
           <CartPageItemList
-            lines={breakdown?.lines ?? []}
-            isLoading={isLoading}
+            lines={breakdown?.lineItems ?? []}
+            isLoading={isPending}
           />
 
           {/* Right column — sticky sidebar */}
           <CartPageSidebar
             breakdown={breakdown}
-            isLoading={isLoading}
+            isLoading={isPending}
             isError={isError}
             onBook={handleBook}
           />
@@ -295,7 +314,7 @@ function CartPageBundleComponent({ component }: CartPageBundleComponentProps) {
 
 type CartPageStandaloneItemProps = {
   item: CartProductItem;
-  line: PriceBreakdownLine | undefined;
+  line: CartPriceLineItem | undefined;
   isLoading: boolean;
 };
 
@@ -335,7 +354,7 @@ export function CartPageStandaloneItem({
             <Skeleton className="mb-1 ml-auto h-5 w-20" />
           ) : line ? (
             <p className="text-base font-black text-black">
-              {formatCurrency(line.lineTotal)}
+              {formatCurrency(line.subtotal)}
             </p>
           ) : null}
           <p className="text-[11px] uppercase tracking-wider text-neutral-400">
@@ -353,7 +372,7 @@ export function CartPageStandaloneItem({
 
 type CartPageBundleItemProps = {
   item: CartBundleItem;
-  line: PriceBreakdownLine | undefined;
+  line: CartPriceLineItem | undefined;
   isLoading: boolean;
 };
 
@@ -379,7 +398,7 @@ function CartPageBundleItem({
             <Skeleton className="ml-auto h-6 w-24" />
           ) : line ? (
             <p className="text-lg font-black text-black">
-              {formatCurrency(line.lineTotal)}
+              {formatCurrency(line.subtotal)}
             </p>
           ) : null}
           {item.quantity > 1 && (
@@ -404,7 +423,7 @@ function CartPageBundleItem({
 }
 
 type CartPageItemListProps = {
-  lines: PriceBreakdownLine[];
+  lines: CartPriceLineItem[];
   isLoading: boolean;
 };
 
@@ -479,104 +498,14 @@ export function CartPageItemList({ lines, isLoading }: CartPageItemListProps) {
   );
 }
 
-type CartPagePriceBreakdownProps = {
-  breakdown: PriceBreakdownResponse | undefined;
-  isLoading: boolean;
-  isError: boolean;
-};
-
-export function CartPagePriceBreakdown({
-  breakdown,
-  isLoading,
-  isError,
-}: CartPagePriceBreakdownProps) {
-  if (isError) {
-    return (
-      <div className="flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
-        <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
-          Unable to compute pricing. Please try again.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-black">
-        Price Breakdown
-      </h3>
-
-      {/* Line items */}
-      <div className="space-y-3">
-        {isLoading
-          ? Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="flex items-start justify-between gap-4">
-                <Skeleton className="h-8 w-32" />
-                <Skeleton className="h-5 w-16" />
-              </div>
-            ))
-          : breakdown?.lines.map((line) => (
-              <div
-                key={line.id}
-                className="flex items-start justify-between gap-4"
-              >
-                <div>
-                  <p className="text-sm text-black">{line.name}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-                    {line.sublabel}
-                  </p>
-                </div>
-                <p className="shrink-0 text-sm font-semibold text-black">
-                  {formatCurrency(line.lineTotal)}
-                </p>
-              </div>
-            ))}
-      </div>
-
-      {/* Divider */}
-      <div className="my-4 border-t border-neutral-200" />
-
-      {/* Subtotal */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-500">Subtotal</p>
-        {isLoading ? (
-          <Skeleton className="h-5 w-20" />
-        ) : (
-          <p className="text-sm text-black">
-            {breakdown ? formatCurrency(breakdown.subtotal) : "—"}
-          </p>
-        )}
-      </div>
-
-      {/* Divider */}
-      <div className="my-4 border-t border-neutral-200" />
-
-      {/* Total */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-black uppercase tracking-widest text-black">
-          Total Amount
-        </p>
-        {isLoading ? (
-          <Skeleton className="h-7 w-28" />
-        ) : (
-          <p className="text-xl font-black text-black">
-            {breakdown ? formatCurrency(breakdown.total) : "—"}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 type CartPageSidebarProps = {
-  breakdown: PriceBreakdownResponse | undefined;
+  breakdown: CartPriceResult | undefined;
   isLoading: boolean;
   isError: boolean;
   onBook: () => void;
 };
 
-export function CartPageSidebar({
+function CartPageSidebar({
   breakdown,
   isLoading,
   isError,
@@ -619,6 +548,96 @@ export function CartPageSidebar({
             You can cancel before the order is confirmed.
           </p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+type CartPagePriceBreakdownProps = {
+  breakdown: CartPriceResult | undefined;
+  isLoading: boolean;
+  isError: boolean;
+};
+
+function CartPagePriceBreakdown({
+  breakdown,
+  isLoading,
+  isError,
+}: CartPagePriceBreakdownProps) {
+  if (isError) {
+    return (
+      <div className="flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+        <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
+          Unable to compute pricing. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-black">
+        Price Breakdown
+      </h3>
+
+      {/* Line items */}
+      <div className="space-y-3">
+        {isLoading
+          ? Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="flex items-start justify-between gap-4">
+                <Skeleton className="h-8 w-32" />
+                <Skeleton className="h-5 w-16" />
+              </div>
+            ))
+          : breakdown?.lineItems.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-start justify-between gap-4"
+              >
+                <div>
+                  <p className="text-sm text-black">{item.id}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                    {item.type}
+                  </p>
+                </div>
+                <p className="shrink-0 text-sm font-semibold text-black">
+                  {formatCurrency(item.subtotal)}
+                </p>
+              </div>
+            ))}
+      </div>
+
+      {/* Divider */}
+      <div className="my-4 border-t border-neutral-200" />
+
+      {/* Subtotal */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-neutral-500">Subtotal</p>
+        {isLoading ? (
+          <Skeleton className="h-5 w-20" />
+        ) : (
+          <p className="text-sm text-black">
+            {breakdown ? formatCurrency(breakdown.total) : "—"}
+          </p>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div className="my-4 border-t border-neutral-200" />
+
+      {/* Total */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-black uppercase tracking-widest text-black">
+          Total Amount
+        </p>
+        {isLoading ? (
+          <Skeleton className="h-7 w-28" />
+        ) : (
+          <p className="text-xl font-black text-black">
+            {breakdown ? formatCurrency(breakdown.total) : "—"}
+          </p>
+        )}
       </div>
     </div>
   );

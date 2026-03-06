@@ -1,18 +1,13 @@
 import { z } from "zod";
+import { emptyToNull, emptyToNullOrUndefined } from "@/shared/utils/form.utils";
 import {
   createCustomerSchema,
-  updateCustomerSchema,
   customerRegisterSchema,
-} from "@your-monorepo/shared";
-import type {
-  CreateCustomerDto,
-  UpdateCustomerDto,
-  CustomerRegisterDto,
-} from "@your-monorepo/shared";
-import {
-  emptyToNull,
-  emptyToNullOrUndefined,
-} from "@your-monorepo/web-shared-utils";
+  updateCustomerSchema,
+  type CreateCustomerDto,
+  type CustomerRegisterDto,
+  type UpdateCustomerDto,
+} from "@repo/schemas";
 
 const customerFieldsFormSchema = {
   email: z.email("Invalid email"),
