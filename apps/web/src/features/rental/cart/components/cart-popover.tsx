@@ -19,7 +19,7 @@ import {
   useCartPeriod,
 } from "../cart.hooks";
 import type { CartItem } from "../cart.types";
-import { useRouter } from "@tanstack/react-router";
+import { useRouter, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import dayjs from "@/lib/dayjs";
 
@@ -212,12 +212,22 @@ type CartPopoverFooterProps = {
 };
 
 export function CartPopoverFooter({ onClose }: CartPopoverFooterProps) {
+  const { locationId, startDate, endDate } = useSearch({
+    from: "/_customer/rental/",
+  });
   const router = useRouter();
   const isEmpty = useCartIsEmpty();
 
   function handleReviewOrder() {
     onClose();
-    router.navigate({ to: "/cart" });
+    router.navigate({
+      to: "/cart",
+      search: {
+        locationId,
+        startDate,
+        endDate,
+      },
+    });
   }
 
   return (

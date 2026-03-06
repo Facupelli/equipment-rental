@@ -23,8 +23,6 @@ export const registerTenantUser = createServerFn({ method: "POST" })
       authenticated: false,
     });
 
-    console.log({ result });
-
     return result;
   });
 

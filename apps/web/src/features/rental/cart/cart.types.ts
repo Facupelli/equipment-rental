@@ -3,11 +3,20 @@ export type RentalPeriod = {
   end: Date;
 };
 
+export type CartIncludedItem = {
+  name: string;
+  quantity: number;
+  notes: string | null;
+};
+
 export type CartBundleComponent = {
   productTypeId: string;
   name: string;
   description: string | null;
   quantity: number;
+  imageUrl: string | null;
+  billingUnitLabel: string;
+  includedItems: CartIncludedItem[];
 };
 
 export type CartProductItem = {
@@ -17,6 +26,8 @@ export type CartProductItem = {
   quantity: number;
   pricePerUnit: number;
   billingUnitLabel: string;
+  imageUrl: string | null;
+  includedItems: CartIncludedItem[];
 };
 
 export type CartBundleItem = {
@@ -26,6 +37,7 @@ export type CartBundleItem = {
   quantity: number;
   price: number;
   billingUnitLabel: string;
+  imageUrl: string | null;
   components: CartBundleComponent[];
 };
 
@@ -50,4 +62,22 @@ export type CartState = {
   period: RentalPeriod | null;
   items: CartItem[];
   actions: CartActions;
+};
+
+// Price breakdown types — shared between cart page and useCartPriceBreakdown hook
+export type PriceBreakdownLine = {
+  id: string;
+  type: "PRODUCT" | "BUNDLE";
+  name: string;
+  sublabel: string;
+  unitPrice: number;
+  units: number;
+  quantity: number;
+  lineTotal: number;
+};
+
+export type PriceBreakdownResponse = {
+  lines: PriceBreakdownLine[];
+  subtotal: number;
+  total: number;
 };

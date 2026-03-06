@@ -45,8 +45,6 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       return null;
     }
 
-    console.log({ exception });
-
     const exceptionResponse = exception.getResponse();
 
     if (typeof exceptionResponse !== 'object' || exceptionResponse === null) {

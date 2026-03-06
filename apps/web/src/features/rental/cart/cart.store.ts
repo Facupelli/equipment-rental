@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CartItem, CartItemKey, CartState } from "./cart.types";
+import type { CartState, CartItem, CartItemKey } from "./cart.types";
 
 function matchesKey(item: CartItem, key: CartItemKey): boolean {
   if (key.type === "PRODUCT" && item.type === "PRODUCT") {
@@ -45,7 +45,7 @@ const useCartStore = create<CartState>()(
             return {
               items: [
                 ...state.items,
-                { ...product, type: "PRODUCT", quantity: 1 },
+                { ...product, type: "PRODUCT" as const, quantity: 1 },
               ],
             };
           }),
@@ -70,7 +70,7 @@ const useCartStore = create<CartState>()(
             return {
               items: [
                 ...state.items,
-                { ...bundle, type: "BUNDLE", quantity: 1 },
+                { ...bundle, type: "BUNDLE" as const, quantity: 1 },
               ],
             };
           }),
@@ -110,7 +110,6 @@ const useCartStore = create<CartState>()(
     }),
     {
       name: "rental-cart",
-      // Actions are derived — exclude them from persistence
       partialize: (state) => ({ period: state.period, items: state.items }),
     },
   ),

@@ -18,6 +18,7 @@ import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-qu
 import { Route as DemoPrismaRouteImport } from './routes/demo/prisma'
 import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashboard/route'
 import { Route as CustomerRentalIndexRouteImport } from './routes/_customer/rental/index'
+import { Route as CustomerCartIndexRouteImport } from './routes/_customer/cart/index'
 import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashboard/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
@@ -72,6 +73,11 @@ const AuthedDashboardRouteRoute = AuthedDashboardRouteRouteImport.update({
 const CustomerRentalIndexRoute = CustomerRentalIndexRouteImport.update({
   id: '/rental/',
   path: '/rental/',
+  getParentRoute: () => CustomerRoute,
+} as any)
+const CustomerCartIndexRoute = CustomerCartIndexRouteImport.update({
+  id: '/cart/',
+  path: '/cart/',
   getParentRoute: () => CustomerRoute,
 } as any)
 const AuthedDashboardIndexRoute = AuthedDashboardIndexRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/': typeof AuthedDashboardIndexRoute
+  '/cart/': typeof CustomerCartIndexRoute
   '/rental/': typeof CustomerRentalIndexRoute
   '/dashboard/bookings/': typeof AuthedDashboardBookingsIndexRoute
   '/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard': typeof AuthedDashboardIndexRoute
+  '/cart': typeof CustomerCartIndexRoute
   '/rental': typeof CustomerRentalIndexRoute
   '/dashboard/bookings': typeof AuthedDashboardBookingsIndexRoute
   '/dashboard/locations': typeof AuthedDashboardLocationsIndexRoute
@@ -198,6 +206,7 @@ export interface FileRoutesById {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
+  '/_customer/cart/': typeof CustomerCartIndexRoute
   '/_customer/rental/': typeof CustomerRentalIndexRoute
   '/_authed/dashboard/bookings/': typeof AuthedDashboardBookingsIndexRoute
   '/_authed/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard/'
+    | '/cart/'
     | '/rental/'
     | '/dashboard/bookings/'
     | '/dashboard/locations/'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/dashboard'
+    | '/cart'
     | '/rental'
     | '/dashboard/bookings'
     | '/dashboard/locations'
@@ -264,6 +275,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/_authed/dashboard/'
+    | '/_customer/cart/'
     | '/_customer/rental/'
     | '/_authed/dashboard/bookings/'
     | '/_authed/dashboard/locations/'
@@ -351,6 +363,13 @@ declare module '@tanstack/react-router' {
       path: '/rental'
       fullPath: '/rental/'
       preLoaderRoute: typeof CustomerRentalIndexRouteImport
+      parentRoute: typeof CustomerRoute
+    }
+    '/_customer/cart/': {
+      id: '/_customer/cart/'
+      path: '/cart'
+      fullPath: '/cart/'
+      preLoaderRoute: typeof CustomerCartIndexRouteImport
       parentRoute: typeof CustomerRoute
     }
     '/_authed/dashboard/': {
@@ -486,10 +505,12 @@ const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
 interface CustomerRouteChildren {
+  CustomerCartIndexRoute: typeof CustomerCartIndexRoute
   CustomerRentalIndexRoute: typeof CustomerRentalIndexRoute
 }
 
 const CustomerRouteChildren: CustomerRouteChildren = {
+  CustomerCartIndexRoute: CustomerCartIndexRoute,
   CustomerRentalIndexRoute: CustomerRentalIndexRoute,
 }
 

@@ -37,8 +37,6 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
     const limit = query.limit ?? 20;
     const offset = (page - 1) * limit;
 
-    console.log({ query });
-
     const tenantId = this.tenantContext.requireTenantId();
 
     // Build optional filter fragments.
@@ -101,8 +99,6 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
     ]);
 
     const total = Number(countRows[0]?.total ?? 0);
-
-    console.log({ rows });
 
     return {
       data: rows.map((row) => ({

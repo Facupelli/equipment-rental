@@ -46,9 +46,17 @@ import {
 } from "@/components/ui/select";
 import { useCartActions } from "@/features/rental/cart/cart.hooks";
 import { CartPopover } from "@/features/rental/cart/components/cart-popover";
+import z from "zod";
+
+const rentalPageSearchSchema = getRentalProductQuerySchema.extend({
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+});
+
+type RentalPageSearch = z.infer<typeof rentalPageSearchSchema>;
 
 export const Route = createFileRoute("/_customer/rental/")({
-  validateSearch: getRentalProductQuerySchema,
+  validateSearch: rentalPageSearchSchema,
   loaderDeps: ({ search }) => ({
     page: search.page,
     categoryId: search.categoryId,
@@ -56,41 +64,10 @@ export const Route = createFileRoute("/_customer/rental/")({
   }),
   loader: ({ context: { queryClient }, deps }) =>
     queryClient.ensureQueryData(createProductsQueryOptions(deps)),
-  component: RouteComponent,
+  component: RentalPage,
 });
 
-/**
- * Builds a pagination window like: [1, …, 4, 5, 6, …, 12]
- * Always shows first, last, current ± 1, and ellipses where needed.
- */
-function buildPageWindow(
-  current: number,
-  total: number,
-): (number | "ellipsis")[] {
-  if (total <= 1) return [];
-
-  const pages = new Set<number>();
-  pages.add(1);
-  pages.add(total);
-  for (let d = -1; d <= 1; d++) {
-    const p = current + d;
-    if (p >= 1 && p <= total) pages.add(p);
-  }
-
-  const sorted = [...pages].sort((a, b) => a - b);
-  const result: (number | "ellipsis")[] = [];
-
-  for (let i = 0; i < sorted.length; i++) {
-    result.push(sorted[i]);
-    if (i < sorted.length - 1 && sorted[i + 1] - sorted[i] > 1) {
-      result.push("ellipsis");
-    }
-  }
-
-  return result;
-}
-
-function RouteComponent() {
+function RentalPage() {
   const search = useSearch({ from: "/_customer/rental/" });
   const navigate = useNavigate({ from: "/rental/" });
   const { addProduct } = useCartActions();
@@ -98,13 +75,11 @@ function RouteComponent() {
   const [localSearch, setLocalSearch] = useState(search.search ?? "");
   const debouncedSearch = useDebounce(localSearch, 300);
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-
   const { data: locations, isPending: isPendingLocations } = useLocations();
   const { data: products, isPending: isPendingProducts } =
     useRentalProducts(search);
 
-  function setUrlParam(patch: Partial<typeof search>) {
+  function setUrlParam(patch: Partial<RentalPageSearch>) {
     navigate({ search: (prev) => ({ ...prev, ...patch }) });
   }
 
@@ -133,6 +108,8 @@ function RouteComponent() {
       billingUnitLabel: "Day",
       pricePerUnit: 10000,
       productTypeId: product.id,
+      imageUrl: "",
+      includedItems: product.includedItems,
     });
   }
 
@@ -213,7 +190,7 @@ function RouteComponent() {
                 RENTAL PERIOD
               </p>
             </div>
-            <DateRangePicker value={dateRange} onChange={setDateRange} />
+            <DateRangePicker setUrlParam={setUrlParam} />
           </div>
         </div>
 
@@ -271,17 +248,28 @@ function RouteComponent() {
 }
 
 function DateRangePicker({
-  value,
-  onChange,
+  setUrlParam,
 }: {
-  value: DateRange | undefined;
-  onChange: (range: DateRange | undefined) => void;
+  setUrlParam: (patch: Partial<RentalPageSearch>) => void;
 }) {
-  const fromLabel = value?.from
+  const { startDate, endDate } = useSearch({
+    from: "/_customer/rental/",
+  });
+
+  const value = {
+    from: startDate,
+    to: endDate,
+  };
+
+  function handleDateRangeChange(value: DateRange | undefined) {
+    setUrlParam({ startDate: value?.from, endDate: value?.to });
+  }
+
+  const fromLabel = value.from
     ? dayjs(value.from).format("MM/DD/YYYY")
     : "MM/DD/YYYY";
 
-  const toLabel = value?.to
+  const toLabel = value.to
     ? dayjs(value.to).format("MM/DD/YYYY")
     : "MM/DD/YYYY";
 
@@ -317,7 +305,7 @@ function DateRangePicker({
           mode="range"
           defaultMonth={value?.from}
           selected={value}
-          onSelect={onChange}
+          onSelect={handleDateRangeChange}
           numberOfMonths={2}
         />
       </PopoverContent>
@@ -451,6 +439,37 @@ function ProductSkeleton() {
       </CardFooter>
     </Card>
   );
+}
+
+/**
+ * Builds a pagination window like: [1, …, 4, 5, 6, …, 12]
+ * Always shows first, last, current ± 1, and ellipses where needed.
+ */
+function buildPageWindow(
+  current: number,
+  total: number,
+): (number | "ellipsis")[] {
+  if (total <= 1) return [];
+
+  const pages = new Set<number>();
+  pages.add(1);
+  pages.add(total);
+  for (let d = -1; d <= 1; d++) {
+    const p = current + d;
+    if (p >= 1 && p <= total) pages.add(p);
+  }
+
+  const sorted = [...pages].sort((a, b) => a - b);
+  const result: (number | "ellipsis")[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    result.push(sorted[i]);
+    if (i < sorted.length - 1 && sorted[i + 1] - sorted[i] > 1) {
+      result.push("ellipsis");
+    }
+  }
+
+  return result;
 }
 
 function PaginationControls({
