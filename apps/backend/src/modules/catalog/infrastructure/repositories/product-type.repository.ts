@@ -37,22 +37,19 @@ export class ProductTypeRepository implements ProductTypeRepositoryPort {
       const existingIds = new Set(existing.map((t) => t.id));
 
       const toDelete = [...existingIds].filter((id) => !currentTierIds.has(id));
-      if (toDelete.length > 0) {
-        await tx.pricingTier.deleteMany({
-          where: { id: { in: toDelete } },
-        });
-      }
 
-      // Upsert all current tiers — pricing tiers are mutable so we always
-      // write the latest state, not just newly added ones
-      for (const tier of currentTiers) {
-        const data = PricingTierMapper.toPersistence(tier);
-        await tx.pricingTier.upsert({
-          where: { id: tier.id },
-          create: data,
-          update: data,
-        });
-      }
+      await Promise.all([
+        toDelete.length > 0 ? tx.pricingTier.deleteMany({ where: { id: { in: toDelete } } }) : Promise.resolve(),
+
+        ...currentTiers.map((tier) => {
+          const data = PricingTierMapper.toPersistence(tier, { productTypeId: productType.id });
+          return tx.pricingTier.upsert({
+            where: { id: tier.id },
+            create: data,
+            update: data,
+          });
+        }),
+      ]);
     });
 
     return productType.id;

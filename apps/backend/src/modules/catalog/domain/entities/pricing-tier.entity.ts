@@ -2,17 +2,18 @@ import { randomUUID } from 'crypto';
 import {
   InvalidPricingTierRangeException,
   InvalidPricingTierPriceException,
+  InvalidPricingTierParentException,
 } from '../exceptions/pricing-tier.exceptions';
 import Decimal from 'decimal.js';
 
-export interface CreatePricingTierProps {
-  productTypeId: string | null;
-  bundleId: string | null;
+type PricingTierParent = { bundleId: string; productTypeId?: never } | { productTypeId: string; bundleId?: never };
+
+export type CreatePricingTierProps = PricingTierParent & {
   locationId: string | null;
   fromUnit: number;
   toUnit: number | null;
   pricePerUnit: string;
-}
+};
 
 export interface ReconstitutePricingTierProps {
   id: string;
@@ -50,16 +51,23 @@ export class PricingTier {
 
     return new PricingTier(
       randomUUID(),
-      props.productTypeId,
-      props.bundleId,
-      props.locationId ?? null,
+      props.productTypeId ?? null,
+      props.bundleId ?? null,
+      props.locationId,
       props.fromUnit,
-      props.toUnit ?? null,
+      props.toUnit,
       price,
     );
   }
 
   static reconstitute(props: ReconstitutePricingTierProps): PricingTier {
+    const hasBundle = props.bundleId != null;
+    const hasProductType = props.productTypeId != null;
+
+    if (hasBundle === hasProductType) {
+      throw new InvalidPricingTierParentException();
+    }
+
     return new PricingTier(
       props.id,
       props.productTypeId,

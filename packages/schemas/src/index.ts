@@ -4,6 +4,7 @@ export * from "./catalog/category/product-category.schema";
 export * from "./catalog/category/product-category-response.schema";
 export * from "./catalog/product-type/product-type.schema";
 export * from "./catalog/product-type/product-type-response.schema";
+export * from "./catalog/bundle.schema";
 export * from "./catalog/pricing-tier.schema";
 export * from "./customer/customer.schema";
 export * from "./inventory/asset.schema";

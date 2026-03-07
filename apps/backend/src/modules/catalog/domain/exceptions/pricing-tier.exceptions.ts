@@ -26,3 +26,10 @@ export class PricingTierNotFoundException extends Error {
     this.name = 'PricingTierNotFoundException';
   }
 }
+
+export class InvalidPricingTierParentException extends Error {
+  constructor() {
+    super('Pricing tier must be created with a bundle or product type.');
+    this.name = 'InvalidPricingTierParentException';
+  }
+}

@@ -23,14 +23,10 @@ export class BundleComponentMapper {
     });
   }
 
-  static toPersistence(entity: BundleComponent): Prisma.BundleComponentUncheckedCreateInput {
-    if (!entity.bundleId) {
-      throw new Error('BundleComponent must be part of a Bundle.');
-    }
-
+  static toPersistence(entity: BundleComponent, bundleId: string): Prisma.BundleComponentUncheckedCreateInput {
     return {
       id: entity.id,
-      bundleId: entity.bundleId,
+      bundleId,
       productTypeId: entity.productTypeId,
       quantity: entity.quantity,
     };

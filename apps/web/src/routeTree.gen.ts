@@ -29,6 +29,7 @@ import { Route as AuthedDashboardLocationsIndexRouteImport } from './routes/_aut
 import { Route as AuthedDashboardInventoryAssetsIndexRouteImport } from './routes/_authed/dashboard/inventory/assets/index'
 import { Route as AuthedDashboardCatalogProductsIndexRouteImport } from './routes/_authed/dashboard/catalog/products/index'
 import { Route as AuthedDashboardCatalogCategoriesIndexRouteImport } from './routes/_authed/dashboard/catalog/categories/index'
+import { Route as AuthedDashboardCatalogBundlesIndexRouteImport } from './routes/_authed/dashboard/catalog/bundles/index'
 import { Route as AuthedDashboardCatalogProductsNewRouteImport } from './routes/_authed/dashboard/catalog/products/new'
 import { Route as AuthedDashboardCatalogProductsProductIdRouteImport } from './routes/_authed/dashboard/catalog/products/$productId'
 
@@ -137,6 +138,12 @@ const AuthedDashboardCatalogCategoriesIndexRoute =
     path: '/catalog/categories/',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
+const AuthedDashboardCatalogBundlesIndexRoute =
+  AuthedDashboardCatalogBundlesIndexRouteImport.update({
+    id: '/catalog/bundles/',
+    path: '/catalog/bundles/',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
 const AuthedDashboardCatalogProductsNewRoute =
   AuthedDashboardCatalogProductsNewRouteImport.update({
     id: '/catalog/products/new',
@@ -168,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings/': typeof AuthedDashboardSettingsIndexRoute
   '/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
   '/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
+  '/dashboard/catalog/bundles/': typeof AuthedDashboardCatalogBundlesIndexRoute
   '/dashboard/catalog/categories/': typeof AuthedDashboardCatalogCategoriesIndexRoute
   '/dashboard/catalog/products/': typeof AuthedDashboardCatalogProductsIndexRoute
   '/dashboard/inventory/assets/': typeof AuthedDashboardInventoryAssetsIndexRoute
@@ -189,6 +197,7 @@ export interface FileRoutesByTo {
   '/dashboard/settings': typeof AuthedDashboardSettingsIndexRoute
   '/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
   '/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
+  '/dashboard/catalog/bundles': typeof AuthedDashboardCatalogBundlesIndexRoute
   '/dashboard/catalog/categories': typeof AuthedDashboardCatalogCategoriesIndexRoute
   '/dashboard/catalog/products': typeof AuthedDashboardCatalogProductsIndexRoute
   '/dashboard/inventory/assets': typeof AuthedDashboardInventoryAssetsIndexRoute
@@ -214,6 +223,7 @@ export interface FileRoutesById {
   '/_authed/dashboard/settings/': typeof AuthedDashboardSettingsIndexRoute
   '/_authed/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
   '/_authed/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
+  '/_authed/dashboard/catalog/bundles/': typeof AuthedDashboardCatalogBundlesIndexRoute
   '/_authed/dashboard/catalog/categories/': typeof AuthedDashboardCatalogCategoriesIndexRoute
   '/_authed/dashboard/catalog/products/': typeof AuthedDashboardCatalogProductsIndexRoute
   '/_authed/dashboard/inventory/assets/': typeof AuthedDashboardInventoryAssetsIndexRoute
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings/'
     | '/dashboard/catalog/products/$productId'
     | '/dashboard/catalog/products/new'
+    | '/dashboard/catalog/bundles/'
     | '/dashboard/catalog/categories/'
     | '/dashboard/catalog/products/'
     | '/dashboard/inventory/assets/'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/catalog/products/$productId'
     | '/dashboard/catalog/products/new'
+    | '/dashboard/catalog/bundles'
     | '/dashboard/catalog/categories'
     | '/dashboard/catalog/products'
     | '/dashboard/inventory/assets'
@@ -283,6 +295,7 @@ export interface FileRouteTypes {
     | '/_authed/dashboard/settings/'
     | '/_authed/dashboard/catalog/products/$productId'
     | '/_authed/dashboard/catalog/products/new'
+    | '/_authed/dashboard/catalog/bundles/'
     | '/_authed/dashboard/catalog/categories/'
     | '/_authed/dashboard/catalog/products/'
     | '/_authed/dashboard/inventory/assets/'
@@ -442,6 +455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardCatalogCategoriesIndexRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
+    '/_authed/dashboard/catalog/bundles/': {
+      id: '/_authed/dashboard/catalog/bundles/'
+      path: '/catalog/bundles'
+      fullPath: '/dashboard/catalog/bundles/'
+      preLoaderRoute: typeof AuthedDashboardCatalogBundlesIndexRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
     '/_authed/dashboard/catalog/products/new': {
       id: '/_authed/dashboard/catalog/products/new'
       path: '/catalog/products/new'
@@ -467,6 +487,7 @@ interface AuthedDashboardRouteRouteChildren {
   AuthedDashboardSettingsIndexRoute: typeof AuthedDashboardSettingsIndexRoute
   AuthedDashboardCatalogProductsProductIdRoute: typeof AuthedDashboardCatalogProductsProductIdRoute
   AuthedDashboardCatalogProductsNewRoute: typeof AuthedDashboardCatalogProductsNewRoute
+  AuthedDashboardCatalogBundlesIndexRoute: typeof AuthedDashboardCatalogBundlesIndexRoute
   AuthedDashboardCatalogCategoriesIndexRoute: typeof AuthedDashboardCatalogCategoriesIndexRoute
   AuthedDashboardCatalogProductsIndexRoute: typeof AuthedDashboardCatalogProductsIndexRoute
   AuthedDashboardInventoryAssetsIndexRoute: typeof AuthedDashboardInventoryAssetsIndexRoute
@@ -482,6 +503,8 @@ const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
     AuthedDashboardCatalogProductsProductIdRoute,
   AuthedDashboardCatalogProductsNewRoute:
     AuthedDashboardCatalogProductsNewRoute,
+  AuthedDashboardCatalogBundlesIndexRoute:
+    AuthedDashboardCatalogBundlesIndexRoute,
   AuthedDashboardCatalogCategoriesIndexRoute:
     AuthedDashboardCatalogCategoriesIndexRoute,
   AuthedDashboardCatalogProductsIndexRoute:

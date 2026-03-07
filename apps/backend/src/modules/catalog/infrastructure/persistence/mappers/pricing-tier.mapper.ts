@@ -1,6 +1,8 @@
 import { PricingTier as PrismaPricingTier, Prisma } from 'src/generated/prisma/client';
 import { PricingTier } from 'src/modules/catalog/domain/entities/pricing-tier.entity';
 
+type PricingTierParent = { bundleId: string; productTypeId?: never } | { productTypeId: string; bundleId?: never };
+
 export class PricingTierMapper {
   static toDomain(raw: PrismaPricingTier): PricingTier {
     return PricingTier.reconstitute({
@@ -14,15 +16,15 @@ export class PricingTierMapper {
     });
   }
 
-  static toPersistence(entity: PricingTier): Prisma.PricingTierUncheckedCreateInput {
+  static toPersistence(entity: PricingTier, parent: PricingTierParent): Prisma.PricingTierUncheckedCreateInput {
     return {
       id: entity.id,
-      productTypeId: entity.productTypeId,
-      bundleId: entity.bundleId,
+      bundleId: parent.bundleId ?? null,
+      productTypeId: parent.productTypeId ?? null,
       locationId: entity.locationId,
       fromUnit: entity.fromUnit,
       toUnit: entity.toUnit,
-      pricePerUnit: entity.pricePerUnit,
+      pricePerUnit: entity.pricePerUnit.toString(),
     };
   }
 }

@@ -16,6 +16,7 @@ const sidebarItems = [
   { name: "Customers", href: "/dashboard/users" },
   { name: "Categories", href: "/dashboard/catalog/categories" },
   { name: "Products", href: "/dashboard/catalog/products" },
+  { name: "Combos", href: "/dashboard/catalog/bundles" },
   { name: "Assets", href: "/dashboard/inventory/assets" },
   { name: "Owners", href: "/dashboard/owners" },
   { name: "Locations", href: "/dashboard/locations" },

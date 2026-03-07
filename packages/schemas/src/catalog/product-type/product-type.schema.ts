@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { TrackingMode } from "@repo/types";
-import { createPricingTierSchema } from "../pricing-tier.schema";
 
 export const productTypeAttributesSchema = z.record(z.string(), z.string());
 
@@ -19,9 +18,6 @@ export const createProductTypeSchema = z.object({
   isActive: z.boolean().default(true),
   attributes: productTypeAttributesSchema,
   includedItems: z.array(productTypeIncludedItemSchema),
-  pricingTiers: z
-    .array(createPricingTierSchema)
-    .min(1, "At least one pricing tier is required"),
 });
 
 export const updateProductTypeSchema = z.object({
@@ -33,10 +29,6 @@ export const updateProductTypeSchema = z.object({
   isActive: z.boolean().optional(),
   attributes: productTypeAttributesSchema.optional(),
   includedItems: z.array(productTypeIncludedItemSchema).optional(),
-  pricingTiers: z
-    .array(createPricingTierSchema)
-    .min(1, "At least one pricing tier is required")
-    .optional(),
 });
 
 export type ProductTypeAttributesDto = z.infer<

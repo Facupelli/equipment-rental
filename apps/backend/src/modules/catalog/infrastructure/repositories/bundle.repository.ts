@@ -24,8 +24,9 @@ export class BundleRepository implements BundleRepositoryPort {
   async save(bundle: Bundle): Promise<string> {
     const rootData = BundleMapper.toPersistence(bundle);
     const currentComponents = bundle.getComponents();
-    const currentComponentIds = new Set(currentComponents.map((c) => c.id));
     const currentTiers = bundle.getPricingTiers();
+
+    const currentComponentIds = new Set(currentComponents.map((c) => c.id));
     const currentTierIds = new Set(currentTiers.map((t) => t.id));
 
     await this.prisma.client.$transaction(async (tx) => {
@@ -35,52 +36,51 @@ export class BundleRepository implements BundleRepositoryPort {
         update: rootData,
       });
 
-      // 2. Reconcile BundleComponents — immutable once created, only insert new ones
-      const existingComponents = await tx.bundleComponent.findMany({
-        where: { bundleId: bundle.id },
-        select: { id: true },
-      });
+      const [existingComponents, existingTiers] = await Promise.all([
+        tx.bundleComponent.findMany({
+          where: { bundleId: bundle.id },
+          select: { id: true },
+        }),
+        tx.pricingTier.findMany({
+          where: { bundleId: bundle.id },
+          select: { id: true },
+        }),
+      ]);
+
       const existingComponentIds = new Set(existingComponents.map((c) => c.id));
-
-      const componentsToDelete = [...existingComponentIds].filter((id) => !currentComponentIds.has(id));
-      if (componentsToDelete.length > 0) {
-        await tx.bundleComponent.deleteMany({
-          where: { id: { in: componentsToDelete } },
-        });
-      }
-
-      const componentsToInsert = currentComponents.filter((c) => !existingComponentIds.has(c.id));
-      for (const component of componentsToInsert) {
-        const data = BundleComponentMapper.toPersistence(component);
-        await tx.bundleComponent.upsert({
-          where: { id: component.id },
-          create: data,
-          update: data,
-        });
-      }
-
-      // 3. Reconcile PricingTiers — mutable, upsert all current tiers
-      const existingTiers = await tx.pricingTier.findMany({
-        where: { bundleId: bundle.id },
-        select: { id: true },
-      });
       const existingTierIds = new Set(existingTiers.map((t) => t.id));
 
-      const tiersToDelete = [...existingTierIds].filter((id) => !currentTierIds.has(id));
-      if (tiersToDelete.length > 0) {
-        await tx.pricingTier.deleteMany({
-          where: { id: { in: tiersToDelete } },
-        });
-      }
+      // Components are immutable once created — delete removed, insert new
+      const componentIdsToDelete = [...existingComponentIds].filter((id) => !currentComponentIds.has(id));
+      const componentsToInsert = currentComponents.filter((c) => !existingComponentIds.has(c.id));
 
-      for (const tier of currentTiers) {
-        const data = PricingTierMapper.toPersistence(tier);
-        await tx.pricingTier.upsert({
-          where: { id: tier.id },
-          create: data,
-          update: data,
-        });
-      }
+      // Pricing tiers are mutable — delete removed, upsert all current
+      const tierIdsToDelete = [...existingTierIds].filter((id) => !currentTierIds.has(id));
+
+      await Promise.all([
+        componentIdsToDelete.length > 0
+          ? tx.bundleComponent.deleteMany({ where: { id: { in: componentIdsToDelete } } })
+          : Promise.resolve(),
+
+        componentsToInsert.length > 0
+          ? tx.bundleComponent.createMany({
+              data: componentsToInsert.map((c) => BundleComponentMapper.toPersistence(c, bundle.id)),
+            })
+          : Promise.resolve(),
+
+        tierIdsToDelete.length > 0
+          ? tx.pricingTier.deleteMany({ where: { id: { in: tierIdsToDelete } } })
+          : Promise.resolve(),
+
+        ...currentTiers.map((tier) => {
+          const data = PricingTierMapper.toPersistence(tier, { bundleId: bundle.id });
+          return tx.pricingTier.upsert({
+            where: { id: tier.id },
+            create: data,
+            update: data,
+          });
+        }),
+      ]);
     });
 
     return bundle.id;
