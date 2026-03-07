@@ -21,8 +21,10 @@ export class OrderItemNotFoundException extends Error {
   }
 }
 
+export type UnavailableItem = { type: 'PRODUCT'; productTypeId: string } | { type: 'BUNDLE'; bundleId: string };
+
 export class OrderItemUnavailableError extends Error {
-  constructor() {
+  constructor(public readonly unavailableItems: UnavailableItem[]) {
     super('One or more order items are not available for the requested period.');
     this.name = 'OrderItemUnavailableError';
   }

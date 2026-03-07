@@ -32,6 +32,10 @@ import type {
   CartPriceLineItem,
   CartPriceResult,
 } from "@repo/schemas";
+import { useCreateOrder } from "@/features/orders/orders.queries";
+import { ProblemDetailsError } from "@/shared/errors";
+import { useState } from "react";
+import clsx from "clsx";
 
 const cartPageSearchSchema = z.object({
   startDate: z.coerce.date(),
@@ -50,6 +54,7 @@ function CartPage() {
   });
 
   const items = useCartItems();
+  const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
 
   const data: CalculateCartPricesRequest = {
     currency: "USD",
@@ -85,10 +90,48 @@ function CartPage() {
       locationId !== undefined,
   });
 
-  function handleBook() {
-    // TODO: wire to order creation mutation when backend spec is ready
-    console.log("Book equipment — placeholder");
-  }
+  const { mutateAsync: createOrder } = useCreateOrder();
+  const handleCreateOrder = async () => {
+    setUnavailableIds([]);
+
+    try {
+      await createOrder({
+        locationId,
+        customerId: undefined,
+        periodEnd: endDate.toISOString(),
+        periodStart: startDate.toISOString(),
+        currency: "USD",
+        items: items.map((item) => {
+          if (item.type === "PRODUCT") {
+            return {
+              type: "PRODUCT",
+              productTypeId: item.productTypeId,
+              quantity: item.quantity,
+            };
+          }
+          return {
+            type: "BUNDLE",
+            bundleId: item.bundleId,
+            quantity: item.quantity,
+          };
+        }),
+      });
+    } catch (error) {
+      if (
+        error instanceof ProblemDetailsError &&
+        error.problemDetails.status === 422
+      ) {
+        const ids = (error.problemDetails.unavailableItems ?? []).map(
+          (i: { productTypeId?: string; bundleId?: string }) =>
+            i.productTypeId ?? i.bundleId ?? "",
+        );
+        setUnavailableIds(ids.filter(Boolean));
+        return;
+      }
+
+      throw error;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -118,6 +161,7 @@ function CartPage() {
           <CartPageItemList
             lines={breakdown?.lineItems ?? []}
             isLoading={isPending}
+            unavailableIds={unavailableIds}
           />
 
           {/* Right column — sticky sidebar */}
@@ -125,7 +169,7 @@ function CartPage() {
             breakdown={breakdown}
             isLoading={isPending}
             isError={isError}
-            onBook={handleBook}
+            onBook={handleCreateOrder}
           />
         </div>
       </div>
@@ -317,6 +361,7 @@ type CartPageStandaloneItemProps = {
   item: CartProductItem;
   line: CartPriceLineItem | undefined;
   isLoading: boolean;
+  isUnavailable: boolean;
 };
 
 function formatCurrency(amount: number): string {
@@ -330,9 +375,15 @@ export function CartPageStandaloneItem({
   item,
   line,
   isLoading,
+  isUnavailable,
 }: CartPageStandaloneItemProps) {
   return (
-    <div className="border border-neutral-200 bg-white">
+    <div
+      className={clsx(
+        "border bg-white border-neutral-200",
+        isUnavailable && "border-red-300 border-l-4 border-l-red-500",
+      )}
+    >
       <div className="flex items-start gap-4 p-4">
         {/* Thumbnail */}
         <div className="h-20 w-20 shrink-0 overflow-hidden">
@@ -364,6 +415,16 @@ export function CartPageStandaloneItem({
         </div>
       </div>
 
+      {isUnavailable && (
+        <div className="flex items-center gap-2 border-t border-red-200 bg-red-50 px-4 py-2.5">
+          <XCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
+          <p className="text-[11px] font-bold uppercase tracking-widest text-red-600">
+            Not available for your selected period — change dates or remove this
+            item.
+          </p>
+        </div>
+      )}
+
       <div className="px-4 pb-4">
         <CartPageIncludedItems items={item.includedItems} />
       </div>
@@ -375,15 +436,22 @@ type CartPageBundleItemProps = {
   item: CartBundleItem;
   line: CartPriceLineItem | undefined;
   isLoading: boolean;
+  isUnavailable: boolean;
 };
 
 function CartPageBundleItem({
   item,
   line,
   isLoading,
+  isUnavailable,
 }: CartPageBundleItemProps) {
   return (
-    <div className="border border-neutral-200 bg-white">
+    <div
+      className={clsx(
+        "border bg-white border-neutral-200",
+        isUnavailable && "border-red-300 border-l-4 border-l-red-500",
+      )}
+    >
       {/* Bundle header */}
       <div className="flex items-center gap-3 border-b border-neutral-200 px-4 py-4">
         <p className="text-base font-black uppercase tracking-wide text-black">
@@ -410,6 +478,16 @@ function CartPageBundleItem({
         </div>
       </div>
 
+      {isUnavailable && (
+        <div className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-4 py-2.5">
+          <XCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
+          <p className="text-[11px] font-bold uppercase tracking-widest text-red-600">
+            Not available for your selected period — change dates or remove this
+            item.
+          </p>
+        </div>
+      )}
+
       {/* Nested components */}
       <div className="space-y-px bg-neutral-100 p-3">
         {item.components.map((component) => (
@@ -426,9 +504,14 @@ function CartPageBundleItem({
 type CartPageItemListProps = {
   lines: CartPriceLineItem[];
   isLoading: boolean;
+  unavailableIds: string[];
 };
 
-export function CartPageItemList({ lines, isLoading }: CartPageItemListProps) {
+export function CartPageItemList({
+  lines,
+  isLoading,
+  unavailableIds,
+}: CartPageItemListProps) {
   const items = useCartItems();
 
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -481,6 +564,7 @@ export function CartPageItemList({ lines, isLoading }: CartPageItemListProps) {
                 item={item}
                 line={line}
                 isLoading={isLoading}
+                isUnavailable={unavailableIds.includes(item.productTypeId)}
               />
             );
           }
@@ -491,6 +575,7 @@ export function CartPageItemList({ lines, isLoading }: CartPageItemListProps) {
               item={item}
               line={line}
               isLoading={isLoading}
+              isUnavailable={unavailableIds.includes(item.bundleId)}
             />
           );
         })}
@@ -512,12 +597,9 @@ function CartPageSidebar({
   isError,
   onBook,
 }: CartPageSidebarProps) {
-  const { startDate, endDate } = useSearch({
-    from: "/_customer/cart/",
-  });
   const isEmpty = useCartIsEmpty();
 
-  const isDisabled = isEmpty || !startDate || !endDate || isLoading || isError;
+  const isDisabled = isEmpty || isLoading || isError;
 
   return (
     <div className="sticky top-6 border border-neutral-200 bg-white p-6">

@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authed/dashboard")({
 
 const sidebarItems = [
   { name: "Dashboard", href: "/dashboard" },
-  { name: "Bookings", href: "/dashboard/bookings" },
+  { name: "Orders", href: "/dashboard/orders" },
   { name: "Customers", href: "/dashboard/users" },
   { name: "Categories", href: "/dashboard/catalog/categories" },
   { name: "Products", href: "/dashboard/catalog/products" },

@@ -1,21 +1,32 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
-import { OrderRepositoryPort, PrismaTransactionClient } from 'src/modules/order/domain/ports/order.repository.port';
+import { OrderRepositoryPort } from 'src/modules/order/domain/ports/order.repository.port';
 import { BundleWithComponents, OrderQueryService } from 'src/modules/order/infrastructure/services/order-query.service';
 import { PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
 import { CreateOrderCommand } from './create-order.command';
 import { err, ok, Result } from 'src/core/result';
-import { OrderItemUnavailableError } from 'src/modules/order/domain/exceptions/order.exceptions';
+import { OrderItemUnavailableError, UnavailableItem } from 'src/modules/order/domain/exceptions/order.exceptions';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
-import { OrderItemType, OrderStatus } from '@repo/types';
+import { AssignmentSource, AssignmentType, OrderItemType, OrderStatus } from '@repo/types';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { randomUUID } from 'node:crypto';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { AssetAssignment } from 'src/modules/inventory/domain/entities/asset-assignment.entity';
+import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
 
-@Injectable()
-export class CreateOrderHandler {
+type PendingAssignment = {
+  assignment: AssetAssignment;
+};
+
+type ReservationResult =
+  | { ok: true; pendingAssignments: PendingAssignment[] }
+  | { ok: false; unavailableItem: UnavailableItem };
+
+@CommandHandler(CreateOrderCommand)
+export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, Result<string>> {
   constructor(
     private readonly prisma: PrismaService,
     private readonly orderRepo: OrderRepositoryPort,
@@ -61,28 +72,54 @@ export class CreateOrderHandler {
         customerId: command.customerId ?? undefined,
       });
 
-      for (let i = 0; i < command.items.length; i++) {
-        const itemCommand = command.items[i];
-        const price = prices[i];
+      const reservationResults = await Promise.all(
+        command.items.map((itemCommand, i) => {
+          const price = prices[i];
+          if (itemCommand.type === 'PRODUCT') {
+            return this.reserveProductItem(order, itemCommand, price, command);
+          } else {
+            const bundle = itemMetas.bundles.get(itemCommand.bundleId)!;
+            return this.reserveBundleItem(order, itemCommand, bundle, price, command);
+          }
+        }),
+      );
 
-        if (itemCommand.type === 'PRODUCT') {
-          const result = await this.reserveProductItem(order, itemCommand, price, command, tx);
-          if (result.isErr()) {
-            return err(result.error);
-          }
-        } else {
-          const bundle = itemMetas.bundles.get(itemCommand.bundleId)!;
-          const result = await this.reserveBundleItem(order, itemCommand, bundle, price, command, tx);
-          if (result.isErr()) {
-            return err(result.error);
-          }
-        }
+      // Collect all unavailable items before failing — complete picture for the frontend
+      const unavailableItems = reservationResults
+        .filter((r): r is { ok: false; unavailableItem: UnavailableItem } => !r.ok)
+        .map((r) => r.unavailableItem);
+
+      if (unavailableItems.length > 0) {
+        return err(new OrderItemUnavailableError(unavailableItems));
       }
 
-      // Transition to SOURCED — all assets successfully reserved
-      order.transitionTo(OrderStatus.SOURCED);
+      // All succeeded — flatten pending assignments
+      const pendingAssignments = reservationResults
+        .filter((r): r is { ok: true; pendingAssignments: PendingAssignment[] } => r.ok)
+        .flatMap((r) => r.pendingAssignments);
 
+      order.transitionTo(OrderStatus.SOURCED);
       await this.orderRepo.save(order, tx);
+
+      const saveResults = await Promise.all(
+        pendingAssignments.map(({ assignment }) => this.inventoryApi.saveAssignment(assignment, tx)),
+      );
+
+      const saveFailed = saveResults.find((r) => r.isErr());
+      if (saveFailed) {
+        // EXCLUDE violation at write time — a race condition, not a user error.
+        // We don't know which item lost the race here, so we report all items
+        // as a generic conflict rather than surfacing partial information.
+        return err(
+          new OrderItemUnavailableError(
+            command.items.map((item) =>
+              item.type === 'PRODUCT'
+                ? { type: 'PRODUCT', productTypeId: item.productTypeId }
+                : { type: 'BUNDLE', bundleId: item.bundleId },
+            ),
+          ),
+        );
+      }
 
       return ok(order.id);
     });
@@ -184,8 +221,18 @@ export class CreateOrderHandler {
     itemCommand: { type: 'PRODUCT'; productTypeId: string; assetId?: string },
     price: Awaited<ReturnType<typeof this.pricingApi.calculateProductPrice>>,
     command: CreateOrderCommand,
-    tx: PrismaTransactionClient,
-  ): Promise<Result<void, OrderItemUnavailableError>> {
+  ): Promise<ReservationResult> {
+    const assetId = await this.inventoryApi.findAvailableAssetId({
+      productTypeId: itemCommand.productTypeId,
+      locationId: command.locationId,
+      period: command.period,
+      assetId: itemCommand.assetId,
+    });
+
+    if (!assetId) {
+      return { ok: false, unavailableItem: { type: 'PRODUCT', productTypeId: itemCommand.productTypeId } };
+    }
+
     const orderItem = OrderItem.create({
       orderId: order.id,
       type: OrderItemType.PRODUCT,
@@ -193,24 +240,23 @@ export class CreateOrderHandler {
       productTypeId: itemCommand.productTypeId,
     });
 
-    const reservation = await this.inventoryApi.reserveAsset(
-      {
-        productTypeId: itemCommand.productTypeId,
-        locationId: command.locationId,
-        orderId: order.id,
-        orderItemId: orderItem.id,
-        period: command.period,
-        assetId: itemCommand.assetId,
-      },
-      tx,
-    );
-
-    if (reservation.isErr()) {
-      return err(new OrderItemUnavailableError());
-    }
-
     order.addItem(orderItem);
-    return ok(undefined);
+
+    return {
+      ok: true,
+      pendingAssignments: [
+        {
+          assignment: AssetAssignment.create({
+            assetId,
+            period: DateRange.create(command.period.start, command.period.end),
+            type: AssignmentType.ORDER,
+            source: AssignmentSource.OWNED,
+            orderId: order.id,
+            orderItemId: orderItem.id,
+          }),
+        },
+      ],
+    };
   }
 
   // ── Private: bundle item reservation ─────────────────────────────────────
@@ -221,29 +267,35 @@ export class CreateOrderHandler {
     bundle: BundleWithComponents,
     price: Awaited<ReturnType<typeof this.pricingApi.calculateBundlePrice>>,
     command: CreateOrderCommand,
-    tx: PrismaTransactionClient,
-  ): Promise<Result<void, OrderItemUnavailableError>> {
+  ): Promise<ReservationResult> {
     // Generate snapshot id upfront so components can reference it
     const snapshotId = randomUUID();
     const orderItemId = randomUUID();
+    const period = DateRange.create(command.period.start, command.period.end);
+    const pendingAssignments: PendingAssignment[] = [];
 
-    // Reserve one asset per bundle component
     for (const component of bundle.components) {
       for (let qty = 0; qty < component.quantity; qty++) {
-        const reservation = await this.inventoryApi.reserveAsset(
-          {
-            productTypeId: component.productTypeId,
-            locationId: command.locationId,
+        const assetId = await this.inventoryApi.findAvailableAssetId({
+          productTypeId: component.productTypeId,
+          locationId: command.locationId,
+          period: command.period,
+        });
+
+        if (!assetId) {
+          return { ok: false, unavailableItem: { type: 'BUNDLE', bundleId: itemCommand.bundleId } };
+        }
+
+        pendingAssignments.push({
+          assignment: AssetAssignment.create({
+            assetId,
+            period,
+            type: AssignmentType.ORDER,
+            source: AssignmentSource.OWNED,
             orderId: order.id,
             orderItemId,
-            period: command.period,
-          },
-          tx,
-        );
-
-        if (reservation.isErr()) {
-          return err(new OrderItemUnavailableError());
-        }
+          }),
+        });
       }
     }
 
@@ -273,6 +325,6 @@ export class CreateOrderHandler {
     });
 
     order.addItem(orderItem);
-    return ok(undefined);
+    return { ok: true, pendingAssignments };
   }
 }

@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AssetAssignment } from '../domain/entities/asset-assignment.entity';
 import { DateRange } from '../domain/value-objects/date-range.vo';
-import { AssignmentType, AssignmentSource } from '@repo/types';
-import { InventoryPublicApi, ReserveAssetDto, ReservedAssetDto } from '../inventory.public-api';
+import { FindAvailableAssetDto, InventoryPublicApi } from '../inventory.public-api';
 import { AssetAssignmentRepositoryPort } from '../domain/ports/asset-assignment.repository.port';
 import { AssetNotAvailableError } from '../domain/exceptions/asset.exceptions';
 import { err, ok, Result } from 'src/core/result';
@@ -17,14 +16,9 @@ export class InventoryApplicationService implements InventoryPublicApi {
     private readonly availabilityService: AssetAvailabilityService,
   ) {}
 
-  async reserveAsset(
-    dto: ReserveAssetDto,
-    tx: PrismaTransactionClient,
-  ): Promise<Result<ReservedAssetDto, AssetNotAvailableError>> {
+  async findAvailableAssetId(dto: FindAvailableAssetDto): Promise<string | null> {
     const period = DateRange.create(dto.period.start, dto.period.end);
 
-    // Step 1: Find an available asset — domain-level fast fail.
-    // This catches the obvious unavailability case without hitting the DB write path.
     const assetId = await this.availabilityService.findAvailableAssetId({
       productTypeId: dto.productTypeId,
       locationId: dto.locationId,
@@ -32,31 +26,21 @@ export class InventoryApplicationService implements InventoryPublicApi {
       assetId: dto.assetId,
     });
 
-    if (!assetId) {
-      return err(new AssetNotAvailableError());
-    }
+    return assetId;
+  }
 
-    // Step 2: Build the assignment record.
-    const assignment = AssetAssignment.create({
-      assetId,
-      period,
-      type: AssignmentType.ORDER,
-      source: AssignmentSource.OWNED,
-      orderId: dto.orderId,
-      orderItemId: dto.orderItemId,
-    });
-
-    // Step 3: Persist — the EXCLUDE constraint is the authoritative concurrency guard.
-    // If two requests passed findAvailable simultaneously, only one insert succeeds.
+  async saveAssignment(
+    assignment: AssetAssignment,
+    tx: PrismaTransactionClient,
+  ): Promise<Result<void, AssetNotAvailableError>> {
     try {
       await this.assignmentRepo.save(assignment, tx);
+      return ok(undefined);
     } catch (error) {
       if (error instanceof PostgresExclusionViolationError) {
         return err(new AssetNotAvailableError());
       }
       throw error;
     }
-
-    return ok({ assetId, assignmentId: assignment.id });
   }
 }

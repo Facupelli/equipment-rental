@@ -1,24 +1,27 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { STATUS_MAP } from "@/features/orders/bookings.constants";
-import {
-  useTodayOverview,
-  useUpcomingSchedule,
-} from "@/features/orders/bookings.queries";
-import type {
-  BookingCard,
-  ProductSummary,
-  ReturnCard,
-  UpcomingBooking,
-  UpcomingDay,
-} from "@repo/schemas";
+import { STATUS_MAP } from "@/features/orders/orders.constants";
+import { useUpcomingSchedule } from "@/features/orders/orders.queries";
+import type { OrderStatus } from "@repo/types";
 import { createFileRoute } from "@tanstack/react-router";
+import dayjs from "@/lib/dayjs";
 
-export const Route = createFileRoute("/_authed/dashboard/bookings/")({
-  component: BookingsPage,
+export const Route = createFileRoute("/_authed/dashboard/orders/")({
+  component: OrdersPage,
 });
 
-function BookingsPage() {
+function OrdersPage() {
+  const from = dayjs.utc().format("YYYY-MM-DD");
+  const to = dayjs.utc().add(7, "day").format("YYYY-MM-DD");
+
+  const { data, isPending, error } = useUpcomingSchedule({
+    locationId: "d6f36e40-1c0f-4008-9365-24c587eed343",
+    from,
+    to,
+  });
+
+  console.log({ data, isPending, error });
+
   return (
     <>
       <header className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
@@ -40,10 +43,10 @@ function BookingsPage() {
       </header>
 
       <main className="space-y-10 overflow-y-auto p-6">
-        <TodaySection />
+        {/* <TodaySection />
         <div className="border-t border-gray-100 pt-8">
           <UpcomingSection />
-        </div>
+        </div> */}
       </main>
     </>
   );
@@ -62,16 +65,8 @@ function renderProductSummary(summary: ProductSummary): React.ReactNode {
   );
 }
 
-function StatusBadge({
-  status,
-  isOverdue,
-}: {
-  status: string;
-  isOverdue?: boolean;
-}) {
-  const config = isOverdue
-    ? STATUS_MAP.OVERDUE
-    : (STATUS_MAP[status] ?? STATUS_MAP.ACTIVE);
+function StatusBadge({ status }: { status: OrderStatus }) {
+  const config = STATUS_MAP[status] ?? STATUS_MAP.ACTIVE;
   return (
     <span
       className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold tracking-widest uppercase ${config.className}`}
@@ -259,7 +254,7 @@ function TodayReturnCard({ booking }: { booking: ReturnCard }) {
           >
             {formatTime(booking.scheduledReturnTime)}
           </span>
-          <StatusBadge status={booking.status} isOverdue={booking.isOverdue} />
+          <StatusBadge status={booking.status} />
         </div>
       </CardContent>
     </Card>

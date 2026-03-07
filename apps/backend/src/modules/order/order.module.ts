@@ -7,6 +7,7 @@ import { PricingModule } from '../pricing/pricing.module';
 import { OrderQueryService } from './infrastructure/services/order-query.service';
 import { CreateOrderHandler } from './application/commands/create-order/create-order.command-handler';
 import { InventoryModule } from '../inventory/inventory.module';
+import { GetOrdersScheduleQueryHandler } from './application/queries/get-orders-schedule.query-handler';
 
 @Module({
   imports: [TenantModule, PricingModule, InventoryModule],
@@ -18,6 +19,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     },
     OrderQueryService,
     CreateOrderHandler,
+    GetOrdersScheduleQueryHandler,
   ],
 })
 export class OrderModule {}

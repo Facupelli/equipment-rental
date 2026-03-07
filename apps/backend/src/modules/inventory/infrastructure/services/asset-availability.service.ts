@@ -36,27 +36,27 @@ export class AssetAvailabilityService {
    * asset access structurally impossible.
    */
   async findAvailableAssetId(params: FindAvailableParams): Promise<string | null> {
-    const period = formatPostgresRange(params.period);
+    const tstzrange = formatPostgresRange(params.period);
 
-    const assetIdFilter = params.assetId ? Prisma.sql`AND a.id = ${params.assetId}::uuid` : Prisma.empty;
+    const assetFilter = params.assetId ? Prisma.sql`AND a.id = ${params.assetId}` : Prisma.empty;
 
     const rows = await this.prisma.client.$queryRaw<{ id: string }[]>`
       SELECT a.id
       FROM assets a
-      WHERE a.product_type_id = ${params.productTypeId}::uuid
-        AND a.location_id     = ${params.locationId}::uuid
+      WHERE a.product_type_id = ${params.productTypeId}
+        AND a.location_id     = ${params.locationId}
         AND a.is_active       = true
         AND a.deleted_at      IS NULL
-        ${assetIdFilter}
+        ${assetFilter}
         AND NOT EXISTS (
           SELECT 1
           FROM asset_assignments aa
           WHERE aa.asset_id = a.id
-            AND aa.period && ${period}::tstzrange
+            AND aa.period && ${tstzrange}::tstzrange
         )
       LIMIT 1
     `;
 
-    return rows.length > 0 ? rows[0].id : null;
+    return rows[0]?.id ?? null;
   }
 }
