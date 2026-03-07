@@ -4,7 +4,7 @@ import { STATUS_MAP } from "@/features/orders/orders.constants";
 import { useUpcomingSchedule } from "@/features/orders/orders.queries";
 import type { OrderStatus } from "@repo/types";
 import { createFileRoute } from "@tanstack/react-router";
-import dayjs from "@/lib/dayjs";
+import dayjs from "@/lib/dates/dayjs";
 
 export const Route = createFileRoute("/_authed/dashboard/orders/")({
   component: OrdersPage,

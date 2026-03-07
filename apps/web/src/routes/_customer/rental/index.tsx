@@ -34,7 +34,7 @@ import {
 import { CalendarIcon, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
-import dayjs from "@/lib/dayjs";
+import dayjs from "@/lib/dates/dayjs";
 import { useRentalProducts } from "@/features/rental/rental.queries";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
 import {

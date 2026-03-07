@@ -16,7 +16,7 @@ import { useCartIsEmpty, useCartItemCount, useCartItems } from "../cart.hooks";
 import type { CartItem } from "../cart.types";
 import { useRouter, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
-import dayjs from "@/lib/dayjs";
+import dayjs from "@/lib/dates/dayjs";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
 
 export function CartPopover() {

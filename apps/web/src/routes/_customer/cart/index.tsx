@@ -4,12 +4,12 @@ import type {
   CartBundleItem,
   CartIncludedItem,
   CartProductItem,
-  RentalPeriod,
 } from "@/features/rental/cart/cart.types";
 import {
   useCartIsEmpty,
   useCartItems,
 } from "@/features/rental/cart/cart.hooks";
+import type { Dayjs } from "dayjs";
 import {
   AlertTriangle,
   ArrowRight,
@@ -26,16 +26,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import z from "zod";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
-import { useCartPricePreview } from "@/features/rental/rental.queries";
-import type {
-  CalculateCartPricesRequest,
-  CartPriceLineItem,
-  CartPriceResult,
-} from "@repo/schemas";
-import { useCreateOrder } from "@/features/orders/orders.queries";
-import { ProblemDetailsError } from "@/shared/errors";
-import { useState } from "react";
+import type { CartPriceLineItem, CartPriceResult } from "@repo/schemas";
 import clsx from "clsx";
+import { useCartOrder } from "@/features/rental/cart/hooks/use-cart-order";
+import { formatDateShort, formatRentalDuration } from "@/lib/dates/format";
 
 const cartPageSearchSchema = z.object({
   startDate: z.coerce.date(),
@@ -48,95 +42,41 @@ export const Route = createFileRoute("/_customer/cart/")({
   component: CartPage,
 });
 
+// ─── Page ────────────────────────────────────────────────────────────────────
+
 function CartPage() {
   const { startDate, endDate, locationId } = useSearch({
     from: "/_customer/cart/",
   });
 
-  const items = useCartItems();
-  const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
-
-  const data: CalculateCartPricesRequest = {
-    currency: "USD",
-    locationId,
-    period: {
-      start: startDate.toISOString(),
-      end: endDate.toISOString(),
-    },
-    items: items.map((item) => {
-      if (item.type === "PRODUCT") {
-        return {
-          type: "PRODUCT",
-          productTypeId: item.productTypeId,
-          quantity: item.quantity,
-        };
-      }
-      return {
-        type: "BUNDLE",
-        bundleId: item.bundleId,
-        quantity: item.quantity,
-      };
-    }),
-  };
+  const { data: locations } = useLocations();
+  const location = locations?.find((l) => l.id === locationId);
 
   const {
-    data: breakdown,
-    isPending,
-    isError,
-  } = useCartPricePreview(data, {
-    enabled:
-      startDate !== undefined &&
-      endDate !== undefined &&
-      locationId !== undefined,
+    cartItems,
+    period,
+    breakdown,
+    isPriceLoading,
+    isPriceError,
+    unavailableIds,
+    handleBook,
+  } = useCartOrder({ locationId, startDate, endDate });
+
+  // Pre-join line items with cart item names before passing to the breakdown.
+  // This keeps CartPagePriceBreakdown free of cart store knowledge.
+  const joinedLineItems = breakdown?.lineItems.map((line) => {
+    const cartItem = cartItems.find(
+      (i) =>
+        (i.type === "PRODUCT" && i.productTypeId === line.id) ||
+        (i.type === "BUNDLE" && i.bundleId === line.id),
+    );
+    return { ...line, name: cartItem?.name ?? line.id };
   });
-
-  const { mutateAsync: createOrder } = useCreateOrder();
-  const handleCreateOrder = async () => {
-    setUnavailableIds([]);
-
-    try {
-      await createOrder({
-        locationId,
-        customerId: undefined,
-        periodEnd: endDate.toISOString(),
-        periodStart: startDate.toISOString(),
-        currency: "USD",
-        items: items.map((item) => {
-          if (item.type === "PRODUCT") {
-            return {
-              type: "PRODUCT",
-              productTypeId: item.productTypeId,
-              quantity: item.quantity,
-            };
-          }
-          return {
-            type: "BUNDLE",
-            bundleId: item.bundleId,
-            quantity: item.quantity,
-          };
-        }),
-      });
-    } catch (error) {
-      if (
-        error instanceof ProblemDetailsError &&
-        error.problemDetails.status === 422
-      ) {
-        const ids = (error.problemDetails.unavailableItems ?? []).map(
-          (i: { productTypeId?: string; bundleId?: string }) =>
-            i.productTypeId ?? i.bundleId ?? "",
-        );
-        setUnavailableIds(ids.filter(Boolean));
-        return;
-      }
-
-      throw error;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-neutral-50">
       <div className="mx-auto max-w-6xl px-6 py-12 space-y-8">
-        <div className="">
+        <div>
           <h1 className="text-4xl font-black uppercase tracking-tight text-black">
             Review Your Order
           </h1>
@@ -145,31 +85,31 @@ function CartPage() {
           </p>
         </div>
 
-        <div>
-          <CartPagePeriod />
-        </div>
+        <CartPagePeriod
+          startDate={period.start}
+          endDate={period.end}
+          locationName={location?.name}
+        />
 
         {/*
-          CSS Grid — two-column layout per flexbox-grid document:
-          Parent-driven structure. Left column owns the content flow.
+          CSS Grid — two-column layout:
+          Left column owns the content flow.
           Right column is fixed-width sticky sidebar.
           Mobile: single column, sidebar stacks below.
         */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
-          {/* Left column */}
-
           <CartPageItemList
             lines={breakdown?.lineItems ?? []}
-            isLoading={isPending}
+            isLoading={isPriceLoading}
             unavailableIds={unavailableIds}
           />
 
-          {/* Right column — sticky sidebar */}
           <CartPageSidebar
             breakdown={breakdown}
-            isLoading={isPending}
-            isError={isError}
-            onBook={handleCreateOrder}
+            joinedLineItems={joinedLineItems}
+            isLoading={isPriceLoading}
+            isError={isPriceError}
+            onBook={handleBook}
           />
         </div>
       </div>
@@ -177,33 +117,28 @@ function CartPage() {
   );
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
 }
 
-function formatDuration(period: RentalPeriod): string {
-  const ms = period.end.getTime() - period.start.getTime();
-  const totalDays = Math.ceil(ms / (1000 * 60 * 60 * 24));
-  const weeks = Math.floor(totalDays / 7);
-  const days = totalDays % 7;
+// ─── Period ──────────────────────────────────────────────────────────────────
 
-  if (weeks === 0) return `${days} ${days === 1 ? `Day` : `Days`}`;
-  if (days === 0) return `${weeks} ${weeks === 1 ? `Week` : `Weeks`}`;
-  return `${weeks} ${weeks === 1 ? `Week` : `Weeks`}, ${days} ${days === 1 ? `Day` : `Days`}`;
-}
+type CartPagePeriodProps = {
+  startDate: Dayjs | undefined;
+  endDate: Dayjs | undefined;
+  locationName: string | undefined;
+};
 
-function CartPagePeriod() {
-  const { startDate, endDate, locationId } = useSearch({
-    from: "/_customer/cart/",
-  });
-
-  const { data: locations } = useLocations();
-  const location = locations?.find((l) => l.id === locationId);
-
+function CartPagePeriod({
+  startDate,
+  endDate,
+  locationName,
+}: CartPagePeriodProps) {
   if (!startDate || !endDate) {
     return (
       <div className="mb-8">
@@ -229,9 +164,8 @@ function CartPagePeriod() {
         </p>
         <div className="flex items-center gap-2 pt-1">
           <Calendar className="h-4 w-4 shrink-0 text-neutral-400" />
-
           <p className="text-sm font-semibold text-black">
-            {formatDate(startDate)} — {formatDate(endDate)}
+            {formatDateShort(startDate)} — {formatDateShort(endDate)}
           </p>
         </div>
       </div>
@@ -242,7 +176,7 @@ function CartPagePeriod() {
         <div className="flex items-center gap-2 pt-1">
           <Clock className="h-4 w-4 shrink-0 text-neutral-400" />
           <p className="text-sm font-semibold text-black">
-            {formatDuration({ start: startDate, end: endDate })}
+            {formatRentalDuration(startDate, endDate)}
           </p>
         </div>
       </div>
@@ -251,8 +185,8 @@ function CartPagePeriod() {
           Pickup Location
         </p>
         <div className="pt-1">
-          {location ? (
-            <p className="text-sm font-semibold text-black">{location.name}</p>
+          {locationName ? (
+            <p className="text-sm font-semibold text-black">{locationName}</p>
           ) : (
             <p className="text-sm text-neutral-300">Not selected</p>
           )}
@@ -262,21 +196,20 @@ function CartPagePeriod() {
   );
 }
 
+// ─── Included items ───────────────────────────────────────────────────────────
+
 type CartPageIncludedItemsProps = {
   items: CartIncludedItem[];
 };
 
 function CartPageIncludedItems({ items }: CartPageIncludedItemsProps) {
-  if (items.length === 0) {
-    return null;
-  }
+  if (items.length === 0) return null;
 
   return (
     <div className="mt-3 border border-neutral-100 bg-neutral-50 px-4 py-3">
       <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
         Included with this rental
       </p>
-      {/* Flexbox with flex-wrap — content-driven tags of varying widths */}
       <div className="flex flex-wrap gap-x-6 gap-y-1.5">
         {items.map((item, index) => (
           <div key={index} className="flex items-center gap-1.5">
@@ -293,6 +226,8 @@ function CartPageIncludedItems({ items }: CartPageIncludedItemsProps) {
     </div>
   );
 }
+
+// ─── Image ───────────────────────────────────────────────────────────────────
 
 type CartPageImageProps = {
   src: string | null;
@@ -320,6 +255,8 @@ function CartPageImage({ src, alt, className = "" }: CartPageImageProps) {
   );
 }
 
+// ─── Bundle component ─────────────────────────────────────────────────────────
+
 type CartPageBundleComponentProps = {
   component: CartBundleComponent;
 };
@@ -328,12 +265,9 @@ function CartPageBundleComponent({ component }: CartPageBundleComponentProps) {
   return (
     <div className="border border-neutral-100 bg-white p-4">
       <div className="flex items-start gap-4">
-        {/* Thumbnail */}
         <div className="h-16 w-16 shrink-0 overflow-hidden">
           <CartPageImage src={component.imageUrl} alt={component.name} />
         </div>
-
-        {/* Name + label */}
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold uppercase tracking-wide text-black">
             {component.name}
@@ -342,8 +276,6 @@ function CartPageBundleComponent({ component }: CartPageBundleComponentProps) {
             {component.billingUnitLabel}
           </p>
         </div>
-
-        {/* Right: included in bundle + qty */}
         <div className="shrink-0 text-right">
           <p className="text-xs italic text-neutral-400">Included in Bundle</p>
           <p className="mt-0.5 text-[11px] uppercase tracking-wider text-neutral-400">
@@ -351,11 +283,12 @@ function CartPageBundleComponent({ component }: CartPageBundleComponentProps) {
           </p>
         </div>
       </div>
-
       <CartPageIncludedItems items={component.includedItems} />
     </div>
   );
 }
+
+// ─── Standalone product item ──────────────────────────────────────────────────
 
 type CartPageStandaloneItemProps = {
   item: CartProductItem;
@@ -363,13 +296,6 @@ type CartPageStandaloneItemProps = {
   isLoading: boolean;
   isUnavailable: boolean;
 };
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
 
 export function CartPageStandaloneItem({
   item,
@@ -385,12 +311,9 @@ export function CartPageStandaloneItem({
       )}
     >
       <div className="flex items-start gap-4 p-4">
-        {/* Thumbnail */}
         <div className="h-20 w-20 shrink-0 overflow-hidden">
           <CartPageImage src={item.imageUrl} alt={item.name} />
         </div>
-
-        {/* Name + label */}
         <div className="min-w-0 flex-1">
           <p className="text-base font-black uppercase tracking-wide text-black">
             {item.name}
@@ -399,8 +322,6 @@ export function CartPageStandaloneItem({
             {item.billingUnitLabel}
           </p>
         </div>
-
-        {/* Right: price + qty */}
         <div className="shrink-0 text-right">
           {isLoading ? (
             <Skeleton className="mb-1 ml-auto h-5 w-20" />
@@ -432,6 +353,8 @@ export function CartPageStandaloneItem({
   );
 }
 
+// ─── Bundle item ──────────────────────────────────────────────────────────────
+
 type CartPageBundleItemProps = {
   item: CartBundleItem;
   line: CartPriceLineItem | undefined;
@@ -452,7 +375,6 @@ function CartPageBundleItem({
         isUnavailable && "border-red-300 border-l-4 border-l-red-500",
       )}
     >
-      {/* Bundle header */}
       <div className="flex items-center gap-3 border-b border-neutral-200 px-4 py-4">
         <p className="text-base font-black uppercase tracking-wide text-black">
           {item.name}
@@ -460,8 +382,6 @@ function CartPageBundleItem({
         <span className="shrink-0 border border-neutral-300 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
           Bundle
         </span>
-
-        {/* Price right-aligned */}
         <div className="ml-auto shrink-0 text-right">
           {isLoading ? (
             <Skeleton className="ml-auto h-6 w-24" />
@@ -488,7 +408,6 @@ function CartPageBundleItem({
         </div>
       )}
 
-      {/* Nested components */}
       <div className="space-y-px bg-neutral-100 p-3">
         {item.components.map((component) => (
           <CartPageBundleComponent
@@ -500,6 +419,8 @@ function CartPageBundleItem({
     </div>
   );
 }
+
+// ─── Item list ────────────────────────────────────────────────────────────────
 
 type CartPageItemListProps = {
   lines: CartPriceLineItem[];
@@ -513,7 +434,6 @@ export function CartPageItemList({
   unavailableIds,
 }: CartPageItemListProps) {
   const items = useCartItems();
-
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
   if (items.length === 0) {
@@ -584,8 +504,13 @@ export function CartPageItemList({
   );
 }
 
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+type JoinedLineItem = CartPriceLineItem & { name: string };
+
 type CartPageSidebarProps = {
   breakdown: CartPriceResult | undefined;
+  joinedLineItems: JoinedLineItem[] | undefined;
   isLoading: boolean;
   isError: boolean;
   onBook: () => void;
@@ -593,23 +518,23 @@ type CartPageSidebarProps = {
 
 function CartPageSidebar({
   breakdown,
+  joinedLineItems,
   isLoading,
   isError,
   onBook,
 }: CartPageSidebarProps) {
   const isEmpty = useCartIsEmpty();
-
   const isDisabled = isEmpty || isLoading || isError;
 
   return (
     <div className="sticky top-6 border border-neutral-200 bg-white p-6">
       <CartPagePriceBreakdown
-        breakdown={breakdown}
+        total={breakdown?.total}
+        lineItems={joinedLineItems}
         isLoading={isLoading}
         isError={isError}
       />
 
-      {/* Book button */}
       <Button
         onClick={onBook}
         disabled={isDisabled}
@@ -619,7 +544,6 @@ function CartPageSidebar({
         <ArrowRight className="h-3.5 w-3.5" />
       </Button>
 
-      {/* Trust signals */}
       <div className="mt-4 space-y-2">
         <div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
           <Banknote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
@@ -638,19 +562,21 @@ function CartPageSidebar({
   );
 }
 
+// ─── Price breakdown ──────────────────────────────────────────────────────────
+
 type CartPagePriceBreakdownProps = {
-  breakdown: CartPriceResult | undefined;
+  total: number | undefined;
+  lineItems: JoinedLineItem[] | undefined;
   isLoading: boolean;
   isError: boolean;
 };
 
 function CartPagePriceBreakdown({
-  breakdown,
+  total,
+  lineItems,
   isLoading,
   isError,
 }: CartPagePriceBreakdownProps) {
-  const cartItems = useCartItems();
-
   if (isError) {
     return (
       <div className="flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
@@ -668,7 +594,6 @@ function CartPagePriceBreakdown({
         Price Breakdown
       </h3>
 
-      {/* Line items */}
       <div className="space-y-3">
         {isLoading
           ? Array.from({ length: 2 }).map((_, i) => (
@@ -677,49 +602,39 @@ function CartPagePriceBreakdown({
                 <Skeleton className="h-5 w-16" />
               </div>
             ))
-          : breakdown?.lineItems.map((item) => {
-              const cartItem = cartItems.find(
-                (i) => i.type === "PRODUCT" && i.productTypeId === item.id,
-              );
-
-              return (
-                <div
-                  key={item.id}
-                  className="flex items-start justify-between gap-4"
-                >
-                  <div>
-                    <p className="text-sm text-black">{cartItem?.name}</p>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-                      {item.type}
-                    </p>
-                  </div>
-                  <p className="shrink-0 text-sm font-semibold text-black">
-                    {formatCurrency(item.subtotal)}
+          : lineItems?.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-start justify-between gap-4"
+              >
+                <div>
+                  <p className="text-sm text-black">{item.name}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                    {item.type}
                   </p>
                 </div>
-              );
-            })}
+                <p className="shrink-0 text-sm font-semibold text-black">
+                  {formatCurrency(item.subtotal)}
+                </p>
+              </div>
+            ))}
       </div>
 
-      {/* Divider */}
       <div className="my-4 border-t border-neutral-200" />
 
-      {/* Subtotal */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-neutral-500">Subtotal</p>
         {isLoading ? (
           <Skeleton className="h-5 w-20" />
         ) : (
           <p className="text-sm text-black">
-            {breakdown ? formatCurrency(breakdown.total) : "—"}
+            {total != null ? formatCurrency(total) : "—"}
           </p>
         )}
       </div>
 
-      {/* Divider */}
       <div className="my-4 border-t border-neutral-200" />
 
-      {/* Total */}
       <div className="flex items-center justify-between">
         <p className="text-sm font-black uppercase tracking-widest text-black">
           Total Amount
@@ -728,7 +643,7 @@ function CartPagePriceBreakdown({
           <Skeleton className="h-7 w-28" />
         ) : (
           <p className="text-xl font-black text-black">
-            {breakdown ? formatCurrency(breakdown.total) : "—"}
+            {total != null ? formatCurrency(total) : "—"}
           </p>
         )}
       </div>
