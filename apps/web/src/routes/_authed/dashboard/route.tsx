@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_authed/dashboard")({
 
 const sidebarItems = [
   { name: "Dashboard", href: "/dashboard" },
+  { name: "Schedule", href: "/dashboard/schedule" },
   { name: "Orders", href: "/dashboard/orders" },
   { name: "Customers", href: "/dashboard/users" },
   { name: "Categories", href: "/dashboard/catalog/categories" },
@@ -28,7 +29,7 @@ function DashboardLayout() {
 
   return (
     <div className="grid h-screen grid-cols-[280px_1fr]">
-      <aside className="h-full border-r border-gray-200 bg-slate-900 text-white p-4">
+      <aside className="h-full border-r border-gray-200 bg-neutral-900 text-white p-4">
         <div>
           <p className="font-bold">{tenant.name}</p>
           <p>

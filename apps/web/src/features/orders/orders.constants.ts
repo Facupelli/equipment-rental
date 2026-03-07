@@ -11,8 +11,8 @@ export const STATUS_MAP: Record<OrderStatus, StatusConfig> = {
     className: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
   },
   [OrderStatus.SOURCED]: {
-    label: "Overdue",
-    className: "bg-green-50 text-red-600 ring-1 ring-red-200",
+    label: "Sourced",
+    className: "bg-green-50 text-green-600 ring-1 ring-green-200",
   },
   [OrderStatus.CONFIRMED]: {
     label: "Confirmed",

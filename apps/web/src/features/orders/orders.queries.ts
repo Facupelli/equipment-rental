@@ -3,6 +3,8 @@ import type {
   CreateOrderDto,
   GetOrdersScheduleQuery,
   GetOrdersScheduleResponse,
+  OrderSummary,
+  ScheduleEvent,
 } from "@repo/schemas";
 import {
   useMutation,
@@ -11,6 +13,25 @@ import {
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { createOrder, getOrdersSchedule } from "./orders.api";
+import type { Dayjs } from "dayjs";
+import { parseDailyBound } from "@/lib/dates/parse";
+
+export type ParsedOrderSummary = Omit<
+  OrderSummary,
+  "periodStart" | "periodEnd"
+> & {
+  periodStart: Dayjs;
+  periodEnd: Dayjs;
+};
+
+export type ParsedScheduleEvent = Omit<ScheduleEvent, "eventDate" | "order"> & {
+  eventDate: Dayjs;
+  order: ParsedOrderSummary;
+};
+
+type ParsedGetOrdersScheduleResponse = {
+  events: ParsedScheduleEvent[];
+};
 
 type GetOrdersScheduleQueryOptions<TData = GetOrdersScheduleResponse> = Omit<
   UseQueryOptions<GetOrdersScheduleResponse, ProblemDetailsError, TData>,
@@ -24,8 +45,24 @@ type OrderMutationOptions = Omit<
 
 // -----------------------------------------------------
 
+function parseScheduleResponse(
+  raw: GetOrdersScheduleResponse,
+): ParsedGetOrdersScheduleResponse {
+  return {
+    events: raw.events.map((e) => ({
+      ...e,
+      eventDate: parseDailyBound(e.eventDate)!,
+      order: {
+        ...e.order,
+        periodStart: parseDailyBound(e.order.periodStart)!,
+        periodEnd: parseDailyBound(e.order.periodEnd)!,
+      },
+    })),
+  };
+}
+
 export function createOrdersScheduleQueryOptions<
-  TData = GetOrdersScheduleResponse,
+  TData = ParsedGetOrdersScheduleResponse,
 >(
   params: GetOrdersScheduleQuery,
   options?: GetOrdersScheduleQueryOptions<TData>,
@@ -34,12 +71,13 @@ export function createOrdersScheduleQueryOptions<
     ...options,
     queryKey: ["orders-schedule", params],
     queryFn: () => getOrdersSchedule({ data: params }),
+    select: (raw) => parseScheduleResponse(raw) as TData,
   };
 }
 
 // -----------------------------------------------------
 
-export function useUpcomingSchedule<TData = GetOrdersScheduleResponse>(
+export function useUpcomingSchedule<TData = ParsedGetOrdersScheduleResponse>(
   params: GetOrdersScheduleQuery,
   options?: GetOrdersScheduleQueryOptions<TData>,
 ) {

@@ -23,8 +23,8 @@ import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashb
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as AuthedDashboardSettingsIndexRouteImport } from './routes/_authed/dashboard/settings/index'
+import { Route as AuthedDashboardScheduleIndexRouteImport } from './routes/_authed/dashboard/schedule/index'
 import { Route as AuthedDashboardOwnersIndexRouteImport } from './routes/_authed/dashboard/owners/index'
-import { Route as AuthedDashboardOrdersIndexRouteImport } from './routes/_authed/dashboard/orders/index'
 import { Route as AuthedDashboardLocationsIndexRouteImport } from './routes/_authed/dashboard/locations/index'
 import { Route as AuthedDashboardInventoryAssetsIndexRouteImport } from './routes/_authed/dashboard/inventory/assets/index'
 import { Route as AuthedDashboardCatalogProductsIndexRouteImport } from './routes/_authed/dashboard/catalog/products/index'
@@ -101,16 +101,16 @@ const AuthedDashboardSettingsIndexRoute =
     path: '/settings/',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
+const AuthedDashboardScheduleIndexRoute =
+  AuthedDashboardScheduleIndexRouteImport.update({
+    id: '/schedule/',
+    path: '/schedule/',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
 const AuthedDashboardOwnersIndexRoute =
   AuthedDashboardOwnersIndexRouteImport.update({
     id: '/owners/',
     path: '/owners/',
-    getParentRoute: () => AuthedDashboardRouteRoute,
-  } as any)
-const AuthedDashboardOrdersIndexRoute =
-  AuthedDashboardOrdersIndexRouteImport.update({
-    id: '/orders/',
-    path: '/orders/',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
 const AuthedDashboardLocationsIndexRoute =
@@ -163,8 +163,8 @@ export interface FileRoutesByFullPath {
   '/cart/': typeof CustomerCartIndexRoute
   '/rental/': typeof CustomerRentalIndexRoute
   '/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
-  '/dashboard/orders/': typeof AuthedDashboardOrdersIndexRoute
   '/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
+  '/dashboard/schedule/': typeof AuthedDashboardScheduleIndexRoute
   '/dashboard/settings/': typeof AuthedDashboardSettingsIndexRoute
   '/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
   '/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
@@ -184,8 +184,8 @@ export interface FileRoutesByTo {
   '/cart': typeof CustomerCartIndexRoute
   '/rental': typeof CustomerRentalIndexRoute
   '/dashboard/locations': typeof AuthedDashboardLocationsIndexRoute
-  '/dashboard/orders': typeof AuthedDashboardOrdersIndexRoute
   '/dashboard/owners': typeof AuthedDashboardOwnersIndexRoute
+  '/dashboard/schedule': typeof AuthedDashboardScheduleIndexRoute
   '/dashboard/settings': typeof AuthedDashboardSettingsIndexRoute
   '/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
   '/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
@@ -209,8 +209,8 @@ export interface FileRoutesById {
   '/_customer/cart/': typeof CustomerCartIndexRoute
   '/_customer/rental/': typeof CustomerRentalIndexRoute
   '/_authed/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
-  '/_authed/dashboard/orders/': typeof AuthedDashboardOrdersIndexRoute
   '/_authed/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
+  '/_authed/dashboard/schedule/': typeof AuthedDashboardScheduleIndexRoute
   '/_authed/dashboard/settings/': typeof AuthedDashboardSettingsIndexRoute
   '/_authed/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
   '/_authed/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
@@ -233,8 +233,8 @@ export interface FileRouteTypes {
     | '/cart/'
     | '/rental/'
     | '/dashboard/locations/'
-    | '/dashboard/orders/'
     | '/dashboard/owners/'
+    | '/dashboard/schedule/'
     | '/dashboard/settings/'
     | '/dashboard/catalog/products/$productId'
     | '/dashboard/catalog/products/new'
@@ -254,8 +254,8 @@ export interface FileRouteTypes {
     | '/cart'
     | '/rental'
     | '/dashboard/locations'
-    | '/dashboard/orders'
     | '/dashboard/owners'
+    | '/dashboard/schedule'
     | '/dashboard/settings'
     | '/dashboard/catalog/products/$productId'
     | '/dashboard/catalog/products/new'
@@ -278,8 +278,8 @@ export interface FileRouteTypes {
     | '/_customer/cart/'
     | '/_customer/rental/'
     | '/_authed/dashboard/locations/'
-    | '/_authed/dashboard/orders/'
     | '/_authed/dashboard/owners/'
+    | '/_authed/dashboard/schedule/'
     | '/_authed/dashboard/settings/'
     | '/_authed/dashboard/catalog/products/$productId'
     | '/_authed/dashboard/catalog/products/new'
@@ -400,18 +400,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardSettingsIndexRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
+    '/_authed/dashboard/schedule/': {
+      id: '/_authed/dashboard/schedule/'
+      path: '/schedule'
+      fullPath: '/dashboard/schedule/'
+      preLoaderRoute: typeof AuthedDashboardScheduleIndexRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
     '/_authed/dashboard/owners/': {
       id: '/_authed/dashboard/owners/'
       path: '/owners'
       fullPath: '/dashboard/owners/'
       preLoaderRoute: typeof AuthedDashboardOwnersIndexRouteImport
-      parentRoute: typeof AuthedDashboardRouteRoute
-    }
-    '/_authed/dashboard/orders/': {
-      id: '/_authed/dashboard/orders/'
-      path: '/orders'
-      fullPath: '/dashboard/orders/'
-      preLoaderRoute: typeof AuthedDashboardOrdersIndexRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
     '/_authed/dashboard/locations/': {
@@ -462,8 +462,8 @@ declare module '@tanstack/react-router' {
 interface AuthedDashboardRouteRouteChildren {
   AuthedDashboardIndexRoute: typeof AuthedDashboardIndexRoute
   AuthedDashboardLocationsIndexRoute: typeof AuthedDashboardLocationsIndexRoute
-  AuthedDashboardOrdersIndexRoute: typeof AuthedDashboardOrdersIndexRoute
   AuthedDashboardOwnersIndexRoute: typeof AuthedDashboardOwnersIndexRoute
+  AuthedDashboardScheduleIndexRoute: typeof AuthedDashboardScheduleIndexRoute
   AuthedDashboardSettingsIndexRoute: typeof AuthedDashboardSettingsIndexRoute
   AuthedDashboardCatalogProductsProductIdRoute: typeof AuthedDashboardCatalogProductsProductIdRoute
   AuthedDashboardCatalogProductsNewRoute: typeof AuthedDashboardCatalogProductsNewRoute
@@ -475,8 +475,8 @@ interface AuthedDashboardRouteRouteChildren {
 const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
   AuthedDashboardIndexRoute: AuthedDashboardIndexRoute,
   AuthedDashboardLocationsIndexRoute: AuthedDashboardLocationsIndexRoute,
-  AuthedDashboardOrdersIndexRoute: AuthedDashboardOrdersIndexRoute,
   AuthedDashboardOwnersIndexRoute: AuthedDashboardOwnersIndexRoute,
+  AuthedDashboardScheduleIndexRoute: AuthedDashboardScheduleIndexRoute,
   AuthedDashboardSettingsIndexRoute: AuthedDashboardSettingsIndexRoute,
   AuthedDashboardCatalogProductsProductIdRoute:
     AuthedDashboardCatalogProductsProductIdRoute,
