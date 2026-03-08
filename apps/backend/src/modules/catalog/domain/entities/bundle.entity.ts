@@ -12,6 +12,7 @@ export interface CreateBundleProps {
   tenantId: string;
   billingUnitId: string;
   name: string;
+  isActive: boolean;
 }
 
 export interface ReconstituteBundleProps {
@@ -39,7 +40,7 @@ export class Bundle {
     if (!props.name || props.name.trim().length === 0) {
       throw new InvalidBundleNameException();
     }
-    return new Bundle(randomUUID(), props.tenantId, props.billingUnitId, props.name.trim(), true, [], []);
+    return new Bundle(randomUUID(), props.tenantId, props.billingUnitId, props.name.trim(), props.isActive, [], []);
   }
 
   static reconstitute(props: ReconstituteBundleProps): Bundle {

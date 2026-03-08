@@ -25,7 +25,6 @@ export class CreateAssetCommandHandler implements ICommandHandler<CreateAssetCom
 
     const product = await this.catalogApi.getProductType(productTypeId);
 
-    console.log({ product });
     if (!product) {
       return err(new ProductTypeNotFoundError(productTypeId));
     }
@@ -35,10 +34,7 @@ export class CreateAssetCommandHandler implements ICommandHandler<CreateAssetCom
         throw new SerialNumberRequiredException();
       }
 
-      console.log('IDENTIFIED', 'SERIAL NUMBER PROVIDED');
-
       const taken = await this.serialNumberService.isTaken(serialNumber);
-      console.log({ taken });
       if (taken) {
         return err(new DuplicateSerialNumberError(serialNumber));
       }

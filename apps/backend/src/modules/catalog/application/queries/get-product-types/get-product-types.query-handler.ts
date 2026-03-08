@@ -41,6 +41,13 @@ export class GetProductTypesQueryHandler implements IQueryHandler<
           category: true,
           billingUnit: true,
           pricingTiers: true,
+          _count: {
+            select: {
+              assets: {
+                where: { isActive: true, deletedAt: null },
+              },
+            },
+          },
         },
         orderBy: {
           name: 'asc',
@@ -64,6 +71,7 @@ export class GetProductTypesQueryHandler implements IQueryHandler<
         createdAt: pt.createdAt,
         updatedAt: pt.updatedAt,
         deletedAt: pt.deletedAt,
+        assetCount: pt._count.assets,
         category: pt.category
           ? {
               id: pt.category.id,

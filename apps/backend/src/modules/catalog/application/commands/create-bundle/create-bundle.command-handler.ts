@@ -7,7 +7,7 @@ import { CatalogApplicationService } from '../../catalog.application-service';
 import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
 
 @CommandHandler(CreateBundleCommand)
-export class CreateBundleHandler implements ICommandHandler<CreateBundleCommand> {
+export class CreateBundleCommandHandler implements ICommandHandler<CreateBundleCommand> {
   constructor(
     private readonly bundleRepo: BundleRepositoryPort,
     private readonly catalogService: CatalogApplicationService,
@@ -30,6 +30,7 @@ export class CreateBundleHandler implements ICommandHandler<CreateBundleCommand>
       tenantId,
       billingUnitId: command.billingUnitId,
       name: command.name,
+      isActive: command.isActive,
     });
 
     for (const component of command.components) {

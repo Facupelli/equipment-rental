@@ -39,6 +39,9 @@ export const productTypeResponseSchema = z.object({
   isActive: z.boolean(),
   attributes: productTypeAttributesSchema,
   includedItems: z.array(productTypeIncludedItemSchema),
+  // Total number of active, non-deleted assets for this product type.
+  // Used as the upper bound when composing bundle components.
+  assetCount: z.number().int().nonnegative(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   deletedAt: z.coerce.date().nullable(),

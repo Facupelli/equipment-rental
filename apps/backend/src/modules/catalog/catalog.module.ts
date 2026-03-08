@@ -15,28 +15,36 @@ import { GetRentalProductTypesQueryHandler } from './application/queries/get-rea
 import { RentalProductTypeController } from './infrastructure/controllers/rental-product-type.controller';
 import { CatalogPublicApi } from './catalog.public-api';
 import { CatalogApplicationService } from './application/catalog.application-service';
+import { BundleController } from './infrastructure/controllers/bundle.controller';
+import { CreateBundleCommandHandler } from './application/commands/create-bundle/create-bundle.command-handler';
+import { GetBundlesQueryHandler } from './application/queries/get-bundles/get-bundles.query-handler';
+import { BundleRepositoryPort } from './domain/ports/bundle-repository.port';
+import { BundleRepository } from './infrastructure/repositories/bundle.repository';
 
 const repositories = [
   { provide: ProductCategoryRepositoryPort, useClass: ProductCategoryRepository },
   { provide: ProductTypeRepositoryPort, useClass: ProductTypeRepository },
+  { provide: BundleRepositoryPort, useClass: BundleRepository },
 ];
 
-const commandhandlers = [CreateProductTypeCommandHandler, CreateProductCategoryHandler];
+const commandhandlers = [CreateProductTypeCommandHandler, CreateProductCategoryHandler, CreateBundleCommandHandler];
 
 const queryHandlers = [
   GetProductTypeByIdQueryHandler,
   GetProductTypesQueryHandler,
   GetProductCategoriesQueryHandler,
   GetRentalProductTypesQueryHandler,
+  GetBundlesQueryHandler,
 ];
 
 @Module({
   imports: [TenantModule],
-  controllers: [ProductCategoryController, ProductTypeController, RentalProductTypeController],
+  controllers: [ProductCategoryController, ProductTypeController, BundleController, RentalProductTypeController],
   providers: [
     ...repositories,
     ...commandhandlers,
     ...queryHandlers,
+    CatalogApplicationService,
     { provide: CatalogPublicApi, useClass: CatalogApplicationService },
   ],
   exports: [CatalogPublicApi],
