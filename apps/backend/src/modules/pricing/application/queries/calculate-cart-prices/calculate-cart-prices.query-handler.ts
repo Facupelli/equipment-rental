@@ -11,7 +11,7 @@ export type CartPriceLineItem = {
   type: 'PRODUCT' | 'BUNDLE';
   id: string;
   quantity: number;
-  pricePerUnit: number;
+  pricePerBillingUnit: number;
   subtotal: number;
 };
 
@@ -124,14 +124,14 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
 
       // All units for the same item share the same inputs → same price.
       // We take index 0 as the canonical per-unit price.
-      const pricePerUnit = unitPrices[0];
-      const subtotal = unitPrices.reduce((acc, price) => acc.add(price), Money.zero(query.currency));
+      const pricePerBillingUnit = unitPrices[0].pricePerBillingUnit;
+      const subtotal = unitPrices.reduce((acc, result) => acc.add(result.finalPrice), Money.zero(query.currency));
 
       return {
         type: item.type,
         id: item.type === 'PRODUCT' ? item.productTypeId : item.bundleId,
         quantity: item.quantity,
-        pricePerUnit: pricePerUnit.toDecimal().toNumber(),
+        pricePerBillingUnit: pricePerBillingUnit.toDecimal().toNumber(),
         subtotal: subtotal.toDecimal().toNumber(),
       };
     });

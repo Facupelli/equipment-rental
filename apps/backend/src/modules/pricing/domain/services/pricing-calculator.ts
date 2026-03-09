@@ -6,6 +6,12 @@ import { RuleApplicationContext } from '../types/pricing-rule.types';
 import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exeptions';
 import { PricingTier } from '../entities/pricing-tier.entity';
 
+export type PricingResult = {
+  finalPrice: Money;
+  pricePerBillingUnit: Money;
+  totalUnits: number;
+};
+
 export type PricingCalculatorInput = {
   period: DateRange;
   billingUnitDurationMinutes: number;
@@ -28,12 +34,18 @@ export type PricingCalculatorInput = {
  *   5. Flooring the result at zero
  */
 export class PricingCalculator {
-  calculate(input: PricingCalculatorInput): Money {
+  calculate(input: PricingCalculatorInput): PricingResult {
     const units = this.resolveUnits(input.period, input.billingUnitDurationMinutes);
     const tier = this.resolveTier(input.tiers, units, input.entityId);
     const base = this.computeBasePrice(tier, units, input.currency);
     const applicableRules = this.filterRules(input.rules, input.context);
-    return this.applyDiscounts(base, applicableRules, input.currency);
+    const finalPrice = this.applyDiscounts(base, applicableRules, input.currency);
+
+    return {
+      finalPrice,
+      pricePerBillingUnit: Money.of(tier.pricePerUnit, input.currency),
+      totalUnits: units,
+    };
   }
 
   // ── Step 1: Billing units ─────────────────────────────────────────────────

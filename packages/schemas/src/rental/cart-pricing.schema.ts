@@ -37,7 +37,7 @@ export const cartPriceLineItemSchema = z.object({
   id: z.uuid(),
   quantity: z.number().int().min(1),
   /** Price for a single unit — decimal */
-  pricePerUnit: z.number().nonnegative(),
+  pricePerBillingUnit: z.number().nonnegative(),
   /** pricePerUnit × quantity — decimal */
   subtotal: z.number().nonnegative(),
 });

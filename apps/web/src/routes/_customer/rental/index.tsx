@@ -387,8 +387,6 @@ function ProductCard({
   onAdd: (product: RentalProductResponse) => void;
 }) {
   const unitPrice = product.pricingTiers[0].pricePerUnit;
-  console.log({ product });
-
   const category = product.category?.name ?? "General";
 
   return (

@@ -318,19 +318,19 @@ export function CartPageStandaloneItem({
           <p className="text-base font-black uppercase tracking-wide text-black">
             {item.name}
           </p>
-          <p className="mt-0.5 text-[11px] uppercase tracking-wider text-neutral-400">
-            {item.billingUnitLabel}
-          </p>
         </div>
         <div className="shrink-0 text-right">
           {isLoading ? (
             <Skeleton className="mb-1 ml-auto h-5 w-20" />
           ) : line ? (
             <p className="text-base font-black text-black">
-              {formatCurrency(line.subtotal)}
+              {formatCurrency(line.pricePerBillingUnit)}{" "}
+              <span className="uppercase text-xs tracking-wider font-semibold text-neutral-400">
+                / {item.billingUnitLabel}
+              </span>
             </p>
           ) : null}
-          <p className="text-[11px] uppercase tracking-wider text-neutral-400">
+          <p className="text-sm uppercase tracking-wider text-neutral-400 pt-1">
             Qty: {item.quantity}
           </p>
         </div>

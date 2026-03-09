@@ -236,7 +236,7 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     const orderItem = OrderItem.create({
       orderId: order.id,
       type: OrderItemType.PRODUCT,
-      priceSnapshot: price.toDecimal(),
+      priceSnapshot: price.finalPrice.toDecimal(),
       productTypeId: itemCommand.productTypeId,
     });
 
@@ -312,14 +312,14 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
       orderItemId,
       bundleId: bundle.id,
       bundleName: bundle.name,
-      bundlePrice: price.toDecimal(),
+      bundlePrice: price.finalPrice.toDecimal(),
       components: snapshotComponents,
     });
 
     const orderItem = OrderItem.create({
       orderId: order.id,
       type: OrderItemType.BUNDLE,
-      priceSnapshot: price.toDecimal(),
+      priceSnapshot: price.finalPrice.toDecimal(),
       bundleId: itemCommand.bundleId,
       bundleSnapshot: snapshot,
     });

@@ -1,9 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Money } from 'src/modules/order/domain/value-objects/money.vo';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
 import { RuleApplicationContext } from '../domain/types/pricing-rule.types';
 import { CalculateBundlePriceDto, CalculateProductPriceDto, PricingPublicApi } from '../pricing.public-api';
-import { PricingCalculator } from '../domain/services/pricing-calculator';
+import { PricingCalculator, PricingResult } from '../domain/services/pricing-calculator';
 import { PricingQueryService } from '../infrastructure/services/pricing-query.service';
 
 @Injectable()
@@ -14,7 +13,7 @@ export class PricingApplicationService implements PricingPublicApi {
 
   constructor(private readonly pricingQuery: PricingQueryService) {}
 
-  async calculateProductPrice(dto: CalculateProductPriceDto): Promise<Money> {
+  async calculateProductPrice(dto: CalculateProductPriceDto): Promise<PricingResult> {
     const meta = await this.pricingQuery.loadProductTypeMeta(dto.productTypeId);
     if (!meta) {
       throw new NotFoundException(`ProductType "${dto.productTypeId}" not found.`);
@@ -45,7 +44,7 @@ export class PricingApplicationService implements PricingPublicApi {
     });
   }
 
-  async calculateBundlePrice(dto: CalculateBundlePriceDto): Promise<Money> {
+  async calculateBundlePrice(dto: CalculateBundlePriceDto): Promise<PricingResult> {
     const meta = await this.pricingQuery.loadBundleMeta(dto.bundleId);
     if (!meta) {
       throw new NotFoundException(`Bundle "${dto.bundleId}" not found.`);

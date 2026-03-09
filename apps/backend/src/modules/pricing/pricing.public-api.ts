@@ -1,4 +1,4 @@
-import { Money } from 'src/modules/order/domain/value-objects/money.vo';
+import { PricingResult } from './domain/services/pricing-calculator';
 
 export type CalculateProductPriceDto = {
   tenantId: string;
@@ -29,6 +29,6 @@ export type CalculateBundlePriceDto = {
  * business outcome, it indicates a catalog setup problem.
  */
 export abstract class PricingPublicApi {
-  abstract calculateProductPrice(dto: CalculateProductPriceDto): Promise<Money>;
-  abstract calculateBundlePrice(dto: CalculateBundlePriceDto): Promise<Money>;
+  abstract calculateProductPrice(dto: CalculateProductPriceDto): Promise<PricingResult>;
+  abstract calculateBundlePrice(dto: CalculateBundlePriceDto): Promise<PricingResult>;
 }
