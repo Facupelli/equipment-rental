@@ -24,14 +24,13 @@ import {
 import { useCategories } from "@/features/catalog/product-categories/categories.queries";
 import { useCreateProduct } from "@/features/catalog/product-types/products.queries";
 import {
-  pricingTierRowDefaults,
   productTypeFormDefaults,
   productTypeFormSchema,
   toCreateProductTypeDto,
 } from "@/features/catalog/product-types/schemas/product-type-form.schema";
 import { TrackingMode } from "@repo/types";
 import { useForm } from "@tanstack/react-form";
-import { getRouteApi } from "@tanstack/react-router";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -46,12 +45,14 @@ const authedRoute = getRouteApi("/_authed");
 const formId = "create-product";
 
 function CreateProductPage() {
+  const navigate = useNavigate();
+
   const {
     tenant: { billingUnits },
   } = authedRoute.useLoaderData();
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories();
-  const { mutate: createProduct, isPending } = useCreateProduct();
+  const { mutateAsync: createProduct, isPending } = useCreateProduct();
 
   const form = useForm({
     defaultValues: productTypeFormDefaults,
@@ -59,8 +60,13 @@ function CreateProductPage() {
       onChange: productTypeFormSchema,
     },
     onSubmit: async ({ value }) => {
-      const dto = toCreateProductTypeDto(value);
-      createProduct(dto);
+      try {
+        const dto = toCreateProductTypeDto(value);
+        createProduct(dto);
+        navigate({ to: "/dashboard/catalog/products" });
+      } catch (error) {
+        console.log({ error });
+      }
     },
   });
 
@@ -460,149 +466,6 @@ function CreateProductPage() {
                         }
                       >
                         <Plus className="h-4 w-4 mr-2" /> Add Included Item
-                      </Button>
-                    </div>
-                  )}
-                />
-              </div>
-
-              {/* Pricing Tiers Field (Array) */}
-              <div className="space-y-2">
-                <FieldLabel>Pricing Tiers</FieldLabel>
-                <form.Field
-                  name="pricingTiers"
-                  mode="array"
-                  children={(field) => (
-                    <div className="space-y-4">
-                      {field.state.value.map((_, index) => (
-                        <div
-                          key={index}
-                          className="border p-4 rounded-md space-y-4 relative"
-                        >
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-2 right-2"
-                            onClick={() => field.removeValue(index)}
-                            disabled={field.state.value.length <= 1}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-
-                          <form.Field
-                            name={`pricingTiers[${index}].fromUnit`}
-                            children={(subField) => {
-                              const isInvalid =
-                                subField.state.meta.isTouched &&
-                                !subField.state.meta.isValid;
-                              return (
-                                <Field data-invalid={isInvalid}>
-                                  <FieldLabel>From unit</FieldLabel>
-                                  <Input
-                                    type="number"
-                                    min={0}
-                                    value={subField.state.value}
-                                    onBlur={subField.handleBlur}
-                                    onChange={(e) =>
-                                      subField.handleChange(
-                                        Number(e.target.value),
-                                      )
-                                    }
-                                  />
-                                  {isInvalid && (
-                                    <FieldError
-                                      errors={subField.state.meta.errors}
-                                    />
-                                  )}
-                                </Field>
-                              );
-                            }}
-                          />
-
-                          <form.Field
-                            name={`pricingTiers[${index}].toUnit`}
-                            children={(subField) => {
-                              const isInvalid =
-                                subField.state.meta.isTouched &&
-                                !subField.state.meta.isValid;
-                              return (
-                                <Field data-invalid={isInvalid}>
-                                  <FieldLabel>
-                                    To unit{" "}
-                                    <span className="text-muted-foreground text-xs">
-                                      (optional)
-                                    </span>
-                                  </FieldLabel>
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    value={
-                                      subField.state.value === ""
-                                        ? ""
-                                        : subField.state.value
-                                    }
-                                    onBlur={subField.handleBlur}
-                                    onChange={(e) =>
-                                      subField.handleChange(
-                                        e.target.value === ""
-                                          ? ""
-                                          : Number(e.target.value),
-                                      )
-                                    }
-                                  />
-                                  {isInvalid && (
-                                    <FieldError
-                                      errors={subField.state.meta.errors}
-                                    />
-                                  )}
-                                </Field>
-                              );
-                            }}
-                          />
-
-                          <form.Field
-                            name={`pricingTiers[${index}].pricePerUnit`}
-                            children={(subField) => {
-                              const isInvalid =
-                                subField.state.meta.isTouched &&
-                                !subField.state.meta.isValid;
-                              return (
-                                <Field data-invalid={isInvalid}>
-                                  <FieldLabel>Price per unit</FieldLabel>
-                                  <Input
-                                    type="text"
-                                    inputMode="decimal"
-                                    placeholder="0.00"
-                                    value={subField.state.value}
-                                    onBlur={subField.handleBlur}
-                                    onChange={(e) =>
-                                      subField.handleChange(e.target.value)
-                                    }
-                                  />
-                                  {isInvalid && (
-                                    <FieldError
-                                      errors={subField.state.meta.errors}
-                                    />
-                                  )}
-                                </Field>
-                              );
-                            }}
-                          />
-                        </div>
-                      ))}
-
-                      {field.state.meta.isTouched &&
-                        !field.state.meta.isValid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => field.pushValue(pricingTierRowDefaults)}
-                      >
-                        <Plus className="h-4 w-4 mr-2" /> Add Pricing Tier
                       </Button>
                     </div>
                   )}

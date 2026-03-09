@@ -5,6 +5,7 @@ import {
   useQueryClient,
   type MutationOptions,
   type UseQueryOptions,
+  type UseSuspenseQueryOptions,
 } from "@tanstack/react-query";
 import { createProduct, getProductDetail, getProducts } from "./products.api";
 import type {
@@ -23,7 +24,7 @@ type ProductsQueryOptions<TData = PaginatedProducts> = Omit<
 >;
 
 type ProductDetailQueryOptions<TData = ProductTypeResponse> = Omit<
-  UseQueryOptions<ProductTypeResponse, ProblemDetailsError, TData>,
+  UseSuspenseQueryOptions<ProductTypeResponse, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
@@ -48,7 +49,7 @@ export function createProductsQueryOptions<TData = PaginatedProducts>(
 export function createProductDetailQueryOptions<TData = ProductTypeResponse>(
   id: string,
   options?: ProductDetailQueryOptions<TData>,
-): UseQueryOptions<ProductTypeResponse, ProblemDetailsError, TData> {
+): UseSuspenseQueryOptions<ProductTypeResponse, ProblemDetailsError, TData> {
   return {
     ...options,
     queryKey: ["products", id],

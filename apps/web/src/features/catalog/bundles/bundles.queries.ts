@@ -5,13 +5,15 @@ import {
   useQueryClient,
   type MutationOptions,
   type UseQueryOptions,
+  type UseSuspenseQueryOptions,
 } from "@tanstack/react-query";
-import { createBundle, getBundles } from "./bundles.api";
+import { createBundle, getBundleDetail, getBundles } from "./bundles.api";
 import type {
   GetBundlesQueryDto,
   PaginatedDto,
   CreateBundleDto,
   BundleListItemResponseDto,
+  BundleDetailResponseDto,
 } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
@@ -19,6 +21,11 @@ type PaginatedBundles = PaginatedDto<BundleListItemResponseDto>;
 
 type BundlesQueryOptions<TData = PaginatedBundles> = Omit<
   UseQueryOptions<PaginatedBundles, ProblemDetailsError, TData>,
+  "queryKey" | "queryFn"
+>;
+
+type BundleDetailQueryOptions<TData = BundleDetailResponseDto> = Omit<
+  UseSuspenseQueryOptions<BundleDetailResponseDto, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
@@ -40,6 +47,20 @@ export function createBundlesQueryOptions<TData = PaginatedBundles>(
   };
 }
 
+export function createBundleDetailQueryOptions<TData = BundleDetailResponseDto>(
+  id: string,
+  options?: BundleDetailQueryOptions<TData>,
+): UseSuspenseQueryOptions<
+  BundleDetailResponseDto,
+  ProblemDetailsError,
+  TData
+> {
+  return {
+    ...options,
+    queryKey: ["bundle", id],
+    queryFn: () => getBundleDetail({ data: { bundleId: id } }),
+  };
+}
 // -----------------------------------------------------
 
 export function useBundles<TData = PaginatedBundles>(
@@ -50,6 +71,13 @@ export function useBundles<TData = PaginatedBundles>(
     ...createBundlesQueryOptions(params, options),
     placeholderData: keepPreviousData,
   });
+}
+
+export function useBundleDetail<TData = BundleDetailResponseDto>(
+  id: string,
+  options?: BundleDetailQueryOptions<TData>,
+) {
+  return useQuery(createBundleDetailQueryOptions(id, options));
 }
 
 export function useCreateBundle(options?: BundleMutationOptions) {

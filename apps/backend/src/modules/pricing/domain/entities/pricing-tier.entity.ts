@@ -1,10 +1,12 @@
 import { randomUUID } from 'crypto';
-import {
-  InvalidPricingTierRangeException,
-  InvalidPricingTierPriceException,
-  InvalidPricingTierParentException,
-} from '../exceptions/pricing-tier.exceptions';
 import Decimal from 'decimal.js';
+import {
+  InvalidPricingTierParentException,
+  InvalidPricingTierPriceException,
+  InvalidPricingTierRangeException,
+} from '../exceptions/pricing-tier.exceptions';
+
+export type PricingTargetType = 'PRODUCT_TYPE' | 'BUNDLE';
 
 type PricingTierParent = { bundleId: string; productTypeId?: never } | { productTypeId: string; bundleId?: never };
 

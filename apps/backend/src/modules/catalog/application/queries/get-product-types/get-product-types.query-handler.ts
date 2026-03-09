@@ -39,8 +39,27 @@ export class GetProductTypesQueryHandler implements IQueryHandler<
         where,
         include: {
           category: true,
-          billingUnit: true,
-          pricingTiers: true,
+          billingUnit: {
+            select: {
+              id: true,
+              label: true,
+              durationMinutes: true,
+            },
+          },
+          pricingTiers: {
+            // Global tiers first, then location-specific; within each group by fromUnit.
+            orderBy: [{ locationId: 'asc' }, { fromUnit: 'asc' }],
+            select: {
+              id: true,
+              fromUnit: true,
+              toUnit: true,
+              pricePerUnit: true,
+              locationId: true,
+              location: {
+                select: { id: true, name: true },
+              },
+            },
+          },
           _count: {
             select: {
               assets: {
@@ -83,18 +102,14 @@ export class GetProductTypesQueryHandler implements IQueryHandler<
           id: pt.billingUnit.id,
           label: pt.billingUnit.label,
           durationMinutes: pt.billingUnit.durationMinutes,
-          sortOrder: pt.billingUnit.sortOrder,
         },
         pricingTiers: pt.pricingTiers.map((tier) => ({
           id: tier.id,
-          productTypeId: tier.productTypeId,
-          bundleId: tier.bundleId,
-          locationId: tier.locationId,
           fromUnit: tier.fromUnit,
           toUnit: tier.toUnit,
           pricePerUnit: tier.pricePerUnit.toNumber(),
-          createdAt: tier.createdAt,
-          updatedAt: tier.updatedAt,
+          locationId: tier.locationId,
+          location: tier.location ? { id: tier.location.id, name: tier.location.name } : null,
         })),
       })),
       meta: {

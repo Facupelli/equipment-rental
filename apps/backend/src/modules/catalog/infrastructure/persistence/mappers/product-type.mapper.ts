@@ -3,7 +3,6 @@ import {
   PricingTier as PrismaPricingTier,
   Prisma,
 } from 'src/generated/prisma/client';
-import { PricingTierMapper } from './pricing-tier.mapper';
 import { ProductType } from 'src/modules/catalog/domain/entities/product-type.entity';
 import { TrackingMode } from '@repo/types';
 import { InputJsonValue } from '@prisma/client/runtime/client';
@@ -14,7 +13,6 @@ type PrismaProductTypeWithRelations = PrismaProductType & {
 
 export class ProductTypeMapper {
   static toDomain(raw: PrismaProductTypeWithRelations): ProductType {
-    const pricingTiers = raw.pricingTiers.map(PricingTierMapper.toDomain);
     return ProductType.reconstitute({
       id: raw.id,
       tenantId: raw.tenantId,
@@ -26,7 +24,6 @@ export class ProductTypeMapper {
       isActive: raw.isActive,
       attributes: raw.attributes as Record<string, unknown>,
       includedItems: raw.includedItems as unknown[],
-      pricingTiers,
     });
   }
 

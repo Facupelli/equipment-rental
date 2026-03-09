@@ -6,8 +6,10 @@ import {
   type CreateBundleDto,
   CreateBundleSchema,
   GetBundlesQuerySchema,
+  type BundleDetailResponseDto,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
+import z from "zod";
 
 const apiUrl = "/bundles";
 
@@ -18,6 +20,29 @@ export const createBundle = createServerFn({ method: "POST" })
       method: "POST",
       body: data,
     });
+
+    return result;
+  });
+
+export interface GetBundleDetailParams {
+  bundleId: string;
+}
+
+const bundleDetailParamsSchema = z.object({
+  bundleId: z.uuid(),
+});
+
+export const getBundleDetail = createServerFn({ method: "GET" })
+  .inputValidator((data: GetBundleDetailParams) =>
+    bundleDetailParamsSchema.parse(data),
+  )
+  .handler(async ({ data }): Promise<BundleDetailResponseDto> => {
+    const result = await apiFetch<BundleDetailResponseDto>(
+      `${apiUrl}/${data.bundleId}`,
+      {
+        method: "GET",
+      },
+    );
 
     return result;
   });

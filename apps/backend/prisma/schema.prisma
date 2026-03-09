@@ -185,11 +185,12 @@ model Location {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant Tenant  @relation(fields: [tenantId], references: [id])
-  assets Asset[]
-  orders Order[]
-  userRoles   UserRole[]
-  invitations Invitation[]
+  tenant       Tenant  @relation(fields: [tenantId], references: [id])
+  assets       Asset[]
+  orders       Order[]
+  userRoles    UserRole[]
+  invitations  Invitation[]
+  pricingTiers PricingTier[]
 
   @@index([tenantId, isActive])
   @@map("locations")
@@ -489,6 +490,7 @@ model PricingTier {
 
   productType ProductType? @relation(fields: [productTypeId], references: [id])
   bundle      Bundle?      @relation(fields: [bundleId], references: [id])
+  location    Location?    @relation(fields: [locationId], references: [id])
 
   @@unique([productTypeId, locationId, fromUnit])
   @@unique([bundleId, locationId, fromUnit])

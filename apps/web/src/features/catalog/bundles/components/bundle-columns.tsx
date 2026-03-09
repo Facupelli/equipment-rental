@@ -58,7 +58,7 @@ export const bundleColumns = [
     header: "Actions",
     cell: (info) => (
       <Link
-        to="/dashboard/catalog/bundles/$bundleId/edit"
+        to="/dashboard/catalog/bundles/$bundleId"
         params={{ bundleId: info.row.original.id }}
         className="text-sm font-medium hover:underline"
       >

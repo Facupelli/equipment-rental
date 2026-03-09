@@ -38,3 +38,56 @@ export const GetBundlesQuerySchema = z.object({
 
 export type GetBundlesQueryDto = z.infer<typeof GetBundlesQuerySchema>;
 export type BundleListItemResponseDto = z.infer<typeof BundleListItemSchema>;
+
+// BUNDLE DETAIL
+
+export const bundleDetailComponentSchema = z.object({
+  productTypeId: z.uuid(),
+  quantity: z.number().int().positive(),
+  // Active, non-deleted asset count — used as quantity ceiling in the edit form.
+  assetCount: z.number().int().nonnegative(),
+  productType: z.object({
+    name: z.string(),
+    description: z.string().nullable(),
+  }),
+});
+
+export const bundleDetailPricingTierSchema = z.object({
+  id: z.uuid(),
+  fromUnit: z.number().int(),
+  // null means open-ended (∞)
+  toUnit: z.number().int().nullable(),
+  pricePerUnit: z.number(),
+  locationId: z.uuid().nullable(),
+  location: z
+    .object({
+      id: z.uuid(),
+      name: z.string(),
+    })
+    .nullable(),
+});
+
+export const bundleDetailResponseSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  isActive: z.boolean(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  billingUnit: z.object({
+    id: z.uuid(),
+    label: z.string(),
+    durationMinutes: z.number().int(),
+  }),
+  components: z.array(bundleDetailComponentSchema),
+  pricingTiers: z.array(bundleDetailPricingTierSchema),
+});
+
+export type BundleDetailComponentDto = z.infer<
+  typeof bundleDetailComponentSchema
+>;
+export type BundleDetailPricingTierDto = z.infer<
+  typeof bundleDetailPricingTierSchema
+>;
+export type BundleDetailResponseDto = z.infer<
+  typeof bundleDetailResponseSchema
+>;

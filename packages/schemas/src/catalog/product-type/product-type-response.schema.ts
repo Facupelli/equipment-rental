@@ -15,19 +15,20 @@ export const productTypeBillingUnitResponseSchema = z.object({
   id: z.uuid(),
   label: z.string(),
   durationMinutes: z.number().int(),
-  sortOrder: z.number().int(),
 });
 
 export const productTypePricingTierResponseSchema = z.object({
   id: z.uuid(),
-  productTypeId: z.uuid().nullable(),
-  bundleId: z.uuid().nullable(),
-  locationId: z.uuid().nullable(),
   fromUnit: z.number().int(),
   toUnit: z.number().int().nullable(),
   pricePerUnit: z.number(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  locationId: z.uuid().nullable(),
+  location: z
+    .object({
+      id: z.uuid(),
+      name: z.string(),
+    })
+    .nullable(),
 });
 
 export const productTypeResponseSchema = z.object({

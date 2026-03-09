@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PricingRule } from '../../domain/entities/pricing-rule.entity';
-import { PricingRuleRepositoryPort } from '../../domain/ports/pricing-rulte.repository.port';
+import { PricingRuleRepositoryPort } from '../../domain/ports/pricing-rule.repository.port';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { PricingRuleMapper } from '../persistence/mappers/pricing-rule.mapper';
 

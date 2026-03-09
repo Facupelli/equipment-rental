@@ -1,11 +1,12 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateBundleDto } from '../../application/dto/create-bundle.dto';
 import { CreateBundleCommand } from '../../application/commands/create-bundle/create-bundle.command';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 import { GetBundlesQueryDto } from '../../application/dto/get-bundles-query.dto';
-import { BundleListItemResponseDto, PaginatedDto } from '@repo/schemas';
+import { BundleDetailResponseDto, BundleListItemResponseDto, PaginatedDto } from '@repo/schemas';
 import { GetBundlesQuery } from '../../application/queries/get-bundles/get-bundles.query';
+import { GetBundleByIdQuery } from '../../application/queries/get-bundle-by-id/get-bundle-by-id.query';
 
 @Controller('bundles')
 export class BundleController {
@@ -29,14 +30,14 @@ export class BundleController {
     return await this.queryBus.execute(query);
   }
 
-  // @Get(':id')
-  // async getProductTypeById(@Param('id') id: string): Promise<ProductTypeResponse> {
-  //   const result = await this.queryBus.execute(new GetProductTypeByIdQuery(id));
+  @Get(':id')
+  async getProductTypeById(@Param('id') id: string): Promise<BundleDetailResponseDto> {
+    const result = await this.queryBus.execute(new GetBundleByIdQuery(id));
 
-  //   if (!result) {
-  //     throw new NotFoundException('Product type not found');
-  //   }
+    if (!result) {
+      throw new NotFoundException('Bundle not found');
+    }
 
-  //   return result;
-  // }
+    return result;
+  }
 }

@@ -12,15 +12,12 @@ export const createPricingTierSchema = z
     path: ["toUnit"],
   });
 
-export const updatePricingTierSchema = z.object({
-  locationId: z.uuid().nullable().optional(),
-  fromUnit: z.number().int().nonnegative().optional(),
-  toUnit: z.number().int().positive().nullable().optional(),
-  pricePerUnit: z
-    .string()
-    .regex(/^\d+(\.\d{1,2})?$/, "Invalid price format")
-    .optional(),
+export type CreatePricingTierDto = z.infer<typeof createPricingTierSchema>;
+
+export const setPricingTiersBodySchema = z.object({
+  targetType: z.enum(["PRODUCT_TYPE", "BUNDLE"]),
+  targetId: z.uuid(),
+  tiers: z.array(createPricingTierSchema),
 });
 
-export type CreatePricingTierDto = z.infer<typeof createPricingTierSchema>;
-export type UpdatePricingTierDto = z.infer<typeof updatePricingTierSchema>;
+export type SetPricingTiersDto = z.infer<typeof setPricingTiersBodySchema>;

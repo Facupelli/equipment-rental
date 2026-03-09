@@ -1,10 +1,10 @@
 import Decimal from 'decimal.js';
-import { PricingTier } from 'src/modules/catalog/domain/entities/pricing-tier.entity';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
 import { Money } from 'src/modules/order/domain/value-objects/money.vo';
 import { PricingRule } from '../entities/pricing-rule.entity';
 import { RuleApplicationContext } from '../types/pricing-rule.types';
 import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exeptions';
+import { PricingTier } from '../entities/pricing-tier.entity';
 
 export type PricingCalculatorInput = {
   period: DateRange;

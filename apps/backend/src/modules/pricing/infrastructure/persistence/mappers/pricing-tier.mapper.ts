@@ -1,5 +1,5 @@
-import { PricingTier as PrismaPricingTier, Prisma } from 'src/generated/prisma/client';
-import { PricingTier } from 'src/modules/catalog/domain/entities/pricing-tier.entity';
+import { Prisma, PricingTier as PrismaPricingTier } from 'src/generated/prisma/client';
+import { PricingTier } from 'src/modules/pricing/domain/entities/pricing-tier.entity';
 
 type PricingTierParent = { bundleId: string; productTypeId?: never } | { productTypeId: string; bundleId?: never };
 
@@ -7,8 +7,8 @@ export class PricingTierMapper {
   static toDomain(raw: PrismaPricingTier): PricingTier {
     return PricingTier.reconstitute({
       id: raw.id,
-      productTypeId: raw.productTypeId,
       bundleId: raw.bundleId,
+      productTypeId: raw.productTypeId,
       locationId: raw.locationId,
       fromUnit: raw.fromUnit,
       toUnit: raw.toUnit,

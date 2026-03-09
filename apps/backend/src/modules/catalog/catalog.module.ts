@@ -20,6 +20,7 @@ import { CreateBundleCommandHandler } from './application/commands/create-bundle
 import { GetBundlesQueryHandler } from './application/queries/get-bundles/get-bundles.query-handler';
 import { BundleRepositoryPort } from './domain/ports/bundle-repository.port';
 import { BundleRepository } from './infrastructure/repositories/bundle.repository';
+import { GetBundleByIdQueryHandler } from './application/queries/get-bundle-by-id/get-bundle-by-id.query-handler';
 
 const repositories = [
   { provide: ProductCategoryRepositoryPort, useClass: ProductCategoryRepository },
@@ -35,6 +36,7 @@ const queryHandlers = [
   GetProductCategoriesQueryHandler,
   GetRentalProductTypesQueryHandler,
   GetBundlesQueryHandler,
+  GetBundleByIdQueryHandler,
 ];
 
 @Module({

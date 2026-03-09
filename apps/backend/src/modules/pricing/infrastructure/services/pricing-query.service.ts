@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PricingTier } from 'src/modules/catalog/domain/entities/pricing-tier.entity';
-import { PricingTierMapper } from 'src/modules/catalog/infrastructure/persistence/mappers/pricing-tier.mapper';
 import { PricingRule } from '../../domain/entities/pricing-rule.entity';
 import { PricingRuleMapper } from '../persistence/mappers/pricing-rule.mapper';
 import { PrismaService } from 'src/core/database/prisma.service';
+import { PricingTier } from '../../domain/entities/pricing-tier.entity';
+import { PricingTierMapper } from '../persistence/mappers/pricing-tier.mapper';
 
 export type ProductTypeMeta = {
   billingUnitDurationMinutes: number;

@@ -4,7 +4,6 @@ import {
   PricingTier as PrismaPricingTier,
   Prisma,
 } from 'src/generated/prisma/client';
-import { PricingTierMapper } from './pricing-tier.mapper';
 import { BundleComponent } from 'src/modules/catalog/domain/entities/bundle-component.entity';
 import { Bundle } from 'src/modules/catalog/domain/entities/bundle.entity';
 
@@ -36,7 +35,6 @@ export class BundleComponentMapper {
 export class BundleMapper {
   static toDomain(raw: PrismaBundleWithRelations): Bundle {
     const components = raw.components.map(BundleComponentMapper.toDomain);
-    const pricingTiers = raw.pricingTiers.map(PricingTierMapper.toDomain);
     return Bundle.reconstitute({
       id: raw.id,
       tenantId: raw.tenantId,
@@ -44,7 +42,6 @@ export class BundleMapper {
       name: raw.name,
       isActive: raw.isActive,
       components,
-      pricingTiers,
     });
   }
 

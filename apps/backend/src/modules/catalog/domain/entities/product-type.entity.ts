@@ -1,8 +1,6 @@
 import { randomUUID } from 'crypto';
-import { PricingTier } from './pricing-tier.entity';
 import { InvalidProductTypeNameException } from '../exceptions/product-type.exceptions';
 import { TrackingMode } from '@repo/types';
-import { DuplicatePricingTierException, PricingTierNotFoundException } from '../exceptions/pricing-tier.exceptions';
 
 export interface IncludedItem {
   name: string;
@@ -32,7 +30,6 @@ export interface ReconstituteProductTypeProps {
   isActive: boolean;
   attributes: Record<string, unknown>;
   includedItems: unknown[];
-  pricingTiers: PricingTier[];
 }
 
 export class ProductType {
@@ -47,7 +44,6 @@ export class ProductType {
     private isActive: boolean,
     public readonly attributes: Record<string, unknown>,
     public readonly includedItems: unknown[],
-    private readonly pricingTiers: PricingTier[],
   ) {}
 
   static create(props: CreateProductTypeProps): ProductType {
@@ -65,7 +61,6 @@ export class ProductType {
       true,
       props.attributes ?? {},
       props.includedItems ?? [],
-      [], // tiers added via addPricingTier()
     );
   }
 
@@ -81,7 +76,6 @@ export class ProductType {
       props.isActive,
       props.attributes,
       props.includedItems,
-      props.pricingTiers,
     );
   }
 
@@ -93,31 +87,11 @@ export class ProductType {
     return this.description;
   }
 
-  getPricingTiers(): PricingTier[] {
-    return [...this.pricingTiers];
-  }
-
   deactivate(): void {
     this.isActive = false;
   }
 
   updateDescription(description: string | null): void {
     this.description = description?.trim() ?? null;
-  }
-
-  addPricingTier(tier: PricingTier): void {
-    const duplicate = this.pricingTiers.some((t) => t.fromUnit === tier.fromUnit && t.locationId === tier.locationId);
-    if (duplicate) {
-      throw new DuplicatePricingTierException(tier.fromUnit, tier.locationId);
-    }
-    this.pricingTiers.push(tier);
-  }
-
-  removePricingTier(tierId: string): void {
-    const idx = this.pricingTiers.findIndex((t) => t.id === tierId);
-    if (idx === -1) {
-      throw new PricingTierNotFoundException(tierId);
-    }
-    this.pricingTiers.splice(idx, 1);
   }
 }

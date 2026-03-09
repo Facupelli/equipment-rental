@@ -1,10 +1,13 @@
-import type { PricingTier } from "@repo/schemas";
+import { PricingTiersTable } from "@/features/catalog/pricing-tier/components/pricing-tiers-table";
 import { useProduct } from "./product-detail.context";
+import type { PricingTierFormValues } from "@/features/catalog/pricing-tier/schemas/pricing-tier-form.schema";
 
-export function PricingTab() {
+export function PricingTab({
+  pendingTiers,
+}: {
+  pendingTiers: PricingTierFormValues[];
+}) {
   const { product } = useProduct();
-
-  const tiers = product.pricingTiers;
 
   return (
     <div className="space-y-8">
@@ -12,53 +15,20 @@ export function PricingTab() {
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
           Pricing Tiers
         </h3>
-        <PricingTiersTable tiers={tiers} />
+        <PricingTiersTable
+          tiers={product.pricingTiers.map((tier) => ({
+            id: tier.id,
+            fromUnit: tier.fromUnit,
+            toUnit: tier.toUnit,
+            pricePerUnit: tier.pricePerUnit.toString(),
+            location: {
+              name: tier.location?.name ?? "Global (Default)",
+            },
+          }))}
+          pendingTiers={pendingTiers}
+          billingUnitLabel={product.billingUnit.label}
+        />
       </section>
-    </div>
-  );
-}
-
-interface PricingTiersTableProps {
-  tiers: PricingTier[];
-}
-
-function PricingTiersTable({ tiers }: PricingTiersTableProps) {
-  if (tiers.length === 0) {
-    return <p className="text-sm text-muted-foreground">No tiers defined.</p>;
-  }
-
-  return (
-    <div className="rounded-md border">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-muted/50">
-            <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              From Unit
-            </th>
-            <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              To Unit
-            </th>
-            <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              Price / Unit
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {tiers.map((tier) => (
-            <tr key={tier.id} className="hover:bg-muted/30 transition-colors">
-              <td className="px-4 py-3 tabular-nums text-muted-foreground">
-                {tier.fromUnit}
-              </td>
-              <td className="px-4 py-3 tabular-nums text-muted-foreground">
-                {tier.toUnit ?? "—"}
-              </td>
-              <td className="px-4 py-3 tabular-nums font-medium">
-                {tier.pricePerUnit}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

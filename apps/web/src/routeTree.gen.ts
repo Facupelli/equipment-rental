@@ -33,6 +33,7 @@ import { Route as AuthedDashboardCatalogBundlesIndexRouteImport } from './routes
 import { Route as AuthedDashboardCatalogProductsNewRouteImport } from './routes/_authed/dashboard/catalog/products/new'
 import { Route as AuthedDashboardCatalogProductsProductIdRouteImport } from './routes/_authed/dashboard/catalog/products/$productId'
 import { Route as AuthedDashboardCatalogBundlesNewRouteImport } from './routes/_authed/dashboard/catalog/bundles/new'
+import { Route as AuthedDashboardCatalogBundlesBundleIdRouteImport } from './routes/_authed/dashboard/catalog/bundles/$bundleId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -163,6 +164,12 @@ const AuthedDashboardCatalogBundlesNewRoute =
     path: '/catalog/bundles/new',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
+const AuthedDashboardCatalogBundlesBundleIdRoute =
+  AuthedDashboardCatalogBundlesBundleIdRouteImport.update({
+    id: '/catalog/bundles/$bundleId',
+    path: '/catalog/bundles/$bundleId',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
   '/dashboard/schedule/': typeof AuthedDashboardScheduleIndexRoute
   '/dashboard/settings/': typeof AuthedDashboardSettingsIndexRoute
+  '/dashboard/catalog/bundles/$bundleId': typeof AuthedDashboardCatalogBundlesBundleIdRoute
   '/dashboard/catalog/bundles/new': typeof AuthedDashboardCatalogBundlesNewRoute
   '/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
   '/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
@@ -203,6 +211,7 @@ export interface FileRoutesByTo {
   '/dashboard/owners': typeof AuthedDashboardOwnersIndexRoute
   '/dashboard/schedule': typeof AuthedDashboardScheduleIndexRoute
   '/dashboard/settings': typeof AuthedDashboardSettingsIndexRoute
+  '/dashboard/catalog/bundles/$bundleId': typeof AuthedDashboardCatalogBundlesBundleIdRoute
   '/dashboard/catalog/bundles/new': typeof AuthedDashboardCatalogBundlesNewRoute
   '/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
   '/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
@@ -230,6 +239,7 @@ export interface FileRoutesById {
   '/_authed/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
   '/_authed/dashboard/schedule/': typeof AuthedDashboardScheduleIndexRoute
   '/_authed/dashboard/settings/': typeof AuthedDashboardSettingsIndexRoute
+  '/_authed/dashboard/catalog/bundles/$bundleId': typeof AuthedDashboardCatalogBundlesBundleIdRoute
   '/_authed/dashboard/catalog/bundles/new': typeof AuthedDashboardCatalogBundlesNewRoute
   '/_authed/dashboard/catalog/products/$productId': typeof AuthedDashboardCatalogProductsProductIdRoute
   '/_authed/dashboard/catalog/products/new': typeof AuthedDashboardCatalogProductsNewRoute
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/dashboard/owners/'
     | '/dashboard/schedule/'
     | '/dashboard/settings/'
+    | '/dashboard/catalog/bundles/$bundleId'
     | '/dashboard/catalog/bundles/new'
     | '/dashboard/catalog/products/$productId'
     | '/dashboard/catalog/products/new'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/dashboard/owners'
     | '/dashboard/schedule'
     | '/dashboard/settings'
+    | '/dashboard/catalog/bundles/$bundleId'
     | '/dashboard/catalog/bundles/new'
     | '/dashboard/catalog/products/$productId'
     | '/dashboard/catalog/products/new'
@@ -305,6 +317,7 @@ export interface FileRouteTypes {
     | '/_authed/dashboard/owners/'
     | '/_authed/dashboard/schedule/'
     | '/_authed/dashboard/settings/'
+    | '/_authed/dashboard/catalog/bundles/$bundleId'
     | '/_authed/dashboard/catalog/bundles/new'
     | '/_authed/dashboard/catalog/products/$productId'
     | '/_authed/dashboard/catalog/products/new'
@@ -496,6 +509,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardCatalogBundlesNewRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
+    '/_authed/dashboard/catalog/bundles/$bundleId': {
+      id: '/_authed/dashboard/catalog/bundles/$bundleId'
+      path: '/catalog/bundles/$bundleId'
+      fullPath: '/dashboard/catalog/bundles/$bundleId'
+      preLoaderRoute: typeof AuthedDashboardCatalogBundlesBundleIdRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
   }
 }
 
@@ -505,6 +525,7 @@ interface AuthedDashboardRouteRouteChildren {
   AuthedDashboardOwnersIndexRoute: typeof AuthedDashboardOwnersIndexRoute
   AuthedDashboardScheduleIndexRoute: typeof AuthedDashboardScheduleIndexRoute
   AuthedDashboardSettingsIndexRoute: typeof AuthedDashboardSettingsIndexRoute
+  AuthedDashboardCatalogBundlesBundleIdRoute: typeof AuthedDashboardCatalogBundlesBundleIdRoute
   AuthedDashboardCatalogBundlesNewRoute: typeof AuthedDashboardCatalogBundlesNewRoute
   AuthedDashboardCatalogProductsProductIdRoute: typeof AuthedDashboardCatalogProductsProductIdRoute
   AuthedDashboardCatalogProductsNewRoute: typeof AuthedDashboardCatalogProductsNewRoute
@@ -520,6 +541,8 @@ const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
   AuthedDashboardOwnersIndexRoute: AuthedDashboardOwnersIndexRoute,
   AuthedDashboardScheduleIndexRoute: AuthedDashboardScheduleIndexRoute,
   AuthedDashboardSettingsIndexRoute: AuthedDashboardSettingsIndexRoute,
+  AuthedDashboardCatalogBundlesBundleIdRoute:
+    AuthedDashboardCatalogBundlesBundleIdRoute,
   AuthedDashboardCatalogBundlesNewRoute: AuthedDashboardCatalogBundlesNewRoute,
   AuthedDashboardCatalogProductsProductIdRoute:
     AuthedDashboardCatalogProductsProductIdRoute,
