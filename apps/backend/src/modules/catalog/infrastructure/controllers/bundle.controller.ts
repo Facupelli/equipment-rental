@@ -1,4 +1,4 @@
-import { Body, Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateBundleDto } from '../../application/dto/create-bundle.dto';
 import { CreateBundleCommand } from '../../application/commands/create-bundle/create-bundle.command';
@@ -7,6 +7,10 @@ import { GetBundlesQueryDto } from '../../application/dto/get-bundles-query.dto'
 import { BundleDetailResponseDto, BundleListItemResponseDto, PaginatedDto } from '@repo/schemas';
 import { GetBundlesQuery } from '../../application/queries/get-bundles/get-bundles.query';
 import { GetBundleByIdQuery } from '../../application/queries/get-bundle-by-id/get-bundle-by-id.query';
+import {
+  PublishBundleCommand,
+  RetireBundleCommand,
+} from '../../application/commands/publish-bundle/publish-bundle.command';
 
 @Controller('bundles')
 export class BundleController {
@@ -39,5 +43,15 @@ export class BundleController {
     }
 
     return result;
+  }
+
+  @Patch(':id/publish')
+  async publish(@Param('id') id: string): Promise<void> {
+    await this.commandBus.execute(new PublishBundleCommand(id));
+  }
+
+  @Patch(':id/retire')
+  async retire(@Param('id') id: string): Promise<void> {
+    await this.commandBus.execute(new RetireBundleCommand(id));
   }
 }

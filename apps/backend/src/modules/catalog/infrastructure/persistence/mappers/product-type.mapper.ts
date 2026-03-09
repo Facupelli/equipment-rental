@@ -23,8 +23,8 @@ export class ProductTypeMapper {
       trackingMode: raw.trackingMode as TrackingMode,
       attributes: raw.attributes as Record<string, unknown>,
       includedItems: raw.includedItems as unknown[],
-      isPublished: raw.publishedAt !== null,
-      isRetired: raw.retiredAt !== null,
+      publishedAt: raw.publishedAt,
+      retiredAt: raw.retiredAt,
     });
   }
 
@@ -39,6 +39,8 @@ export class ProductTypeMapper {
       trackingMode: entity.trackingMode,
       attributes: entity.attributes as InputJsonValue,
       includedItems: entity.includedItems as InputJsonValue,
+      publishedAt: entity.getPublishedAt(),
+      retiredAt: entity.getRetiredAt(),
     };
   }
 }

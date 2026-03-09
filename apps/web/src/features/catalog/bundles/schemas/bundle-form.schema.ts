@@ -15,7 +15,6 @@ const bundleComponentFormSchema = z.object({
 export const bundleFormSchema = z.object({
   name: z.string().min(1, "Bundle name is required"),
   billingUnitId: z.uuid("Billing unit is required"),
-  isActive: z.boolean(),
   components: z
     .array(bundleComponentFormSchema)
     .min(1, "At least one component is required"),
@@ -29,7 +28,6 @@ export type BundleFormValues = z.infer<typeof bundleFormSchema>;
 export const bundleFormDefaults: BundleFormValues = {
   name: "",
   billingUnitId: "",
-  isActive: true,
   components: [],
 };
 
@@ -37,7 +35,6 @@ export function toCreateBundleDto(values: BundleFormValues): CreateBundleDto {
   const dto = {
     name: values.name,
     billingUnitId: values.billingUnitId,
-    isActive: values.isActive,
     // Strip display-only fields — only send what the backend expects.
     components: values.components.map(({ productTypeId, quantity }) => ({
       productTypeId,

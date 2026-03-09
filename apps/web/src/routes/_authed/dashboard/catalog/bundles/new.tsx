@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   bundleFormDefaults,
   bundleFormSchema,
@@ -189,25 +188,6 @@ function NewBundlePage() {
               )}
             </form.Field>
           </div>
-
-          {/* Row 2 — Bundle status */}
-          <form.Field name="isActive">
-            {(field) => (
-              <div className="bg-muted/40 border-border flex items-center justify-between rounded-lg border px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium">Bundle Status</p>
-                  <p className="text-muted-foreground text-xs">
-                    Enable this bundle for storefront display
-                  </p>
-                </div>
-                <Switch
-                  checked={field.state.value}
-                  onCheckedChange={field.handleChange}
-                  aria-label="Bundle status"
-                />
-              </div>
-            )}
-          </form.Field>
 
           {/* Row 3 — Components */}
           <form.Field name="components" mode="array">
@@ -421,8 +401,6 @@ function BundleComponentRow({
   const atMax = quantity >= maxQuantity;
   const atMin = quantity <= 1;
 
-  console.log({ quantity, maxQuantity, atMax, atMin });
-
   return (
     <div className="flex items-center gap-3 px-3 py-2.5">
       {/* Placeholder thumbnail */}
@@ -468,7 +446,7 @@ function BundleComponentRow({
       </div>
 
       <span className="text-muted-foreground w-16 text-right text-xs">
-        {maxQuantity} of {maxQuantity}
+        {quantity} of {maxQuantity}
       </span>
 
       {/* Delete */}

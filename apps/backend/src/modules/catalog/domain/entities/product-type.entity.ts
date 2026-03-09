@@ -33,8 +33,8 @@ export interface ReconstituteProductTypeProps {
   trackingMode: TrackingMode;
   attributes: Record<string, unknown>;
   includedItems: unknown[];
-  isPublished: boolean;
-  isRetired: boolean;
+  publishedAt: Date | null;
+  retiredAt: Date | null;
 }
 
 export class ProductType {
@@ -48,8 +48,8 @@ export class ProductType {
     public readonly trackingMode: TrackingMode,
     public readonly attributes: Record<string, unknown>,
     public readonly includedItems: unknown[],
-    private published: boolean,
-    private retired: boolean,
+    private publishedAt: Date | null,
+    private retiredAt: Date | null,
   ) {}
 
   // --- Factories ---
@@ -68,8 +68,8 @@ export class ProductType {
       props.trackingMode,
       props.attributes ?? {},
       props.includedItems ?? [],
-      false, // starts as draft
-      false,
+      null, // starts as draft
+      null,
     );
   }
 
@@ -84,8 +84,8 @@ export class ProductType {
       props.trackingMode,
       props.attributes,
       props.includedItems,
-      props.isPublished,
-      props.isRetired,
+      props.publishedAt,
+      props.retiredAt,
     );
   }
 
@@ -95,16 +95,24 @@ export class ProductType {
     return this.description;
   }
 
+  getPublishedAt(): Date | null {
+    return this.publishedAt;
+  }
+
+  getRetiredAt(): Date | null {
+    return this.retiredAt;
+  }
+
   isPublished(): boolean {
-    return this.published;
+    return this.publishedAt !== null;
   }
 
   isRetired(): boolean {
-    return this.retired;
+    return this.retiredAt !== null;
   }
 
   isAvailableForBooking(): boolean {
-    return this.published && !this.retired;
+    return this.isPublished() && !this.isRetired();
   }
 
   // --- Commands ---
@@ -114,13 +122,19 @@ export class ProductType {
   }
 
   publish(): void {
-    if (this.retired) throw new ProductTypeAlreadyRetiredException();
-    if (this.published) throw new ProductTypeAlreadyPublishedException();
-    this.published = true;
+    if (this.isRetired()) {
+      throw new ProductTypeAlreadyRetiredException();
+    }
+    if (this.isPublished()) {
+      throw new ProductTypeAlreadyPublishedException();
+    }
+    this.publishedAt = new Date();
   }
 
   retire(): void {
-    if (this.retired) throw new ProductTypeAlreadyRetiredException();
-    this.retired = true;
+    if (this.isRetired()) {
+      throw new ProductTypeAlreadyRetiredException();
+    }
+    this.retiredAt = new Date();
   }
 }

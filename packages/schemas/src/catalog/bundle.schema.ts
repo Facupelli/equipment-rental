@@ -71,6 +71,8 @@ export const bundleDetailResponseSchema = z.object({
   name: z.string(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
+  publishedAt: z.coerce.date().nullable(),
+  retiredAt: z.coerce.date().nullable(),
   billingUnit: z.object({
     id: z.uuid(),
     label: z.string(),

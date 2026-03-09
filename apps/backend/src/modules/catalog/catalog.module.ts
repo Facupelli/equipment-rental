@@ -23,6 +23,10 @@ import { BundleRepository } from './infrastructure/repositories/bundle.repositor
 import { GetBundleByIdQueryHandler } from './application/queries/get-bundle-by-id/get-bundle-by-id.query-handler';
 import { GetNewArrivalsQueryHandler } from './application/queries/get-rental-new-arrivals/get-rental-new-arrival.query-handler';
 import { GetCombosQueryHandler } from './application/queries/get-rental-bundles/get-rental-budles.query-handler';
+import { PublishProductTypeCommandHandler } from './application/commands/publish-product-type/publish-product.command-handler';
+import { RetireProductTypeCommandHandler } from './application/commands/publish-product-type/retire-product.command-handler';
+import { PublishBundleCommandHandler } from './application/commands/publish-bundle/publish-bundle.command-handler';
+import { RetireBundleCommandHandler } from './application/commands/publish-bundle/retire-bundle.command-handler';
 
 const repositories = [
   { provide: ProductCategoryRepositoryPort, useClass: ProductCategoryRepository },
@@ -30,7 +34,15 @@ const repositories = [
   { provide: BundleRepositoryPort, useClass: BundleRepository },
 ];
 
-const commandhandlers = [CreateProductTypeCommandHandler, CreateProductCategoryHandler, CreateBundleCommandHandler];
+const commandhandlers = [
+  CreateProductTypeCommandHandler,
+  CreateProductCategoryHandler,
+  CreateBundleCommandHandler,
+  PublishProductTypeCommandHandler,
+  RetireProductTypeCommandHandler,
+  PublishBundleCommandHandler,
+  RetireBundleCommandHandler,
+];
 
 const queryHandlers = [
   GetProductTypeByIdQueryHandler,

@@ -27,7 +27,6 @@ export const productTypeFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().or(z.literal("")),
   trackingMode: z.enum(TrackingMode),
-  isActive: z.boolean(),
   attributes: z.array(attributeRowSchema),
   includedItems: z.array(includedItemRowSchema),
 });
@@ -42,7 +41,6 @@ export const productTypeFormDefaults: ProductTypeFormValues = {
   name: "",
   description: "",
   trackingMode: TrackingMode.IDENTIFIED,
-  isActive: true,
   attributes: [],
   includedItems: [],
 };
@@ -64,7 +62,6 @@ export function productTypeToFormValues(productType: {
     name: productType.name,
     description: productType.description ?? "",
     trackingMode: productType.trackingMode,
-    isActive: productType.isActive,
     attributes: Object.entries(productType.attributes).map(([key, value]) => ({
       key,
       value,
@@ -102,7 +99,6 @@ export function toCreateProductTypeDto(
     name: values.name.trim(),
     description: emptyToNull(values.description),
     trackingMode: values.trackingMode,
-    isActive: values.isActive,
     attributes: mapAttributeRows(values.attributes),
     includedItems: mapIncludedItemRows(values.includedItems),
   };
@@ -129,9 +125,6 @@ export function toUpdateProductTypeDto(
   }
   if (dirtyValues.trackingMode !== undefined) {
     dto.trackingMode = dirtyValues.trackingMode;
-  }
-  if (dirtyValues.isActive !== undefined) {
-    dto.isActive = dirtyValues.isActive;
   }
   if (dirtyValues.attributes !== undefined) {
     dto.attributes = mapAttributeRows(dirtyValues.attributes);

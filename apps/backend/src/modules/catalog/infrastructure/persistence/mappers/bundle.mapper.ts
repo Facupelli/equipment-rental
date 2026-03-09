@@ -12,6 +12,34 @@ type PrismaBundleWithRelations = PrismaBundle & {
   pricingTiers: PrismaPricingTier[];
 };
 
+export class BundleMapper {
+  static toDomain(raw: PrismaBundleWithRelations): Bundle {
+    const components = raw.components.map(BundleComponentMapper.toDomain);
+    return Bundle.reconstitute({
+      id: raw.id,
+      tenantId: raw.tenantId,
+      billingUnitId: raw.billingUnitId,
+      name: raw.name,
+      description: raw.description,
+      components,
+      publishedAt: raw.publishedAt,
+      retiredAt: raw.retiredAt,
+    });
+  }
+
+  static toPersistence(entity: Bundle): Prisma.BundleUncheckedCreateInput {
+    return {
+      id: entity.id,
+      tenantId: entity.tenantId,
+      name: entity.name,
+      description: entity.currentDescription,
+      billingUnitId: entity.billingUnitId,
+      publishedAt: entity.getPublishedAt(),
+      retiredAt: entity.getRetiredAt(),
+    };
+  }
+}
+
 export class BundleComponentMapper {
   static toDomain(raw: PrismaBundleComponent): BundleComponent {
     return BundleComponent.reconstitute({
@@ -28,31 +56,6 @@ export class BundleComponentMapper {
       bundleId,
       productTypeId: entity.productTypeId,
       quantity: entity.quantity,
-    };
-  }
-}
-
-export class BundleMapper {
-  static toDomain(raw: PrismaBundleWithRelations): Bundle {
-    const components = raw.components.map(BundleComponentMapper.toDomain);
-    return Bundle.reconstitute({
-      id: raw.id,
-      tenantId: raw.tenantId,
-      billingUnitId: raw.billingUnitId,
-      name: raw.name,
-      components,
-      description: raw.description,
-      isPublished: raw.publishedAt !== null,
-      isRetired: raw.retiredAt !== null,
-    });
-  }
-
-  static toPersistence(entity: Bundle): Prisma.BundleUncheckedCreateInput {
-    return {
-      id: entity.id,
-      tenantId: entity.tenantId,
-      name: entity.name,
-      billingUnitId: entity.billingUnitId,
     };
   }
 }

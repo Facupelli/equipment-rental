@@ -64,3 +64,19 @@ export const getBundles = createServerFn({ method: "GET" })
       return result;
     },
   );
+
+export const publishBundle = createServerFn({ method: "POST" })
+  .inputValidator((data: { bundleId: string }) => data)
+  .handler(async ({ data }): Promise<void> => {
+    await apiFetch<void>(`${apiUrl}/${data.bundleId}/publish`, {
+      method: "PATCH",
+    });
+  });
+
+export const retireBundle = createServerFn({ method: "POST" })
+  .inputValidator((data: { bundleId: string }) => data)
+  .handler(async ({ data }): Promise<void> => {
+    await apiFetch<void>(`${apiUrl}/${data.bundleId}/retire`, {
+      method: "PATCH",
+    });
+  });

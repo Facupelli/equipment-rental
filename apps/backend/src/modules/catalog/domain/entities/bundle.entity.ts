@@ -22,8 +22,8 @@ export interface ReconstituteBundleProps {
   name: string;
   description: string | null;
   components: BundleComponent[];
-  isPublished: boolean;
-  isRetired: boolean;
+  publishedAt: Date | null;
+  retiredAt: Date | null;
 }
 
 export class Bundle {
@@ -34,8 +34,8 @@ export class Bundle {
     public readonly name: string,
     private description: string | null,
     private readonly components: BundleComponent[],
-    private published: boolean,
-    private retired: boolean,
+    private publishedAt: Date | null,
+    private retiredAt: Date | null,
   ) {}
 
   // --- Factories ---
@@ -51,8 +51,8 @@ export class Bundle {
       props.name.trim(),
       props.description?.trim() ?? null,
       [],
-      false, // starts as draft
-      false,
+      null,
+      null,
     );
   }
 
@@ -64,8 +64,8 @@ export class Bundle {
       props.name,
       props.description,
       props.components,
-      props.isPublished,
-      props.isRetired,
+      props.publishedAt,
+      props.retiredAt,
     );
   }
 
@@ -75,16 +75,24 @@ export class Bundle {
     return this.description;
   }
 
+  getPublishedAt(): Date | null {
+    return this.publishedAt;
+  }
+
+  getRetiredAt(): Date | null {
+    return this.retiredAt;
+  }
+
   isPublished(): boolean {
-    return this.published;
+    return this.publishedAt !== null;
   }
 
   isRetired(): boolean {
-    return this.retired;
+    return this.retiredAt !== null;
   }
 
   isAvailableForBooking(): boolean {
-    return this.published && !this.retired;
+    return this.isPublished() && !this.isRetired();
   }
 
   getComponents(): BundleComponent[] {
@@ -94,14 +102,20 @@ export class Bundle {
   // --- Commands ---
 
   publish(): void {
-    if (this.retired) throw new BundleAlreadyRetiredException();
-    if (this.published) throw new BundleAlreadyPublishedException();
-    this.published = true;
+    if (this.isRetired()) {
+      throw new BundleAlreadyRetiredException();
+    }
+    if (this.isPublished()) {
+      throw new BundleAlreadyPublishedException();
+    }
+    this.publishedAt = new Date();
   }
 
   retire(): void {
-    if (this.retired) throw new BundleAlreadyRetiredException();
-    this.retired = true;
+    if (this.isRetired()) {
+      throw new BundleAlreadyRetiredException();
+    }
+    this.retiredAt = new Date();
   }
 
   updateDescription(description: string | null): void {
@@ -109,16 +123,24 @@ export class Bundle {
   }
 
   addComponent(productTypeId: string, quantity: number): void {
-    if (this.retired) throw new BundleAlreadyRetiredException();
+    if (this.isRetired()) {
+      throw new BundleAlreadyRetiredException();
+    }
     const duplicate = this.components.some((c) => c.productTypeId === productTypeId);
-    if (duplicate) throw new DuplicateBundleComponentException(productTypeId);
+    if (duplicate) {
+      throw new DuplicateBundleComponentException(productTypeId);
+    }
     this.components.push(BundleComponent.create({ productTypeId, quantity }));
   }
 
   removeComponent(productTypeId: string): void {
-    if (this.retired) throw new BundleAlreadyRetiredException();
+    if (this.isRetired()) {
+      throw new BundleAlreadyRetiredException();
+    }
     const idx = this.components.findIndex((c) => c.productTypeId === productTypeId);
-    if (idx === -1) throw new BundleComponentNotFoundException(productTypeId);
+    if (idx === -1) {
+      throw new BundleComponentNotFoundException(productTypeId);
+    }
     this.components.splice(idx, 1);
   }
 }

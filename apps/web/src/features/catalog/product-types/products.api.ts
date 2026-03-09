@@ -60,3 +60,19 @@ export const getProducts = createServerFn({ method: "GET" })
 
     return result;
   });
+
+export const publishProductType = createServerFn({ method: "POST" })
+  .inputValidator((data: { productTypeId: string }) => data)
+  .handler(async ({ data }): Promise<void> => {
+    await apiFetch<void>(`${apiUrl}/${data.productTypeId}/publish`, {
+      method: "PATCH",
+    });
+  });
+
+export const retireProductType = createServerFn({ method: "POST" })
+  .inputValidator((data: { productTypeId: string }) => data)
+  .handler(async ({ data }): Promise<void> => {
+    await apiFetch<void>(`${apiUrl}/${data.productTypeId}/retire`, {
+      method: "PATCH",
+    });
+  });

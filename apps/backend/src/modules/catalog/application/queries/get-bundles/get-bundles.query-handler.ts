@@ -28,6 +28,8 @@ export class GetBundlesQueryHandler implements IQueryHandler<GetBundlesQuery> {
           name: true,
           billingUnitId: true,
           createdAt: true,
+          publishedAt: true,
+          retiredAt: true,
           // Resolve the label — no extra query, Prisma joins it
           billingUnit: {
             select: { label: true },
@@ -55,6 +57,8 @@ export class GetBundlesQueryHandler implements IQueryHandler<GetBundlesQuery> {
         basePrice: row.pricingTiers[0] ? Number(row.pricingTiers[0].pricePerUnit) : null,
         componentCount: row._count.components,
         createdAt: row.createdAt,
+        publishedAt: row.publishedAt,
+        retiredAt: row.retiredAt,
       })),
       meta: {
         total,

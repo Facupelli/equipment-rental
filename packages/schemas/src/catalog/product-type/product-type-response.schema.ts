@@ -45,6 +45,8 @@ export const productTypeResponseSchema = z.object({
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   deletedAt: z.coerce.date().nullable(),
+  publishedAt: z.coerce.date().nullable(),
+  retiredAt: z.coerce.date().nullable(),
   category: productTypeCategoryResponseSchema.nullable(),
   billingUnit: productTypeBillingUnitResponseSchema,
   pricingTiers: z.array(productTypePricingTierResponseSchema),

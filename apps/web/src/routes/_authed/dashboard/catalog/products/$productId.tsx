@@ -7,6 +7,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,11 @@ import {
 } from "@/features/catalog/product-types/components/detail/product-detail.context";
 import { SpecificationsTab } from "@/features/catalog/product-types/components/detail/specifications-tab";
 import { formatTrackingType } from "@/features/catalog/product-types/components/products-columns";
-import { createProductDetailQueryOptions } from "@/features/catalog/product-types/products.queries";
+import {
+  createProductDetailQueryOptions,
+  usePublishProductType,
+  useRetireProductType,
+} from "@/features/catalog/product-types/products.queries";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
@@ -186,10 +191,19 @@ function RouteComponent() {
 function ProductHeader() {
   const { product } = useProduct();
 
+  const isPublished = product.publishedAt !== null;
+  const isRetired = product.retiredAt !== null;
+
+  const { mutate: publish, isPending: isPublishing } = usePublishProductType();
+  const { mutate: retire, isPending: isRetiring } = useRetireProductType();
+
   return (
     <div className="flex items-start justify-between">
       <div className="space-y-1.5">
-        <h1 className="text-2xl font-bold tracking-tight">{product.name}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">{product.name}</h1>
+          <LifecycleBadge isPublished={isPublished} isRetired={isRetired} />
+        </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {product.category && (
             <>
@@ -203,18 +217,95 @@ function ProductHeader() {
         </div>
       </div>
 
-      <Button
-        variant="outline"
-        nativeButton={false}
-        render={
-          <Link
-            to="/dashboard/catalog/products/$productId"
-            params={{ productId: product.id }}
+      {/* ---------------------------------------------------------------- */}
+      {/* Actions                                                          */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="flex items-center gap-2">
+        {/* Draft → Publish */}
+        {!isPublished && !isRetired && (
+          <Button
+            onClick={() => publish({ productTypeId: product.id })}
+            disabled={isPublishing}
           >
-            Edit Product
-          </Link>
+            {isPublishing ? "Publishing..." : "Publish"}
+          </Button>
+        )}
+
+        {/* Published → Retire (destructive, requires confirmation) */}
+        {isPublished && !isRetired && (
+          <RetireConfirmDialog
+            onConfirm={() => retire({ productTypeId: product.id })}
+            isPending={isRetiring}
+          />
+        )}
+
+        {/* Edit — always visible unless retired */}
+        {!isRetired && (
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={
+              <Link
+                to="/dashboard/catalog/products/$productId"
+                params={{ productId: product.id }}
+              >
+                Edit Product
+              </Link>
+            }
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LifecycleBadge({
+  isPublished,
+  isRetired,
+}: {
+  isPublished: boolean;
+  isRetired: boolean;
+}) {
+  if (isRetired) {
+    return <Badge variant="destructive">Retired</Badge>;
+  }
+  if (isPublished) {
+    return <Badge variant="default">Published</Badge>;
+  }
+  return <Badge variant="secondary">Draft</Badge>;
+}
+
+function RetireConfirmDialog({
+  onConfirm,
+  isPending,
+}: {
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger
+        render={
+          <Button variant="outline" disabled={isPending}>
+            {isPending ? "Retiring..." : "Retire"}
+          </Button>
         }
       />
-    </div>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Retire this product?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This product will no longer appear in the rental catalog. Existing
+            orders are not affected. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>
+            Retire Product
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

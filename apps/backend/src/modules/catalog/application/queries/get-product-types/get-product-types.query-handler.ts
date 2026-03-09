@@ -23,8 +23,11 @@ export class GetProductTypesQueryHandler implements IQueryHandler<
       where.categoryId = query.categoryId;
     }
 
-    if (query.isActive !== undefined) {
-      where.isActive = query.isActive;
+    if (query.isActive === true) {
+      where.publishedAt = { not: null };
+      where.retiredAt = null;
+    } else if (query.isActive === false) {
+      where.OR = [{ publishedAt: null }, { retiredAt: { not: null } }];
     }
 
     if (query.search) {
@@ -89,6 +92,8 @@ export class GetProductTypesQueryHandler implements IQueryHandler<
         createdAt: pt.createdAt,
         updatedAt: pt.updatedAt,
         deletedAt: pt.deletedAt,
+        publishedAt: pt.publishedAt,
+        retiredAt: pt.retiredAt,
         assetCount: pt._count.assets,
         category: pt.category
           ? {

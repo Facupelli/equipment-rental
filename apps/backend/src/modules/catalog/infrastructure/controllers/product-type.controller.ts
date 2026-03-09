@@ -1,4 +1,4 @@
-import { Body, Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
 import { CreateProductTypeDto } from '../../application/dto/create-product-type.dto';
 import { GetProductTypesQueryDto } from '../../application/dto/get-product-types-query.dto';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
@@ -7,6 +7,10 @@ import { GetProductTypeByIdQuery } from '../../application/queries/get-product-t
 import { GetProductTypesQuery } from '../../application/queries/get-product-types/get-product-types.query';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 import { ProductTypeResponse } from '@repo/schemas';
+import {
+  PublishProductTypeCommand,
+  RetireProductTypeCommand,
+} from '../../application/commands/publish-product-type/publish-product.command';
 
 @Controller('product-types')
 export class ProductTypeController {
@@ -39,5 +43,15 @@ export class ProductTypeController {
     }
 
     return result;
+  }
+
+  @Patch(':id/publish')
+  async publish(@Param('id') id: string): Promise<void> {
+    await this.commandBus.execute(new PublishProductTypeCommand(id));
+  }
+
+  @Patch(':id/retire')
+  async retire(@Param('id') id: string): Promise<void> {
+    await this.commandBus.execute(new RetireProductTypeCommand(id));
   }
 }

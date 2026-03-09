@@ -7,7 +7,13 @@ import {
   type UseQueryOptions,
   type UseSuspenseQueryOptions,
 } from "@tanstack/react-query";
-import { createProduct, getProductDetail, getProducts } from "./products.api";
+import {
+  createProduct,
+  getProductDetail,
+  getProducts,
+  publishProductType,
+  retireProductType,
+} from "./products.api";
 import type {
   GetProductTypesQuery,
   PaginatedDto,
@@ -26,11 +32,6 @@ type ProductsQueryOptions<TData = PaginatedProducts> = Omit<
 type ProductDetailQueryOptions<TData = ProductTypeResponse> = Omit<
   UseSuspenseQueryOptions<ProductTypeResponse, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
->;
-
-type ProductMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, CreateProductTypeDto>,
-  "mutationFn" | "mutationKey"
 >;
 
 // -----------------------------------------------------
@@ -76,6 +77,20 @@ export function useProductDetail<TData = ProductTypeResponse>(
   return useQuery(createProductDetailQueryOptions(id, options));
 }
 
+// MUTATIONS
+
+type ProductTypeLifecycleMutationOptions = Omit<
+  MutationOptions<void, ProblemDetailsError, { productTypeId: string }>,
+  "mutationFn" | "mutationKey"
+>;
+
+type ProductMutationOptions = Omit<
+  MutationOptions<string, ProblemDetailsError, CreateProductTypeDto>,
+  "mutationFn" | "mutationKey"
+>;
+
+// -----------------------------------------------------
+
 export function useCreateProduct(options?: ProductMutationOptions) {
   const queryClient = useQueryClient();
 
@@ -85,6 +100,50 @@ export function useCreateProduct(options?: ProductMutationOptions) {
     onSuccess: async (data, variables, onMutateResult, context) => {
       await queryClient.invalidateQueries({
         queryKey: createProductsQueryOptions().queryKey,
+      });
+
+      await options?.onSuccess?.(data, variables, onMutateResult, context);
+    },
+    onError: async (error, variables, onMutateResult, context) => {
+      await options?.onError?.(error, variables, onMutateResult, context);
+    },
+  });
+}
+
+export function usePublishProductType(
+  options?: ProductTypeLifecycleMutationOptions,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, ProblemDetailsError, { productTypeId: string }>({
+    ...options,
+    mutationFn: (data) => publishProductType({ data }),
+    onSuccess: async (data, variables, onMutateResult, context) => {
+      await queryClient.invalidateQueries({
+        queryKey: createProductDetailQueryOptions(variables.productTypeId)
+          .queryKey,
+      });
+
+      await options?.onSuccess?.(data, variables, onMutateResult, context);
+    },
+    onError: async (error, variables, onMutateResult, context) => {
+      await options?.onError?.(error, variables, onMutateResult, context);
+    },
+  });
+}
+
+export function useRetireProductType(
+  options?: ProductTypeLifecycleMutationOptions,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, ProblemDetailsError, { productTypeId: string }>({
+    ...options,
+    mutationFn: (data) => retireProductType({ data }),
+    onSuccess: async (data, variables, onMutateResult, context) => {
+      await queryClient.invalidateQueries({
+        queryKey: createProductDetailQueryOptions(variables.productTypeId)
+          .queryKey,
       });
 
       await options?.onSuccess?.(data, variables, onMutateResult, context);

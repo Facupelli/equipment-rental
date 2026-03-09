@@ -61,6 +61,8 @@ export class GetProductTypeByIdQueryHandler implements IQueryHandler<GetProductT
       createdAt: productType.createdAt,
       updatedAt: productType.updatedAt,
       deletedAt: productType.deletedAt,
+      publishedAt: productType.publishedAt,
+      retiredAt: productType.retiredAt,
       assetCount: productType._count.assets,
       category: productType.category
         ? {
