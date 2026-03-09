@@ -1,8 +1,9 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Injectable } from '@nestjs/common';
-import { GetRentalBundlesQuery } from './get-rental-budles.query';
+import { GetRentalBundlesQuery } from './get-rental-bundles.query';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { BundleListResponseDto } from '@repo/schemas';
+import { IncludedItem } from 'src/modules/catalog/domain/entities/product-type.entity';
 
 @Injectable()
 @QueryHandler(GetRentalBundlesQuery)
@@ -37,7 +38,7 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
           select: {
             quantity: true,
             productType: {
-              select: { id: true, name: true },
+              select: { id: true, name: true, description: true, includedItems: true },
             },
           },
         },
@@ -56,7 +57,15 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
             fromUnit: bundle.pricingTiers[0].fromUnit,
           }
         : null,
-      components: bundle.components,
+      components: bundle.components.map((component) => ({
+        quantity: component.quantity,
+        productType: {
+          name: component.productType.name,
+          description: component.productType.description,
+          id: component.productType.id,
+          includedItems: component.productType.includedItems as unknown as IncludedItem[],
+        },
+      })),
     }));
   }
 }

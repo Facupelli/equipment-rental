@@ -2,55 +2,6 @@ import { randomUUID } from 'crypto';
 import Decimal from 'decimal.js';
 
 // ---------------------------------------------------------------------------
-// BundleSnapshotComponent
-// ---------------------------------------------------------------------------
-
-export interface CreateBundleSnapshotComponentProps {
-  bundleSnapshotId: string;
-  productTypeId: string;
-  productTypeName: string;
-  quantity: number;
-}
-
-export interface ReconstituteBundleSnapshotComponentProps {
-  id: string;
-  bundleSnapshotId: string;
-  productTypeId: string;
-  productTypeName: string;
-  quantity: number;
-}
-
-export class BundleSnapshotComponent {
-  private constructor(
-    public readonly id: string,
-    public readonly bundleSnapshotId: string,
-    public readonly productTypeId: string,
-    public readonly productTypeName: string,
-    public readonly quantity: number,
-  ) {}
-
-  static create(props: CreateBundleSnapshotComponentProps): BundleSnapshotComponent {
-    return new BundleSnapshotComponent(
-      randomUUID(),
-      props.bundleSnapshotId,
-      props.productTypeId,
-      props.productTypeName,
-      props.quantity,
-    );
-  }
-
-  static reconstitute(props: ReconstituteBundleSnapshotComponentProps): BundleSnapshotComponent {
-    return new BundleSnapshotComponent(
-      props.id,
-      props.bundleSnapshotId,
-      props.productTypeId,
-      props.productTypeName,
-      props.quantity,
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
 // BundleSnapshot
 // ---------------------------------------------------------------------------
 
@@ -101,5 +52,43 @@ export class BundleSnapshot {
       props.bundlePrice,
       props.components,
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// BundleSnapshotComponent
+// ---------------------------------------------------------------------------
+// bundleSnapshotId is intentionally absent from this entity.
+// It is a persistence concern — the mapper derives it from the parent
+// BundleSnapshot at write time. The domain only needs the component data.
+// ---------------------------------------------------------------------------
+
+export interface CreateBundleSnapshotComponentProps {
+  productTypeId: string;
+  productTypeName: string;
+  quantity: number;
+}
+
+export interface ReconstituteBundleSnapshotComponentProps {
+  id: string;
+  productTypeId: string;
+  productTypeName: string;
+  quantity: number;
+}
+
+export class BundleSnapshotComponent {
+  private constructor(
+    public readonly id: string,
+    public readonly productTypeId: string,
+    public readonly productTypeName: string,
+    public readonly quantity: number,
+  ) {}
+
+  static create(props: CreateBundleSnapshotComponentProps): BundleSnapshotComponent {
+    return new BundleSnapshotComponent(randomUUID(), props.productTypeId, props.productTypeName, props.quantity);
+  }
+
+  static reconstitute(props: ReconstituteBundleSnapshotComponentProps): BundleSnapshotComponent {
+    return new BundleSnapshotComponent(props.id, props.productTypeId, props.productTypeName, props.quantity);
   }
 }

@@ -4,7 +4,7 @@ import { GetRentalProductTypesQuery } from '../../application/queries/get-reanta
 import { GetRentalProductTypesQueryDto } from '../../application/dto/rental/get-rental-product-types-query.dto';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 import { GetNewArrivalsQuery } from '../../application/queries/get-rental-new-arrivals/get-rental-new-arrival.query';
-import { GetRentalBundlesQuery } from '../../application/queries/get-rental-bundles/get-rental-budles.query';
+import { GetRentalBundlesQuery } from '../../application/queries/get-rental-bundles/get-rental-bundles.query';
 import { GetRentalBundlesQueryDto } from '../../application/dto/rental/get-rental-bundles-query.dto';
 import { GetNewArrivalsQueryDto } from '../../application/dto/rental/get-new-arrivals-query.dto';
 

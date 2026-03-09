@@ -10,7 +10,6 @@ import { OrderItemUnavailableError, UnavailableItem } from 'src/modules/order/do
 import { Order } from 'src/modules/order/domain/entities/order.entity';
 import { AssignmentSource, AssignmentType, OrderItemType, OrderStatus } from '@repo/types';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
-import { randomUUID } from 'node:crypto';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
@@ -268,11 +267,13 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     price: Awaited<ReturnType<typeof this.pricingApi.calculateBundlePrice>>,
     command: CreateOrderCommand,
   ): Promise<ReservationResult> {
-    // Generate snapshot id upfront so components can reference it
-    const snapshotId = randomUUID();
-    const orderItemId = randomUUID();
     const period = DateRange.create(command.period.start, command.period.end);
-    const pendingAssignments: PendingAssignment[] = [];
+
+    // ── Step 1: reserve assets ────────────────────────────────────────────
+    // Collect asset IDs upfront. Exit early if any component is unavailable
+    // before building any domain objects.
+
+    const reservedAssetIds: string[] = [];
 
     for (const component of bundle.components) {
       for (let qty = 0; qty < component.quantity; qty++) {
@@ -286,45 +287,65 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
           return { ok: false, unavailableItem: { type: 'BUNDLE', bundleId: itemCommand.bundleId } };
         }
 
-        pendingAssignments.push({
-          assignment: AssetAssignment.create({
-            assetId,
-            period,
-            type: AssignmentType.ORDER,
-            source: AssignmentSource.OWNED,
-            orderId: order.id,
-            orderItemId,
-          }),
-        });
+        reservedAssetIds.push(assetId);
       }
     }
 
+    // ── Step 2: build domain objects bottom-up following ownership ────────
+    // Components first — they carry no parent reference in the domain.
+    // Snapshot second — receives orderItem.id.
+    // OrderItem last — owns the snapshot.
+    // Assignments last — reference orderItem.id.
+
     const snapshotComponents = bundle.components.map((c) =>
       BundleSnapshotComponent.create({
-        bundleSnapshotId: snapshotId,
         productTypeId: c.productTypeId,
         productTypeName: c.productTypeName,
         quantity: c.quantity,
       }),
     );
 
+    // OrderItem generates its own ID — all downstream objects derive from it.
+    const orderItem = OrderItem.create({
+      orderId: order.id,
+      type: OrderItemType.BUNDLE,
+      priceSnapshot: price.finalPrice.toDecimal(),
+      bundleId: itemCommand.bundleId,
+    });
+
     const snapshot = BundleSnapshot.create({
-      orderItemId,
+      orderItemId: orderItem.id,
       bundleId: bundle.id,
       bundleName: bundle.name,
       bundlePrice: price.finalPrice.toDecimal(),
       components: snapshotComponents,
     });
 
-    const orderItem = OrderItem.create({
-      orderId: order.id,
-      type: OrderItemType.BUNDLE,
-      priceSnapshot: price.finalPrice.toDecimal(),
-      bundleId: itemCommand.bundleId,
+    // OrderItem is immutable — reconstitute with snapshot attached.
+    // This avoids a mutable `attachSnapshot` method on the entity.
+    const orderItemWithSnapshot = OrderItem.reconstitute({
+      id: orderItem.id,
+      orderId: orderItem.orderId,
+      type: orderItem.type,
+      priceSnapshot: orderItem.priceSnapshot,
+      productTypeId: orderItem.productTypeId,
+      bundleId: orderItem.bundleId,
       bundleSnapshot: snapshot,
     });
 
-    order.addItem(orderItem);
+    order.addItem(orderItemWithSnapshot);
+
+    const pendingAssignments: PendingAssignment[] = reservedAssetIds.map((assetId) => ({
+      assignment: AssetAssignment.create({
+        assetId,
+        period,
+        type: AssignmentType.ORDER,
+        source: AssignmentSource.OWNED,
+        orderId: order.id,
+        orderItemId: orderItemWithSnapshot.id,
+      }),
+    }));
+
     return { ok: true, pendingAssignments };
   }
 }

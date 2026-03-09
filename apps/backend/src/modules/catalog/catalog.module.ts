@@ -22,7 +22,7 @@ import { BundleRepositoryPort } from './domain/ports/bundle-repository.port';
 import { BundleRepository } from './infrastructure/repositories/bundle.repository';
 import { GetBundleByIdQueryHandler } from './application/queries/get-bundle-by-id/get-bundle-by-id.query-handler';
 import { GetNewArrivalsQueryHandler } from './application/queries/get-rental-new-arrivals/get-rental-new-arrival.query-handler';
-import { GetCombosQueryHandler } from './application/queries/get-rental-bundles/get-rental-budles.query-handler';
+import { GetCombosQueryHandler } from './application/queries/get-rental-bundles/get-rental-bundles.query-handler';
 import { PublishProductTypeCommandHandler } from './application/commands/publish-product-type/publish-product.command-handler';
 import { RetireProductTypeCommandHandler } from './application/commands/publish-product-type/retire-product.command-handler';
 import { PublishBundleCommandHandler } from './application/commands/publish-bundle/publish-bundle.command-handler';

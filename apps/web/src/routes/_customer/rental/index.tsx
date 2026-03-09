@@ -354,8 +354,16 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
       bundleId: bundle.id,
       name: bundle.name,
       billingUnitLabel: bundle.billingUnit.label,
-      pricePerUnit: price?.pricePerUnit ?? 0,
-      components: bundle.components,
+      imageUrl: "",
+      price: price?.pricePerUnit ?? 0,
+      components: bundle.components.map((component) => ({
+        productTypeId: component.productType.id,
+        name: component.productType.name,
+        quantity: component.quantity,
+        description: component.productType.description,
+        imageUrl: "",
+        includedItems: component.productType.includedItems,
+      })),
     });
   }
 
@@ -543,6 +551,8 @@ function NewArrivalsSkeleton() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 function CategoryFilter({
   activeCategory,
   onSelect,
@@ -624,16 +634,13 @@ function ProductCatalog({
       {/* ---------------------------------------------------------------- */}
       {/* Section heading                                                  */}
       {/* ---------------------------------------------------------------- */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold tracking-tight py-4">
-          Equipment Catalog
-        </h2>
+      {/* <div className="flex items-center justify-between">
         <Badge variant="secondary" className="text-sm px-3 py-1">
           {isPendingProducts
             ? "..."
             : `${products?.meta.total ?? 0} items available`}
         </Badge>
-      </div>
+      </div> */}
 
       {/* ---------------------------------------------------------------- */}
       {/* Product grid                                                     */}

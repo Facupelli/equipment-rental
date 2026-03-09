@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { productTypeIncludedItemSchema } from "../catalog/product-type/product-type.schema";
 
 const pricingPreviewSchema = z.object({
   pricePerUnit: z.number(),
@@ -10,6 +11,8 @@ const comboComponentSchema = z.object({
   productType: z.object({
     id: z.uuid(),
     name: z.string(),
+    description: z.string().nullable(),
+    includedItems: z.array(productTypeIncludedItemSchema),
   }),
 });
 

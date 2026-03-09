@@ -58,7 +58,8 @@ export class OrderMapper {
             components: itemRow.bundleSnapshot.components.map((c) =>
               BundleSnapshotComponent.reconstitute({
                 id: c.id,
-                bundleSnapshotId: c.bundleSnapshotId,
+                // bundleSnapshotId is not part of the domain entity —
+                // it exists only in the DB row and is dropped here intentionally
                 productTypeId: c.productTypeId,
                 productTypeName: c.productTypeName,
                 quantity: c.quantity,
@@ -125,7 +126,9 @@ export class OrderMapper {
         for (const component of item.bundleSnapshot.components) {
           snapshotComponentRows.push({
             id: component.id,
-            bundleSnapshotId: component.bundleSnapshotId,
+            // bundleSnapshotId is injected from the parent here —
+            // the entity does not carry it, the mapper owns the FK wiring
+            bundleSnapshotId: item.bundleSnapshot.id,
             productTypeId: component.productTypeId,
             productTypeName: component.productTypeName,
             quantity: component.quantity,

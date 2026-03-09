@@ -15,7 +15,6 @@ export type CartBundleComponent = {
   description: string | null;
   quantity: number;
   imageUrl: string | null;
-  billingUnitLabel: string;
   includedItems: CartIncludedItem[];
 };
 
