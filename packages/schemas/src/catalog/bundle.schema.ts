@@ -19,7 +19,6 @@ export type CreateBundleDto = z.infer<typeof CreateBundleSchema>;
 export const BundleListItemSchema = z.object({
   id: z.uuid(),
   name: z.string(),
-  isActive: z.boolean(),
   billingUnitId: z.uuid(),
   billingUnit: z.object({
     label: z.string(),
@@ -70,7 +69,6 @@ export const bundleDetailPricingTierSchema = z.object({
 export const bundleDetailResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
-  isActive: z.boolean(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   billingUnit: z.object({

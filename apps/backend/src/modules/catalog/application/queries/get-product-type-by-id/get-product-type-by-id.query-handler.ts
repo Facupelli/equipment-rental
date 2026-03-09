@@ -56,7 +56,6 @@ export class GetProductTypeByIdQueryHandler implements IQueryHandler<GetProductT
       name: productType.name,
       description: productType.description,
       trackingMode: productType.trackingMode as TrackingMode,
-      isActive: productType.isActive,
       attributes: productType.attributes as Record<string, string>,
       includedItems: productType.includedItems as unknown as IncludedItem[],
       createdAt: productType.createdAt,

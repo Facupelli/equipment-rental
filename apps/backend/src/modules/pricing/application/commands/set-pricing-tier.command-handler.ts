@@ -29,7 +29,7 @@ export class SetPricingTiersCommandHandler implements ICommandHandler<SetPricing
       return err(new PricingTargetNotFoundException(command.targetType, command.targetId));
     }
 
-    if (!target.isActive) {
+    if (target.retiredAt !== null) {
       return err(new PricingTargetInactiveError(command.targetType, command.targetId));
     }
 

@@ -25,3 +25,17 @@ export class BundleComponentNotFoundException extends Error {
     this.name = 'BundleComponentNotFoundException';
   }
 }
+
+export class BundleAlreadyRetiredException extends Error {
+  constructor() {
+    super('This bundle is already retired.');
+    this.name = 'BundleAlreadyRetiredException';
+  }
+}
+
+export class BundleAlreadyPublishedException extends Error {
+  constructor() {
+    super('This bundle is already published.');
+    this.name = 'BundleAlreadyPublishedException';
+  }
+}

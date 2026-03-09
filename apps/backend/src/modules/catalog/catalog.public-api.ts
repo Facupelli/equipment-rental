@@ -4,14 +4,16 @@ export class ProductTypeDto {
   constructor(
     public readonly id: string,
     public readonly trackingMode: TrackingMode,
-    public readonly isActive: boolean,
+    public readonly retiredAt: Date | null,
+    public readonly publishedAt: Date | null,
   ) {}
 }
 
 export class BundleDto {
   constructor(
     public readonly id: string,
-    public readonly isActive: boolean,
+    public readonly retiredAt: Date | null,
+    public readonly publishedAt: Date | null,
   ) {}
 }
 

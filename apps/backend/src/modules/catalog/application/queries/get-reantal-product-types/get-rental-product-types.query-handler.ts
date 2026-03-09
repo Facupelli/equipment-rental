@@ -115,7 +115,8 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
     search,
   }: Pick<GetRentalProductTypesQuery, 'locationId' | 'categoryId' | 'search'>): Prisma.ProductTypeWhereInput {
     return {
-      isActive: true,
+      retiredAt: null,
+      publishedAt: { not: null },
       deletedAt: null,
 
       // Category filter — omitted entirely when not provided so Prisma doesn't

@@ -7,6 +7,7 @@ import {
   Post,
   ConflictException,
   NotFoundException,
+  Patch,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -20,6 +21,8 @@ import { GetTenantBillingUnitsQuery } from '../../application/queries/get-billin
 import { SyncTenantBillingUnitsCommand } from '../../application/commands/create-billing-unit/sync-billing-units.command-handler';
 import { SyncTenantBillingUnitsDto } from '../../application/dto/create-tenant-billing-unit.dto';
 import { TenantBillingUnitListResponse, TenantResponse } from '@repo/schemas';
+import { UpdateTenantConfigCommand } from '../../application/commands/update-config/update-config.command';
+import { UpdateTenantConfigDto } from '../../application/dto/update-config.dto';
 
 @Controller('tenants')
 export class TenantController {
@@ -59,6 +62,11 @@ export class TenantController {
     }
 
     return tenant;
+  }
+
+  @Patch('config')
+  async updateConfig(@Body() dto: UpdateTenantConfigDto): Promise<void> {
+    await this.commandBus.execute(new UpdateTenantConfigCommand(dto));
   }
 
   @Get('billing-units')

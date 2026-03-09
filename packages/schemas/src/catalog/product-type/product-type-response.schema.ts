@@ -37,7 +37,6 @@ export const productTypeResponseSchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   trackingMode: z.enum(TrackingMode),
-  isActive: z.boolean(),
   attributes: productTypeAttributesSchema,
   includedItems: z.array(productTypeIncludedItemSchema),
   // Total number of active, non-deleted assets for this product type.

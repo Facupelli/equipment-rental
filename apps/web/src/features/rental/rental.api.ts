@@ -7,6 +7,12 @@ import {
   calculateCartPricesRequestSchema,
   type CalculateCartPricesRequest,
   type CartPriceResult,
+  type GetNewArrivalsParams,
+  type NewArrivalListResponseDto,
+  type GetCombosParams,
+  type BundleListResponseDto,
+  getNewArrivalsParamsSchema,
+  getBundleParamsSchema,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -30,6 +36,26 @@ export const getRentalProducts = createServerFn({ method: "GET" })
     );
 
     return result;
+  });
+
+export const getNewArrivals = createServerFn({ method: "GET" })
+  .inputValidator((data: GetNewArrivalsParams) =>
+    getNewArrivalsParamsSchema.parse(data),
+  )
+  .handler(async ({ data }): Promise<NewArrivalListResponseDto> => {
+    return await apiFetch<NewArrivalListResponseDto>(`${apiUrl}/new-arrivals`, {
+      method: "GET",
+      params: data,
+    });
+  });
+
+export const getRentalBundles = createServerFn({ method: "GET" })
+  .inputValidator((data: GetCombosParams) => getBundleParamsSchema.parse(data))
+  .handler(async ({ data }): Promise<BundleListResponseDto> => {
+    return await apiFetch<BundleListResponseDto>(`${apiUrl}/bundles`, {
+      method: "GET",
+      params: data,
+    });
   });
 
 export const getCartPricePreview = createServerFn({ method: "POST" })

@@ -23,6 +23,8 @@ import { createProductsQueryOptions } from "@/features/catalog/product-types/pro
 import useDebounce from "@/shared/hooks/use-debounce";
 import {
   getRentalProductQuerySchema,
+  type BundleItemResponse,
+  type NewArrivalItemResponseDto,
   type RentalProductResponse,
 } from "@repo/schemas";
 import {
@@ -31,11 +33,15 @@ import {
   useNavigate,
   useSearch,
 } from "@tanstack/react-router";
-import { CalendarIcon, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CalendarIcon, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import dayjs from "@/lib/dates/dayjs";
-import { useRentalProducts } from "@/features/rental/rental.queries";
+import {
+  createNewArrivalsQueryOptions,
+  createRentalBundlesQueryOptions,
+  useRentalProducts,
+} from "@/features/rental/rental.queries";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
 import {
   Select,
@@ -47,6 +53,7 @@ import {
 import { useCartActions } from "@/features/rental/cart/cart.hooks";
 import { CartPopover } from "@/features/rental/cart/components/cart-popover";
 import z from "zod";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 const rentalPageSearchSchema = getRentalProductQuerySchema.extend({
   startDate: z.coerce.date().optional(),
@@ -65,10 +72,14 @@ export const Route = createFileRoute("/_customer/rental/")({
     locationId: search.locationId,
   }),
   loader: ({ context: { queryClient }, deps }) => {
-    if (!deps.locationId) {
-      return null;
+    const locationId = deps.locationId;
+
+    queryClient.prefetchQuery(createRentalBundlesQueryOptions({ locationId }));
+    queryClient.prefetchQuery(createNewArrivalsQueryOptions({ locationId }));
+
+    if (locationId) {
+      queryClient.prefetchQuery(createProductsQueryOptions(deps));
     }
-    queryClient.ensureQueryData(createProductsQueryOptions(deps));
   },
   component: RentalPage,
 });
@@ -133,6 +144,9 @@ function RentalPage() {
       </header>
 
       <main className="container mx-auto px-4">
+        {/* ---------------------------------------------------------------- */}
+        {/* Location + date filters                                          */}
+        {/* ---------------------------------------------------------------- */}
         <div className="pt-4 flex items-center gap-20">
           <div className="flex items-center gap-4">
             <div>
@@ -179,12 +193,40 @@ function RentalPage() {
           </div>
         </div>
 
-        <CategoryFilter
-          activeCategory={search.categoryId}
-          onSelect={handleCategorySelect}
-        />
+        {/* ---------------------------------------------------------------- */}
+        {/* Featured Combos                                                  */}
+        {/* ---------------------------------------------------------------- */}
+        <section className="mt-10">
+          <SectionHeading
+            title="Featured Combos"
+            subtitle="Curated equipment bundles at a lower daily rate."
+          />
+          <Suspense fallback={<BundlesSkeleton />}>
+            <FeaturedBundles locationId={search.locationId} />
+          </Suspense>
+        </section>
 
-        <ProductCatalog setUrlParam={setUrlParam} />
+        {/* ---------------------------------------------------------------- */}
+        {/* New Arrivals                                                     */}
+        {/* ---------------------------------------------------------------- */}
+        <section className="mt-12">
+          <SectionHeading title="New Arrivals" />
+          <Suspense fallback={<NewArrivalsSkeleton />}>
+            <NewArrivals locationId={search.locationId} />
+          </Suspense>
+        </section>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Category filter + product grid                                   */}
+        {/* ---------------------------------------------------------------- */}
+        <section className="mt-12">
+          <SectionHeading title="Browse All Equipment" />
+          <CategoryFilter
+            activeCategory={search.categoryId}
+            onSelect={handleCategorySelect}
+          />
+          <ProductCatalog setUrlParam={setUrlParam} />
+        </section>
       </main>
     </div>
   );
@@ -256,6 +298,251 @@ function DateRangePicker({
   );
 }
 
+function SectionHeading({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="mb-4">
+      <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+      {subtitle && (
+        <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Featured Combos
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FeaturedBundles({ locationId }: { locationId?: string }) {
+  const { data: bundles } = useSuspenseQuery(
+    createRentalBundlesQueryOptions({ locationId }),
+  );
+
+  if (!bundles.length) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No featured combos available.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      {bundles.map((bundle) => (
+        <BundleCard key={bundle.id} bundle={bundle} />
+      ))}
+    </div>
+  );
+}
+
+function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
+  const { addBundle } = useCartActions();
+  const price = bundle.pricingPreview;
+
+  const includedNames = bundle.components
+    .map((c) => `${c.quantity}x ${c.productType.name}`)
+    .join(", ");
+
+  function handleAdd() {
+    addBundle({
+      bundleId: bundle.id,
+      name: bundle.name,
+      billingUnitLabel: bundle.billingUnit.label,
+      pricePerUnit: price?.pricePerUnit ?? 0,
+      components: bundle.components,
+    });
+  }
+
+  return (
+    <Card className="overflow-hidden rounded-xs flex flex-col">
+      {/* Image placeholder */}
+      <div className="aspect-video bg-gray-100 relative overflow-hidden">
+        <img
+          src="/placeholder-equipment.png"
+          alt={bundle.name}
+          className="object-cover w-full h-full"
+        />
+        <Badge
+          className="absolute top-2 left-2 text-[10px] uppercase tracking-widest"
+          variant="secondary"
+        >
+          Non-modifiable bundle
+        </Badge>
+      </div>
+
+      <CardHeader className="p-4 pb-0">
+        <div className="flex items-start justify-between gap-4">
+          <CardTitle className="text-lg leading-tight">{bundle.name}</CardTitle>
+          {price ? (
+            <div className="text-right shrink-0">
+              <span className="text-xl font-bold">
+                ${price.pricePerUnit.toFixed(0)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                /{bundle.billingUnit.label}
+              </span>
+            </div>
+          ) : (
+            <span className="text-sm text-muted-foreground">Contact us</span>
+          )}
+        </div>
+        {bundle.description && (
+          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+            {bundle.description}
+          </p>
+        )}
+        {includedNames && (
+          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+            Includes {includedNames}.
+          </p>
+        )}
+      </CardHeader>
+
+      <CardFooter className="p-4 mt-auto">
+        <Button className="w-full" onClick={handleAdd}>
+          Quick Reserve Combo
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+function BundlesSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <Card key={i} className="overflow-hidden rounded-xs">
+          <Skeleton className="aspect-video w-full" />
+          <CardHeader className="p-4 pb-0">
+            <div className="flex items-start justify-between gap-4">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+            <Skeleton className="h-3 w-full mt-2" />
+            <Skeleton className="h-3 w-3/4 mt-1" />
+          </CardHeader>
+          <CardFooter className="p-4">
+            <Skeleton className="h-9 w-full" />
+          </CardFooter>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// New Arrivals
+// ─────────────────────────────────────────────────────────────────────────────
+
+function NewArrivals({ locationId }: { locationId?: string }) {
+  const { data: items } = useSuspenseQuery(
+    createNewArrivalsQueryOptions({ locationId }),
+  );
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  function scroll(direction: "left" | "right") {
+    if (!scrollRef.current) return;
+    const amount = 320;
+    scrollRef.current.scrollBy({
+      left: direction === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
+  }
+
+  if (!items.length) {
+    return (
+      <p className="text-sm text-muted-foreground">No new arrivals yet.</p>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {/* Scroll buttons */}
+      <button
+        onClick={() => scroll("left")}
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white border rounded-full p-1.5 shadow-sm hover:bg-gray-50 transition-colors"
+        aria-label="Scroll left"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => scroll("right")}
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white border rounded-full p-1.5 shadow-sm hover:bg-gray-50 transition-colors"
+        aria-label="Scroll right"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+
+      {/* Scrollable row */}
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+      >
+        {items.map((item) => (
+          <NewArrivalCard key={item.id} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NewArrivalCard({ item }: { item: NewArrivalItemResponseDto }) {
+  const price = item.pricingPreview;
+
+  return (
+    <Link
+      to="/rental/$productId"
+      params={{ productId: item.id }}
+      className="shrink-0 w-44 group"
+    >
+      <div className="aspect-square bg-gray-100 rounded-xs overflow-hidden mb-2">
+        <img
+          src="/placeholder-equipment.png"
+          alt={item.name}
+          className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+        />
+      </div>
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium truncate">
+        {item.categoryId ?? "General"}
+      </p>
+      <p className="text-sm font-medium leading-tight line-clamp-2 mt-0.5">
+        {item.name}
+      </p>
+      {price ? (
+        <p className="text-sm font-semibold mt-1">
+          ${price.pricePerUnit.toFixed(0)}
+          <span className="text-xs font-normal text-muted-foreground">
+            /{item.billingUnit.label}
+          </span>
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground mt-1">Contact us</p>
+      )}
+    </Link>
+  );
+}
+
+function NewArrivalsSkeleton() {
+  return (
+    <div className="flex gap-4 overflow-hidden pb-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="shrink-0 w-44">
+          <Skeleton className="aspect-square rounded-xs mb-2" />
+          <Skeleton className="h-2.5 w-16 mb-1" />
+          <Skeleton className="h-4 w-full mb-1" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CategoryFilter({
   activeCategory,
   onSelect,
@@ -307,7 +594,7 @@ function ProductCatalog({
   const { data: products, isPending: isPendingProducts } = useRentalProducts(
     search,
     {
-      enabled: search.locationId !== undefined,
+      // enabled: search.locationId !== undefined,
     },
   );
 

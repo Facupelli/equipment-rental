@@ -6,11 +6,33 @@ import {
 } from 'src/generated/prisma/client';
 import { TenantBillingUnit } from 'src/modules/tenant/domain/entities/tenant-billing-unit.entity';
 import { Tenant } from 'src/modules/tenant/domain/entities/tenant.entity';
-import { TenantConfig } from 'src/modules/tenant/domain/value-objects/tenant-config.vo';
+import { TenantConfig, TenantConfigProps } from 'src/modules/tenant/domain/value-objects/tenant-config.vo';
 
 type PrismaTenantWithRelations = PrismaTenant & {
   billingUnits: PrismaTenantBillingUnit[];
 };
+
+export class TenantMapper {
+  static toDomain(raw: PrismaTenantWithRelations): Tenant {
+    const billingUnits = raw.billingUnits.map(TenantBillingUnitMapper.toDomain);
+    return Tenant.reconstitute({
+      id: raw.id,
+      name: raw.name,
+      slug: raw.slug,
+      config: TenantConfig.reconstitute(raw.config as unknown as TenantConfigProps),
+      billingUnits,
+    });
+  }
+
+  static toPersistence(entity: Tenant): Prisma.TenantUncheckedCreateInput {
+    return {
+      id: entity.id,
+      name: entity.name,
+      slug: entity.slug,
+      config: entity.getConfig().toPlainObject() as unknown as InputJsonValue,
+    };
+  }
+}
 
 export class TenantBillingUnitMapper {
   static toDomain(raw: PrismaTenantBillingUnit): TenantBillingUnit {
@@ -26,28 +48,6 @@ export class TenantBillingUnitMapper {
       id: entity.id,
       tenantId: entity.tenantId,
       billingUnitId: entity.billingUnitId,
-    };
-  }
-}
-
-export class TenantMapper {
-  static toDomain(raw: PrismaTenantWithRelations): Tenant {
-    const billingUnits = raw.billingUnits.map(TenantBillingUnitMapper.toDomain);
-    return Tenant.reconstitute({
-      id: raw.id,
-      name: raw.name,
-      slug: raw.slug,
-      config: raw.config as unknown as TenantConfig,
-      billingUnits,
-    });
-  }
-
-  static toPersistence(entity: Tenant): Prisma.TenantUncheckedCreateInput {
-    return {
-      id: entity.id,
-      name: entity.name,
-      slug: entity.slug,
-      config: entity.config as unknown as InputJsonValue,
     };
   }
 }

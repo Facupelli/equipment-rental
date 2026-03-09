@@ -10,26 +10,26 @@ export class CatalogApplicationService implements CatalogPublicApi {
   async getProductType(id: string): Promise<ProductTypeDto | null> {
     const row = await this.prisma.client.productType.findUnique({
       where: { id },
-      select: { id: true, trackingMode: true, isActive: true },
+      select: { id: true, trackingMode: true, retiredAt: true, publishedAt: true },
     });
 
     if (!row) {
       return null;
     }
 
-    return new ProductTypeDto(row.id, row.trackingMode as TrackingMode, row.isActive);
+    return new ProductTypeDto(row.id, row.trackingMode as TrackingMode, row.retiredAt, row.publishedAt);
   }
 
   async getBundle(id: string): Promise<BundleDto | null> {
     const row = await this.prisma.client.bundle.findUnique({
       where: { id },
-      select: { id: true, isActive: true },
+      select: { id: true, retiredAt: true, publishedAt: true },
     });
 
     if (!row) {
       return null;
     }
 
-    return new BundleDto(row.id, row.isActive);
+    return new BundleDto(row.id, row.retiredAt, row.publishedAt);
   }
 }

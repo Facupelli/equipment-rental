@@ -6,7 +6,7 @@ import {
   BillingUnitNotActiveException,
 } from '../exceptions/tenant.exceptions';
 import { TenantBillingUnit } from './tenant-billing-unit.entity';
-import { TenantConfig } from '../value-objects/tenant-config.vo';
+import { TenantConfig, type TenantConfigPatch } from '../value-objects/tenant-config.vo';
 import { DEFAULT_CONFIG } from '../../infrastructure/config/tenancy.defaults';
 
 export interface CreateTenantProps {
@@ -27,9 +27,11 @@ export class Tenant {
     public readonly id: string,
     public readonly name: string,
     public readonly slug: string,
-    public readonly config: TenantConfig,
+    private config: TenantConfig,
     private readonly billingUnits: TenantBillingUnit[],
   ) {}
+
+  // --- Factories ---
 
   static create(props: CreateTenantProps): Tenant {
     if (!props.name || props.name.trim().length === 0) {
@@ -45,8 +47,20 @@ export class Tenant {
     return new Tenant(props.id, props.name, props.slug, props.config, props.billingUnits);
   }
 
+  // --- Queries ---
+
+  getConfig(): TenantConfig {
+    return this.config;
+  }
+
   getActiveBillingUnits(): TenantBillingUnit[] {
     return [...this.billingUnits];
+  }
+
+  // --- Commands ---
+
+  updateConfig(patch: TenantConfigPatch): void {
+    this.config = this.config.merge(patch);
   }
 
   activateBillingUnit(billingUnitId: string): void {

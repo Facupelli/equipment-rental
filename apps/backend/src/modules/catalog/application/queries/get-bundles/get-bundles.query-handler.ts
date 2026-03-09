@@ -12,7 +12,9 @@ export class GetBundlesQueryHandler implements IQueryHandler<GetBundlesQuery> {
     const skip = (page - 1) * limit;
 
     const where = {
-      ...(name && { name: { contains: name, mode: 'insensitive' as const } }),
+      ...(name && {
+        name: { contains: name, mode: 'insensitive' as const },
+      }),
     };
 
     const [rows, total] = await Promise.all([
@@ -24,7 +26,6 @@ export class GetBundlesQueryHandler implements IQueryHandler<GetBundlesQuery> {
         select: {
           id: true,
           name: true,
-          isActive: true,
           billingUnitId: true,
           createdAt: true,
           // Resolve the label — no extra query, Prisma joins it
@@ -48,7 +49,6 @@ export class GetBundlesQueryHandler implements IQueryHandler<GetBundlesQuery> {
       data: rows.map((row) => ({
         id: row.id,
         name: row.name,
-        isActive: row.isActive,
         billingUnitId: row.billingUnitId,
         billingUnit: { label: row.billingUnit.label },
         // Prisma returns Decimal — coerce to JS number for the DTO

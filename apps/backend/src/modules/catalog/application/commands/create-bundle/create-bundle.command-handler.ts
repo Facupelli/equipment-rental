@@ -30,7 +30,7 @@ export class CreateBundleCommandHandler implements ICommandHandler<CreateBundleC
       tenantId,
       billingUnitId: command.billingUnitId,
       name: command.name,
-      isActive: command.isActive,
+      description: command.description,
     });
 
     for (const component of command.components) {

@@ -11,6 +11,7 @@ export * from "./inventory/asset-response.schema";
 export * from "./order/order.schema";
 export * from "./order/get-orders-schedule-response.schema";
 export * from "./pricing/pricing-tier.schema";
+export * from "./tenant/update-config.schema";
 export * from "./tenant/location/location.schema";
 export * from "./tenant/location/location-response.schema";
 export * from "./tenant/owner/owner.schema";
@@ -22,3 +23,5 @@ export * from "./tenant/billing-unit-response.schema";
 export * from "./user/user-response.schema";
 
 export * from "./rental/cart-pricing.schema";
+export * from "./rental/bundles.schema";
+export * from "./rental/new-arrivals.schema";

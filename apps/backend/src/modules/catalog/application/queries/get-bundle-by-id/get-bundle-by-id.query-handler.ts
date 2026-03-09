@@ -60,7 +60,6 @@ export class GetBundleByIdQueryHandler implements IQueryHandler<GetBundleByIdQue
     return {
       id: bundle.id,
       name: bundle.name,
-      isActive: bundle.isActive,
       createdAt: bundle.createdAt,
       updatedAt: bundle.updatedAt,
       billingUnit: {

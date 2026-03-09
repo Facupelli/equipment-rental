@@ -9,5 +9,6 @@ export class CreateBundleCommand {
     public readonly name: string,
     public readonly isActive: boolean,
     public readonly components: CreateBundleComponentProps[],
+    public readonly description: string | null = null,
   ) {}
 }

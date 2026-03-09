@@ -12,7 +12,7 @@ import { GetProductTypeByIdQueryHandler } from './application/queries/get-produc
 import { GetProductTypesQueryHandler } from './application/queries/get-product-types/get-product-types.query-handler';
 import { GetProductCategoriesQueryHandler } from './application/queries/get-product-categories/get-product-categories.query-handler';
 import { GetRentalProductTypesQueryHandler } from './application/queries/get-reantal-product-types/get-rental-product-types.query-handler';
-import { RentalProductTypeController } from './infrastructure/controllers/rental-product-type.controller';
+import { RentalController } from './infrastructure/controllers/rental.controller';
 import { CatalogPublicApi } from './catalog.public-api';
 import { CatalogApplicationService } from './application/catalog.application-service';
 import { BundleController } from './infrastructure/controllers/bundle.controller';
@@ -21,6 +21,8 @@ import { GetBundlesQueryHandler } from './application/queries/get-bundles/get-bu
 import { BundleRepositoryPort } from './domain/ports/bundle-repository.port';
 import { BundleRepository } from './infrastructure/repositories/bundle.repository';
 import { GetBundleByIdQueryHandler } from './application/queries/get-bundle-by-id/get-bundle-by-id.query-handler';
+import { GetNewArrivalsQueryHandler } from './application/queries/get-rental-new-arrivals/get-rental-new-arrival.query-handler';
+import { GetCombosQueryHandler } from './application/queries/get-rental-bundles/get-rental-budles.query-handler';
 
 const repositories = [
   { provide: ProductCategoryRepositoryPort, useClass: ProductCategoryRepository },
@@ -34,18 +36,20 @@ const queryHandlers = [
   GetProductTypeByIdQueryHandler,
   GetProductTypesQueryHandler,
   GetProductCategoriesQueryHandler,
-  GetRentalProductTypesQueryHandler,
   GetBundlesQueryHandler,
   GetBundleByIdQueryHandler,
 ];
 
+const rentalQueryHandlers = [GetRentalProductTypesQueryHandler, GetNewArrivalsQueryHandler, GetCombosQueryHandler];
+
 @Module({
   imports: [TenantModule],
-  controllers: [ProductCategoryController, ProductTypeController, BundleController, RentalProductTypeController],
+  controllers: [ProductCategoryController, ProductTypeController, BundleController, RentalController],
   providers: [
     ...repositories,
     ...commandhandlers,
     ...queryHandlers,
+    ...rentalQueryHandlers,
     CatalogApplicationService,
     { provide: CatalogPublicApi, useClass: CatalogApplicationService },
   ],

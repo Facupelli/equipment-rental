@@ -23,9 +23,13 @@ import { TenantBillingUnitRepositoryPort } from './domain/ports/billing-unit.rep
 import { TenantBillingUnitRepository } from './infrastructure/persistence/repositories/billing-unit.repository';
 import { GetTenantBillingUnitsQueryHandler } from './application/queries/get-billing-units/get-tenant-billing-units.query-handler';
 import { SyncTenantBillingUnitsCommandHandler } from './application/commands/create-billing-unit/sync-billing-units.command';
+import { TenantPublicApi } from './tenant.public-api';
+import { TenantApplicationService } from './application/tenant.application-service';
+import { UpdateTenantConfigCommandHandler } from './application/commands/update-config/update-config.command-handler';
 
 const commandHandlers = [
   CreateTenantUserCommandHandler,
+  UpdateTenantConfigCommandHandler,
   CreateOwnerCommandHandler,
   CreateLocationCommandHandler,
   SyncTenantBillingUnitsCommandHandler,
@@ -44,12 +48,18 @@ const repositories = [
   { provide: LocationRepositoryPort, useClass: LocationRepository },
   { provide: OwnerRepositoryPort, useClass: OwnerRepository },
 ];
-const services = [TenantContextService];
+const services = [
+  TenantContextService,
+  {
+    provide: TenantPublicApi,
+    useClass: TenantApplicationService,
+  },
+];
 
 @Module({
   imports: [UsersModule, AuthModule, CqrsModule],
   controllers: [TenantController, OwnerController, LocationController],
   providers: [...repositories, ...services, ...commandHandlers, ...queryHandlers],
-  exports: [TenantContextService],
+  exports: [TenantContextService, TenantPublicApi],
 })
 export class TenantModule {}

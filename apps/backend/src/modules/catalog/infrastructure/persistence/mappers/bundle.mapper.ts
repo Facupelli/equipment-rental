@@ -40,8 +40,10 @@ export class BundleMapper {
       tenantId: raw.tenantId,
       billingUnitId: raw.billingUnitId,
       name: raw.name,
-      isActive: raw.isActive,
       components,
+      description: raw.description,
+      isPublished: raw.publishedAt !== null,
+      isRetired: raw.retiredAt !== null,
     });
   }
 
@@ -50,7 +52,6 @@ export class BundleMapper {
       id: entity.id,
       tenantId: entity.tenantId,
       name: entity.name,
-      isActive: entity.active,
       billingUnitId: entity.billingUnitId,
     };
   }

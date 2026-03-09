@@ -1,5 +1,9 @@
 import { randomUUID } from 'crypto';
-import { InvalidProductTypeNameException } from '../exceptions/product-type.exceptions';
+import {
+  InvalidProductTypeNameException,
+  ProductTypeAlreadyRetiredException,
+  ProductTypeAlreadyPublishedException,
+} from '../exceptions/product-type.exceptions';
 import { TrackingMode } from '@repo/types';
 
 export interface IncludedItem {
@@ -27,9 +31,10 @@ export interface ReconstituteProductTypeProps {
   name: string;
   description: string | null;
   trackingMode: TrackingMode;
-  isActive: boolean;
   attributes: Record<string, unknown>;
   includedItems: unknown[];
+  isPublished: boolean;
+  isRetired: boolean;
 }
 
 export class ProductType {
@@ -41,10 +46,13 @@ export class ProductType {
     public readonly name: string,
     private description: string | null,
     public readonly trackingMode: TrackingMode,
-    private isActive: boolean,
     public readonly attributes: Record<string, unknown>,
     public readonly includedItems: unknown[],
+    private published: boolean,
+    private retired: boolean,
   ) {}
+
+  // --- Factories ---
 
   static create(props: CreateProductTypeProps): ProductType {
     if (!props.name || props.name.trim().length === 0) {
@@ -58,9 +66,10 @@ export class ProductType {
       props.name.trim(),
       props.description?.trim() ?? null,
       props.trackingMode,
-      true,
       props.attributes ?? {},
       props.includedItems ?? [],
+      false, // starts as draft
+      false,
     );
   }
 
@@ -73,25 +82,45 @@ export class ProductType {
       props.name,
       props.description,
       props.trackingMode,
-      props.isActive,
       props.attributes,
       props.includedItems,
+      props.isPublished,
+      props.isRetired,
     );
   }
 
-  get active(): boolean {
-    return this.isActive;
-  }
+  // --- Queries ---
 
   get currentDescription(): string | null {
     return this.description;
   }
 
-  deactivate(): void {
-    this.isActive = false;
+  isPublished(): boolean {
+    return this.published;
   }
+
+  isRetired(): boolean {
+    return this.retired;
+  }
+
+  isAvailableForBooking(): boolean {
+    return this.published && !this.retired;
+  }
+
+  // --- Commands ---
 
   updateDescription(description: string | null): void {
     this.description = description?.trim() ?? null;
+  }
+
+  publish(): void {
+    if (this.retired) throw new ProductTypeAlreadyRetiredException();
+    if (this.published) throw new ProductTypeAlreadyPublishedException();
+    this.published = true;
+  }
+
+  retire(): void {
+    if (this.retired) throw new ProductTypeAlreadyRetiredException();
+    this.retired = true;
   }
 }
