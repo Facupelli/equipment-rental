@@ -12,6 +12,7 @@ import { addDays } from "@/lib/dates/compute";
 import { Badge } from "@/components/ui/badge";
 import { formatDailyRange } from "@/lib/dates/format";
 import dayjs from "@/lib/dates/dayjs";
+import { useLocationId } from "@/shared/contexts/location/location.hooks";
 
 export const Route = createFileRoute("/_authed/dashboard/schedule/")({
   component: OrdersPage,
@@ -24,12 +25,14 @@ function OrdersPage() {
     tenant: { config },
   } = authedRoute.useLoaderData();
 
+  const locationId = useLocationId();
+
   const now = dayjs().tz(config.timezone);
   const from = now.format("YYYY-MM-DD");
   const to = toDateParam(addDays(now, 7));
 
   const { data, isPending, error } = useUpcomingSchedule({
-    locationId: "d6f36e40-1c0f-4008-9365-24c587eed343",
+    locationId,
     from,
     to,
   });
