@@ -135,6 +135,7 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
     return {
       id: order.id,
       status: order.status as OrderStatus,
+      number: order.orderNumber,
       createdAt: order.createdAt,
       notes: order.notes,
       customer: order.customer ?? null,

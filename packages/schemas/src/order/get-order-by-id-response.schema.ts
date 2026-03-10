@@ -75,6 +75,7 @@ const FinancialBreakdownSchema = z.object({
 export const orderDetailSchema = z.object({
   id: z.uuid(),
   status: z.enum(OrderStatus),
+  number: z.number().int(),
   createdAt: z.date(),
   notes: z.string().nullable(),
   customer: CustomerSummarySchema.nullable(),

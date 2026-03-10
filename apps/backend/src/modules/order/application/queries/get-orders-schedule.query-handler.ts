@@ -6,6 +6,7 @@ import { OrderStatus } from '@repo/types';
 
 type RawOrderRow = {
   id: string;
+  order_number: number;
   status: OrderStatus;
   period_start: string;
   period_end: string;
@@ -53,6 +54,7 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<GetOrdersSch
       SELECT DISTINCT ON (o.id)
         o.id,
         o.status,
+        o.order_number,
         lower(aa.period)::text AS period_start,
         upper(aa.period)::text AS period_end,
         c.id                   AS customer_id,
@@ -78,6 +80,7 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<GetOrdersSch
       SELECT DISTINCT ON (o.id)
         o.id,
         o.status,
+        o.order_number,
         lower(aa.period)::text AS period_start,
         upper(aa.period)::text AS period_end,
         c.id                   AS customer_id,
@@ -105,6 +108,7 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<GetOrdersSch
     return {
       id: row.id,
       status: row.status,
+      number: row.order_number,
       periodStart: this.extractDateString(row.period_start),
       periodEnd: this.extractDateString(row.period_end),
       customer: row.customer_id

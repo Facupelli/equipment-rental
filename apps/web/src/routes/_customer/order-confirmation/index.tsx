@@ -4,7 +4,6 @@ import { CheckCircle2, Mail, CalendarCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const orderConfirmationSearchSchema = z.object({
-  orderId: z.string().catch("—"),
   pickupDate: z.string().catch("—"),
   pickupLocation: z.string().catch("—"),
 });
@@ -15,7 +14,7 @@ export const Route = createFileRoute("/_customer/order-confirmation/")({
 });
 
 function OrderConfirmationPage() {
-  const { orderId, pickupDate, pickupLocation } = Route.useSearch();
+  const { pickupDate, pickupLocation } = Route.useSearch();
 
   const formattedDate = formatPickupDate(pickupDate);
 
@@ -54,9 +53,6 @@ function OrderConfirmationPage() {
             <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
               Your order is confirmed
             </h1>
-            <p className="text-sm text-neutral-400 font-medium tracking-wide">
-              Order #{orderId}
-            </p>
           </div>
 
           {/* Next Steps */}

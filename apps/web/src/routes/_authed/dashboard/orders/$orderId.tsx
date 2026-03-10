@@ -17,6 +17,7 @@ import {
   Package,
   ExternalLink,
 } from "lucide-react";
+import { formatOrderNumber } from "@/features/orders/order.utils";
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   [OrderStatus.PENDING_SOURCING]: "Pending Sourcing",
@@ -71,10 +72,7 @@ function OrderHeader({ order }: Props) {
         <div>
           <div className="flex items-center gap-3 mb-1.5">
             <h1 className="text-3xl font-bold tracking-tight leading-none">
-              Order{" "}
-              <span className="font-mono">
-                #{order.id.slice(0, 5).toUpperCase()}
-              </span>
+              Order <span>#{formatOrderNumber(order.number)}</span>
             </h1>
             <OrderStatusBadge status={order.status} />
           </div>

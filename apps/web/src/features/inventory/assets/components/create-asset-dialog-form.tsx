@@ -31,15 +31,17 @@ import { Plus } from "lucide-react";
 import { useProduct } from "@/features/catalog/product-types/components/detail/product-detail.context";
 import { TrackingMode } from "@repo/types";
 import {
-  assetFormDefaults,
   assetFormSchema,
+  getAssetFormDefaults,
   toCreateAssetDto,
 } from "../schemas/asset-form.schema";
 import { ProblemDetailsError } from "@/shared/errors";
+import { useLocationId } from "@/shared/contexts/location/location.hooks";
 
 const formId = "create-asset";
 
 export function CreateAssetDialogForm() {
+  const locationId = useLocationId();
   const { product } = useProduct();
 
   const [open, setOpen] = useState(false);
@@ -49,7 +51,7 @@ export function CreateAssetDialogForm() {
   const { data: owners = [], isLoading: ownersLoading } = useOwners();
 
   const form = useForm({
-    defaultValues: assetFormDefaults,
+    defaultValues: getAssetFormDefaults(locationId),
     validators: {
       onSubmit: assetFormSchema,
     },

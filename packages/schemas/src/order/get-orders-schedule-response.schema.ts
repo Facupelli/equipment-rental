@@ -9,6 +9,7 @@ const CustomerSummarySchema = z.object({
 
 const OrderSummarySchema = z.object({
   id: z.string(),
+  number: z.number().int(),
   status: z.enum(OrderStatus),
   periodStart: z.string(), // "YYYY-MM-DD"
   periodEnd: z.string(), // "YYYY-MM-DD"

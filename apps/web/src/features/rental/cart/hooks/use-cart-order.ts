@@ -95,7 +95,7 @@ export function useCartOrder({
     setUnavailableIds([]);
 
     try {
-      const orderId = await createOrder({
+      await createOrder({
         locationId: location.id,
         customerId: undefined,
         periodStart: toISOString(period.start),
@@ -109,7 +109,6 @@ export function useCartOrder({
       navigate({
         to: "/order-confirmation",
         search: {
-          orderId: orderId,
           pickupDate: period.start.format("YYYY-MM-DD"),
           pickupLocation: location.name,
         },

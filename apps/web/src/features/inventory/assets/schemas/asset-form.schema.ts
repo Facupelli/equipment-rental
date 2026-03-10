@@ -17,13 +17,15 @@ export const assetFormSchema = z.object({
 
 export type AssetFormValues = z.infer<typeof assetFormSchema>;
 
-export const assetFormDefaults: AssetFormValues = {
-  locationId: "",
-  ownerId: "",
-  serialNumber: "",
-  notes: "",
-  isActive: true,
-};
+export function getAssetFormDefaults(locationId: string): AssetFormValues {
+  return {
+    locationId,
+    ownerId: "",
+    serialNumber: "",
+    notes: "",
+    isActive: true,
+  };
+}
 
 export function assetToFormValues(asset: {
   locationId: string;

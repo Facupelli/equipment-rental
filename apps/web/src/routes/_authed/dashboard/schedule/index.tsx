@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDailyRange } from "@/lib/dates/format";
 import dayjs from "@/lib/dates/dayjs";
 import { useLocationId } from "@/shared/contexts/location/location.hooks";
+import { formatOrderNumber } from "@/features/orders/order.utils";
 
 export const Route = createFileRoute("/_authed/dashboard/schedule/")({
   component: OrdersPage,
@@ -141,9 +142,28 @@ function TodaySection({
             <EmptyState message="No pick-ups scheduled for today" />
           ) : (
             <div className="space-y-2.5">
-              {pickups.map((event) => (
-                <TodayBookingCard key={event.order.id} order={event.order} />
-              ))}
+              <Card>
+                <CardContent className="gap-y-2 flex flex-col divide-y">
+                  {pickups.map((event) => (
+                    <div
+                      key={event.order.id}
+                      className="flex items-center justify-between py-2"
+                    >
+                      <div>
+                        <p className="truncate font-semibold text-gray-900">
+                          {event.order.customer?.displayName ?? "No customer"}
+                        </p>
+                        <p className="font-mono text-sm  text-neutral-400">
+                          {formatOrderNumber(event.order.number)}
+                        </p>
+                      </div>
+                      <div>
+                        <StatusBadge status={event.order.status} />
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>
@@ -157,50 +177,33 @@ function TodaySection({
             <EmptyState message="No returns scheduled for today" />
           ) : (
             <div className="space-y-2.5">
-              {returns.map((event) => (
-                <TodayReturnCard key={event.order.id} order={event.order} />
-              ))}
+              <Card>
+                <CardContent className="gap-y-2 flex flex-col divide-y">
+                  {returns.map((event) => (
+                    <div
+                      key={event.order.id}
+                      className="flex items-center justify-between py-2"
+                    >
+                      <div>
+                        <p className="truncate font-semibold text-gray-900">
+                          {event.order.customer?.displayName ?? "No customer"}
+                        </p>
+                        <p className="font-mono text-sm text-neutral-400">
+                          {formatOrderNumber(event.order.number)}
+                        </p>
+                      </div>
+                      <div>
+                        <StatusBadge status={event.order.status} />
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>
       </div>
     </div>
-  );
-}
-
-// ─── Today Booking Card ────────────────────────────────────────────────────────
-
-function TodayBookingCard({ order }: { order: ParsedOrderSummary }) {
-  return (
-    <Card className="transition-all hover:border-gray-200 hover:shadow-md">
-      <CardContent className="flex items-center justify-between px-4 py-3.5">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-gray-900">
-            {order.customer?.displayName}
-          </p>
-        </div>
-        <div className="ml-4 flex shrink-0 flex-col items-end gap-1.5">
-          <StatusBadge status={order.status} />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function TodayReturnCard({ order }: { order: ParsedOrderSummary }) {
-  return (
-    <Card className="hover:shadow-md hover:border-gray-200">
-      <CardContent className="flex items-center justify-between px-4 py-3.5">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-gray-900">
-            {order.customer?.displayName}
-          </p>
-        </div>
-        <div className="ml-4 flex shrink-0 flex-col items-end gap-1.5">
-          <StatusBadge status={order.status} />
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -365,11 +368,16 @@ function ScheduleEventRow({ event }: { event: ParsedScheduleEvent }) {
       preload={false}
     >
       <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-muted/70 hover:bg-muted/90 transition-colors">
-        <div className="flex flex-col gap-0.5 min-w-0">
-          <span className="text-sm font-medium text-foreground truncate">
-            {customerName}
-          </span>
-          <span className="text-xs text-muted-foreground">{period}</span>
+        <div className="flex gap-4">
+          <p className="text-sm font-mono text-neutral-500">
+            {formatOrderNumber(event.order.number)}
+          </p>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-sm font-medium text-foreground truncate">
+              {customerName}
+            </span>
+            <span className="text-xs text-muted-foreground">{period}</span>
+          </div>
         </div>
 
         <Badge
