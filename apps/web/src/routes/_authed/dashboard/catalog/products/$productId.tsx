@@ -117,7 +117,7 @@ function RouteComponent() {
   return (
     <>
       <ProductProvider product={product}>
-        <div className="space-y-6 p-6">
+        <div className="space-y-12 p-6">
           <ProductHeader />
 
           <Tabs
@@ -198,13 +198,10 @@ function ProductHeader() {
   const { mutate: retire, isPending: isRetiring } = useRetireProductType();
 
   return (
-    <div className="flex items-start justify-between">
-      <div className="space-y-1.5">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">{product.name}</h1>
-          <LifecycleBadge isPublished={isPublished} isRetired={isRetired} />
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className="flex items-start justify-between gap-8">
+      {/* Left — info + actions */}
+      <div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground pb-2">
           {product.category && (
             <>
               <span>{product.category.name}</span>
@@ -215,46 +212,71 @@ function ProductHeader() {
             {formatTrackingType(product.trackingMode)}
           </Badge>
         </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {product.name}
+            </h1>
+            <LifecycleBadge isPublished={isPublished} isRetired={isRetired} />
+          </div>
+
+          {product.description && (
+            <p className="text-sm text-muted-foreground max-w-prose">
+              {product.description}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4 pt-6">
+          {!isRetired && (
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={
+                <Link
+                  to="/dashboard/catalog/products/$productId/edit"
+                  params={{ productId: product.id }}
+                >
+                  Edit Details
+                </Link>
+              }
+            />
+          )}
+
+          {!isPublished && !isRetired && (
+            <Button
+              onClick={() => publish({ productTypeId: product.id })}
+              disabled={isPublishing}
+            >
+              {isPublishing ? "Publishing..." : "Publish"}
+            </Button>
+          )}
+
+          {isPublished && !isRetired && (
+            <RetireConfirmDialog
+              onConfirm={() => retire({ productTypeId: product.id })}
+              isPending={isRetiring}
+            />
+          )}
+        </div>
       </div>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* Actions                                                          */}
-      {/* ---------------------------------------------------------------- */}
-      <div className="flex items-center gap-2">
-        {/* Draft → Publish */}
-        {!isPublished && !isRetired && (
-          <Button
-            onClick={() => publish({ productTypeId: product.id })}
-            disabled={isPublishing}
-          >
-            {isPublishing ? "Publishing..." : "Publish"}
-          </Button>
-        )}
-
-        {/* Published → Retire (destructive, requires confirmation) */}
-        {isPublished && !isRetired && (
-          <RetireConfirmDialog
-            onConfirm={() => retire({ productTypeId: product.id })}
-            isPending={isRetiring}
-          />
-        )}
-
-        {/* Edit — always visible unless retired */}
-        {!isRetired && (
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={
-              <Link
-                to="/dashboard/catalog/products/$productId"
-                params={{ productId: product.id }}
-              >
-                Edit Product
-              </Link>
-            }
-          />
-        )}
-      </div>
+      {/* Right — image */}
+      {product.imageUrl ? (
+        <img
+          src={`${import.meta.env.VITE_R2_PUBLIC_URL}/${product.imageUrl}`}
+          alt={product.name}
+          width={320}
+          height={240}
+          loading="lazy"
+          decoding="async"
+          className="rounded-lg object-contain shrink-0 w-[320px] h-60"
+        />
+      ) : (
+        <div className="w-[320px] h-60 rounded-lg bg-muted shrink-0 flex items-center justify-center">
+          <span className="text-sm text-muted-foreground">No image</span>
+        </div>
+      )}
     </div>
   );
 }

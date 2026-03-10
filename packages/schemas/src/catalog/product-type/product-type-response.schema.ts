@@ -35,6 +35,7 @@ export const productTypeResponseSchema = z.object({
   id: z.uuid(),
   tenantId: z.uuid(),
   name: z.string(),
+  imageUrl: z.string(),
   description: z.string().nullable(),
   trackingMode: z.enum(TrackingMode),
   attributes: productTypeAttributesSchema,
@@ -94,6 +95,7 @@ const rentalProductCategorySchema = z.object({
 const rentalProductItemSchema = z.object({
   id: z.uuid(),
   name: z.string(),
+  imageUrl: z.string(),
   description: z.string().nullable(),
   attributes: productTypeAttributesSchema,
   includedItems: z.array(productTypeIncludedItemSchema),

@@ -29,6 +29,7 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
         select: {
           id: true,
           name: true,
+          imageUrl: true,
           description: true,
           includedItems: true,
           attributes: true,
@@ -82,6 +83,8 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
       return {
         id: product.id,
         name: product.name,
+        // todo fix when image migration is not null
+        imageUrl: product.imageUrl ?? '',
         description: product.description,
         availableCount: product._count.assets,
         category: product.category ?? null,

@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
+    "@better-upload/client": "^3.0.14",
+    "@better-upload/server": "^3.0.14",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@tailwindcss/vite": "^4.1.18",
@@ -30,6 +32,7 @@
     "@tanstack/react-start": "^1.132.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.132.0",
+    "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

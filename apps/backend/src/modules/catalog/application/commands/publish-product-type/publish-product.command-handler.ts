@@ -19,8 +19,8 @@ export class PublishProductTypeCommandHandler implements ICommandHandler<Publish
     }
 
     try {
+      // TODO: check product has at least one pricing tier
       productType.publish();
-      console.log('published');
     } catch (e) {
       if (e instanceof ProductTypeAlreadyPublishedException) {
         throw new ConflictException(e.message);

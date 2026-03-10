@@ -54,6 +54,7 @@ export class GetProductTypeByIdQueryHandler implements IQueryHandler<GetProductT
       id: productType.id,
       tenantId: productType.tenantId,
       name: productType.name,
+      imageUrl: productType.imageUrl ?? '',
       description: productType.description,
       trackingMode: productType.trackingMode as TrackingMode,
       attributes: productType.attributes as Record<string, string>,

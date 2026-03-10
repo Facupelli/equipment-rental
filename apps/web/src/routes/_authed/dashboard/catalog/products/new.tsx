@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CatalogImageUploader } from "@/features/catalog/components/catalog-image-uploader";
 import { useCategories } from "@/features/catalog/product-categories/categories.queries";
 import { useCreateProduct } from "@/features/catalog/product-types/products.queries";
 import {
@@ -197,6 +198,24 @@ function CreateProductPage() {
                     </Field>
                   );
                 }}
+              />
+
+              <form.Field
+                name="imageUrl"
+                children={(field) => (
+                  <Field>
+                    <FieldLabel>
+                      Product Image{" "}
+                      <span className="text-muted-foreground text-xs">
+                        (optional)
+                      </span>
+                    </FieldLabel>
+                    <CatalogImageUploader
+                      currentPath={field.state.value}
+                      onUploadComplete={(path) => field.handleChange(path)}
+                    />
+                  </Field>
+                )}
               />
 
               {/* Description Field */}

@@ -25,6 +25,7 @@ export const productTypeFormSchema = z.object({
   categoryId: z.string().or(z.literal("")),
   billingUnitId: z.string().min(1, "Billing unit is required"),
   name: z.string().min(1, "Name is required"),
+  imageUrl: z.string(),
   description: z.string().or(z.literal("")),
   trackingMode: z.enum(TrackingMode),
   attributes: z.array(attributeRowSchema),
@@ -39,6 +40,7 @@ export const productTypeFormDefaults: ProductTypeFormValues = {
   categoryId: "",
   billingUnitId: "",
   name: "",
+  imageUrl: "",
   description: "",
   trackingMode: TrackingMode.IDENTIFIED,
   attributes: [],
@@ -49,6 +51,7 @@ export function productTypeToFormValues(productType: {
   categoryId: string | null;
   billingUnitId: string;
   name: string;
+  imageUrl: string;
   description: string | null;
   trackingMode: TrackingMode;
   isActive: boolean;
@@ -60,6 +63,7 @@ export function productTypeToFormValues(productType: {
     categoryId: productType.categoryId ?? "",
     billingUnitId: productType.billingUnitId,
     name: productType.name,
+    imageUrl: productType.imageUrl ?? "",
     description: productType.description ?? "",
     trackingMode: productType.trackingMode,
     attributes: Object.entries(productType.attributes).map(([key, value]) => ({
@@ -97,6 +101,7 @@ export function toCreateProductTypeDto(
     categoryId: emptyToNull(values.categoryId),
     billingUnitId: values.billingUnitId,
     name: values.name.trim(),
+    imageUrl: emptyToNull(values.imageUrl),
     description: emptyToNull(values.description),
     trackingMode: values.trackingMode,
     attributes: mapAttributeRows(values.attributes),
@@ -119,6 +124,9 @@ export function toUpdateProductTypeDto(
   }
   if (dirtyValues.name !== undefined) {
     dto.name = dirtyValues.name.trim();
+  }
+  if (dirtyValues.imageUrl !== undefined) {
+    dto.imageUrl = dirtyValues.imageUrl;
   }
   if (dirtyValues.description !== undefined) {
     dto.description = emptyToNullOrUndefined(dirtyValues.description);

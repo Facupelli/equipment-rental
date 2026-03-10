@@ -17,6 +17,7 @@ export interface CreateProductTypeProps {
   categoryId: string | null;
   billingUnitId: string;
   name: string;
+  imageUrl: string;
   description: string | null;
   trackingMode: TrackingMode;
   attributes: Record<string, unknown> | null;
@@ -29,6 +30,7 @@ export interface ReconstituteProductTypeProps {
   categoryId: string | null;
   billingUnitId: string;
   name: string;
+  imageUrl: string;
   description: string | null;
   trackingMode: TrackingMode;
   attributes: Record<string, unknown>;
@@ -44,6 +46,7 @@ export class ProductType {
     public readonly categoryId: string | null,
     public readonly billingUnitId: string,
     public readonly name: string,
+    public readonly imageUrl: string,
     private description: string | null,
     public readonly trackingMode: TrackingMode,
     public readonly attributes: Record<string, unknown>,
@@ -64,6 +67,7 @@ export class ProductType {
       props.categoryId ?? null,
       props.billingUnitId,
       props.name.trim(),
+      props.imageUrl,
       props.description?.trim() ?? null,
       props.trackingMode,
       props.attributes ?? {},
@@ -80,6 +84,7 @@ export class ProductType {
       props.categoryId,
       props.billingUnitId,
       props.name,
+      props.imageUrl,
       props.description,
       props.trackingMode,
       props.attributes,
