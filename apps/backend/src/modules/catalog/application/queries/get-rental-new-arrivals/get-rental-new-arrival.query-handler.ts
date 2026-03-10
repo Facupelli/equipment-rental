@@ -32,7 +32,10 @@ export class GetNewArrivalsQueryHandler implements IQueryHandler<GetNewArrivalsQ
       select: {
         id: true,
         name: true,
-        categoryId: true,
+        imageUrl: true,
+        category: {
+          select: { id: true, name: true },
+        },
         publishedAt: true,
         billingUnit: {
           select: { label: true },
@@ -53,7 +56,8 @@ export class GetNewArrivalsQueryHandler implements IQueryHandler<GetNewArrivalsQ
     return productTypes.map((pt) => ({
       id: pt.id,
       name: pt.name,
-      categoryId: pt.categoryId,
+      imageUrl: pt.imageUrl ?? '',
+      category: pt.category,
       publishedAt: pt.publishedAt!,
       billingUnit: pt.billingUnit,
       pricingPreview: pt.pricingTiers[0]

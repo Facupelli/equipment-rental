@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCategories } from "@/features/catalog/product-categories/categories.queries";
-import { createProductsQueryOptions } from "@/features/catalog/product-types/products.queries";
 import useDebounce from "@/shared/hooks/use-debounce";
 import {
   getRentalProductQuerySchema,
@@ -29,7 +28,6 @@ import {
 } from "@repo/schemas";
 import {
   createFileRoute,
-  Link,
   useNavigate,
   useSearch,
 } from "@tanstack/react-router";
@@ -40,6 +38,7 @@ import dayjs from "@/lib/dates/dayjs";
 import {
   createNewArrivalsQueryOptions,
   createRentalBundlesQueryOptions,
+  createRentalProductsQueryOptions,
   useRentalProducts,
 } from "@/features/rental/rental.queries";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
@@ -78,7 +77,7 @@ export const Route = createFileRoute("/_customer/rental/")({
     queryClient.prefetchQuery(createNewArrivalsQueryOptions({ locationId }));
 
     if (locationId) {
-      queryClient.prefetchQuery(createProductsQueryOptions(deps));
+      queryClient.prefetchQuery(createRentalProductsQueryOptions(deps));
     }
   },
   component: RentalPage,
@@ -451,7 +450,10 @@ function NewArrivals({ locationId }: { locationId?: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scroll(direction: "left" | "right") {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current) {
+      return;
+    }
+
     const amount = 320;
     scrollRef.current.scrollBy({
       left: direction === "left" ? -amount : amount,
@@ -500,20 +502,29 @@ function NewArrivalCard({ item }: { item: NewArrivalItemResponseDto }) {
   const price = item.pricingPreview;
 
   return (
-    <Link
-      to="/rental/$productId"
-      params={{ productId: item.id }}
-      className="shrink-0 w-44 group"
-    >
-      <div className="aspect-square bg-gray-100 rounded-xs overflow-hidden mb-2">
-        <img
-          src="/placeholder-equipment.png"
-          alt={item.name}
-          className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-        />
+    // <Link
+    //   to="/rental/$productId"
+    //   params={{ productId: item.id }}
+    //   className="shrink-0 w-44 group"
+    // >
+    <div>
+      <div className="aspect-square w-52 bg-gray-100 rounded-xs overflow-hidden mb-2">
+        {item.imageUrl ? (
+          <img
+            src={`${import.meta.env.VITE_R2_PUBLIC_URL}/${item.imageUrl}`}
+            alt={item.name}
+            loading="lazy"
+            decoding="async"
+            className="object-contain w-full h-full "
+          />
+        ) : (
+          <div className="w-full h-full rounded-lg bg-muted shrink-0 flex items-center justify-center">
+            <span className="text-sm text-muted-foreground">No image</span>
+          </div>
+        )}
       </div>
       <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium truncate">
-        {item.categoryId ?? "General"}
+        {item.category?.name ?? "General"}
       </p>
       <p className="text-sm font-medium leading-tight line-clamp-2 mt-0.5">
         {item.name}
@@ -528,7 +539,8 @@ function NewArrivalCard({ item }: { item: NewArrivalItemResponseDto }) {
       ) : (
         <p className="text-xs text-muted-foreground mt-1">Contact us</p>
       )}
-    </Link>
+    </div>
+    // </Link>
   );
 }
 
@@ -681,33 +693,39 @@ function ProductCard({
   const category = product.category?.name ?? "General";
 
   return (
-    <Card className="overflow-hidden group rounded-xs">
-      {/* Clickable area — navigates to detail */}
-      <Link
+    <Card className="overflow-hidden rounded-xs">
+      {/* <Link
         to="/rental/$productId"
         params={{ productId: product.id }}
         className="block"
-      >
-        <div className="aspect-4/3 bg-gray-100 relative overflow-hidden">
+      > */}
+      <div className="aspect-4/3 bg-gray-100 relative overflow-hidden">
+        {product.imageUrl ? (
           <img
-            src="/placeholder-equipment.png"
+            src={`${import.meta.env.VITE_R2_PUBLIC_URL}/${product.imageUrl}`}
             alt={product.name}
-            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
+            className="object-contain w-full h-full "
           />
-          <Badge className="absolute top-2 right-2" variant="secondary">
-            {category}
-          </Badge>
-        </div>
+        ) : (
+          <div className="w-full h-full rounded-lg bg-muted shrink-0 flex items-center justify-center">
+            <span className="text-sm text-muted-foreground">No image</span>
+          </div>
+        )}
+        <Badge className="absolute top-2 right-2" variant="secondary">
+          {category}
+        </Badge>
+      </div>
 
-        <CardHeader className="p-4 pb-0">
-          <CardTitle className="text-lg line-clamp-1">{product.name}</CardTitle>
-          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-            {product.description}
-          </p>
-        </CardHeader>
-      </Link>
+      <CardHeader className="p-4 pb-0">
+        <CardTitle className="text-lg line-clamp-1">{product.name}</CardTitle>
+        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+          {product.description}
+        </p>
+      </CardHeader>
+      {/* </Link> */}
 
-      {/* Footer — Add button isolated from navigation */}
       <CardFooter className="p-4 flex items-center justify-between ">
         <div>
           {unitPrice != null ? (

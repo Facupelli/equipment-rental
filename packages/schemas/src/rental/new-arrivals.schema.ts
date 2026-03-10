@@ -8,7 +8,13 @@ const pricingPreviewSchema = z.object({
 export const newArrivalResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
-  categoryId: z.uuid().nullable(),
+  imageUrl: z.string(),
+  category: z
+    .object({
+      id: z.uuid(),
+      name: z.string(),
+    })
+    .nullable(),
   publishedAt: z.date(),
   billingUnit: z.object({
     label: z.string(),
