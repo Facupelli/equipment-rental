@@ -7,6 +7,7 @@ export class CreateBundleCommand {
   constructor(
     public readonly billingUnitId: string,
     public readonly name: string,
+    public readonly imageUrl: string | null,
     public readonly isActive: boolean,
     public readonly components: CreateBundleComponentProps[],
     public readonly description: string | null = null,

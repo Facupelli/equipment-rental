@@ -41,7 +41,10 @@ import {
   createRentalProductsQueryOptions,
   useRentalProducts,
 } from "@/features/rental/rental.queries";
-import { useLocations } from "@/features/tenant/locations/locations.queries";
+import {
+  createLocationQueryOptions,
+  useLocations,
+} from "@/features/tenant/locations/locations.queries";
 import {
   Select,
   SelectContent,
@@ -70,9 +73,10 @@ export const Route = createFileRoute("/_customer/rental/")({
     searchQuery: search.search,
     locationId: search.locationId,
   }),
-  loader: ({ context: { queryClient }, deps }) => {
+  loader: async ({ context: { queryClient }, deps }) => {
     const locationId = deps.locationId;
 
+    await queryClient.ensureQueryData(createLocationQueryOptions());
     queryClient.prefetchQuery(createRentalBundlesQueryOptions({ locationId }));
     queryClient.prefetchQuery(createNewArrivalsQueryOptions({ locationId }));
 
@@ -366,11 +370,19 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
     <Card className="overflow-hidden rounded-xs flex flex-col">
       {/* Image placeholder */}
       <div className="aspect-video bg-gray-100 relative overflow-hidden">
-        <img
-          src="/placeholder-equipment.png"
-          alt={bundle.name}
-          className="object-cover w-full h-full"
-        />
+        {bundle.imageUrl ? (
+          <img
+            src={`${import.meta.env.VITE_R2_PUBLIC_URL}/${bundle.imageUrl}`}
+            alt={bundle.name}
+            loading="lazy"
+            decoding="async"
+            className="object-contain w-full h-full "
+          />
+        ) : (
+          <div className="w-full h-full rounded-lg bg-muted shrink-0 flex items-center justify-center">
+            <span className="text-sm text-muted-foreground">No image</span>
+          </div>
+        )}
         <Badge
           className="absolute top-2 left-2 text-[10px] uppercase tracking-widest"
           variant="secondary"
@@ -385,10 +397,10 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
           {price ? (
             <div className="text-right shrink-0">
               <span className="text-xl font-bold">
-                ${price.pricePerUnit.toFixed(0)}
+                ${price.pricePerUnit.toFixed(0)}{" "}
               </span>
               <span className="text-xs text-muted-foreground">
-                /{bundle.billingUnit.label}
+                / {bundle.billingUnit.label}
               </span>
             </div>
           ) : (
@@ -531,9 +543,9 @@ function NewArrivalCard({ item }: { item: NewArrivalItemResponseDto }) {
       </p>
       {price ? (
         <p className="text-sm font-semibold mt-1">
-          ${price.pricePerUnit.toFixed(0)}
+          ${price.pricePerUnit.toFixed(0)}{" "}
           <span className="text-xs font-normal text-muted-foreground">
-            /{item.billingUnit.label}
+            / {item.billingUnit.label}
           </span>
         </p>
       ) : (

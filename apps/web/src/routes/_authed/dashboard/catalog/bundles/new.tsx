@@ -26,6 +26,8 @@ import useDebounce from "@/shared/hooks/use-debounce";
 import { useProducts } from "@/features/catalog/product-types/products.queries";
 import { Loader2, Minus, Plus, Search, Trash2 } from "lucide-react";
 import { useCreateBundle } from "@/features/catalog/bundles/bundles.queries";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { CatalogImageUploader } from "@/features/catalog/components/catalog-image-uploader";
 
 export const Route = createFileRoute("/_authed/dashboard/catalog/bundles/new")({
   component: NewBundlePage,
@@ -188,6 +190,52 @@ function NewBundlePage() {
               )}
             </form.Field>
           </div>
+
+          <form.Field
+            name="description"
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    Description{" "}
+                    <span className="text-muted-foreground text-xs">
+                      (optional)
+                    </span>
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="text"
+                    value={field.state.value ?? ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={isInvalid}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
+          />
+
+          <form.Field
+            name="imageUrl"
+            children={(field) => (
+              <Field>
+                <FieldLabel>
+                  Product Image{" "}
+                  <span className="text-muted-foreground text-xs">
+                    (optional)
+                  </span>
+                </FieldLabel>
+                <CatalogImageUploader
+                  currentPath={field.state.value}
+                  onUploadComplete={(path) => field.handleChange(path)}
+                />
+              </Field>
+            )}
+          />
 
           {/* Row 3 — Components */}
           <form.Field name="components" mode="array">

@@ -19,6 +19,7 @@ const comboComponentSchema = z.object({
 export const bundleItemResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
+  imageUrl: z.string(),
   description: z.string().nullable(),
   billingUnit: z.object({
     label: z.string(),

@@ -12,6 +12,7 @@ export interface CreateBundleProps {
   tenantId: string;
   billingUnitId: string;
   name: string;
+  imageUrl: string | null;
   description: string | null;
 }
 
@@ -20,6 +21,7 @@ export interface ReconstituteBundleProps {
   tenantId: string;
   billingUnitId: string;
   name: string;
+  imageUrl: string | null;
   description: string | null;
   components: BundleComponent[];
   publishedAt: Date | null;
@@ -32,6 +34,7 @@ export class Bundle {
     public readonly tenantId: string,
     public readonly billingUnitId: string,
     public readonly name: string,
+    public readonly imageUrl: string | null,
     private description: string | null,
     private readonly components: BundleComponent[],
     private publishedAt: Date | null,
@@ -49,6 +52,7 @@ export class Bundle {
       props.tenantId,
       props.billingUnitId,
       props.name.trim(),
+      props.imageUrl,
       props.description?.trim() ?? null,
       [],
       null,
@@ -62,6 +66,7 @@ export class Bundle {
       props.tenantId,
       props.billingUnitId,
       props.name,
+      props.imageUrl,
       props.description,
       props.components,
       props.publishedAt,

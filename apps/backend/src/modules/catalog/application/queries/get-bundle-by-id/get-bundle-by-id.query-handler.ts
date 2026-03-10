@@ -60,6 +60,8 @@ export class GetBundleByIdQueryHandler implements IQueryHandler<GetBundleByIdQue
     return {
       id: bundle.id,
       name: bundle.name,
+      imageUrl: bundle.imageUrl,
+      description: bundle.description,
       createdAt: bundle.createdAt,
       updatedAt: bundle.updatedAt,
       publishedAt: bundle.publishedAt,

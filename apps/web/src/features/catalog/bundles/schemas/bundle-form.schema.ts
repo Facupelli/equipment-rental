@@ -1,3 +1,4 @@
+import { emptyToNull } from "@/shared/utils/form.utils";
 import { CreateBundleSchema, type CreateBundleDto } from "@repo/schemas";
 import { z } from "zod";
 
@@ -15,6 +16,8 @@ const bundleComponentFormSchema = z.object({
 export const bundleFormSchema = z.object({
   name: z.string().min(1, "Bundle name is required"),
   billingUnitId: z.uuid("Billing unit is required"),
+  imageUrl: z.string().or(z.literal("")),
+  description: z.string().or(z.literal("")),
   components: z
     .array(bundleComponentFormSchema)
     .min(1, "At least one component is required"),
@@ -28,6 +31,8 @@ export type BundleFormValues = z.infer<typeof bundleFormSchema>;
 export const bundleFormDefaults: BundleFormValues = {
   name: "",
   billingUnitId: "",
+  imageUrl: "",
+  description: "",
   components: [],
 };
 
@@ -35,6 +40,8 @@ export function toCreateBundleDto(values: BundleFormValues): CreateBundleDto {
   const dto = {
     name: values.name,
     billingUnitId: values.billingUnitId,
+    imageUrl: emptyToNull(values.imageUrl),
+    description: emptyToNull(values.description),
     // Strip display-only fields — only send what the backend expects.
     components: values.components.map(({ productTypeId, quantity }) => ({
       productTypeId,

@@ -21,6 +21,7 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
       select: {
         id: true,
         name: true,
+        imageUrl: true,
         description: true,
         billingUnit: {
           select: { label: true },
@@ -49,6 +50,7 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
     return bundles.map((bundle) => ({
       id: bundle.id,
       name: bundle.name,
+      imageUrl: bundle.imageUrl ?? '',
       description: bundle.description,
       billingUnit: bundle.billingUnit,
       pricingPreview: bundle.pricingTiers[0]

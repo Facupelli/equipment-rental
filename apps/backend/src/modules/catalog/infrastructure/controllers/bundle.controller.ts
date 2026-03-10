@@ -21,7 +21,14 @@ export class BundleController {
 
   @Post()
   async createBundle(@Body() dto: CreateBundleDto): Promise<string> {
-    const command = new CreateBundleCommand(dto.billingUnitId, dto.name, dto.isActive, dto.components);
+    const command = new CreateBundleCommand(
+      dto.billingUnitId,
+      dto.name,
+      dto.imageUrl,
+      dto.isActive,
+      dto.components,
+      dto.description,
+    );
 
     return await this.commandBus.execute(command);
   }

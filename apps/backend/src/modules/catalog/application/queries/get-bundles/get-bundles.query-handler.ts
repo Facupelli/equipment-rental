@@ -26,6 +26,7 @@ export class GetBundlesQueryHandler implements IQueryHandler<GetBundlesQuery> {
         select: {
           id: true,
           name: true,
+          imageUrl: true,
           billingUnitId: true,
           createdAt: true,
           publishedAt: true,
@@ -51,6 +52,7 @@ export class GetBundlesQueryHandler implements IQueryHandler<GetBundlesQuery> {
       data: rows.map((row) => ({
         id: row.id,
         name: row.name,
+        imageUrl: row.imageUrl ?? '',
         billingUnitId: row.billingUnitId,
         billingUnit: { label: row.billingUnit.label },
         // Prisma returns Decimal — coerce to JS number for the DTO

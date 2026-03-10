@@ -8,6 +8,8 @@ const BundleComponentSchema = z.object({
 export const CreateBundleSchema = z.object({
   name: z.string().min(1),
   billingUnitId: z.uuid(),
+  imageUrl: z.string().nullable(),
+  description: z.string().nullable(),
   isActive: z.boolean().default(true),
   components: z.array(BundleComponentSchema).min(1),
 });
@@ -19,6 +21,7 @@ export type CreateBundleDto = z.infer<typeof CreateBundleSchema>;
 export const BundleListItemSchema = z.object({
   id: z.uuid(),
   name: z.string(),
+  imageUrl: z.string(),
   billingUnitId: z.uuid(),
   billingUnit: z.object({
     label: z.string(),
@@ -71,6 +74,8 @@ export const bundleDetailPricingTierSchema = z.object({
 export const bundleDetailResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
+  imageUrl: z.string().nullable(),
+  description: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   publishedAt: z.coerce.date().nullable(),

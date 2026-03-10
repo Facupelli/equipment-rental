@@ -174,41 +174,58 @@ function BundleHeader({
 
   return (
     <div className="flex items-start justify-between gap-4">
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">{bundle.name}</h1>
-        <LifecycleBadge isPublished={isPublished} isRetired={isRetired} />
-      </div>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">{bundle.name}</h1>
+          <LifecycleBadge isPublished={isPublished} isRetired={isRetired} />
+        </div>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* Actions                                                          */}
-      {/* ---------------------------------------------------------------- */}
-      <div className="flex items-center gap-2">
-        {/* Draft → Publish */}
-        {!isPublished && !isRetired && (
-          <Button
-            onClick={() => publish({ bundleId: bundle.id })}
-            disabled={isPublishing}
-          >
-            {isPublishing ? "Publishing..." : "Publish"}
-          </Button>
-        )}
-
-        {/* Published → Retire (destructive, requires confirmation) */}
-        {isPublished && !isRetired && (
-          <RetireConfirmDialog
-            onConfirm={() => retire({ bundleId: bundle.id })}
-            isPending={isRetiring}
-          />
-        )}
+        {bundle.description && <p>{bundle.description}</p>}
 
         <div className="flex items-center gap-2">
-          {hasUnsavedChanges && (
-            <Button onClick={onSave} disabled={isSaving}>
-              {isSaving ? "Saving…" : "Save Changes"}
+          {/* Draft → Publish */}
+          {!isPublished && !isRetired && (
+            <Button
+              onClick={() => publish({ bundleId: bundle.id })}
+              disabled={isPublishing}
+            >
+              {isPublishing ? "Publishing..." : "Publish"}
             </Button>
           )}
+
+          {/* Published → Retire (destructive, requires confirmation) */}
+          {isPublished && !isRetired && (
+            <RetireConfirmDialog
+              onConfirm={() => retire({ bundleId: bundle.id })}
+              isPending={isRetiring}
+            />
+          )}
+
+          <div className="flex items-center gap-2">
+            {hasUnsavedChanges && (
+              <Button onClick={onSave} disabled={isSaving}>
+                {isSaving ? "Saving…" : "Save Changes"}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
+
+      {bundle.imageUrl ? (
+        <img
+          src={`${import.meta.env.VITE_R2_PUBLIC_URL}/${bundle.imageUrl}`}
+          alt={bundle.name}
+          width={320}
+          height={240}
+          loading="lazy"
+          decoding="async"
+          className="rounded-lg object-contain shrink-0 w-[320px] h-60"
+        />
+      ) : (
+        <div className="w-[320px] h-60 rounded-lg bg-muted shrink-0 flex items-center justify-center">
+          <span className="text-sm text-muted-foreground">No image</span>
+        </div>
+      )}
     </div>
   );
 }
