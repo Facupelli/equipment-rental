@@ -26,6 +26,7 @@ import { Route as AuthedDashboardSettingsIndexRouteImport } from './routes/_auth
 import { Route as AuthedDashboardScheduleIndexRouteImport } from './routes/_authed/dashboard/schedule/index'
 import { Route as AuthedDashboardOwnersIndexRouteImport } from './routes/_authed/dashboard/owners/index'
 import { Route as AuthedDashboardLocationsIndexRouteImport } from './routes/_authed/dashboard/locations/index'
+import { Route as AuthedDashboardOrdersOrderIdRouteImport } from './routes/_authed/dashboard/orders/$orderId'
 import { Route as AuthedDashboardInventoryAssetsIndexRouteImport } from './routes/_authed/dashboard/inventory/assets/index'
 import { Route as AuthedDashboardCatalogProductsIndexRouteImport } from './routes/_authed/dashboard/catalog/products/index'
 import { Route as AuthedDashboardCatalogCategoriesIndexRouteImport } from './routes/_authed/dashboard/catalog/categories/index'
@@ -122,6 +123,12 @@ const AuthedDashboardLocationsIndexRoute =
     path: '/locations/',
     getParentRoute: () => AuthedDashboardRouteRoute,
   } as any)
+const AuthedDashboardOrdersOrderIdRoute =
+  AuthedDashboardOrdersOrderIdRouteImport.update({
+    id: '/orders/$orderId',
+    path: '/orders/$orderId',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
 const AuthedDashboardInventoryAssetsIndexRoute =
   AuthedDashboardInventoryAssetsIndexRouteImport.update({
     id: '/inventory/assets/',
@@ -183,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof AuthedDashboardIndexRoute
   '/cart/': typeof CustomerCartIndexRoute
   '/rental/': typeof CustomerRentalIndexRoute
+  '/dashboard/orders/$orderId': typeof AuthedDashboardOrdersOrderIdRoute
   '/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
   '/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
   '/dashboard/schedule/': typeof AuthedDashboardScheduleIndexRoute
@@ -207,6 +215,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthedDashboardIndexRoute
   '/cart': typeof CustomerCartIndexRoute
   '/rental': typeof CustomerRentalIndexRoute
+  '/dashboard/orders/$orderId': typeof AuthedDashboardOrdersOrderIdRoute
   '/dashboard/locations': typeof AuthedDashboardLocationsIndexRoute
   '/dashboard/owners': typeof AuthedDashboardOwnersIndexRoute
   '/dashboard/schedule': typeof AuthedDashboardScheduleIndexRoute
@@ -235,6 +244,7 @@ export interface FileRoutesById {
   '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
   '/_customer/cart/': typeof CustomerCartIndexRoute
   '/_customer/rental/': typeof CustomerRentalIndexRoute
+  '/_authed/dashboard/orders/$orderId': typeof AuthedDashboardOrdersOrderIdRoute
   '/_authed/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
   '/_authed/dashboard/owners/': typeof AuthedDashboardOwnersIndexRoute
   '/_authed/dashboard/schedule/': typeof AuthedDashboardScheduleIndexRoute
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/cart/'
     | '/rental/'
+    | '/dashboard/orders/$orderId'
     | '/dashboard/locations/'
     | '/dashboard/owners/'
     | '/dashboard/schedule/'
@@ -286,6 +297,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/cart'
     | '/rental'
+    | '/dashboard/orders/$orderId'
     | '/dashboard/locations'
     | '/dashboard/owners'
     | '/dashboard/schedule'
@@ -313,6 +325,7 @@ export interface FileRouteTypes {
     | '/_authed/dashboard/'
     | '/_customer/cart/'
     | '/_customer/rental/'
+    | '/_authed/dashboard/orders/$orderId'
     | '/_authed/dashboard/locations/'
     | '/_authed/dashboard/owners/'
     | '/_authed/dashboard/schedule/'
@@ -460,6 +473,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardLocationsIndexRouteImport
       parentRoute: typeof AuthedDashboardRouteRoute
     }
+    '/_authed/dashboard/orders/$orderId': {
+      id: '/_authed/dashboard/orders/$orderId'
+      path: '/orders/$orderId'
+      fullPath: '/dashboard/orders/$orderId'
+      preLoaderRoute: typeof AuthedDashboardOrdersOrderIdRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
     '/_authed/dashboard/inventory/assets/': {
       id: '/_authed/dashboard/inventory/assets/'
       path: '/inventory/assets'
@@ -521,6 +541,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthedDashboardRouteRouteChildren {
   AuthedDashboardIndexRoute: typeof AuthedDashboardIndexRoute
+  AuthedDashboardOrdersOrderIdRoute: typeof AuthedDashboardOrdersOrderIdRoute
   AuthedDashboardLocationsIndexRoute: typeof AuthedDashboardLocationsIndexRoute
   AuthedDashboardOwnersIndexRoute: typeof AuthedDashboardOwnersIndexRoute
   AuthedDashboardScheduleIndexRoute: typeof AuthedDashboardScheduleIndexRoute
@@ -537,6 +558,7 @@ interface AuthedDashboardRouteRouteChildren {
 
 const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
   AuthedDashboardIndexRoute: AuthedDashboardIndexRoute,
+  AuthedDashboardOrdersOrderIdRoute: AuthedDashboardOrdersOrderIdRoute,
   AuthedDashboardLocationsIndexRoute: AuthedDashboardLocationsIndexRoute,
   AuthedDashboardOwnersIndexRoute: AuthedDashboardOwnersIndexRoute,
   AuthedDashboardScheduleIndexRoute: AuthedDashboardScheduleIndexRoute,

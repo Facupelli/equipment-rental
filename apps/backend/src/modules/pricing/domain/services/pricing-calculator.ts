@@ -6,10 +6,19 @@ import { RuleApplicationContext } from '../types/pricing-rule.types';
 import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exeptions';
 import { PricingTier } from '../entities/pricing-tier.entity';
 
+export type AppliedDiscount = {
+  ruleId: string;
+  type: 'PERCENTAGE' | 'FLAT';
+  value: number;
+  discountAmount: Money;
+};
+
 export type PricingResult = {
+  basePrice: Money;
   finalPrice: Money;
   pricePerBillingUnit: Money;
   totalUnits: number;
+  appliedDiscounts: AppliedDiscount[];
 };
 
 export type PricingCalculatorInput = {
@@ -37,14 +46,16 @@ export class PricingCalculator {
   calculate(input: PricingCalculatorInput): PricingResult {
     const units = this.resolveUnits(input.period, input.billingUnitDurationMinutes);
     const tier = this.resolveTier(input.tiers, units, input.entityId);
-    const base = this.computeBasePrice(tier, units, input.currency);
+    const basePrice = this.computeBasePrice(tier, units, input.currency);
     const applicableRules = this.filterRules(input.rules, input.context);
-    const finalPrice = this.applyDiscounts(base, applicableRules, input.currency);
+    const { finalPrice, appliedDiscounts } = this.applyDiscounts(basePrice, applicableRules, input.currency);
 
     return {
+      basePrice,
       finalPrice,
       pricePerBillingUnit: Money.of(tier.pricePerUnit, input.currency),
       totalUnits: units,
+      appliedDiscounts,
     };
   }
 
@@ -113,23 +124,47 @@ export class PricingCalculator {
    * Applying percentage as a single combined pass avoids order-dependency
    * and matches how business owners reason about stacked discounts.
    */
-  private applyDiscounts(base: Money, rules: PricingRule[], currency: string): Money {
+  private applyDiscounts(
+    base: Money,
+    rules: PricingRule[],
+    currency: string,
+  ): { finalPrice: Money; appliedDiscounts: AppliedDiscount[] } {
     let result = base;
+    const appliedDiscounts: AppliedDiscount[] = [];
 
-    const totalPercentage = rules
-      .filter((r) => r.effect.type === 'PERCENTAGE')
-      .reduce((sum, r) => sum + (r.effect as { type: 'PERCENTAGE'; value: number }).value, 0);
+    const percentageRules = rules.filter((r) => r.effect.type === 'PERCENTAGE');
+    const flatRules = rules.filter((r) => r.effect.type === 'FLAT');
+
+    // ── Percentage discounts: additive, applied as a single combined pass ──
+    const totalPercentage = percentageRules.reduce(
+      (sum, r) => sum + (r.effect as { type: 'PERCENTAGE'; value: number }).value,
+      0,
+    );
 
     if (totalPercentage > 0) {
-      const discountAmount = base.multiply(new Decimal(totalPercentage).div(100));
+      // Distribute the combined discount proportionally back to each rule
+      // so each rule records its individual contribution.
+      for (const rule of percentageRules) {
+        const effect = rule.effect as { type: 'PERCENTAGE'; value: number };
+        const discountAmount = base.multiply(new Decimal(effect.value).div(100));
+        appliedDiscounts.push({ ruleId: rule.id, type: 'PERCENTAGE', value: effect.value, discountAmount });
+      }
+
+      const totalDiscountAmount = base.multiply(new Decimal(totalPercentage).div(100));
+      result = result.subtract(totalDiscountAmount);
+    }
+
+    // ── Flat discounts: applied sequentially ──────────────────────────────
+    for (const rule of flatRules) {
+      const effect = rule.effect as { type: 'FLAT'; value: number };
+      const discountAmount = Money.of(effect.value, currency);
+      appliedDiscounts.push({ ruleId: rule.id, type: 'FLAT', value: effect.value, discountAmount });
       result = result.subtract(discountAmount);
     }
 
-    for (const rule of rules.filter((r) => r.effect.type === 'FLAT')) {
-      const flatDiscount = Money.of((rule.effect as { type: 'FLAT'; value: number }).value, currency);
-      result = result.subtract(flatDiscount);
-    }
-
-    return result.clampAbove(Money.zero(currency));
+    return {
+      finalPrice: result.clampAbove(Money.zero(currency)),
+      appliedDiscounts,
+    };
   }
 }

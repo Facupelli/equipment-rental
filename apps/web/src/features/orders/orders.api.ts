@@ -2,10 +2,13 @@ import { apiFetch } from "@/lib/api";
 import { ProblemDetailsError } from "@/shared/errors";
 import {
   createOrderSchema,
+  getOrderByIdParamSchema,
   GetOrdersScheduleQuerySchema,
   type CreateOrderDto,
+  type GetOrderByIdParamDto,
   type GetOrdersScheduleQuery,
   type GetOrdersScheduleResponse,
+  type OrderDetailResponseDto,
   type ProblemDetails,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
@@ -22,6 +25,21 @@ export const getOrdersSchedule = createServerFn({ method: "GET" })
       {
         method: "GET",
         params: data,
+      },
+    );
+
+    return result;
+  });
+
+export const getOrderById = createServerFn({ method: "GET" })
+  .inputValidator((data: GetOrderByIdParamDto) =>
+    getOrderByIdParamSchema.parse(data),
+  )
+  .handler(async ({ data }): Promise<OrderDetailResponseDto> => {
+    const result = await apiFetch<OrderDetailResponseDto>(
+      `${apiUrl}/${data.orderId}`,
+      {
+        method: "GET",
       },
     );
 

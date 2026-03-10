@@ -61,7 +61,7 @@ function parseScheduleResponse(
   };
 }
 
-export function createOrdersScheduleQueryOptions<
+export function getOrdersScheduleQueryOptions<
   TData = ParsedGetOrdersScheduleResponse,
 >(
   params: GetOrdersScheduleQuery,
@@ -82,7 +82,7 @@ export function useUpcomingSchedule<TData = ParsedGetOrdersScheduleResponse>(
   options?: GetOrdersScheduleQueryOptions<TData>,
 ) {
   return useQuery({
-    ...createOrdersScheduleQueryOptions(params, options),
+    ...getOrdersScheduleQueryOptions(params, options),
   });
 }
 

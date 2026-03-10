@@ -6,19 +6,21 @@ import {
   type ParsedScheduleEvent,
 } from "@/features/orders/orders.queries";
 import type { OrderStatus } from "@repo/types";
-import { createFileRoute } from "@tanstack/react-router";
-import { nowUtc, toDateParam } from "@/lib/dates/parse";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { toDateParam } from "@/lib/dates/parse";
 import { addDays } from "@/lib/dates/compute";
 import { Badge } from "@/components/ui/badge";
 import { formatDailyRange } from "@/lib/dates/format";
+import dayjs from "@/lib/dates/dayjs";
 
 export const Route = createFileRoute("/_authed/dashboard/schedule/")({
   component: OrdersPage,
 });
 
 function OrdersPage() {
-  const now = nowUtc();
-  const from = toDateParam(now);
+  // TODO: add local (location) timezone to all "now" dates
+  const now = dayjs();
+  const from = dayjs().format("YYYY-MM-DD");
   const to = toDateParam(addDays(now, 7));
 
   const { data, isPending, error } = useUpcomingSchedule({
@@ -26,6 +28,8 @@ function OrdersPage() {
     from,
     to,
   });
+
+  console.log({ data });
 
   if (isPending) {
     return <div>Loading...</div>;
@@ -256,11 +260,15 @@ function EmptyState({ message }: { message: string }) {
 // -----------------------------------------------------------------------------
 
 function formatDateHeading(date: ParsedScheduleEvent["eventDate"]): string {
-  const today = nowUtc();
+  const today = dayjs();
   const label = date.utc().format("MMM D");
 
-  if (date.isSame(today, "day")) return "Today, ${label}";
-  if (date.isSame(today.add(1, "day"), "day")) return "Tomorrow, ${label}";
+  if (date.isSame(today, "day")) {
+    return `Today, ${label}`;
+  }
+  if (date.isSame(today.add(1, "day"), "day")) {
+    return `Tomorrow, ${label}`;
+  }
   return `${date.utc().format(`ddd`)}, ${label}`;
 }
 
@@ -335,24 +343,30 @@ function ScheduleEventRow({ event }: { event: ParsedScheduleEvent }) {
   const period = formatDailyRange(order.periodStart, order.periodEnd);
 
   return (
-    <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-muted/70 hover:bg-muted/90 transition-colors">
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="text-sm font-medium text-foreground truncate">
-          {customerName}
-        </span>
-        <span className="text-xs text-muted-foreground">{period}</span>
-      </div>
+    <Link
+      to="/dashboard/orders/$orderId"
+      params={{ orderId: order.id }}
+      preload={false}
+    >
+      <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-muted/70 hover:bg-muted/90 transition-colors">
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <span className="text-sm font-medium text-foreground truncate">
+            {customerName}
+          </span>
+          <span className="text-xs text-muted-foreground">{period}</span>
+        </div>
 
-      <Badge
-        variant={eventType === "PICKUP" ? "default" : "secondary"}
-        className={
-          eventType === "PICKUP"
-            ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 border-0"
-            : "bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-0"
-        }
-      >
-        {eventType === "PICKUP" ? "Pick-up" : "Return"}
-      </Badge>
-    </div>
+        <Badge
+          variant={eventType === "PICKUP" ? "default" : "secondary"}
+          className={
+            eventType === "PICKUP"
+              ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 border-0"
+              : "bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-0"
+          }
+        >
+          {eventType === "PICKUP" ? "Pick-up" : "Return"}
+        </Badge>
+      </div>
+    </Link>
   );
 }

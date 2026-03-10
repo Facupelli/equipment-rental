@@ -1,8 +1,10 @@
+import { JsonValue } from '@prisma/client/runtime/client';
 import { OrderStatus, OrderItemType } from '@repo/types';
 import Decimal from 'decimal.js';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
+import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.vo';
 
 // ── Prisma row shapes (from include queries) ──────────────────────────────────
 
@@ -27,7 +29,7 @@ type OrderItemRow = {
   id: string;
   orderId: string;
   type: string;
-  priceSnapshot: Decimal;
+  priceSnapshot: JsonValue;
   productTypeId: string | null;
   bundleId: string | null;
   bundleSnapshot: BundleSnapshotRow | null;
@@ -72,7 +74,7 @@ export class OrderMapper {
         id: itemRow.id,
         orderId: itemRow.orderId,
         type: itemRow.type as OrderItemType,
-        priceSnapshot: itemRow.priceSnapshot,
+        priceSnapshot: PriceSnapshot.fromJSON(itemRow.priceSnapshot),
         productTypeId: itemRow.productTypeId,
         bundleId: itemRow.bundleId,
         bundleSnapshot: snapshot,
@@ -109,7 +111,7 @@ export class OrderMapper {
         id: item.id,
         orderId: item.orderId,
         type: item.type,
-        priceSnapshot: item.priceSnapshot,
+        priceSnapshot: item.priceSnapshot.toJSON(),
         productTypeId: item.productTypeId,
         bundleId: item.bundleId,
       });

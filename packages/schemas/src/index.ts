@@ -10,6 +10,7 @@ export * from "./inventory/asset.schema";
 export * from "./inventory/asset-response.schema";
 export * from "./order/order.schema";
 export * from "./order/get-orders-schedule-response.schema";
+export * from "./order/get-order-by-id-response.schema";
 export * from "./pricing/pricing-tier.schema";
 export * from "./tenant/update-config.schema";
 export * from "./tenant/location/location.schema";

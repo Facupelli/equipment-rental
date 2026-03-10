@@ -15,6 +15,7 @@ import { TenantContextService } from 'src/modules/tenant/application/tenant-cont
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { AssetAssignment } from 'src/modules/inventory/domain/entities/asset-assignment.entity';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { toPriceSnapshot } from 'src/modules/order/infrastructure/persistence/mappers/price-snapshot.mapper';
 
 type PendingAssignment = {
   assignment: AssetAssignment;
@@ -235,7 +236,7 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     const orderItem = OrderItem.create({
       orderId: order.id,
       type: OrderItemType.PRODUCT,
-      priceSnapshot: price.finalPrice.toDecimal(),
+      priceSnapshot: toPriceSnapshot(price, command.currency),
       productTypeId: itemCommand.productTypeId,
     });
 
@@ -309,7 +310,7 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     const orderItem = OrderItem.create({
       orderId: order.id,
       type: OrderItemType.BUNDLE,
-      priceSnapshot: price.finalPrice.toDecimal(),
+      priceSnapshot: toPriceSnapshot(price, command.currency),
       bundleId: itemCommand.bundleId,
     });
 

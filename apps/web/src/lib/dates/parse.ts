@@ -28,6 +28,21 @@ export function toDateParam(date: Dayjs): string {
 }
 
 /**
+ * Parse a UTC ISO timestamp from the DB or API.
+ * Use for: created_at, paid_at, cancelled_at,
+ *          and tstzrange bounds of HOURLY rentals.
+ */
+export function parseTimestamp(
+  value: string | null | undefined | Date,
+): Dayjs | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = dayjs.utc(value);
+  return parsed.isValid() ? parsed : null;
+}
+
+/**
  * Parse a tstzrange bound that represents a DAILY rental.
  * The time component is ignored — only the date matters.
  * Stored as UTC midnight; we read back the date portion only.

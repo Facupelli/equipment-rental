@@ -1,12 +1,12 @@
 import { randomUUID } from 'crypto';
 import { BundleSnapshot } from './bundle-snapshot.entity';
 import { OrderItemType } from '@repo/types';
-import Decimal from 'decimal.js';
+import { PriceSnapshot } from '../value-objects/price-snapshot.vo';
 
 export interface CreateOrderItemProps {
   orderId: string;
   type: OrderItemType;
-  priceSnapshot: Decimal;
+  priceSnapshot: PriceSnapshot;
   productTypeId?: string;
   bundleId?: string;
   bundleSnapshot?: BundleSnapshot;
@@ -16,7 +16,7 @@ export interface ReconstituteOrderItemProps {
   id: string;
   orderId: string;
   type: OrderItemType;
-  priceSnapshot: Decimal;
+  priceSnapshot: PriceSnapshot;
   productTypeId: string | null;
   bundleId: string | null;
   bundleSnapshot: BundleSnapshot | null;
@@ -27,7 +27,7 @@ export class OrderItem {
     public readonly id: string,
     public readonly orderId: string,
     public readonly type: OrderItemType,
-    public readonly priceSnapshot: Decimal,
+    public readonly priceSnapshot: PriceSnapshot,
     public readonly productTypeId: string | null,
     public readonly bundleId: string | null,
     public readonly bundleSnapshot: BundleSnapshot | null,
