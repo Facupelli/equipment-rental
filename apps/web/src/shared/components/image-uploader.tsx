@@ -1,0 +1,49 @@
+import type { useUploadFiles } from "@better-upload/client";
+import { Button } from "@/components/ui/button";
+import { UploadDropzone } from "@/components/ui/upload-dropzone";
+
+type ImageUploadFieldProps = {
+  uploader: ReturnType<typeof useUploadFiles>;
+  value: File | null;
+  onChange: (file: File | null) => void;
+  id?: string;
+};
+
+export function ImageUploadField({
+  uploader,
+  value,
+  onChange,
+  id,
+}: ImageUploadFieldProps) {
+  return (
+    <div>
+      {value ? (
+        <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+          <span className="truncate text-muted-foreground">{value.name}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onChange(null);
+              uploader.reset();
+            }}
+          >
+            Remove
+          </Button>
+        </div>
+      ) : (
+        <UploadDropzone
+          id={id}
+          control={uploader.control}
+          accept="image/*"
+          description={{ fileTypes: "JPEG, PNG, GIF", maxFileSize: "5MB" }}
+          uploadOverride={(files) => {
+            const file = files[0];
+            if (file) onChange(file);
+          }}
+        />
+      )}
+    </div>
+  );
+}

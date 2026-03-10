@@ -17,9 +17,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoPrismaRouteImport } from './routes/demo/prisma'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
+import { Route as ApiCustomerUploadRouteImport } from './routes/api/customer-upload'
 import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashboard/route'
 import { Route as CustomerRentalIndexRouteImport } from './routes/_customer/rental/index'
 import { Route as CustomerOrderConfirmationIndexRouteImport } from './routes/_customer/order-confirmation/index'
+import { Route as CustomerOnboardIndexRouteImport } from './routes/_customer/onboard/index'
 import { Route as CustomerCartIndexRouteImport } from './routes/_customer/cart/index'
 import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashboard/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
@@ -76,6 +78,11 @@ const ApiUploadRoute = ApiUploadRouteImport.update({
   path: '/api/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCustomerUploadRoute = ApiCustomerUploadRouteImport.update({
+  id: '/api/customer-upload',
+  path: '/api/customer-upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedDashboardRouteRoute = AuthedDashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -92,6 +99,11 @@ const CustomerOrderConfirmationIndexRoute =
     path: '/order-confirmation/',
     getParentRoute: () => CustomerRoute,
   } as any)
+const CustomerOnboardIndexRoute = CustomerOnboardIndexRouteImport.update({
+  id: '/onboard/',
+  path: '/onboard/',
+  getParentRoute: () => CustomerRoute,
+} as any)
 const CustomerCartIndexRoute = CustomerCartIndexRouteImport.update({
   id: '/cart/',
   path: '/cart/',
@@ -196,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/dashboard': typeof AuthedDashboardRouteRouteWithChildren
+  '/api/customer-upload': typeof ApiCustomerUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/demo/prisma': typeof DemoPrismaRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -203,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/': typeof AuthedDashboardIndexRoute
   '/cart/': typeof CustomerCartIndexRoute
+  '/onboard/': typeof CustomerOnboardIndexRoute
   '/order-confirmation/': typeof CustomerOrderConfirmationIndexRoute
   '/rental/': typeof CustomerRentalIndexRoute
   '/dashboard/orders/$orderId': typeof AuthedDashboardOrdersOrderIdRoute
@@ -223,6 +237,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/api/customer-upload': typeof ApiCustomerUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/demo/prisma': typeof DemoPrismaRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -230,6 +245,7 @@ export interface FileRoutesByTo {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard': typeof AuthedDashboardIndexRoute
   '/cart': typeof CustomerCartIndexRoute
+  '/onboard': typeof CustomerOnboardIndexRoute
   '/order-confirmation': typeof CustomerOrderConfirmationIndexRoute
   '/rental': typeof CustomerRentalIndexRoute
   '/dashboard/orders/$orderId': typeof AuthedDashboardOrdersOrderIdRoute
@@ -254,6 +270,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_authed/dashboard': typeof AuthedDashboardRouteRouteWithChildren
+  '/api/customer-upload': typeof ApiCustomerUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/demo/prisma': typeof DemoPrismaRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -261,6 +278,7 @@ export interface FileRoutesById {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
   '/_customer/cart/': typeof CustomerCartIndexRoute
+  '/_customer/onboard/': typeof CustomerOnboardIndexRoute
   '/_customer/order-confirmation/': typeof CustomerOrderConfirmationIndexRoute
   '/_customer/rental/': typeof CustomerRentalIndexRoute
   '/_authed/dashboard/orders/$orderId': typeof AuthedDashboardOrdersOrderIdRoute
@@ -284,6 +302,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/dashboard'
+    | '/api/customer-upload'
     | '/api/upload'
     | '/demo/prisma'
     | '/demo/tanstack-query'
@@ -291,6 +310,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/dashboard/'
     | '/cart/'
+    | '/onboard/'
     | '/order-confirmation/'
     | '/rental/'
     | '/dashboard/orders/$orderId'
@@ -311,6 +331,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/api/customer-upload'
     | '/api/upload'
     | '/demo/prisma'
     | '/demo/tanstack-query'
@@ -318,6 +339,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/dashboard'
     | '/cart'
+    | '/onboard'
     | '/order-confirmation'
     | '/rental'
     | '/dashboard/orders/$orderId'
@@ -341,6 +363,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/_authed/dashboard'
+    | '/api/customer-upload'
     | '/api/upload'
     | '/demo/prisma'
     | '/demo/tanstack-query'
@@ -348,6 +371,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/_authed/dashboard/'
     | '/_customer/cart/'
+    | '/_customer/onboard/'
     | '/_customer/order-confirmation/'
     | '/_customer/rental/'
     | '/_authed/dashboard/orders/$orderId'
@@ -371,6 +395,7 @@ export interface RootRouteChildren {
   CustomerRoute: typeof CustomerRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
+  ApiCustomerUploadRoute: typeof ApiCustomerUploadRoute
   ApiUploadRoute: typeof ApiUploadRoute
   DemoPrismaRoute: typeof DemoPrismaRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
@@ -436,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/customer-upload': {
+      id: '/api/customer-upload'
+      path: '/api/customer-upload'
+      fullPath: '/api/customer-upload'
+      preLoaderRoute: typeof ApiCustomerUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/dashboard': {
       id: '/_authed/dashboard'
       path: '/dashboard'
@@ -455,6 +487,13 @@ declare module '@tanstack/react-router' {
       path: '/order-confirmation'
       fullPath: '/order-confirmation/'
       preLoaderRoute: typeof CustomerOrderConfirmationIndexRouteImport
+      parentRoute: typeof CustomerRoute
+    }
+    '/_customer/onboard/': {
+      id: '/_customer/onboard/'
+      path: '/onboard'
+      fullPath: '/onboard/'
+      preLoaderRoute: typeof CustomerOnboardIndexRouteImport
       parentRoute: typeof CustomerRoute
     }
     '/_customer/cart/': {
@@ -636,12 +675,14 @@ const AuthedRouteWithChildren =
 
 interface CustomerRouteChildren {
   CustomerCartIndexRoute: typeof CustomerCartIndexRoute
+  CustomerOnboardIndexRoute: typeof CustomerOnboardIndexRoute
   CustomerOrderConfirmationIndexRoute: typeof CustomerOrderConfirmationIndexRoute
   CustomerRentalIndexRoute: typeof CustomerRentalIndexRoute
 }
 
 const CustomerRouteChildren: CustomerRouteChildren = {
   CustomerCartIndexRoute: CustomerCartIndexRoute,
+  CustomerOnboardIndexRoute: CustomerOnboardIndexRoute,
   CustomerOrderConfirmationIndexRoute: CustomerOrderConfirmationIndexRoute,
   CustomerRentalIndexRoute: CustomerRentalIndexRoute,
 }
@@ -656,6 +697,7 @@ const rootRouteChildren: RootRouteChildren = {
   CustomerRoute: CustomerRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
+  ApiCustomerUploadRoute: ApiCustomerUploadRoute,
   ApiUploadRoute: ApiUploadRoute,
   DemoPrismaRoute: DemoPrismaRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
