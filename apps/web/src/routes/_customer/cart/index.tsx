@@ -60,7 +60,14 @@ function CartPage() {
     isPriceError,
     unavailableIds,
     handleBook,
-  } = useCartOrder({ locationId, startDate, endDate });
+  } = useCartOrder({
+    location: {
+      id: locationId,
+      name: location?.name ?? "—",
+    },
+    startDate,
+    endDate,
+  });
 
   // Pre-join line items with cart item names before passing to the breakdown.
   // This keeps CartPagePriceBreakdown free of cart store knowledge.
@@ -271,9 +278,6 @@ function CartPageBundleComponent({ component }: CartPageBundleComponentProps) {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold uppercase tracking-wide text-black">
             {component.name}
-          </p>
-          <p className="mt-0.5 text-[11px] uppercase tracking-wider text-neutral-400">
-            {component.billingUnitLabel}
           </p>
         </div>
         <div className="shrink-0 text-right">

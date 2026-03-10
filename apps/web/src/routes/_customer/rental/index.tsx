@@ -91,7 +91,7 @@ function RentalPage() {
   const [localSearch, setLocalSearch] = useState(search.search ?? "");
   const debouncedSearch = useDebounce(localSearch, 300);
 
-  const { data: locations, isPending: isPendingLocations } = useLocations();
+  const { data: locations } = useLocations();
 
   function setUrlParam(patch: Partial<RentalPageSearch>) {
     navigate({ search: (prev) => ({ ...prev, ...patch }) });
@@ -155,32 +155,28 @@ function RentalPage() {
               </p>
             </div>
 
-            {isPendingLocations ? (
-              <Skeleton className="h-9 w-52" />
-            ) : (
-              <Select
-                value={search.locationId ?? "all"}
-                onValueChange={(value) =>
-                  handleLocationChange(value === "all" ? null : value)
-                }
-                items={locations?.map((location) => ({
-                  label: location.name,
-                  value: location.id,
-                }))}
-              >
-                <SelectTrigger className="w-52">
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
-                  {locations?.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>
-                      {location.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <Select
+              value={search.locationId ?? "all"}
+              onValueChange={(value) =>
+                handleLocationChange(value === "all" ? null : value)
+              }
+              items={locations?.map((location) => ({
+                label: location.name,
+                value: location.id,
+              }))}
+            >
+              <SelectTrigger className="w-52">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Locations</SelectItem>
+                {locations?.map((location) => (
+                  <SelectItem key={location.id} value={location.id}>
+                    {location.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex items-center gap-4">
@@ -622,6 +618,7 @@ function ProductCatalog({
       productTypeId: product.id,
       imageUrl: "",
       includedItems: product.includedItems,
+      assetCount: product.availableCount,
     });
   }
 

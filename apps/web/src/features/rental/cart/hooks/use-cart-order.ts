@@ -12,7 +12,10 @@ import type { CalculateCartPricesRequest } from "@repo/schemas";
 import { fromDate, toISOString } from "@/lib/dates/parse";
 
 type UseCartOrderParams = {
-  locationId: string;
+  location: {
+    id: string;
+    name: string;
+  };
   startDate: Date;
   endDate: Date;
 };
@@ -33,7 +36,7 @@ export type CartOrderPeriod = {
  * - Track unavailable item IDs on 422 errors
  */
 export function useCartOrder({
-  locationId,
+  location,
   startDate,
   endDate,
 }: UseCartOrderParams) {
@@ -70,7 +73,7 @@ export function useCartOrder({
 
   const pricePreviewRequest: CalculateCartPricesRequest = {
     currency: "USD",
-    locationId,
+    locationId: location.id,
     period: {
       start: toISOString(period.start),
       end: toISOString(period.end),
@@ -83,7 +86,7 @@ export function useCartOrder({
     isPending: isPriceLoading,
     isError: isPriceError,
   } = useCartPricePreview(pricePreviewRequest, {
-    enabled: Boolean(startDate && endDate && locationId),
+    enabled: Boolean(startDate && endDate && location.id),
   });
 
   const { mutateAsync: createOrder } = useCreateOrder();
@@ -92,8 +95,8 @@ export function useCartOrder({
     setUnavailableIds([]);
 
     try {
-      const order = await createOrder({
-        locationId,
+      const orderId = await createOrder({
+        locationId: location.id,
         customerId: undefined,
         periodStart: toISOString(period.start),
         periodEnd: toISOString(period.end),
@@ -104,8 +107,12 @@ export function useCartOrder({
       clearCart();
 
       navigate({
-        to: "/orders/$orderId/confirmation",
-        params: { orderId: order.id },
+        to: "/order-confirmation",
+        search: {
+          orderId: orderId,
+          pickupDate: period.start.format("YYYY-MM-DD"),
+          pickupLocation: location.name,
+        },
       });
     } catch (error) {
       if (

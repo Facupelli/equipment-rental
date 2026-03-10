@@ -18,6 +18,7 @@ import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-qu
 import { Route as DemoPrismaRouteImport } from './routes/demo/prisma'
 import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashboard/route'
 import { Route as CustomerRentalIndexRouteImport } from './routes/_customer/rental/index'
+import { Route as CustomerOrderConfirmationIndexRouteImport } from './routes/_customer/order-confirmation/index'
 import { Route as CustomerCartIndexRouteImport } from './routes/_customer/cart/index'
 import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashboard/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
@@ -79,6 +80,12 @@ const CustomerRentalIndexRoute = CustomerRentalIndexRouteImport.update({
   path: '/rental/',
   getParentRoute: () => CustomerRoute,
 } as any)
+const CustomerOrderConfirmationIndexRoute =
+  CustomerOrderConfirmationIndexRouteImport.update({
+    id: '/order-confirmation/',
+    path: '/order-confirmation/',
+    getParentRoute: () => CustomerRoute,
+  } as any)
 const CustomerCartIndexRoute = CustomerCartIndexRouteImport.update({
   id: '/cart/',
   path: '/cart/',
@@ -189,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard/': typeof AuthedDashboardIndexRoute
   '/cart/': typeof CustomerCartIndexRoute
+  '/order-confirmation/': typeof CustomerOrderConfirmationIndexRoute
   '/rental/': typeof CustomerRentalIndexRoute
   '/dashboard/orders/$orderId': typeof AuthedDashboardOrdersOrderIdRoute
   '/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
@@ -214,6 +222,7 @@ export interface FileRoutesByTo {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/dashboard': typeof AuthedDashboardIndexRoute
   '/cart': typeof CustomerCartIndexRoute
+  '/order-confirmation': typeof CustomerOrderConfirmationIndexRoute
   '/rental': typeof CustomerRentalIndexRoute
   '/dashboard/orders/$orderId': typeof AuthedDashboardOrdersOrderIdRoute
   '/dashboard/locations': typeof AuthedDashboardLocationsIndexRoute
@@ -243,6 +252,7 @@ export interface FileRoutesById {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
   '/_customer/cart/': typeof CustomerCartIndexRoute
+  '/_customer/order-confirmation/': typeof CustomerOrderConfirmationIndexRoute
   '/_customer/rental/': typeof CustomerRentalIndexRoute
   '/_authed/dashboard/orders/$orderId': typeof AuthedDashboardOrdersOrderIdRoute
   '/_authed/dashboard/locations/': typeof AuthedDashboardLocationsIndexRoute
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/dashboard/'
     | '/cart/'
+    | '/order-confirmation/'
     | '/rental/'
     | '/dashboard/orders/$orderId'
     | '/dashboard/locations/'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/dashboard'
     | '/cart'
+    | '/order-confirmation'
     | '/rental'
     | '/dashboard/orders/$orderId'
     | '/dashboard/locations'
@@ -324,6 +336,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/_authed/dashboard/'
     | '/_customer/cart/'
+    | '/_customer/order-confirmation/'
     | '/_customer/rental/'
     | '/_authed/dashboard/orders/$orderId'
     | '/_authed/dashboard/locations/'
@@ -415,6 +428,13 @@ declare module '@tanstack/react-router' {
       path: '/rental'
       fullPath: '/rental/'
       preLoaderRoute: typeof CustomerRentalIndexRouteImport
+      parentRoute: typeof CustomerRoute
+    }
+    '/_customer/order-confirmation/': {
+      id: '/_customer/order-confirmation/'
+      path: '/order-confirmation'
+      fullPath: '/order-confirmation/'
+      preLoaderRoute: typeof CustomerOrderConfirmationIndexRouteImport
       parentRoute: typeof CustomerRoute
     }
     '/_customer/cart/': {
@@ -596,11 +616,13 @@ const AuthedRouteWithChildren =
 
 interface CustomerRouteChildren {
   CustomerCartIndexRoute: typeof CustomerCartIndexRoute
+  CustomerOrderConfirmationIndexRoute: typeof CustomerOrderConfirmationIndexRoute
   CustomerRentalIndexRoute: typeof CustomerRentalIndexRoute
 }
 
 const CustomerRouteChildren: CustomerRouteChildren = {
   CustomerCartIndexRoute: CustomerCartIndexRoute,
+  CustomerOrderConfirmationIndexRoute: CustomerOrderConfirmationIndexRoute,
   CustomerRentalIndexRoute: CustomerRentalIndexRoute,
 }
 

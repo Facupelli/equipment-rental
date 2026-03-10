@@ -8,11 +8,19 @@ import {
   ArrowRight,
   Calendar,
   MapPin,
+  Minus,
   Package,
+  Plus,
   ShoppingBag,
+  Trash2,
   X,
 } from "lucide-react";
-import { useCartIsEmpty, useCartItemCount, useCartItems } from "../cart.hooks";
+import {
+  useCartActions,
+  useCartIsEmpty,
+  useCartItemCount,
+  useCartItems,
+} from "../cart.hooks";
 import type { CartItem } from "../cart.types";
 import { useRouter, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
@@ -164,6 +172,15 @@ function CartPopoverItemList() {
 
 function CartPopoverItem({ item }: { item: CartItem }) {
   const isBundle = item.type === "BUNDLE";
+  const { incrementQuantity, decrementQuantity, removeItem } = useCartActions();
+
+  const key =
+    item.type === "PRODUCT"
+      ? { type: "PRODUCT" as const, productTypeId: item.productTypeId }
+      : { type: "BUNDLE" as const, bundleId: item.bundleId };
+
+  const atStockLimit =
+    item.type === "PRODUCT" ? item.quantity >= item.assetCount : false;
 
   return (
     <div className="flex items-start justify-between gap-4 py-6">
@@ -198,9 +215,38 @@ function CartPopoverItem({ item }: { item: CartItem }) {
         )}
       </div>
 
-      <span className="shrink-0 text-sm font-bold text-black">
-        {item.quantity}
-      </span>
+      <div className="flex shrink-0 items-center gap-2">
+        {item.quantity === 1 ? (
+          <button
+            onClick={() => removeItem(key)}
+            className="flex size-6 items-center justify-center text-neutral-300 transition-colors hover:text-red-500"
+            aria-label="Remove item"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        ) : (
+          <button
+            onClick={() => decrementQuantity(key)}
+            className="flex size-6 items-center justify-center text-neutral-300 transition-colors hover:text-black"
+            aria-label="Decrease quantity"
+          >
+            <Minus className="size-4" />
+          </button>
+        )}
+
+        <span className="w-4 text-center text-sm font-bold text-black">
+          {item.quantity}
+        </span>
+
+        <button
+          onClick={() => incrementQuantity(key)}
+          disabled={atStockLimit}
+          className="flex size-6 items-center justify-center text-neutral-300 transition-colors hover:text-black disabled:cursor-not-allowed disabled:opacity-30"
+          aria-label="Increase quantity"
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -218,14 +264,17 @@ export function CartPopoverFooter({ onClose }: CartPopoverFooterProps) {
 
   function handleReviewOrder() {
     onClose();
-    router.navigate({
-      to: "/cart",
-      search: {
-        locationId,
-        startDate,
-        endDate,
-      },
-    });
+
+    if (locationId != null) {
+      router.navigate({
+        to: "/cart",
+        search: {
+          locationId,
+          startDate,
+          endDate,
+        },
+      });
+    }
   }
 
   return (

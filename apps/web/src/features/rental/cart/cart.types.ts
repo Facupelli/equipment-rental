@@ -25,6 +25,7 @@ export type CartProductItem = {
   quantity: number;
   pricePerUnit: number;
   billingUnitLabel: string;
+  assetCount: number;
   imageUrl: string | null;
   includedItems: CartIncludedItem[];
 };
