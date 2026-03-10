@@ -5,6 +5,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { PaginationState } from "@tanstack/react-table";
 import { useState } from "react";
 import { getAssetColumns } from "@/features/inventory/assets/components/aseets-columns";
+import { useLocationId } from "@/shared/contexts/location/location.hooks";
 
 export const Route = createFileRoute("/_authed/dashboard/inventory/assets/")({
   component: AssetsPage,
@@ -14,10 +15,13 @@ const DEFAULT_PAGINATION: PaginationState = { pageIndex: 0, pageSize: 20 };
 
 function AssetsPage() {
   const navigate = useNavigate();
+  const locationId = useLocationId();
 
   const [pagination, setPagination] =
     useState<PaginationState>(DEFAULT_PAGINATION);
-  const [filters, setFilters] = useState<GetAssetsQuery>({});
+  const [filters, setFilters] = useState<GetAssetsQuery>({
+    locationId,
+  });
 
   function handleFiltersChange(next: GetAssetsQuery) {
     setFilters(next);

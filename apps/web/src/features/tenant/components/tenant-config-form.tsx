@@ -44,7 +44,7 @@ export function TenantConfigForm() {
   return (
     <section className="space-y-4 max-w-3xl">
       <div>
-        <h2 className="text-xl font-bold text-white">General Configuration</h2>
+        <h2 className="text-xl font-bold">General Configuration</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Manage pricing rules, timezone, and catalog behavior for your tenant.
         </p>

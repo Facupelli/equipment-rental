@@ -57,8 +57,6 @@ export const productColumns: ColumnDef<ProductTypeResponse>[] = [
       const publishedAt = info.getValue();
       const retiredAt = info.row.original.retiredAt;
 
-      console.log({ original: info.row.original });
-
       if (!publishedAt && !retiredAt) {
         return (
           <Badge variant="outline" className="text-muted-foreground">
