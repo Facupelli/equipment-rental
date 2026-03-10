@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, Sun, CalendarDays, Grid2x2, CalendarClock } from "lucide-react";
 import type { BillingUnitListResponse } from "@repo/schemas";
 import { useSyncTenantBillingUnits } from "@/features/tenant/billing-unit/tenant-billing.queries";
+import { TenantConfigForm } from "@/features/tenant/components/tenant-config-form";
 
 export const Route = createFileRoute("/_authed/dashboard/settings/")({
   component: RouteComponent,
@@ -27,11 +28,19 @@ function RouteComponent() {
         </div>
       </div>
 
-      {isPending && <p className="text-sm text-muted-foreground">Loading...</p>}
+      <div>
+        <section>
+          {isPending && (
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          )}
 
-      {!isPending && !isError && (
-        <ActiveBillingUnitsForm billingUnits={billingUnits} />
-      )}
+          {!isPending && !isError && (
+            <ActiveBillingUnitsForm billingUnits={billingUnits} />
+          )}
+        </section>
+
+        <TenantConfigForm />
+      </div>
     </div>
   );
 }

@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_authed")({
     if (!user || !tenant) {
       throw Error("User or Tenant not found");
     }
+
     return { user, tenant };
   },
 });

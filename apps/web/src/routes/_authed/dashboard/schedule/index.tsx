@@ -6,7 +6,7 @@ import {
   type ParsedScheduleEvent,
 } from "@/features/orders/orders.queries";
 import type { OrderStatus } from "@repo/types";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { toDateParam } from "@/lib/dates/parse";
 import { addDays } from "@/lib/dates/compute";
 import { Badge } from "@/components/ui/badge";
@@ -17,10 +17,15 @@ export const Route = createFileRoute("/_authed/dashboard/schedule/")({
   component: OrdersPage,
 });
 
+const authedRoute = getRouteApi("/_authed");
+
 function OrdersPage() {
-  // TODO: add local (location) timezone to all "now" dates
-  const now = dayjs();
-  const from = dayjs().format("YYYY-MM-DD");
+  const {
+    tenant: { config },
+  } = authedRoute.useLoaderData();
+
+  const now = dayjs().tz(config.timezone);
+  const from = now.format("YYYY-MM-DD");
   const to = toDateParam(addDays(now, 7));
 
   const { data, isPending, error } = useUpcomingSchedule({
@@ -28,8 +33,6 @@ function OrdersPage() {
     from,
     to,
   });
-
-  console.log({ data });
 
   if (isPending) {
     return <div>Loading...</div>;
@@ -62,7 +65,7 @@ function OrdersPage() {
 
       <main className="space-y-10 overflow-y-auto p-6">
         <TodaySection pickups={pickups} returns={returns} />
-        <ScheduleTimeline events={data.events} />
+        <ScheduleTimeline events={data.events} timezone={config.timezone} />
       </main>
     </>
   );
@@ -259,8 +262,11 @@ function EmptyState({ message }: { message: string }) {
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 
-function formatDateHeading(date: ParsedScheduleEvent["eventDate"]): string {
-  const today = dayjs();
+function formatDateHeading(
+  date: ParsedScheduleEvent["eventDate"],
+  timezone: string,
+): string {
+  const today = dayjs().tz(timezone);
   const label = date.utc().format("MMM D");
 
   if (date.isSame(today, "day")) {
@@ -289,9 +295,10 @@ function groupEventsByDate(
 
 interface ScheduleTimelineProps {
   events: ParsedScheduleEvent[];
+  timezone: string;
 }
 
-function ScheduleTimeline({ events }: ScheduleTimelineProps) {
+function ScheduleTimeline({ events, timezone }: ScheduleTimelineProps) {
   if (events.length === 0) {
     return (
       <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
@@ -306,18 +313,24 @@ function ScheduleTimeline({ events }: ScheduleTimelineProps) {
     <div className="flex flex-col divide-y divide-border">
       {groups.map(([dateKey, groupEvents]) => (
         <div key={dateKey} className="py-4">
-          <DateGroup events={groupEvents} />
+          <DateGroup events={groupEvents} timezone={timezone} />
         </div>
       ))}
     </div>
   );
 }
 
-function DateGroup({ events }: { events: ParsedScheduleEvent[] }) {
+function DateGroup({
+  events,
+  timezone,
+}: {
+  events: ParsedScheduleEvent[];
+  timezone: string;
+}) {
   // Re-parse the key back to Dayjs only for the heading label.
   // The key is always "YYYY-MM-DD" — safe to use the first event's eventDate
   // since all events in the group share the same date.
-  const heading = formatDateHeading(events[0].eventDate);
+  const heading = formatDateHeading(events[0].eventDate, timezone);
 
   return (
     <div className="flex gap-6">

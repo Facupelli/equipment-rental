@@ -1,7 +1,13 @@
 import { apiFetch } from "@/lib/api";
 import { useAppSession } from "@/lib/session";
-import type { TenantResponse } from "@repo/schemas";
+import {
+  updateTenantConfigSchema,
+  type TenantResponse,
+  type UpdateTenantConfigDto,
+} from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
+
+const apiUrl = "/tenants";
 
 export const getCurrentTenant = createServerFn({ method: "GET" }).handler(
   async (): Promise<TenantResponse | null> => {
@@ -11,10 +17,23 @@ export const getCurrentTenant = createServerFn({ method: "GET" }).handler(
       return null;
     }
 
-    const result = await apiFetch<TenantResponse>("/tenants/me", {
+    const result = await apiFetch<TenantResponse>(`${apiUrl}/me`, {
       method: "GET",
     });
 
     return result;
   },
 );
+
+export const updateTenantConfig = createServerFn({ method: "POST" })
+  .inputValidator((data: UpdateTenantConfigDto) =>
+    updateTenantConfigSchema.parse(data),
+  )
+  .handler(async ({ data }): Promise<string> => {
+    const result = await apiFetch<string>(`${apiUrl}/config`, {
+      method: "PATCH",
+      body: data,
+    });
+
+    return result;
+  });

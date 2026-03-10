@@ -14,6 +14,7 @@ export const tenantPricingConfigSchema = z.object({
 export const tenantConfigSchema = z.object({
   pricing: tenantPricingConfigSchema,
   timezone: z.string(),
+  newArrivalsWindowDays: z.number().int().positive(),
 });
 
 const tenantBillingUnitResponseSchema = z.object({
