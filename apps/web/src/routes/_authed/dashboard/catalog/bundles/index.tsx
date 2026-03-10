@@ -93,9 +93,9 @@ function BundlesPage() {
     <div className="space-y-6 p-8">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Categories</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Bundles</h1>
           <p className="text-sm text-muted-foreground">
-            Manage categories for organizing your products.
+            Manage promotional bundles of products.
           </p>
         </div>
 

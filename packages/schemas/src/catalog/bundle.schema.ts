@@ -23,6 +23,8 @@ export const BundleListItemSchema = z.object({
   billingUnit: z.object({
     label: z.string(),
   }),
+  publishedAt: z.coerce.date().nullable(),
+  retiredAt: z.coerce.date().nullable(),
   // First pricing tier (lowest fromUnit). Null when no tiers exist yet.
   basePrice: z.number().nullable(),
   componentCount: z.number().int().nonnegative(),

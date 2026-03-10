@@ -19,21 +19,50 @@ export const bundleColumns = [
     ),
   }),
 
-  col.accessor("isActive", {
-    header: "Active Status",
-    cell: (info) =>
-      info.getValue() ? (
-        <Badge
-          variant="outline"
-          className="border-emerald-200 bg-emerald-50 text-emerald-700"
-        >
-          Active
-        </Badge>
-      ) : (
+  col.accessor("publishedAt", {
+    id: "status",
+    header: "Status",
+    cell: (info) => {
+      const publishedAt = info.getValue();
+      const retiredAt = info.row.original.retiredAt;
+
+      if (!publishedAt && !retiredAt) {
+        return (
+          <Badge variant="outline" className="text-muted-foreground">
+            Inactive
+          </Badge>
+        );
+      }
+
+      if (publishedAt && !retiredAt) {
+        return (
+          <Badge
+            variant="outline"
+            className="border-emerald-200 bg-emerald-50 text-emerald-700"
+          >
+            Active
+          </Badge>
+        );
+      }
+
+      if (publishedAt && retiredAt) {
+        return (
+          <Badge
+            variant="outline"
+            className="border-amber-200 bg-amber-50 text-amber-700"
+          >
+            Retired
+          </Badge>
+        );
+      }
+
+      // Fallback (retired but not published - edge case)
+      return (
         <Badge variant="outline" className="text-muted-foreground">
           Inactive
         </Badge>
-      ),
+      );
+    },
   }),
 
   col.accessor("billingUnit", {
