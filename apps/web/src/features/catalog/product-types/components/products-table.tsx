@@ -50,6 +50,8 @@ export function ProductsTable({
   const navigate = useNavigate();
   const { data: categories } = useCategories();
 
+  console.log({ products });
+
   const table = useReactTable({
     data: products,
     columns: productColumns,

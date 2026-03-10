@@ -2,10 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import type { ProductTypeResponse } from "@repo/schemas";
 import type { ColumnDef } from "@tanstack/react-table";
 
-// ---------------------------------------------------------------------------
-// Tracking type formatting
-// ---------------------------------------------------------------------------
-
 const TRACKING_MODE_LABELS: Record<string, string> = {
   SERIALIZED: "Serialized",
   POOLED: "Pooled",
@@ -22,10 +18,6 @@ export function formatTrackingType(value: string): string {
       .replace(/\b\w/g, (c) => c.toUpperCase())
   );
 }
-
-// ---------------------------------------------------------------------------
-// Column definitions
-// ---------------------------------------------------------------------------
 
 export const productColumns: ColumnDef<ProductTypeResponse>[] = [
   {
@@ -58,9 +50,55 @@ export const productColumns: ColumnDef<ProductTypeResponse>[] = [
     ),
   },
   {
-    id: "totalAssets",
-    // TODO: replace with real accessor once backend exposes this field
-    accessorFn: () => 0,
+    id: "status",
+    accessorKey: "publishedAt",
+    header: "Status",
+    cell: (info) => {
+      const publishedAt = info.getValue();
+      const retiredAt = info.row.original.retiredAt;
+
+      console.log({ original: info.row.original });
+
+      if (!publishedAt && !retiredAt) {
+        return (
+          <Badge variant="outline" className="text-muted-foreground">
+            Draft
+          </Badge>
+        );
+      }
+
+      if (publishedAt && !retiredAt) {
+        return (
+          <Badge
+            variant="outline"
+            className="border-emerald-200 bg-emerald-50 text-emerald-700"
+          >
+            Active
+          </Badge>
+        );
+      }
+
+      if (publishedAt && retiredAt) {
+        return (
+          <Badge
+            variant="outline"
+            className="border-amber-200 bg-amber-50 text-amber-700"
+          >
+            Retired
+          </Badge>
+        );
+      }
+
+      // Fallback (retired but not published - edge case)
+      return (
+        <Badge variant="outline" className="text-muted-foreground">
+          Inactive
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "assetCount",
     header: "Total Assets",
     cell: ({ getValue }) => (
       <span className="tabular-nums text-sm">{getValue<number>()}</span>

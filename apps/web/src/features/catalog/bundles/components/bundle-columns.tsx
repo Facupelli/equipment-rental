@@ -29,7 +29,7 @@ export const bundleColumns = [
       if (!publishedAt && !retiredAt) {
         return (
           <Badge variant="outline" className="text-muted-foreground">
-            Inactive
+            Draft
           </Badge>
         );
       }
