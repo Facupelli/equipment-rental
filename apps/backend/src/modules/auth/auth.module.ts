@@ -13,6 +13,7 @@ import { BcryptService } from './application/bcript.service';
 import { CustomerModule } from '../customer/customer.module';
 import { TokenRepository } from './infrastructure/repositories/token.repository';
 import { LocalCustomerStrategy } from './infrastructure/strategies/local-customer.strategy';
+import { RegisterCustomerCommandHandler } from './application/commands/register-customer/regsiter-customer.command-handler';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { LocalCustomerStrategy } from './infrastructure/strategies/local-custome
   providers: [
     // Application
     AuthService,
+    RegisterCustomerCommandHandler,
     BcryptService,
 
     // Infrastructure

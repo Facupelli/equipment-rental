@@ -18,30 +18,28 @@ const REFRESH_BUFFER_MS = 30 * 1000; // 30 seconds
 // All child server functions trust that beforeLoad already guaranteed a valid
 // session — they just read it directly via useAppSession() or apiFetch().
 
-export const ensureValidSession = createServerFn({ method: "GET" }).handler(
-  async () => {
+export const ensureValidSession = createServerFn({ method: "GET" })
+  .inputValidator((face: "admin" | "portal") => face)
+  .handler(async ({ data: face }) => {
     const session = await useAppSession();
     const { accessToken, refreshToken, accessTokenExpiresAt } = session.data;
 
+    const loginRoute = face === "admin" ? "/admin/login" : "/login";
+
     if (!accessToken || !refreshToken) {
-      throw redirect({ to: "/admin/login" });
+      throw redirect({ to: loginRoute });
     }
 
     const expiresAt = accessTokenExpiresAt ?? 0;
     const isExpiringSoon = expiresAt - Date.now() < REFRESH_BUFFER_MS;
 
     if (isExpiringSoon) {
-      console.log({ isExpiringSoon }, "REFRESH SESSION");
-      // refreshSession() updates the session in place.
-      // On unrecoverable failure it throws redirect({ to: '/login' }) itself.
-      await refreshSession();
+      await refreshSession(face); // refreshSession needs the same treatment
     }
 
-    // Re-read session to get the potentially refreshed token.
     const freshSession = await useAppSession();
 
     return {
       accessToken: freshSession.data.accessToken!,
     };
-  },
-);
+  });

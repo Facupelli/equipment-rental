@@ -9,15 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as CustomerRouteImport } from './routes/_customer'
+import { Route as PortalRouteRouteImport } from './routes/_portal/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiCustomerUploadRouteImport } from './routes/api/customer-upload'
+import { Route as PortalRegisterRouteImport } from './routes/_portal/register'
+import { Route as PortalLoginRouteImport } from './routes/_portal/login'
 import { Route as AdminDashboardRouteRouteImport } from './routes/_admin/dashboard/route'
-import { Route as CustomerRentalIndexRouteImport } from './routes/_customer/rental/index'
-import { Route as CustomerOrderConfirmationIndexRouteImport } from './routes/_customer/order-confirmation/index'
-import { Route as CustomerOnboardIndexRouteImport } from './routes/_customer/onboard/index'
-import { Route as CustomerCartIndexRouteImport } from './routes/_customer/cart/index'
+import { Route as PortalRentalIndexRouteImport } from './routes/_portal/rental/index'
+import { Route as PortalOrderConfirmationIndexRouteImport } from './routes/_portal/order-confirmation/index'
+import { Route as PortalOnboardIndexRouteImport } from './routes/_portal/onboard/index'
+import { Route as PortalCartIndexRouteImport } from './routes/_portal/cart/index'
 import { Route as AdminDashboardIndexRouteImport } from './routes/_admin/dashboard/index'
 import { Route as AdminAdminRegisterRouteImport } from './routes/_admin/admin/register'
 import { Route as AdminAdminLoginRouteImport } from './routes/_admin/admin/login'
@@ -35,8 +37,8 @@ import { Route as AdminDashboardCatalogProductsProductIdRouteImport } from './ro
 import { Route as AdminDashboardCatalogBundlesNewRouteImport } from './routes/_admin/dashboard/catalog/bundles/new'
 import { Route as AdminDashboardCatalogBundlesBundleIdRouteImport } from './routes/_admin/dashboard/catalog/bundles/$bundleId'
 
-const CustomerRoute = CustomerRouteImport.update({
-  id: '/_customer',
+const PortalRouteRoute = PortalRouteRouteImport.update({
+  id: '/_portal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -54,31 +56,41 @@ const ApiCustomerUploadRoute = ApiCustomerUploadRouteImport.update({
   path: '/api/customer-upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalRegisterRoute = PortalRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => PortalRouteRoute,
+} as any)
+const PortalLoginRoute = PortalLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => PortalRouteRoute,
+} as any)
 const AdminDashboardRouteRoute = AdminDashboardRouteRouteImport.update({
   id: '/_admin/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CustomerRentalIndexRoute = CustomerRentalIndexRouteImport.update({
+const PortalRentalIndexRoute = PortalRentalIndexRouteImport.update({
   id: '/rental/',
   path: '/rental/',
-  getParentRoute: () => CustomerRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const CustomerOrderConfirmationIndexRoute =
-  CustomerOrderConfirmationIndexRouteImport.update({
+const PortalOrderConfirmationIndexRoute =
+  PortalOrderConfirmationIndexRouteImport.update({
     id: '/order-confirmation/',
     path: '/order-confirmation/',
-    getParentRoute: () => CustomerRoute,
+    getParentRoute: () => PortalRouteRoute,
   } as any)
-const CustomerOnboardIndexRoute = CustomerOnboardIndexRouteImport.update({
+const PortalOnboardIndexRoute = PortalOnboardIndexRouteImport.update({
   id: '/onboard/',
   path: '/onboard/',
-  getParentRoute: () => CustomerRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const CustomerCartIndexRoute = CustomerCartIndexRouteImport.update({
+const PortalCartIndexRoute = PortalCartIndexRouteImport.update({
   id: '/cart/',
   path: '/cart/',
-  getParentRoute: () => CustomerRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
 const AdminDashboardIndexRoute = AdminDashboardIndexRouteImport.update({
   id: '/',
@@ -177,15 +189,17 @@ const AdminDashboardCatalogBundlesBundleIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof AdminDashboardRouteRouteWithChildren
+  '/login': typeof PortalLoginRoute
+  '/register': typeof PortalRegisterRoute
   '/api/customer-upload': typeof ApiCustomerUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/admin/login': typeof AdminAdminLoginRoute
   '/admin/register': typeof AdminAdminRegisterRoute
   '/dashboard/': typeof AdminDashboardIndexRoute
-  '/cart/': typeof CustomerCartIndexRoute
-  '/onboard/': typeof CustomerOnboardIndexRoute
-  '/order-confirmation/': typeof CustomerOrderConfirmationIndexRoute
-  '/rental/': typeof CustomerRentalIndexRoute
+  '/cart/': typeof PortalCartIndexRoute
+  '/onboard/': typeof PortalOnboardIndexRoute
+  '/order-confirmation/': typeof PortalOrderConfirmationIndexRoute
+  '/rental/': typeof PortalRentalIndexRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/owners/': typeof AdminDashboardOwnersIndexRoute
@@ -202,15 +216,17 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof PortalLoginRoute
+  '/register': typeof PortalRegisterRoute
   '/api/customer-upload': typeof ApiCustomerUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/admin/login': typeof AdminAdminLoginRoute
   '/admin/register': typeof AdminAdminRegisterRoute
   '/dashboard': typeof AdminDashboardIndexRoute
-  '/cart': typeof CustomerCartIndexRoute
-  '/onboard': typeof CustomerOnboardIndexRoute
-  '/order-confirmation': typeof CustomerOrderConfirmationIndexRoute
-  '/rental': typeof CustomerRentalIndexRoute
+  '/cart': typeof PortalCartIndexRoute
+  '/onboard': typeof PortalOnboardIndexRoute
+  '/order-confirmation': typeof PortalOrderConfirmationIndexRoute
+  '/rental': typeof PortalRentalIndexRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/locations': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/owners': typeof AdminDashboardOwnersIndexRoute
@@ -228,17 +244,19 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_customer': typeof CustomerRouteWithChildren
+  '/_portal': typeof PortalRouteRouteWithChildren
   '/_admin/dashboard': typeof AdminDashboardRouteRouteWithChildren
+  '/_portal/login': typeof PortalLoginRoute
+  '/_portal/register': typeof PortalRegisterRoute
   '/api/customer-upload': typeof ApiCustomerUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/_admin/admin/login': typeof AdminAdminLoginRoute
   '/_admin/admin/register': typeof AdminAdminRegisterRoute
   '/_admin/dashboard/': typeof AdminDashboardIndexRoute
-  '/_customer/cart/': typeof CustomerCartIndexRoute
-  '/_customer/onboard/': typeof CustomerOnboardIndexRoute
-  '/_customer/order-confirmation/': typeof CustomerOrderConfirmationIndexRoute
-  '/_customer/rental/': typeof CustomerRentalIndexRoute
+  '/_portal/cart/': typeof PortalCartIndexRoute
+  '/_portal/onboard/': typeof PortalOnboardIndexRoute
+  '/_portal/order-confirmation/': typeof PortalOrderConfirmationIndexRoute
+  '/_portal/rental/': typeof PortalRentalIndexRoute
   '/_admin/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/_admin/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/_admin/dashboard/owners/': typeof AdminDashboardOwnersIndexRoute
@@ -258,6 +276,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/login'
+    | '/register'
     | '/api/customer-upload'
     | '/api/upload'
     | '/admin/login'
@@ -283,6 +303,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
+    | '/register'
     | '/api/customer-upload'
     | '/api/upload'
     | '/admin/login'
@@ -308,17 +330,19 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/_customer'
+    | '/_portal'
     | '/_admin/dashboard'
+    | '/_portal/login'
+    | '/_portal/register'
     | '/api/customer-upload'
     | '/api/upload'
     | '/_admin/admin/login'
     | '/_admin/admin/register'
     | '/_admin/dashboard/'
-    | '/_customer/cart/'
-    | '/_customer/onboard/'
-    | '/_customer/order-confirmation/'
-    | '/_customer/rental/'
+    | '/_portal/cart/'
+    | '/_portal/onboard/'
+    | '/_portal/order-confirmation/'
+    | '/_portal/rental/'
     | '/_admin/dashboard/orders/$orderId'
     | '/_admin/dashboard/locations/'
     | '/_admin/dashboard/owners/'
@@ -336,7 +360,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CustomerRoute: typeof CustomerRouteWithChildren
+  PortalRouteRoute: typeof PortalRouteRouteWithChildren
   AdminDashboardRouteRoute: typeof AdminDashboardRouteRouteWithChildren
   ApiCustomerUploadRoute: typeof ApiCustomerUploadRoute
   ApiUploadRoute: typeof ApiUploadRoute
@@ -346,11 +370,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_customer': {
-      id: '/_customer'
+    '/_portal': {
+      id: '/_portal'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof CustomerRouteImport
+      preLoaderRoute: typeof PortalRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -374,6 +398,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCustomerUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_portal/register': {
+      id: '/_portal/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof PortalRegisterRouteImport
+      parentRoute: typeof PortalRouteRoute
+    }
+    '/_portal/login': {
+      id: '/_portal/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof PortalLoginRouteImport
+      parentRoute: typeof PortalRouteRoute
+    }
     '/_admin/dashboard': {
       id: '/_admin/dashboard'
       path: '/dashboard'
@@ -381,33 +419,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_customer/rental/': {
-      id: '/_customer/rental/'
+    '/_portal/rental/': {
+      id: '/_portal/rental/'
       path: '/rental'
       fullPath: '/rental/'
-      preLoaderRoute: typeof CustomerRentalIndexRouteImport
-      parentRoute: typeof CustomerRoute
+      preLoaderRoute: typeof PortalRentalIndexRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_customer/order-confirmation/': {
-      id: '/_customer/order-confirmation/'
+    '/_portal/order-confirmation/': {
+      id: '/_portal/order-confirmation/'
       path: '/order-confirmation'
       fullPath: '/order-confirmation/'
-      preLoaderRoute: typeof CustomerOrderConfirmationIndexRouteImport
-      parentRoute: typeof CustomerRoute
+      preLoaderRoute: typeof PortalOrderConfirmationIndexRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_customer/onboard/': {
-      id: '/_customer/onboard/'
+    '/_portal/onboard/': {
+      id: '/_portal/onboard/'
       path: '/onboard'
       fullPath: '/onboard/'
-      preLoaderRoute: typeof CustomerOnboardIndexRouteImport
-      parentRoute: typeof CustomerRoute
+      preLoaderRoute: typeof PortalOnboardIndexRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_customer/cart/': {
-      id: '/_customer/cart/'
+    '/_portal/cart/': {
+      id: '/_portal/cart/'
       path: '/cart'
       fullPath: '/cart/'
-      preLoaderRoute: typeof CustomerCartIndexRouteImport
-      parentRoute: typeof CustomerRoute
+      preLoaderRoute: typeof PortalCartIndexRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
     '/_admin/dashboard/': {
       id: '/_admin/dashboard/'
@@ -524,22 +562,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface CustomerRouteChildren {
-  CustomerCartIndexRoute: typeof CustomerCartIndexRoute
-  CustomerOnboardIndexRoute: typeof CustomerOnboardIndexRoute
-  CustomerOrderConfirmationIndexRoute: typeof CustomerOrderConfirmationIndexRoute
-  CustomerRentalIndexRoute: typeof CustomerRentalIndexRoute
+interface PortalRouteRouteChildren {
+  PortalLoginRoute: typeof PortalLoginRoute
+  PortalRegisterRoute: typeof PortalRegisterRoute
+  PortalCartIndexRoute: typeof PortalCartIndexRoute
+  PortalOnboardIndexRoute: typeof PortalOnboardIndexRoute
+  PortalOrderConfirmationIndexRoute: typeof PortalOrderConfirmationIndexRoute
+  PortalRentalIndexRoute: typeof PortalRentalIndexRoute
 }
 
-const CustomerRouteChildren: CustomerRouteChildren = {
-  CustomerCartIndexRoute: CustomerCartIndexRoute,
-  CustomerOnboardIndexRoute: CustomerOnboardIndexRoute,
-  CustomerOrderConfirmationIndexRoute: CustomerOrderConfirmationIndexRoute,
-  CustomerRentalIndexRoute: CustomerRentalIndexRoute,
+const PortalRouteRouteChildren: PortalRouteRouteChildren = {
+  PortalLoginRoute: PortalLoginRoute,
+  PortalRegisterRoute: PortalRegisterRoute,
+  PortalCartIndexRoute: PortalCartIndexRoute,
+  PortalOnboardIndexRoute: PortalOnboardIndexRoute,
+  PortalOrderConfirmationIndexRoute: PortalOrderConfirmationIndexRoute,
+  PortalRentalIndexRoute: PortalRentalIndexRoute,
 }
 
-const CustomerRouteWithChildren = CustomerRoute._addFileChildren(
-  CustomerRouteChildren,
+const PortalRouteRouteWithChildren = PortalRouteRoute._addFileChildren(
+  PortalRouteRouteChildren,
 )
 
 interface AdminDashboardRouteRouteChildren {
@@ -587,7 +629,7 @@ const AdminDashboardRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CustomerRoute: CustomerRouteWithChildren,
+  PortalRouteRoute: PortalRouteRouteWithChildren,
   AdminDashboardRouteRoute: AdminDashboardRouteRouteWithChildren,
   ApiCustomerUploadRoute: ApiCustomerUploadRoute,
   ApiUploadRoute: ApiUploadRoute,

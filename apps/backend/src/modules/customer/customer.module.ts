@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { CustomerService } from './customer.service';
 import { CustomerRepositoryPort } from './application/ports/customer.repository.port';
 import { CustomerController } from './infrastructure/controllers/customer.controller';
 import { CustomerRepository } from './infrastructure/repositories/customer.repository';
@@ -7,6 +6,8 @@ import { FindCustomerCredentialsByEmailQueryHandler } from './application/querie
 import { GetCustomersQueryHandler } from './application/queries/get-customers/get-customers.query-handler';
 import { SubmitCustomerProfileCommandHandler } from './application/commands/submit-customer-profile/submit-customer-profile.command-handler';
 import { ResubmitCustomerProfileCommandHandler } from './application/commands/resubmit-customer-profile/resubmit-customer-profile.command-handler';
+import { CustomerApplicationService } from './application/customer.application-service';
+import { CustomerPublicApi } from './customer.public-api';
 
 const commandHandlers = [SubmitCustomerProfileCommandHandler, ResubmitCustomerProfileCommandHandler];
 const queryHandlers = [FindCustomerCredentialsByEmailQueryHandler, GetCustomersQueryHandler];
@@ -18,10 +19,14 @@ const queryHandlers = [FindCustomerCredentialsByEmailQueryHandler, GetCustomersQ
       provide: CustomerRepositoryPort,
       useClass: CustomerRepository,
     },
+    {
+      provide: CustomerPublicApi,
+      useClass: CustomerApplicationService,
+    },
 
-    CustomerService,
     ...queryHandlers,
     ...commandHandlers,
   ],
+  exports: [CustomerPublicApi],
 })
 export class CustomerModule {}

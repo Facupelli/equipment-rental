@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, UseGuards, Request, HttpCode, HttpStatus, Body } from '@nestjs/common';
 import { AuthService } from '../../application/auth.service';
 import { Public } from '../is-public.decorator';
 import { LocalAuthGuard } from '../guards/local-auth.guard';
@@ -9,10 +9,16 @@ import { CustomerLocalUser } from '../strategies/local-customer.strategy';
 import { ReqUser } from '../strategies/jwt.strategy';
 import { User } from 'src/modules/users/domain/entities/user.entity';
 import { ActorType } from '@repo/types';
+import { CommandBus } from '@nestjs/cqrs';
+import { RegisterCustomerCommand } from '../../application/commands/register-customer/regsiter-customer.command';
+import { RegisterCustomerDto } from '../../application/dto/register-customer.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly authService: AuthService,
+  ) {}
 
   // ── User (back-office) ────────────────────────────────────────────────────
 
@@ -41,6 +47,25 @@ export class AuthController {
     const { accessToken, refreshToken } = await this.authService.login(req.user);
 
     return { access_token: accessToken, refresh_token: refreshToken };
+  }
+
+  @Public()
+  @Post('customer/register')
+  @HttpCode(HttpStatus.OK)
+  async registerCustomer(@Body() dto: RegisterCustomerDto) {
+    const customerId = await this.commandBus.execute(
+      new RegisterCustomerCommand(
+        dto.tenantId,
+        dto.email,
+        dto.password,
+        dto.firstName,
+        dto.lastName,
+        dto.isCompany,
+        dto.companyName,
+      ),
+    );
+
+    return customerId;
   }
 
   // ── Shared ────────────────────────────────────────────────────────────────

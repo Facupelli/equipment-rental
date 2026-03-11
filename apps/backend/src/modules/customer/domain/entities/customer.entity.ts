@@ -14,10 +14,8 @@ export interface CreateCustomerProps {
   passwordHash: string;
   firstName: string;
   lastName: string;
-  phone: string | null;
   isCompany: boolean | null;
   companyName: string | null;
-  taxId: string | null;
 }
 
 export interface ReconstituteCustomerProps {
@@ -27,10 +25,8 @@ export interface ReconstituteCustomerProps {
   passwordHash: string;
   firstName: string;
   lastName: string;
-  phone: string | null;
   isCompany: boolean;
   companyName: string | null;
-  taxId: string | null;
   isActive: boolean;
   deletedAt: Date | null;
   onboardingStatus: OnboardingStatus;
@@ -45,10 +41,8 @@ export class Customer {
     private readonly passwordHash: string,
     public readonly firstName: string,
     public readonly lastName: string,
-    public readonly phone: string | null,
     public readonly isCompany: boolean,
     public readonly companyName: string | null,
-    public readonly taxId: string | null,
     private isActive: boolean,
     private deletedAt: Date | null,
     private onboardingStatus: OnboardingStatus,
@@ -74,10 +68,8 @@ export class Customer {
       props.passwordHash,
       props.firstName.trim(),
       props.lastName.trim(),
-      props.phone?.trim() ?? null,
       props.isCompany ?? false,
       props.companyName?.trim() ?? null,
-      props.taxId?.trim() ?? null,
       true,
       null,
       OnboardingStatus.NOT_STARTED,
@@ -93,10 +85,8 @@ export class Customer {
       props.passwordHash,
       props.firstName,
       props.lastName,
-      props.phone,
       props.isCompany,
       props.companyName,
-      props.taxId,
       props.isActive,
       props.deletedAt,
       props.onboardingStatus,

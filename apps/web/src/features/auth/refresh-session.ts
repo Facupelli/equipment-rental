@@ -22,25 +22,29 @@ let inflightRefresh: Promise<boolean> | null = null;
 // On an unrecoverable failure (no refresh token, API rejects it), clears the
 // session and redirects the user to the login page.
 
-export async function refreshSession(): Promise<boolean> {
+export async function refreshSession(
+  face: "admin" | "portal",
+): Promise<boolean> {
   if (inflightRefresh) {
     return inflightRefresh;
   }
 
-  inflightRefresh = attemptRefresh().finally(() => {
+  inflightRefresh = attemptRefresh(face).finally(() => {
     inflightRefresh = null;
   });
 
   return inflightRefresh;
 }
 
-async function attemptRefresh(): Promise<boolean> {
+async function attemptRefresh(face: "admin" | "portal"): Promise<boolean> {
   const session = await useAppSession();
   const refreshToken = session.data.refreshToken;
 
   if (!refreshToken) {
     await session.clear();
-    throw redirect({ to: "/login" });
+    const loginRoute = face === "admin" ? "/admin/login" : "/login";
+
+    throw redirect({ to: loginRoute });
   }
 
   let response: Response;

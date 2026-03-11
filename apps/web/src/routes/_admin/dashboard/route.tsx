@@ -29,7 +29,9 @@ export const Route = createFileRoute("/_admin/dashboard")({
       throw redirect({ to: "/admin/login" });
     }
 
-    const { accessToken } = await ensureValidSession();
+    const { accessToken } = await ensureValidSession({
+      data: context.tenantContext.face,
+    });
     return { accessToken };
   },
   loader: async ({ context: { queryClient } }) => {

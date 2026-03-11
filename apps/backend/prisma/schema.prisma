@@ -93,10 +93,8 @@ model Customer {
   passwordHash String    @map("password_hash")
   firstName    String    @map("first_name")
   lastName     String    @map("last_name")
-  phone        String?
   isCompany    Boolean   @default(false) @map("is_company")
   companyName  String?   @map("company_name")
-  taxId        String?   @map("tax_id")
   isActive     Boolean   @default(true) @map("is_active")
   onboardingStatus OnboardingStatus @default(NOT_STARTED) @map("onboarding_status")
 

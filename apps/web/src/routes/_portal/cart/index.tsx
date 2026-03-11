@@ -37,7 +37,7 @@ const cartPageSearchSchema = z.object({
   locationId: z.string(),
 });
 
-export const Route = createFileRoute("/_customer/cart/")({
+export const Route = createFileRoute("/_portal/cart/")({
   validateSearch: cartPageSearchSchema,
   component: CartPage,
 });
