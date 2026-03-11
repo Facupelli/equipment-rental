@@ -19,7 +19,7 @@ import {
   toUpdateTenantConfigDto,
 } from "../schemas/tenant-config-form.schema";
 
-const authedRoute = getRouteApi("/_authed");
+const authedRoute = getRouteApi("/_admin/dashboard");
 
 export function TenantConfigForm() {
   const { tenant } = authedRoute.useLoaderData();

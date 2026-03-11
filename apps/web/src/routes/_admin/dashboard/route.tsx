@@ -20,10 +20,15 @@ import {
   getRouteApi,
   Link,
   Outlet,
+  redirect,
 } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_admin/dashboard")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ context }) => {
+    if (context.tenantContext.face !== "admin") {
+      throw redirect({ to: "/admin/login" });
+    }
+
     const { accessToken } = await ensureValidSession();
     return { accessToken };
   },

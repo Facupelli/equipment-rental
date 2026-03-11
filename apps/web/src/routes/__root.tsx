@@ -2,6 +2,7 @@ import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
+  notFound,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -13,12 +14,32 @@ import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import appCss from "../styles.css?url";
 
 import type { QueryClient } from "@tanstack/react-query";
+import { resolveTenantContext } from "@/features/tenant-context/resolve-tenant-context";
+import type { ResolvedTenantContext } from "@repo/schemas";
 
-export interface MyRouterContext {
+export interface RouterContext {
   queryClient: QueryClient;
+  tenantContext: ResolvedTenantContext;
 }
 
-export const Route = createRootRouteWithContext<MyRouterContext>()({
+export const Route = createRootRouteWithContext<RouterContext>()({
+  beforeLoad: async () => {
+    try {
+      const tenantContext = await resolveTenantContext();
+      return { tenantContext };
+    } catch (error) {
+      // NestJS returned 404 — unknown hostname
+      if (
+        error !== null &&
+        typeof error === "object" &&
+        "isNotFound" in error
+      ) {
+        throw notFound();
+      }
+      // Any other error (5xx, network failure) — let it bubble as 500
+      throw error;
+    }
+  },
   head: () => ({
     meta: [
       {

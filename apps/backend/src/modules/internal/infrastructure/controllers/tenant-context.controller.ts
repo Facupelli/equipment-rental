@@ -7,6 +7,7 @@ import { FindTenantBySlugQuery } from 'src/modules/tenant/application/queries/fi
 import { FindTenantByCustomDomainQuery } from 'src/modules/tenant/application/queries/find-tenant-by-custom-domain/find-tenant-by-custom-domain.query';
 import { ConfigService } from '@nestjs/config';
 import { Env } from 'src/config/env.schema';
+import { Public } from 'src/modules/auth/infrastructure/is-public.decorator';
 
 @Controller('internal')
 @UseGuards(InternalTokenGuard)
@@ -24,6 +25,7 @@ export class TenantContextController {
     this.adminHostname = `app.${rootDomain}`;
   }
 
+  @Public()
   @Get('tenant-context')
   async resolve(@Query('hostname') raw: string): Promise<ResolvedTenantContext> {
     const hostname = this.normalize(raw);
@@ -42,8 +44,6 @@ export class TenantContextController {
     // Path 3 — custom domain lookup
     return this.resolveByCustomDomain(hostname);
   }
-
-  // --- private helpers ---
 
   private normalize(hostname: string): string {
     return hostname.toLowerCase().trim().split(':')[0]; // strip port for local dev (e.g. localhost:3000)

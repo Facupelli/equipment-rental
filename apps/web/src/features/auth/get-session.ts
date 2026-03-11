@@ -8,7 +8,7 @@ const REFRESH_BUFFER_MS = 30 * 1000; // 30 seconds
 
 // ── ensureValidSession ────────────────────────────────────────────────────────
 // The single auth entry point for all protected routes.
-// Called once in beforeLoad on the _authed layout route.
+// Called once in beforeLoad on the _admin/dashboard layout route.
 //
 // Responsibilities:
 //   1. Verify a session exists
@@ -24,7 +24,7 @@ export const ensureValidSession = createServerFn({ method: "GET" }).handler(
     const { accessToken, refreshToken, accessTokenExpiresAt } = session.data;
 
     if (!accessToken || !refreshToken) {
-      throw redirect({ to: "/login" });
+      throw redirect({ to: "/admin/login" });
     }
 
     const expiresAt = accessTokenExpiresAt ?? 0;
