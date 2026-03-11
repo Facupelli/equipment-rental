@@ -26,6 +26,8 @@ import { SyncTenantBillingUnitsCommandHandler } from './application/commands/cre
 import { TenantPublicApi } from './tenant.public-api';
 import { TenantApplicationService } from './application/tenant.application-service';
 import { UpdateTenantConfigCommandHandler } from './application/commands/update-config/update-config.command-handler';
+import { FindTenantByCustomDomainQueryHandler } from './application/queries/find-tenant-by-custom-domain/find-tenant-by-custom-domain.query-handler';
+import { FindTenantBySlugQueryHandler } from './application/queries/find-tenant-by-slug/find-tenant-by-slug.query-handler';
 
 const commandHandlers = [
   CreateTenantUserCommandHandler,
@@ -40,6 +42,9 @@ const queryHandlers = [
   GetLocationsQueryHandler,
   GetOwnersQueryHandler,
   GetTenantBillingUnitsQueryHandler,
+  // internal
+  FindTenantByCustomDomainQueryHandler,
+  FindTenantBySlugQueryHandler,
 ];
 
 const repositories = [

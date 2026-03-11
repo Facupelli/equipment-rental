@@ -15,6 +15,7 @@ import { OrderModule } from './modules/order/order.module';
 import { CqrsModule } from '@nestjs/cqrs';
 import { BillingUnitModule } from './modules/billing-unit/billing-unit.module';
 import { PricingModule } from './modules/pricing/pricing.module';
+import { InternalModule } from './modules/internal/internal.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PricingModule } from './modules/pricing/pricing.module';
     AppConfigModule,
     DatabaseModule,
     CqrsModule.forRoot(),
+    InternalModule,
     TenantModule,
     AuthModule,
     UsersModule,
