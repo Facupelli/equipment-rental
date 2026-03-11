@@ -18,3 +18,46 @@ export class RefreshTokenNotFoundException extends Error {
     this.name = 'RefreshTokenNotFoundException';
   }
 }
+
+export class CustomerProfileAlreadyExistsException extends Error {
+  constructor() {
+    super('Customer profile already exists.');
+    this.name = 'CustomerProfileAlreadyExistsException';
+  }
+}
+
+export class CustomerProfileNotFoundException extends Error {
+  constructor() {
+    super('Customer profile not found.');
+    this.name = 'CustomerProfileNotFoundException';
+  }
+}
+
+export class CustomerNotFoundException extends Error {
+  constructor() {
+    super('Customer not found.');
+    this.name = 'CustomerNotFoundException';
+  }
+}
+
+// PROFILE EXCEPTIONS
+
+export class CannotReviewNonPendingProfileException extends Error {
+  constructor() {
+    super('Cannot review a profile that is not pending.');
+    this.name = 'CannotReviewNonPendingProfileException';
+  }
+}
+export class RejectionReasonRequiredException extends Error {
+  constructor() {
+    super('Rejection reason is required.');
+    this.name = 'RejectionReasonRequiredException';
+  }
+}
+
+export class CannotSubmitApprovedProfileException extends Error {
+  constructor() {
+    super('Cannot resubmit an approved profile.');
+    this.name = 'CannotSubmitApprovedProfileException';
+  }
+}

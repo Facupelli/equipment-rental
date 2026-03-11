@@ -73,10 +73,11 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  tenant        Tenant             @relation(fields: [tenantId], references: [id])
-  refreshTokens UserRefreshToken[]
-  userRoles UserRole[]
-
+  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  refreshTokens    UserRefreshToken[]
+  userRoles        UserRole[]
+  reviewedProfiles CustomerProfile[]
+  
   @@unique([tenantId, email])
   @@index([tenantId, isActive, deletedAt])
   @@map("users")
@@ -114,11 +115,13 @@ model Customer {
   companyName  String?   @map("company_name")
   taxId        String?   @map("tax_id")
   isActive     Boolean   @default(true) @map("is_active")
+  onboardingStatus OnboardingStatus @default(NOT_STARTED) @map("onboarding_status")
 
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
+  profile       CustomerProfile?
   tenant        Tenant                  @relation(fields: [tenantId], references: [id])
   refreshTokens CustomerRefreshToken[]
   orders        Order[]
@@ -127,6 +130,68 @@ model Customer {
   @@index([tenantId, isActive, deletedAt])
   @@index([tenantId, isCompany])
   @@map("customers")
+}
+
+enum OnboardingStatus {
+  NOT_STARTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProfileSubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model CustomerProfile {
+  id         String                 @id @default(uuid())
+  customerId String                 @unique @map("customer_id")
+  status     ProfileSubmissionStatus @default(PENDING)
+
+  // Personal
+  fullName             String    @map("full_name")
+  phone                String
+  birthDate            DateTime  @map("birth_date") @db.Date
+  documentNumber       String    @map("document_number")
+  identityDocumentPath String    @map("identity_document_path")
+
+  // Address
+  address     String
+  city        String
+  stateRegion String @map("state_region")
+  country     String
+
+  // Professional
+  occupation   String
+  company      String?
+  taxId        String?  @map("tax_id")
+  businessName String?  @map("business_name")
+
+  // Bank
+  bankName      String @map("bank_name")
+  accountNumber String @map("account_number")
+
+  // Reference contacts
+  contact1Name         String  @map("contact1_name")
+  contact1Relationship String  @map("contact1_relationship")
+  contact2Name         String  @map("contact2_name")
+  contact2Relationship String  @map("contact2_relationship")
+
+  // Review
+  rejectionReason String?   @map("rejection_reason")
+  reviewedAt      DateTime? @map("reviewed_at")
+  reviewedById    String?   @map("reviewed_by_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  customer   Customer @relation(fields: [customerId], references: [id])
+  reviewedBy User?    @relation(fields: [reviewedById], references: [id])
+
+  @@index([status])
+  @@map("customer_profiles")
 }
 
 model CustomerRefreshToken {

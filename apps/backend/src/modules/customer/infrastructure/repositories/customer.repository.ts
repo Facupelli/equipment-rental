@@ -9,20 +9,27 @@ export class CustomerRepository implements CustomerRepositoryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(id: string): Promise<Customer | null> {
-    const raw = await this.prisma.client.customer.findUnique({ where: { id } });
+    const raw = await this.prisma.client.customer.findUnique({
+      where: { id },
+      include: {
+        profile: true,
+      },
+    });
+
     if (!raw) {
       return null;
     }
+
     return CustomerMapper.toDomain(raw);
   }
 
   async save(customer: Customer): Promise<string> {
-    const data = CustomerMapper.toPersistence(customer);
     await this.prisma.client.customer.upsert({
       where: { id: customer.id },
-      create: data,
-      update: data,
+      create: CustomerMapper.toPersistence(customer),
+      update: CustomerMapper.toUpdatePersistence(customer),
     });
+
     return customer.id;
   }
 }

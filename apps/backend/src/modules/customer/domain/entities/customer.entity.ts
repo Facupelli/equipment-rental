@@ -1,5 +1,12 @@
 import { randomUUID } from 'crypto';
-import { InvalidCustomerNameException, CompanyNameRequiredException } from '../exceptions/customer.exceptions';
+import { CustomerProfile, CreateCustomerProfileProps } from './customer-profile.entity';
+import {
+  CompanyNameRequiredException,
+  CustomerProfileAlreadyExistsException,
+  CustomerProfileNotFoundException,
+  InvalidCustomerNameException,
+} from '../exceptions/customer.exceptions';
+import { OnboardingStatus } from '@repo/types';
 
 export interface CreateCustomerProps {
   tenantId: string;
@@ -26,6 +33,8 @@ export interface ReconstituteCustomerProps {
   taxId: string | null;
   isActive: boolean;
   deletedAt: Date | null;
+  onboardingStatus: OnboardingStatus;
+  profile: CustomerProfile | null;
 }
 
 export class Customer {
@@ -42,7 +51,11 @@ export class Customer {
     public readonly taxId: string | null,
     private isActive: boolean,
     private deletedAt: Date | null,
+    private onboardingStatus: OnboardingStatus,
+    private profile: CustomerProfile | null,
   ) {}
+
+  // --- Factories ---
 
   static create(props: CreateCustomerProps): Customer {
     if (!props.firstName || props.firstName.trim().length === 0) {
@@ -67,6 +80,8 @@ export class Customer {
       props.taxId?.trim() ?? null,
       true,
       null,
+      OnboardingStatus.NOT_STARTED,
+      null,
     );
   }
 
@@ -84,8 +99,12 @@ export class Customer {
       props.taxId,
       props.isActive,
       props.deletedAt,
+      props.onboardingStatus,
+      props.profile,
     );
   }
+
+  // --- Queries ---
 
   get active(): boolean {
     return this.isActive;
@@ -101,6 +120,48 @@ export class Customer {
 
   get currentPasswordHash(): string {
     return this.passwordHash;
+  }
+
+  get currentOnboardingStatus(): OnboardingStatus {
+    return this.onboardingStatus;
+  }
+
+  getProfile(): CustomerProfile | null {
+    return this.profile;
+  }
+
+  // --- Commands ---
+
+  submitProfile(props: CreateCustomerProfileProps): void {
+    if (this.profile !== null) {
+      throw new CustomerProfileAlreadyExistsException();
+    }
+    this.profile = CustomerProfile.create(props);
+    this.onboardingStatus = OnboardingStatus.PENDING;
+  }
+
+  resubmitProfile(props: CreateCustomerProfileProps): void {
+    if (this.profile === null) {
+      throw new CustomerProfileNotFoundException();
+    }
+    this.profile = CustomerProfile.create(props);
+    this.onboardingStatus = OnboardingStatus.PENDING;
+  }
+
+  approveProfile(reviewedById: string): void {
+    if (this.profile === null) {
+      throw new CustomerProfileNotFoundException();
+    }
+    this.profile.approve(reviewedById);
+    this.onboardingStatus = OnboardingStatus.APPROVED;
+  }
+
+  rejectProfile(reviewedById: string, reason: string): void {
+    if (this.profile === null) {
+      throw new CustomerProfileNotFoundException();
+    }
+    this.profile.reject(reviewedById, reason);
+    this.onboardingStatus = OnboardingStatus.REJECTED;
   }
 
   deactivate(): void {

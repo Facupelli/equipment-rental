@@ -1,7 +1,14 @@
-import { Customer as PrismaCustomer, Prisma } from 'src/generated/prisma/client';
-import { Customer } from '../../domain/entities/customer.entity';
+import {
+  Customer as PrismaCustomer,
+  CustomerProfile as PrismaCustomerProfile,
+  Prisma,
+} from 'src/generated/prisma/client';
+import { Customer, OnboardingStatus } from '../../domain/entities/customer.entity';
+import { CustomerProfileMapper } from './customer-profile.mapper';
 
-type PrismaCustomerWithRelations = PrismaCustomer;
+type PrismaCustomerWithRelations = PrismaCustomer & {
+  profile: PrismaCustomerProfile | null;
+};
 
 export class CustomerMapper {
   static toDomain(raw: PrismaCustomerWithRelations): Customer {
@@ -18,6 +25,8 @@ export class CustomerMapper {
       taxId: raw.taxId,
       isActive: raw.isActive,
       deletedAt: raw.deletedAt,
+      onboardingStatus: raw.onboardingStatus as OnboardingStatus,
+      profile: raw.profile ? CustomerProfileMapper.toDomain(raw.profile) : null,
     });
   }
 
@@ -35,6 +44,33 @@ export class CustomerMapper {
       taxId: entity.taxId,
       isActive: entity.active,
       deletedAt: entity.deletedOn,
+      onboardingStatus: entity.currentOnboardingStatus,
+    };
+  }
+
+  static toUpdatePersistence(entity: Customer): Prisma.CustomerUncheckedUpdateInput {
+    const profile = entity.getProfile();
+
+    return {
+      email: entity.email,
+      passwordHash: entity.currentPasswordHash,
+      firstName: entity.firstName,
+      lastName: entity.lastName,
+      phone: entity.phone,
+      isCompany: entity.isCompany,
+      companyName: entity.companyName,
+      taxId: entity.taxId,
+      isActive: entity.active,
+      deletedAt: entity.deletedOn,
+      onboardingStatus: entity.currentOnboardingStatus,
+      profile: profile
+        ? {
+            upsert: {
+              create: CustomerProfileMapper.toPersistence(profile),
+              update: CustomerProfileMapper.toPersistence(profile),
+            },
+          }
+        : undefined,
     };
   }
 }

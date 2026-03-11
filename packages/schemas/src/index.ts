@@ -6,6 +6,8 @@ export * from "./catalog/product-type/product-type.schema";
 export * from "./catalog/product-type/product-type-response.schema";
 export * from "./catalog/bundle.schema";
 export * from "./customer/customer.schema";
+export * from "./customer/customer-profile.schema";
+export * from "./customer/customer-response.schema";
 export * from "./inventory/asset.schema";
 export * from "./inventory/asset-response.schema";
 export * from "./order/order.schema";
