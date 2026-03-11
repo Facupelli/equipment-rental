@@ -50,12 +50,12 @@ function RegisterPage() {
   console.log(form.getAllErrors());
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
+    <div className="min-h-screen bg-neutral-100 flex flex-col">
       {/* ── Main content ── */}
       <main className="flex-1 flex flex-col items-center justify-center px-4">
         {/* Heading */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-white tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             Create an account
           </h1>
           <p className="mt-2 text-sm text-zinc-400">
@@ -64,7 +64,7 @@ function RegisterPage() {
         </div>
 
         {/* Card */}
-        <div className="w-full max-w-md rounded-xl bg-neutral-900 border border-white/5 p-8 shadow-2xl">
+        <div className="w-full max-w-md rounded-xl bg-neutral-800 border border-white/5 p-8 shadow-2xl">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -312,7 +312,7 @@ function RegisterPage() {
                 <span className="w-full border-t border-white/10" />
               </div>
               <div className="relative flex justify-center">
-                <span className="bg-neutral-900 px-3 text-[11px] uppercase tracking-widest text-zinc-600">
+                <span className="bg-neutral-800 px-3 text-[11px] uppercase tracking-widest text-zinc-600">
                   or join with
                 </span>
               </div>
@@ -331,11 +331,11 @@ function RegisterPage() {
         </div>
 
         {/* ── Sign in link ── */}
-        <p className="mt-6 text-sm text-zinc-500">
+        <p className="mt-6 text-sm text-neutral-500">
           Already have an account?{" "}
           <Link
             to="/login"
-            className="font-semibold text-white hover:text-zinc-300 transition-colors"
+            className="font-semibold hover:text-neutral-300 transition-colors"
           >
             Sign In
           </Link>

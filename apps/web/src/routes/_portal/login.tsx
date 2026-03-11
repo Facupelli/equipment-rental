@@ -49,14 +49,12 @@ function LoginPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
+    <div className="min-h-screen bg-neutral-100 flex flex-col">
       {/* ── Main content ── */}
       <main className="flex-1 flex flex-col items-center justify-center px-4">
         {/* Heading */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            Welcome back
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
         </div>
 
         {/* Card */}
@@ -214,11 +212,11 @@ function LoginPage() {
         </div>
 
         {/* ── Create account ── */}
-        <p className="mt-6 text-sm text-zinc-500">
+        <p className="mt-6 text-sm text-neutral-500">
           New to the platform?{" "}
           <Link
             to="/register"
-            className="font-semibold text-white hover:text-zinc-300 transition-colors"
+            className="font-semibold hover:text-neutral-300 transition-colors"
           >
             Create an account
           </Link>
