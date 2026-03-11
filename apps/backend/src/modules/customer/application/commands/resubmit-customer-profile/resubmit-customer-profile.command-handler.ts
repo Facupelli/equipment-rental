@@ -10,7 +10,7 @@ import {
 import { ConflictException } from '@nestjs/common';
 
 @CommandHandler(ResubmitCustomerProfileCommand)
-export class ResubmitCustomerProfileHandler implements ICommandHandler<ResubmitCustomerProfileCommand> {
+export class ResubmitCustomerProfileCommandHandler implements ICommandHandler<ResubmitCustomerProfileCommand> {
   constructor(private readonly customerRepo: CustomerRepositoryPort) {}
 
   async execute(

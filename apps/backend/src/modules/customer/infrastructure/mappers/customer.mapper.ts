@@ -3,8 +3,9 @@ import {
   CustomerProfile as PrismaCustomerProfile,
   Prisma,
 } from 'src/generated/prisma/client';
-import { Customer, OnboardingStatus } from '../../domain/entities/customer.entity';
+import { Customer } from '../../domain/entities/customer.entity';
 import { CustomerProfileMapper } from './customer-profile.mapper';
+import { OnboardingStatus } from '@repo/types';
 
 type PrismaCustomerWithRelations = PrismaCustomer & {
   profile: PrismaCustomerProfile | null;

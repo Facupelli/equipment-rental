@@ -74,29 +74,12 @@ model User {
   deletedAt    DateTime? @map("deleted_at")
 
   tenant           Tenant             @relation(fields: [tenantId], references: [id])
-  refreshTokens    UserRefreshToken[]
   userRoles        UserRole[]
   reviewedProfiles CustomerProfile[]
   
   @@unique([tenantId, email])
   @@index([tenantId, isActive, deletedAt])
   @@map("users")
-}
-
-model UserRefreshToken {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  tokenHash String   @map("token_hash")
-
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  revokedAt DateTime? @map("revoked_at")
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([tokenHash])
-  @@map("user_refresh_tokens")
 }
 
 // ---------------------------------------------------------------------------
@@ -123,7 +106,6 @@ model Customer {
 
   profile       CustomerProfile?
   tenant        Tenant                  @relation(fields: [tenantId], references: [id])
-  refreshTokens CustomerRefreshToken[]
   orders        Order[]
 
   @@unique([tenantId, email])
@@ -194,20 +176,25 @@ model CustomerProfile {
   @@map("customer_profiles")
 }
 
-model CustomerRefreshToken {
-  id         String   @id @default(uuid())
-  customerId String   @map("customer_id")
-  tokenHash  String   @map("token_hash")
+// JWT REFRESH TOKENS
 
-  expiresAt  DateTime @map("expires_at")
-  createdAt  DateTime @default(now()) @map("created_at")
-  revokedAt  DateTime? @map("revoked_at")
+enum ActorType {
+  USER
+  CUSTOMER
+}
 
-  customer Customer @relation(fields: [customerId], references: [id])
+model RefreshToken {
+  id        String    @id @default(uuid())
+  actorType ActorType @map("actor_type")
+  actorId   String    @map("actor_id")
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
 
-  @@index([customerId])
+  @@index([actorType, actorId])
   @@index([tokenHash])
-  @@map("customer_refresh_tokens")
+  @@map("refresh_tokens")
 }
 
 // ---------------------------------------------------------------------------

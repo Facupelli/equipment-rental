@@ -3,76 +3,62 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Env } from 'src/config/env.schema';
-import { PrismaService } from 'src/core/database/prisma.service';
+import { TokenRepository } from '../repositories/token.repository';
+import { ActorType } from '@repo/types';
 
-// Refresh token payload — signed with a different secret than the access token.
-// jti (JWT ID) is the DB row id, so we can locate and rotate the exact token.
 export interface RefreshTokenPayload {
-  id: string; // userId
+  id: string;
   email: string;
   tenantId: string;
-  jti: string; // RefreshToken.id in the DB
+  actorType: ActorType;
+  jti: string;
 }
 
-// What Passport attaches to req.user after refresh token validation.
 export interface RefreshTokenUser {
-  userId: string;
-  tokenId: string; // the DB row id (jti) — needed by the rotation transaction
+  actorId: string;
+  actorType: ActorType;
+  tokenId: string;
 }
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   constructor(
     configService: ConfigService<Env, true>,
-    private readonly prisma: PrismaService,
+    private readonly tokenRepository: TokenRepository,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.get('JWT_REFRESH_SECRET'),
-      // passReqToCallback is NOT needed here — we read the cookie via the
-      // extractor above, and the raw token is available in validate() via
-      // the decoded payload's jti. We fetch from DB using jti directly.
     });
   }
 
   async validate(payload: RefreshTokenPayload): Promise<RefreshTokenUser> {
-    const tokenRecord = await this.prisma.client.userRefreshToken.findUnique({
-      where: { id: payload.jti },
-    });
+    const tokenRecord = await this.tokenRepository.find(payload.jti, payload.actorType);
 
-    // Token row doesn't exist at all — invalid or already cleaned up.
     if (!tokenRecord) {
       throw new UnauthorizedException('Refresh token not found.');
     }
 
     // ── Reuse Detection ─────────────────────────────────────────────────────
-    // If this token was already revoked and someone is presenting it again,
-    // we have a potential theft scenario. Nuclear response: revoke ALL sessions
-    // for this user and force a full re-login.
+    // Revoked token being presented again signals a potential theft scenario.
+    // Nuclear response: revoke ALL sessions for this actor and force re-login.
     if (tokenRecord.revokedAt !== null) {
-      await this.prisma.client.userRefreshToken.updateMany({
-        where: { userId: payload.id },
-        data: { revokedAt: new Date() },
-      });
+      await this.tokenRepository.revokeAll(payload.id, payload.actorType);
       throw new UnauthorizedException('Refresh token reuse detected. All sessions invalidated.');
     }
 
     // ── Server-side Expiry Check ─────────────────────────────────────────────
-    // The JWT expiry is a first pass. We also check our own DB expiry as the
-    // authoritative source — this allows us to force-expire tokens server-side
-    // even if the JWT hasn't expired yet (e.g. forced logout, security incident).
+    // Authoritative expiry lives in the DB — allows force-expiring tokens
+    // server-side even before the JWT itself expires.
     if (tokenRecord.expiresAt < new Date()) {
-      await this.prisma.client.userRefreshToken.update({
-        where: { id: tokenRecord.id },
-        data: { revokedAt: new Date() },
-      });
+      await this.tokenRepository.revokeOne(tokenRecord.id);
       throw new UnauthorizedException('Refresh token expired.');
     }
 
-    // All checks passed. Attach minimal info to req.user for the controller.
     return {
-      userId: payload.id,
+      actorId: payload.id,
+      actorType: payload.actorType,
       tokenId: tokenRecord.id,
     };
   }

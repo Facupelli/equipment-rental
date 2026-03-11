@@ -4,11 +4,8 @@ import { SubmitCustomerProfileDto } from '../../application/dto/submit-customer-
 import { SubmitCustomerProfileCommand } from '../../application/commands/submit-customer-profile/submit-customer-profile.command';
 import { CustomerNotFoundException } from '../../domain/exceptions/customer.exceptions';
 import { ResubmitCustomerProfileCommand } from '../../application/commands/resubmit-customer-profile/resubmit-customer-profile.command';
-
-interface CurrentCustomerPayload {
-  id: string;
-  tenantId: string;
-}
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
 
 @Controller('customer-profile')
 export class CustomerProfileHttpController {
@@ -16,10 +13,7 @@ export class CustomerProfileHttpController {
 
   @Post()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async submit(
-    @CurrentCustomer() customer: CurrentCustomerPayload,
-    @Body() dto: SubmitCustomerProfileDto,
-  ): Promise<void> {
+  async submit(@CurrentUser() customer: ReqUser, @Body() dto: SubmitCustomerProfileDto): Promise<void> {
     const result = await this.commandBus.execute(
       new SubmitCustomerProfileCommand(
         customer.id,
@@ -55,10 +49,7 @@ export class CustomerProfileHttpController {
 
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async resubmit(
-    @CurrentCustomer() customer: CurrentCustomerPayload,
-    @Body() dto: SubmitCustomerProfileDto,
-  ): Promise<void> {
+  async resubmit(@CurrentUser() customer: ReqUser, @Body() dto: SubmitCustomerProfileDto): Promise<void> {
     const result = await this.commandBus.execute(
       new ResubmitCustomerProfileCommand(
         customer.id,

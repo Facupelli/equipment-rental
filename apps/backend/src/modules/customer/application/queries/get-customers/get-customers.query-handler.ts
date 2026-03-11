@@ -6,7 +6,7 @@ import { CustomerResponseDto, PaginatedDto } from '@repo/schemas';
 import { OnboardingStatus } from '@repo/types';
 
 @QueryHandler(GetCustomersQuery)
-export class GetCustomersHandler implements IQueryHandler<GetCustomersQuery> {
+export class GetCustomersQueryHandler implements IQueryHandler<GetCustomersQuery> {
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetCustomersQuery): Promise<PaginatedDto<CustomerResponseDto>> {

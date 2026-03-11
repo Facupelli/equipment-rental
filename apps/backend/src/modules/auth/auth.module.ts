@@ -10,10 +10,14 @@ import { LocalStrategy } from './infrastructure/strategies/local.strategy';
 import { AuthService } from './application/auth.service';
 import { RefreshTokenStrategy } from './infrastructure/strategies/jwt-refresh.strategy';
 import { BcryptService } from './application/bcript.service';
+import { CustomerModule } from '../customer/customer.module';
+import { TokenRepository } from './infrastructure/repositories/token.repository';
+import { LocalCustomerStrategy } from './infrastructure/strategies/local-customer.strategy';
 
 @Module({
   imports: [
     UsersModule,
+    CustomerModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -24,7 +28,20 @@ import { BcryptService } from './application/bcript.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, RefreshTokenStrategy, BcryptService],
+  providers: [
+    // Application
+    AuthService,
+    BcryptService,
+
+    // Infrastructure
+    TokenRepository,
+
+    // Strategies
+    LocalStrategy,
+    LocalCustomerStrategy,
+    JwtStrategy,
+    RefreshTokenStrategy,
+  ],
   exports: [AuthService, BcryptService],
 })
 export class AuthModule {}
