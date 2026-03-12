@@ -149,7 +149,7 @@ function TodaySchedulePage() {
       </div>
 
       {/* Body */}
-      <div className="grid flex-1 grid-cols-[1fr_320px] gap-6 overflow-hidden">
+      <div className="grid flex-1 grid-cols-[1fr_400px] gap-6 overflow-hidden">
         <ScheduleContent
           locationId={locationId}
           date={selectedDate}
@@ -615,7 +615,7 @@ function ScheduleSidebar({
   const pastModifier = (d: Date) => dateToLabel(d) < today;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col items-center gap-4">
       <div className="bg-card border-border rounded-lg border p-3">
         <Calendar
           mode="single"
