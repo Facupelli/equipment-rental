@@ -1,9 +1,11 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { z } from "zod";
-import dayjs from "dayjs";
+import { type Dayjs } from "dayjs";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useLocationId } from "@/shared/contexts/location/location.hooks";
 import { parseDailyBound, toDateString } from "@/lib/dates/parse";
@@ -12,23 +14,43 @@ import {
   useUpcomingSchedule,
   type ParsedScheduleEvent,
 } from "@/features/orders/orders.queries";
+import {
+  createOrderDetailQueryOptions,
+  type ParsedOrderDetailResponseDto,
+} from "@/features/orders/queries/get-order-by-id";
 import { formatDateShort } from "@/lib/dates/format";
 import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
 import { formatOrderNumber } from "@/features/orders/order.utils";
+import { OrderItemType } from "@repo/types";
+import {
+  CalendarDays,
+  X,
+  ArrowRight,
+  MapPin,
+  Clock,
+  User,
+  Mail,
+  Package,
+  Tag,
+} from "lucide-react";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useCallback } from "react";
+import dayjs from "@/lib/dates/dayjs";
 
 const searchSchema = z.object({
   date: z.iso.date().optional(),
+  orderId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_admin/dashboard/schedule/")({
   validateSearch: searchSchema,
-  component: OrdersPage,
+  component: TodaySchedulePage,
 });
 
 const authedRoute = getRouteApi("/_admin/dashboard");
 
 function useScheduleParams(timezone: string) {
-  const { date } = Route.useSearch();
+  const { date, orderId } = Route.useSearch();
   const navigate = Route.useNavigate();
 
   const today = dayjs().tz(timezone).format("YYYY-MM-DD");
@@ -40,10 +62,28 @@ function useScheduleParams(timezone: string) {
   const monthTo = d.endOf("month").format("YYYY-MM-DD");
 
   const setDate = (d: Date) => {
-    navigate({ search: { date: dayjs(d).format("YYYY-MM-DD") } });
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        date: dayjs(d).format("YYYY-MM-DD"),
+        orderId: undefined, // clear panel when changing date
+      }),
+    });
   };
 
-  return { selectedDate, isToday, monthFrom, monthTo, setDate };
+  const setOrderId = (id: string | undefined) => {
+    navigate({ search: (prev) => ({ ...prev, orderId: id }) });
+  };
+
+  return {
+    selectedDate,
+    isToday,
+    monthFrom,
+    monthTo,
+    selectedOrderId: orderId,
+    setDate,
+    setOrderId,
+  };
 }
 
 function labelToDate(label: string): Date {
@@ -51,13 +91,24 @@ function labelToDate(label: string): Date {
   return new Date(y, m - 1, d);
 }
 
-function OrdersPage() {
+function dateToLabel(d: Date): string {
+  return dayjs(d).format("YYYY-MM-DD");
+}
+
+function TodaySchedulePage() {
   const {
     tenant: { config },
   } = authedRoute.useLoaderData();
 
-  const { selectedDate, isToday, monthFrom, monthTo, setDate } =
-    useScheduleParams(config.timezone);
+  const {
+    selectedDate,
+    isToday,
+    monthFrom,
+    monthTo,
+    selectedOrderId,
+    setDate,
+    setOrderId,
+  } = useScheduleParams(config.timezone);
 
   const locationId = useLocationId();
 
@@ -65,8 +116,18 @@ function OrdersPage() {
     ? "Today"
     : dayjs(selectedDate, "YYYY-MM-DD").format("MMMM D, YYYY");
 
+  // Deselect on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedOrderId) setOrderId(undefined);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selectedOrderId]);
+
   return (
     <div className="flex h-full flex-col gap-6 p-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <p className="text-muted-foreground text-sm">Schedule</p>
@@ -74,28 +135,64 @@ function OrdersPage() {
             {displayLabel}
           </h1>
         </div>
+
+        {selectedOrderId && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setOrderId(undefined)}
+          >
+            <CalendarDays className="mr-1.5 h-4 w-4" />
+            Show Calendar
+          </Button>
+        )}
       </div>
 
-      <div className="grid flex-1 grid-cols-[1fr_320px] gap-6">
-        <ScheduleContent locationId={locationId} date={selectedDate} />
-        <ScheduleSidebar
+      {/* Body */}
+      <div className="grid flex-1 grid-cols-[1fr_320px] gap-6 overflow-hidden">
+        <ScheduleContent
           locationId={locationId}
-          selectedDate={selectedDate}
-          monthFrom={monthFrom}
-          monthTo={monthTo}
-          onDayClick={setDate}
+          date={selectedDate}
+          selectedOrderId={selectedOrderId}
+          onOrderSelect={(id) =>
+            setOrderId(id === selectedOrderId ? undefined : id)
+          }
         />
+
+        {selectedOrderId ? (
+          <OrderQuickPanel
+            orderId={selectedOrderId}
+            onClose={() => setOrderId(undefined)}
+          />
+        ) : (
+          <ScheduleSidebar
+            locationId={locationId}
+            selectedDate={selectedDate}
+            monthFrom={monthFrom}
+            monthTo={monthTo}
+            onDayClick={setDate}
+          />
+        )}
       </div>
     </div>
   );
 }
 
+// ─── Schedule Content ─────────────────────────────────────────────────────────
+
 interface ScheduleContentProps {
   locationId: string;
   date: string;
+  selectedOrderId: string | undefined;
+  onOrderSelect: (id: string) => void;
 }
 
-function ScheduleContent({ locationId, date }: ScheduleContentProps) {
+function ScheduleContent({
+  locationId,
+  date,
+  selectedOrderId,
+  onOrderSelect,
+}: ScheduleContentProps) {
   const { data, isPending, isError } = useUpcomingSchedule({
     locationId,
     from: date,
@@ -114,13 +211,15 @@ function ScheduleContent({ locationId, date }: ScheduleContentProps) {
   const returns = data?.events.filter((e) => e.eventType === "RETURN") ?? [];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 overflow-y-auto">
       <EventSection
         title="Pickups"
         count={pickups.length}
         events={pickups}
         isPending={isPending}
         emptyMessage="No pickups scheduled"
+        selectedOrderId={selectedOrderId}
+        onOrderSelect={onOrderSelect}
       />
       <EventSection
         title="Returns"
@@ -128,10 +227,14 @@ function ScheduleContent({ locationId, date }: ScheduleContentProps) {
         events={returns}
         isPending={isPending}
         emptyMessage="No returns scheduled"
+        selectedOrderId={selectedOrderId}
+        onOrderSelect={onOrderSelect}
       />
     </div>
   );
 }
+
+// ─── Event Section ────────────────────────────────────────────────────────────
 
 interface EventSectionProps {
   title: string;
@@ -139,6 +242,8 @@ interface EventSectionProps {
   events: ParsedScheduleEvent[];
   isPending: boolean;
   emptyMessage: string;
+  selectedOrderId: string | undefined;
+  onOrderSelect: (id: string) => void;
 }
 
 function EventSection({
@@ -147,6 +252,8 @@ function EventSection({
   events,
   isPending,
   emptyMessage,
+  selectedOrderId,
+  onOrderSelect,
 }: EventSectionProps) {
   return (
     <section className="flex flex-col gap-3">
@@ -172,7 +279,12 @@ function EventSection({
           </p>
         ) : (
           events.map((event) => (
-            <EventCard key={event.order.id} event={event} />
+            <EventCard
+              key={event.order.id}
+              event={event}
+              isSelected={selectedOrderId === event.order.id}
+              onSelect={onOrderSelect}
+            />
           ))
         )}
       </div>
@@ -180,33 +292,69 @@ function EventSection({
   );
 }
 
+// ─── Event Card ───────────────────────────────────────────────────────────────
+
 interface EventCardProps {
   event: ParsedScheduleEvent;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
 }
 
-function EventCard({ event }: EventCardProps) {
+function EventCard({ event, isSelected, onSelect }: EventCardProps) {
   const { order } = event;
+  const queryClient = useQueryClient();
 
   const dateRange = `${formatDateShort(order.periodStart)} – ${formatDateShort(order.periodEnd)}`;
 
+  const handleMouseEnter = useCallback(() => {
+    queryClient.prefetchQuery(
+      createOrderDetailQueryOptions({ orderId: order.id }),
+    );
+  }, [order.id, queryClient]);
+
   return (
-    <div className="bg-card border-border flex items-center gap-4 rounded-lg border px-4 py-3">
-      {/* Order number + date range */}
+    <button
+      type="button"
+      className={cn(
+        "border-border flex w-full items-center gap-4 rounded-lg border px-4 py-3 text-left transition-all duration-150",
+        isSelected
+          ? "bg-foreground border-foreground"
+          : "bg-card hover:border-foreground/30 hover:shadow-sm",
+      )}
+      onMouseEnter={handleMouseEnter}
+      onClick={() => onSelect(order.id)}
+    >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground font-mono text-xs">
+          <span
+            className={cn(
+              "font-mono text-xs",
+              isSelected ? "text-background/60" : "text-muted-foreground",
+            )}
+          >
             {formatOrderNumber(order.number)}
           </span>
-          <span className="text-foreground truncate text-sm font-medium">
+          <span
+            className={cn(
+              "truncate text-sm font-medium",
+              isSelected ? "text-background" : "text-foreground",
+            )}
+          >
             {order.customer ? order.customer.displayName : "No customer"}
           </span>
         </div>
-        <p className="text-muted-foreground mt-0.5 text-xs">{dateRange}</p>
+        <p
+          className={cn(
+            "mt-0.5 text-xs",
+            isSelected ? "text-background/50" : "text-muted-foreground",
+          )}
+        >
+          {dateRange}
+        </p>
       </div>
 
-      {/* Status */}
       <OrderStatusBadge status={order.status} />
-    </div>
+    </button>
   );
 }
 
@@ -222,16 +370,223 @@ function EventCardSkeleton() {
   );
 }
 
+// ─── Order Quick Panel ────────────────────────────────────────────────────────
+
+function OrderQuickPanel({
+  orderId,
+  onClose,
+}: {
+  orderId: string;
+  onClose: () => void;
+}) {
+  // Resolves instantly from prefetch cache in the happy path
+  const { data: order } = useSuspenseQuery(
+    createOrderDetailQueryOptions({ orderId }),
+  );
+
+  return (
+    <div className="bg-card border-border flex h-full flex-col overflow-hidden rounded-lg border">
+      {/* Header */}
+      <div className="flex items-start justify-between border-b px-5 py-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold tracking-tight">
+              Order #{formatOrderNumber(order.number)}
+            </h2>
+            <OrderStatusBadge status={order.status} />
+          </div>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            Fulfillment view
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted-foreground hover:text-foreground hover:bg-muted mt-0.5 rounded-md p-1 transition-colors"
+          aria-label="Close panel"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Body */}
+      <ScrollArea className="flex-1">
+        <div className="space-y-6 px-5 py-5">
+          {order.customer && (
+            <PanelSection
+              icon={<User className="h-3.5 w-3.5" />}
+              label="Customer"
+            >
+              <p className="text-sm font-semibold">
+                {order.customer.isCompany && order.customer.companyName
+                  ? order.customer.companyName
+                  : `${order.customer.firstName} ${order.customer.lastName}`}
+              </p>
+              {order.customer.isCompany && (
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  {order.customer.firstName} {order.customer.lastName}
+                </p>
+              )}
+              <div className="text-muted-foreground mt-2 flex items-center gap-1.5">
+                <Mail className="h-3 w-3 shrink-0" />
+                <span className="text-xs">{order.customer.email}</span>
+              </div>
+            </PanelSection>
+          )}
+
+          {order.period && (
+            <PanelSection
+              icon={<Clock className="h-3.5 w-3.5" />}
+              label="Rental Period"
+            >
+              <div className="grid grid-cols-2 gap-2">
+                <PeriodCell label="Pickup" date={order.period.start} />
+                <PeriodCell label="Return" date={order.period.end} />
+              </div>
+            </PanelSection>
+          )}
+
+          <PanelSection
+            icon={<MapPin className="h-3.5 w-3.5" />}
+            label="Location"
+          >
+            <p className="text-sm font-semibold">{order.location.name}</p>
+          </PanelSection>
+
+          <PanelSection
+            icon={<Package className="h-3.5 w-3.5" />}
+            label="Equipment"
+          >
+            <div className="space-y-2">
+              {order.items.map((item) => (
+                <EquipmentRow key={item.id} item={item} />
+              ))}
+            </div>
+          </PanelSection>
+
+          {order.notes && (
+            <PanelSection icon={<Tag className="h-3.5 w-3.5" />} label="Notes">
+              <p className="text-sm leading-relaxed">{order.notes}</p>
+            </PanelSection>
+          )}
+        </div>
+      </ScrollArea>
+
+      {/* Footer */}
+      <div className="border-t px-5 py-4">
+        <Link
+          to="/dashboard/orders/$orderId"
+          params={{ orderId }}
+          className="bg-foreground text-background hover:bg-foreground/90 flex h-10 w-full items-center justify-between rounded-md px-4 text-sm font-medium transition-colors"
+        >
+          View Full Order
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── Panel Primitives ─────────────────────────────────────────────────────────
+
+function PanelSection({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="text-muted-foreground mb-2.5 flex items-center gap-1.5">
+        {icon}
+        <span className="font-mono text-[10px] uppercase tracking-widest">
+          {label}
+        </span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function PeriodCell({ label, date }: { label: string; date: Dayjs }) {
+  return (
+    <div className="bg-muted/50 rounded-md border px-3 py-2.5">
+      <p className="text-muted-foreground mb-1 font-mono text-[9px] uppercase tracking-widest">
+        {label}
+      </p>
+      <p className="text-sm font-semibold">{date.format("MMM D, YYYY")}</p>
+      <p className="text-muted-foreground mt-0.5 font-mono text-[10px]">
+        {date.format("HH:mm")}
+      </p>
+    </div>
+  );
+}
+
+function EquipmentRow({
+  item,
+}: {
+  item: ParsedOrderDetailResponseDto["items"][number];
+}) {
+  const isBundle = item.type === OrderItemType.BUNDLE;
+
+  return (
+    <div className="bg-muted/40 rounded-md border px-3.5 py-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold leading-snug">{item.name}</p>
+            {isBundle && (
+              <Badge
+                variant="secondary"
+                className="h-4 rounded px-1.5 font-mono text-[9px] uppercase tracking-wide"
+              >
+                Bundle
+              </Badge>
+            )}
+          </div>
+          {isBundle && item.components.length > 0 && (
+            <p className="text-muted-foreground mt-1 text-[11px]">
+              {item.components
+                .map((c) => `${c.quantity}× ${c.productTypeName}`)
+                .join(" · ")}
+            </p>
+          )}
+        </div>
+        <span className="text-muted-foreground shrink-0 font-mono text-xs">
+          ×{item.assets.length || 1}
+        </span>
+      </div>
+
+      {item.assets.length > 0 && (
+        <div className="mt-2.5 space-y-1">
+          {item.assets.map((asset) => (
+            <div key={asset.id} className="flex items-center gap-1.5">
+              <div className="bg-muted-foreground/30 h-1 w-1 shrink-0 rounded-full" />
+              <span className="text-muted-foreground font-mono text-[10px]">
+                {asset.serialNumber
+                  ? `S/N: ${asset.serialNumber}`
+                  : "No serial number assigned"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Schedule Sidebar (unchanged) ─────────────────────────────────────────────
+
 interface ScheduleSidebarProps {
   locationId: string;
   selectedDate: string;
   monthFrom: string;
   monthTo: string;
   onDayClick: (date: Date) => void;
-}
-
-function dateToLabel(d: Date): string {
-  return dayjs(d).format("YYYY-MM-DD");
 }
 
 function ScheduleSidebar({
@@ -247,7 +602,6 @@ function ScheduleSidebar({
     to: monthTo,
   });
 
-  // Convert YYYY-MM-DD strings → Date objects for DayPicker modifiers
   const pickupDates = new Set(data?.pickupDates ?? []);
   const returnDates = new Set(data?.returnDates ?? []);
 
@@ -280,10 +634,8 @@ function ScheduleSidebar({
           classNames={{
             day: cn(
               "relative",
-              // dots container — shown via CSS on days with modifiers
               "[&.has-pickup]:after:bg-primary [&.has-pickup]:after:absolute [&.has-pickup]:after:bottom-1 [&.has-pickup]:after:left-1/2 [&.has-pickup]:after:-translate-x-1/2 [&.has-pickup]:after:h-1 [&.has-pickup]:after:w-1 [&.has-pickup]:after:rounded-full",
               "[&.has-return]:before:bg-emerald-500 [&.has-return]:before:absolute [&.has-return]:before:bottom-1 [&.has-return]:before:left-[calc(50%+4px)] [&.has-return]:before:h-1 [&.has-return]:before:w-1 [&.has-return]:before:rounded-full",
-              // past days: dim both dots by reducing their opacity
               "[&.is-past.has-pickup]:after:opacity-35",
               "[&.is-past.has-return]:before:opacity-35",
             ),
@@ -292,7 +644,6 @@ function ScheduleSidebar({
         />
       </div>
 
-      {/* Dots legend */}
       <div className="flex items-center gap-4 px-1">
         <div className="flex items-center gap-1.5">
           <span className="bg-primary h-2 w-2 rounded-full" />
