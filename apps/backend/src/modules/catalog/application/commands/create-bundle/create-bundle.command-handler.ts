@@ -4,7 +4,7 @@ import { BundleRepositoryPort } from 'src/modules/catalog/domain/ports/bundle-re
 import { NotFoundException } from '@nestjs/common';
 import { Bundle } from 'src/modules/catalog/domain/entities/bundle.entity';
 import { CatalogApplicationService } from '../../catalog.application-service';
-import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
+import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 
 @CommandHandler(CreateBundleCommand)
 export class CreateBundleCommandHandler implements ICommandHandler<CreateBundleCommand> {

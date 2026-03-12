@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { TenantContextService } from '../../tenant-context.service';
+import { TenantContextService } from '../../../../shared/tenant/tenant-context.service';
 import { Result, ok } from 'src/core/result';
 import { SyncTenantBillingUnitsCommand } from './sync-billing-units.command-handler';
 import { PrismaService } from 'src/core/database/prisma.service';

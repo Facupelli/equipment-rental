@@ -5,7 +5,7 @@ import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range
 import { PricingPublicApi } from '../../../pricing.public-api';
 import { CalculateCartPricesQuery, CartQueryProductItem } from './calculate-cart-prices.query';
 import { PricingQueryService } from '../../../infrastructure/services/pricing-query.service';
-import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
+import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 
 export type CartPriceLineItem = {
   type: 'PRODUCT' | 'BUNDLE';

@@ -4,7 +4,7 @@ import { GetNewArrivalsQuery } from './get-rental-new-arrival.query';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { TenantPublicApi } from 'src/modules/tenant/tenant.public-api';
 import { NewArrivalListResponseDto } from '@repo/schemas';
-import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
+import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 
 @Injectable()
 @QueryHandler(GetNewArrivalsQuery)

@@ -8,9 +8,16 @@ import { SubmitCustomerProfileCommandHandler } from './application/commands/subm
 import { ResubmitCustomerProfileCommandHandler } from './application/commands/resubmit-customer-profile/resubmit-customer-profile.command-handler';
 import { CustomerApplicationService } from './application/customer.application-service';
 import { CustomerPublicApi } from './customer.public-api';
+import { GetCustomerDetailQueryHandler } from './application/queries/get-customer-detail/get-customer-detail.query-handler';
+import { GetCustomerProfileQueryHandler } from './application/queries/get-customer-profile/get-customer-profile.query-handler';
 
 const commandHandlers = [SubmitCustomerProfileCommandHandler, ResubmitCustomerProfileCommandHandler];
-const queryHandlers = [FindCustomerCredentialsByEmailQueryHandler, GetCustomersQueryHandler];
+const queryHandlers = [
+  FindCustomerCredentialsByEmailQueryHandler,
+  GetCustomersQueryHandler,
+  GetCustomerDetailQueryHandler,
+  GetCustomerProfileQueryHandler,
+];
 
 @Module({
   controllers: [CustomerController],

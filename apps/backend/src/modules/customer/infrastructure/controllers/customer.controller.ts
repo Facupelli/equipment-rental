@@ -1,10 +1,12 @@
-import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { GetCustomersQuery } from '../../application/queries/get-customers/get-customers.query';
 import { GetCustomersQueryDto } from '../../application/dto/get-customers-query.dto';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
+import { GetCustomerDetailQuery } from '../../application/queries/get-customer-detail/get-customer-detail.query';
+import { CustomerDetailResponseDto } from '@repo/schemas';
 
 @Controller('customers')
 export class CustomerController {
@@ -25,5 +27,10 @@ export class CustomerController {
         dto.search,
       ),
     );
+  }
+
+  @Get(':id')
+  getCustomerDetail(@Param('id') id: string): Promise<CustomerDetailResponseDto> {
+    return this.queryBus.execute(new GetCustomerDetailQuery(id));
   }
 }

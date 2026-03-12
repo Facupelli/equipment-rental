@@ -1,7 +1,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetTenantBillingUnitsQuery } from './get-tenant-billing-units.query';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { TenantContextService } from '../../tenant-context.service';
+import { TenantContextService } from '../../../../shared/tenant/tenant-context.service';
 
 export interface TenantBillingUnitListItem {
   id: string;

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UpdateTenantConfigCommand } from './update-config.command';
 import { TenantRepositoryPort } from 'src/modules/tenant/domain/ports/tenant.repository.port';
-import { TenantContextService } from '../../tenant-context.service';
+import { TenantContextService } from '../../../../shared/tenant/tenant-context.service';
 
 @Injectable()
 @CommandHandler(UpdateTenantConfigCommand)

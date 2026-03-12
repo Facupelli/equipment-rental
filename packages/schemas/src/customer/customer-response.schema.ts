@@ -6,7 +6,6 @@ export const customerResponseSchema = z.object({
   email: z.string(),
   firstName: z.string(),
   lastName: z.string(),
-  phone: z.string().nullable(),
   isCompany: z.boolean(),
   companyName: z.string().nullable(),
   isActive: z.boolean(),
@@ -26,3 +25,29 @@ export const getCustomersQuerySchema = z.object({
 });
 
 export type GetCustomersQueryDto = z.infer<typeof getCustomersQuerySchema>;
+
+// DETAIL
+
+export const ActiveRentalSchema = z.object({
+  orderId: z.uuid(),
+  orderNumber: z.number(),
+  returnDate: z.date(),
+});
+
+export const CustomerDetailResponseSchema = z.object({
+  id: z.uuid(),
+  email: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  isCompany: z.boolean(),
+  companyName: z.string().nullable(),
+  isActive: z.boolean(),
+  onboardingStatus: z.string(),
+  createdAt: z.date(),
+  totalOrders: z.number(),
+  activeRentals: z.array(ActiveRentalSchema),
+});
+
+export type CustomerDetailResponseDto = z.infer<
+  typeof CustomerDetailResponseSchema
+>;

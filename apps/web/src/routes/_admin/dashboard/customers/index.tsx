@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
+  type Table as TanStackTable,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -19,12 +20,15 @@ import { useCustomersFilters } from "@/features/customer/components/customers-ta
 import { useCustomers } from "@/features/customer/customer.queries";
 import { customersColumns } from "@/features/customer/components/customers-table/customers-columns";
 import { CustomersToolbar } from "@/features/customer/components/customers-table/customers-toolbar";
+import type { CustomerResponseDto } from "@repo/schemas";
 
 export const Route = createFileRoute("/_admin/dashboard/customers/")({
   component: CustomersPage,
 });
 
 function CustomersPage() {
+  const navigate = useNavigate();
+
   const {
     filters,
     queryParams,
@@ -106,43 +110,18 @@ function CustomersPage() {
             </TableHeader>
 
             <TableBody>
-              {isLoading ? (
-                <SkeletonRows
-                  columns={customersColumns.length}
-                  rows={filters.limit}
-                />
-              ) : isError ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={customersColumns.length}
-                    className="h-32 text-center text-muted-foreground"
-                  >
-                    Something went wrong loading customers.
-                  </TableCell>
-                </TableRow>
-              ) : table.getRowModel().rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={customersColumns.length}
-                    className="h-32 text-center text-muted-foreground"
-                  >
-                    No customers found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
+              <TableBodyContent
+                table={table}
+                isLoading={isLoading}
+                isError={isError}
+                pageLimit={filters.limit}
+                onRowClick={(customer) =>
+                  navigate({
+                    to: "/dashboard/customers/$customerId",
+                    params: { customerId: customer.id },
+                  })
+                }
+              />
             </TableBody>
           </Table>
         </div>
@@ -164,6 +143,66 @@ function CustomersPage() {
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
+
+function TableBodyContent({
+  table,
+  isLoading,
+  isError,
+  pageLimit,
+  onRowClick,
+}: {
+  table: TanStackTable<CustomerResponseDto>;
+  isLoading: boolean;
+  isError: boolean;
+  pageLimit: number;
+  onRowClick: (customer: CustomerResponseDto) => void;
+}) {
+  const colSpan = table.getAllColumns().length;
+
+  if (isLoading) {
+    return <SkeletonRows columns={colSpan} rows={pageLimit} />;
+  }
+
+  if (isError) {
+    return (
+      <TableRow>
+        <TableCell
+          colSpan={colSpan}
+          className="h-32 text-center text-muted-foreground"
+        >
+          Something went wrong loading customers.
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  if (table.getRowModel().rows.length === 0) {
+    return (
+      <TableRow>
+        <TableCell
+          colSpan={colSpan}
+          className="h-32 text-center text-muted-foreground"
+        >
+          No customers found.
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  return table.getRowModel().rows.map((row) => (
+    <TableRow
+      key={row.id}
+      className="cursor-pointer"
+      onClick={() => onRowClick(row.original)}
+    >
+      {row.getVisibleCells().map((cell) => (
+        <TableCell key={cell.id}>
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </TableCell>
+      ))}
+    </TableRow>
+  ));
+}
 
 function SkeletonRows({ columns, rows }: { columns: number; rows: number }) {
   // Cap the skeleton at a sensible visual amount regardless of page limit

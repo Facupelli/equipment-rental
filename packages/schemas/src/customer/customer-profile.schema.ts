@@ -23,3 +23,41 @@ export const customerProfileSchema = z.object({
 });
 
 export type CustomerProfile = z.infer<typeof customerProfileSchema>;
+
+// RESPONSE
+
+// customer-profile.response.dto.ts
+
+export const CustomerProfileResponseSchema = z.object({
+  id: z.uuid(),
+  status: z.string(),
+  submittedAt: z.date(),
+
+  // Personal
+  fullName: z.string(),
+  phone: z.string(),
+  birthDate: z.date(),
+  documentNumber: z.string(),
+
+  // Address
+  address: z.string(),
+  city: z.string(),
+  stateRegion: z.string(),
+  country: z.string(),
+
+  // Professional
+  occupation: z.string(),
+  company: z.string().nullable(),
+  taxId: z.string().nullable(),
+
+  // Bank
+  bankName: z.string(),
+  accountNumber: z.string(),
+
+  // Review
+  rejectionReason: z.string().nullable(),
+});
+
+export type CustomerProfileResponseDto = z.infer<
+  typeof CustomerProfileResponseSchema
+>;

@@ -1,7 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CreateLocationCommand } from './create-location.command';
 import { LocationRepositoryPort } from 'src/modules/tenant/domain/ports/location.repository.port';
-import { TenantContextService } from '../../tenant-context.service';
+import { TenantContextService } from '../../../../shared/tenant/tenant-context.service';
 import { ok, Result } from 'src/core/result';
 import { Location } from 'src/modules/tenant/domain/entities/location.entity';
 

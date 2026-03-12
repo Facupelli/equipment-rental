@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { OrdersController } from './infrastructure/controllers/orders.controller';
-import { TenantModule } from '../tenant/tenant.module';
 import { OrderRepositoryPort } from './domain/ports/order.repository.port';
 import { OrderRepository } from './infrastructure/persistence/repositories/order.repository';
 import { PricingModule } from '../pricing/pricing.module';
@@ -11,7 +10,7 @@ import { GetOrdersScheduleQueryHandler } from './application/queries/get-orders-
 import { GetOrderByIdQueryHandler } from './application/queries/get-order-by-id/get-order-by-id.query-handler';
 
 @Module({
-  imports: [TenantModule, PricingModule, InventoryModule],
+  imports: [PricingModule, InventoryModule],
   controllers: [OrdersController],
   providers: [
     {

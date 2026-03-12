@@ -29,6 +29,7 @@ import { Route as AdminDashboardOwnersIndexRouteImport } from './routes/_admin/d
 import { Route as AdminDashboardLocationsIndexRouteImport } from './routes/_admin/dashboard/locations/index'
 import { Route as AdminDashboardCustomersIndexRouteImport } from './routes/_admin/dashboard/customers/index'
 import { Route as AdminDashboardOrdersOrderIdRouteImport } from './routes/_admin/dashboard/orders/$orderId'
+import { Route as AdminDashboardCustomersCustomerIdRouteImport } from './routes/_admin/dashboard/customers/$customerId'
 import { Route as AdminDashboardInventoryAssetsIndexRouteImport } from './routes/_admin/dashboard/inventory/assets/index'
 import { Route as AdminDashboardCatalogProductsIndexRouteImport } from './routes/_admin/dashboard/catalog/products/index'
 import { Route as AdminDashboardCatalogCategoriesIndexRouteImport } from './routes/_admin/dashboard/catalog/categories/index'
@@ -144,6 +145,12 @@ const AdminDashboardOrdersOrderIdRoute =
     path: '/orders/$orderId',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
+const AdminDashboardCustomersCustomerIdRoute =
+  AdminDashboardCustomersCustomerIdRouteImport.update({
+    id: '/customers/$customerId',
+    path: '/customers/$customerId',
+    getParentRoute: () => AdminDashboardRouteRoute,
+  } as any)
 const AdminDashboardInventoryAssetsIndexRoute =
   AdminDashboardInventoryAssetsIndexRouteImport.update({
     id: '/inventory/assets/',
@@ -207,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/onboard/': typeof PortalOnboardIndexRoute
   '/order-confirmation/': typeof PortalOrderConfirmationIndexRoute
   '/rental/': typeof PortalRentalIndexRoute
+  '/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
@@ -235,6 +243,7 @@ export interface FileRoutesByTo {
   '/onboard': typeof PortalOnboardIndexRoute
   '/order-confirmation': typeof PortalOrderConfirmationIndexRoute
   '/rental': typeof PortalRentalIndexRoute
+  '/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/customers': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations': typeof AdminDashboardLocationsIndexRoute
@@ -266,6 +275,7 @@ export interface FileRoutesById {
   '/_portal/onboard/': typeof PortalOnboardIndexRoute
   '/_portal/order-confirmation/': typeof PortalOrderConfirmationIndexRoute
   '/_portal/rental/': typeof PortalRentalIndexRoute
+  '/_admin/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/_admin/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/_admin/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/_admin/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/onboard/'
     | '/order-confirmation/'
     | '/rental/'
+    | '/dashboard/customers/$customerId'
     | '/dashboard/orders/$orderId'
     | '/dashboard/customers/'
     | '/dashboard/locations/'
@@ -325,6 +336,7 @@ export interface FileRouteTypes {
     | '/onboard'
     | '/order-confirmation'
     | '/rental'
+    | '/dashboard/customers/$customerId'
     | '/dashboard/orders/$orderId'
     | '/dashboard/customers'
     | '/dashboard/locations'
@@ -355,6 +367,7 @@ export interface FileRouteTypes {
     | '/_portal/onboard/'
     | '/_portal/order-confirmation/'
     | '/_portal/rental/'
+    | '/_admin/dashboard/customers/$customerId'
     | '/_admin/dashboard/orders/$orderId'
     | '/_admin/dashboard/customers/'
     | '/_admin/dashboard/locations/'
@@ -523,6 +536,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardOrdersOrderIdRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
+    '/_admin/dashboard/customers/$customerId': {
+      id: '/_admin/dashboard/customers/$customerId'
+      path: '/customers/$customerId'
+      fullPath: '/dashboard/customers/$customerId'
+      preLoaderRoute: typeof AdminDashboardCustomersCustomerIdRouteImport
+      parentRoute: typeof AdminDashboardRouteRoute
+    }
     '/_admin/dashboard/inventory/assets/': {
       id: '/_admin/dashboard/inventory/assets/'
       path: '/inventory/assets'
@@ -606,6 +626,7 @@ const PortalRouteRouteWithChildren = PortalRouteRoute._addFileChildren(
 
 interface AdminDashboardRouteRouteChildren {
   AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
+  AdminDashboardCustomersCustomerIdRoute: typeof AdminDashboardCustomersCustomerIdRoute
   AdminDashboardOrdersOrderIdRoute: typeof AdminDashboardOrdersOrderIdRoute
   AdminDashboardCustomersIndexRoute: typeof AdminDashboardCustomersIndexRoute
   AdminDashboardLocationsIndexRoute: typeof AdminDashboardLocationsIndexRoute
@@ -624,6 +645,8 @@ interface AdminDashboardRouteRouteChildren {
 
 const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
   AdminDashboardIndexRoute: AdminDashboardIndexRoute,
+  AdminDashboardCustomersCustomerIdRoute:
+    AdminDashboardCustomersCustomerIdRoute,
   AdminDashboardOrdersOrderIdRoute: AdminDashboardOrdersOrderIdRoute,
   AdminDashboardCustomersIndexRoute: AdminDashboardCustomersIndexRoute,
   AdminDashboardLocationsIndexRoute: AdminDashboardLocationsIndexRoute,

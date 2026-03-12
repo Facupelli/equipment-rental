@@ -1,6 +1,6 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { TenantContextService } from './application/tenant-context.service';
+import { TenantContextService } from './tenant-context.service';
 
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {

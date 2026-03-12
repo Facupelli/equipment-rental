@@ -2,7 +2,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CreateProductCategoryCommand } from './create-product-category.command';
 import { ProductCategoryRepositoryPort } from 'src/modules/catalog/domain/ports/product-catalog.repository.port';
 import { ProductCategory } from 'src/modules/catalog/domain/entities/product-category.entity';
-import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
+import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 
 @CommandHandler(CreateProductCategoryCommand)
 export class CreateProductCategoryHandler implements ICommandHandler<CreateProductCategoryCommand> {

@@ -23,7 +23,6 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
               firstName: true,
               lastName: true,
               email: true,
-              phone: true,
               isCompany: true,
               companyName: true,
             },

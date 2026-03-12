@@ -11,7 +11,7 @@ import { Order } from 'src/modules/order/domain/entities/order.entity';
 import { AssignmentSource, AssignmentType, OrderItemType, OrderStatus } from '@repo/types';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
-import { TenantContextService } from 'src/modules/tenant/application/tenant-context.service';
+import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { AssetAssignment } from 'src/modules/inventory/domain/entities/asset-assignment.entity';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';

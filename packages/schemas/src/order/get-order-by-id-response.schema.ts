@@ -6,7 +6,6 @@ const CustomerSummarySchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   email: z.string(),
-  phone: z.string().nullable(),
   isCompany: z.boolean(),
   companyName: z.string().nullable(),
 });
