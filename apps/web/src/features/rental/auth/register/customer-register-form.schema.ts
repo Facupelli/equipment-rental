@@ -1,3 +1,8 @@
+import { emptyToNull } from "@/shared/utils/form.utils";
+import {
+  registerCustomerSchema,
+  type RegisterCustomerDto,
+} from "@repo/schemas";
 import z from "zod";
 
 export const customerRegisterSchema = z
@@ -10,7 +15,7 @@ export const customerRegisterSchema = z
       .min(1, "Password is required.")
       .min(8, "Password must be at least 8 characters."),
     isCompany: z.boolean(),
-    companyName: z.string().nullable(),
+    companyName: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.isCompany && !data.companyName?.trim()) {
@@ -32,3 +37,18 @@ export const customerRegisterDefaultValues: CustomerRegisterFormValues = {
   isCompany: false,
   companyName: "",
 };
+
+export function toRegisterCustomerDto(
+  values: CustomerRegisterFormValues,
+): RegisterCustomerDto {
+  const dto = {
+    firstName: values.firstName.trim(),
+    lastName: values.lastName.trim(),
+    email: values.email.trim(),
+    password: values.password.trim(),
+    isCompany: values.isCompany,
+    companyName: emptyToNull(values.companyName ?? ""),
+  };
+
+  return registerCustomerSchema.parse(dto);
+}

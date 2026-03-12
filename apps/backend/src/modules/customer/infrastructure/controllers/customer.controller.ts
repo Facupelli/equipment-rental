@@ -4,6 +4,7 @@ import { GetCustomersQuery } from '../../application/queries/get-customers/get-c
 import { GetCustomersQueryDto } from '../../application/dto/get-customers-query.dto';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 
 @Controller('customers')
 export class CustomerController {
@@ -11,6 +12,7 @@ export class CustomerController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
+  @Paginated()
   async getCustomers(@CurrentUser() user: ReqUser, @Query() dto: GetCustomersQueryDto): Promise<void> {
     return this.queryBus.execute(
       new GetCustomersQuery(

@@ -13,6 +13,7 @@ import {
 import {
   customerRegisterDefaultValues,
   customerRegisterSchema,
+  toRegisterCustomerDto,
 } from "@/features/rental/auth/register/customer-register-form.schema";
 import { useCustomerRegister } from "@/features/rental/auth/portal-auth.queries";
 import { Link } from "@tanstack/react-router";
@@ -35,9 +36,11 @@ function RegisterPage() {
         return;
       }
 
+      const dto = toRegisterCustomerDto(value);
+
       try {
         await register({
-          ...value,
+          ...dto,
           tenantId: tenantContext.tenant.id,
         });
         form.reset();
@@ -229,7 +232,7 @@ function RegisterPage() {
                         // Reset companyName when unchecking so stale
                         // values don't linger and superRefine stays clean
                         if (checked !== true) {
-                          form.setFieldValue("companyName", null);
+                          form.setFieldValue("companyName", undefined);
                         }
                       }}
                       className="border-white/20 data-[state=checked]:bg-neutral-600 data-[state=checked]:border-neutral-600"
