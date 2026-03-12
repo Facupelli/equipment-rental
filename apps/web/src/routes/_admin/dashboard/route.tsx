@@ -1,4 +1,9 @@
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -6,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getCurrentUser } from "@/features/auth/auth.api";
+import { useLogout } from "@/features/auth/auth.queries";
 import { ensureValidSession } from "@/features/auth/get-session";
 import { createLocationQueryOptions } from "@/features/tenant/locations/locations.queries";
 import { getCurrentTenant } from "@/features/tenant/tenant.api";
@@ -22,6 +28,7 @@ import {
   Outlet,
   redirect,
 } from "@tanstack/react-router";
+import { ChevronsUpDown, LogOut, User } from "lucide-react";
 
 export const Route = createFileRoute("/_admin/dashboard")({
   beforeLoad: async ({ context }) => {
@@ -77,18 +84,18 @@ function DashboardLayout() {
   return (
     <LocationStoreProvider locations={locations}>
       <div className="grid h-screen grid-cols-[280px_1fr]">
-        <aside className="h-full border-r border-gray-200 bg-neutral-900 text-white p-4">
+        <aside className="flex flex-col h-full border-r border-gray-200 bg-neutral-900 text-white p-4">
+          {/* Tenant header */}
           <div>
             <p className="font-bold">{tenant.name}</p>
-            <p>
-              Hola {user.firstName} {user.lastName}
-            </p>
           </div>
 
+          {/* Location selector */}
           <div className="py-6">
             <LocationSelector locations={locations} />
           </div>
 
+          {/* Nav links */}
           <div className="grid gap-y-4">
             {sidebarItems.map((item) => (
               <Link to={item.href} key={item.href}>
@@ -96,7 +103,17 @@ function DashboardLayout() {
               </Link>
             ))}
           </div>
+
+          {/* Profile popover — pinned to bottom via mt-auto */}
+          <div className="mt-auto">
+            <UserPopover
+              firstName={user.firstName}
+              lastName={user.lastName}
+              email={user.email}
+            />
+          </div>
         </aside>
+
         <div className="grid h-full grid-rows-[auto_1fr] bg-gray-50">
           <Outlet />
         </div>
@@ -129,5 +146,49 @@ function LocationSelector({ locations }: { locations: LocationListResponse }) {
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+function UserPopover({
+  firstName,
+  lastName,
+  email,
+}: {
+  firstName: string;
+  lastName: string;
+  email: string;
+}) {
+  const { mutate: logOut } = useLogout();
+
+  return (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <button className="flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors hover:bg-neutral-800">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-600">
+              <User className="h-4 w-4 text-neutral-300" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-white">
+                {firstName} {lastName}
+              </p>
+              <p className="truncate text-xs text-neutral-400">{email}</p>
+            </div>
+            <ChevronsUpDown className="h-4 w-4 shrink-0 text-neutral-400" />
+          </button>
+        }
+      />
+      <PopoverContent side="top" align="start" className="w-62 p-1">
+        <button
+          onClick={() => {
+            logOut();
+          }}
+          className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
+        >
+          <LogOut className="h-4 w-4" />
+          Log out
+        </button>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -5,7 +5,12 @@ import {
   type MutationOptions,
 } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getCurrentUser, loginUser, registerTenantUser } from "./auth.api";
+import {
+  getCurrentUser,
+  loginUser,
+  logoutUser,
+  registerTenantUser,
+} from "./auth.api";
 import type { LoginDto } from "./schemas/login-form.schema";
 import type { ProblemDetailsError } from "@/shared/errors";
 import { useRouter } from "@tanstack/react-router";
@@ -45,6 +50,21 @@ export function useLogin() {
       console.error(
         `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
       );
+    },
+  });
+}
+
+export function useLogout() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  return useMutation<void, ProblemDetailsError>({
+    mutationFn: () => logoutUser(),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: authQueryKey.currentUser,
+      });
+      await router.navigate({ to: "/login" });
     },
   });
 }
