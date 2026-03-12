@@ -7,6 +7,8 @@ import { GetOrdersScheduleQueryDto } from '../../application/dto/get-orders-sche
 import { GetOrdersScheduleQuery } from '../../application/queries/get-orders-schedule.query';
 import { ProblemException } from 'src/core/exceptions/problem.exception';
 import { GetOrderByIdQuery } from '../../application/queries/get-order-by-id/get-order-by-id.query';
+import { GetCalendarDotsQueryDto } from '../../application/dto/get-calendar-dots-query.dto';
+import { GetCalendarDotsQuery } from '../../application/queries/get-calendars-dots/get-calendar-dots.query';
 
 @Controller('orders')
 export class OrdersController {
@@ -48,6 +50,13 @@ export class OrdersController {
   @Get('schedule')
   async getOrdersSchedule(@Query() query: GetOrdersScheduleQueryDto) {
     const result = await this.queryBus.execute(new GetOrdersScheduleQuery(query.locationId, query.from, query.to));
+
+    return result;
+  }
+
+  @Get('calendar-dots')
+  async getCalendarDtos(@Query() query: GetCalendarDotsQueryDto) {
+    const result = await this.queryBus.execute(new GetCalendarDotsQuery(query.locationId, query.from, query.to));
 
     return result;
   }

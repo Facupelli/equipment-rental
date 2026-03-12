@@ -6,27 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { OrderItemType, OrderStatus } from "@repo/types";
+import { OrderItemType } from "@repo/types";
 import {
   FileText,
   Pencil,
   Mail,
-  Phone,
   MapPin,
   Clock,
   Package,
   ExternalLink,
 } from "lucide-react";
 import { formatOrderNumber } from "@/features/orders/order.utils";
-
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  [OrderStatus.PENDING_SOURCING]: "Pending Sourcing",
-  [OrderStatus.SOURCED]: "Sourced",
-  [OrderStatus.CONFIRMED]: "Confirmed",
-  [OrderStatus.ACTIVE]: "Active",
-  [OrderStatus.COMPLETED]: "Completed",
-  [OrderStatus.CANCELLED]: "Cancelled",
-};
+import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
 
 export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
   loader: ({ context: { queryClient }, params: { orderId } }) => {
@@ -112,25 +103,6 @@ function OrderHeader({ order }: Props) {
 }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
-
-const STATUS_STYLES: Record<OrderStatus, string> = {
-  [OrderStatus.PENDING_SOURCING]: "bg-stone-100 text-stone-600",
-  [OrderStatus.SOURCED]: "bg-stone-100 text-stone-600",
-  [OrderStatus.CONFIRMED]: "bg-emerald-100 text-emerald-700",
-  [OrderStatus.ACTIVE]: "bg-stone-950 text-white",
-  [OrderStatus.COMPLETED]: "bg-stone-200 text-stone-700",
-  [OrderStatus.CANCELLED]: "bg-stone-100 text-stone-400",
-};
-
-function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  return (
-    <span
-      className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full leading-none ${STATUS_STYLES[status]}`}
-    >
-      {STATUS_LABEL[status]}
-    </span>
-  );
-}
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
@@ -405,12 +377,6 @@ function OrderClientCard({
           icon={<Mail className="w-3.5 h-3.5" />}
           value={customer.email}
         />
-        {customer.phone && (
-          <SidebarField
-            icon={<Phone className="w-3.5 h-3.5" />}
-            value={customer.phone}
-          />
-        )}
       </div>
     </section>
   );

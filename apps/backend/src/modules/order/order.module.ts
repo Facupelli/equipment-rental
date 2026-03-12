@@ -8,6 +8,7 @@ import { CreateOrderHandler } from './application/commands/create-order/create-o
 import { InventoryModule } from '../inventory/inventory.module';
 import { GetOrdersScheduleQueryHandler } from './application/queries/get-orders-schedule.query-handler';
 import { GetOrderByIdQueryHandler } from './application/queries/get-order-by-id/get-order-by-id.query-handler';
+import { GetCalendarDotsQueryHandler } from './application/queries/get-calendars-dots/get-calendar-dots.query-handler';
 
 @Module({
   imports: [PricingModule, InventoryModule],
@@ -20,6 +21,7 @@ import { GetOrderByIdQueryHandler } from './application/queries/get-order-by-id/
     OrderQueryService,
     CreateOrderHandler,
     GetOrdersScheduleQueryHandler,
+    GetCalendarDotsQueryHandler,
     GetOrderByIdQueryHandler,
   ],
 })

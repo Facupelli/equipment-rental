@@ -28,6 +28,14 @@ export function toDateParam(date: Dayjs): string {
 }
 
 /**
+ * Serialize a daily rental bound back to a plain date string.
+ * Use when sending to the client — prevents timezone leakage.
+ */
+export function toDateString(date: Dayjs): string {
+  return date.utc().format("YYYY-MM-DD");
+}
+
+/**
  * Parse a UTC ISO timestamp from the DB or API.
  * Use for: created_at, paid_at, cancelled_at,
  *          and tstzrange bounds of HOURLY rentals.

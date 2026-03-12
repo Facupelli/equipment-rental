@@ -1,6 +1,8 @@
 import { ProblemDetailsError } from "@/shared/errors";
 import type {
   CreateOrderDto,
+  GetCalendarDotsQueryDto,
+  GetCalendarDotsResponseDto,
   GetOrdersScheduleQuery,
   GetOrdersScheduleResponse,
   OrderSummary,
@@ -12,7 +14,7 @@ import {
   type MutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
-import { createOrder, getOrdersSchedule } from "./orders.api";
+import { createOrder, getCalendarDots, getOrdersSchedule } from "./orders.api";
 import type { Dayjs } from "dayjs";
 import { parseDailyBound } from "@/lib/dates/parse";
 
@@ -35,6 +37,11 @@ type ParsedGetOrdersScheduleResponse = {
 
 type GetOrdersScheduleQueryOptions<TData = GetOrdersScheduleResponse> = Omit<
   UseQueryOptions<GetOrdersScheduleResponse, ProblemDetailsError, TData>,
+  "queryKey" | "queryFn"
+>;
+
+type GetCalendarDotsQueryOptions<TData = GetCalendarDotsResponseDto> = Omit<
+  UseQueryOptions<GetCalendarDotsResponseDto, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
@@ -75,6 +82,17 @@ export function getOrdersScheduleQueryOptions<
   };
 }
 
+export function getCalendarDotsQueryOptions<TData = GetCalendarDotsResponseDto>(
+  params: GetCalendarDotsQueryDto,
+  options?: GetCalendarDotsQueryOptions<TData>,
+): UseQueryOptions<GetCalendarDotsResponseDto, ProblemDetailsError, TData> {
+  return {
+    ...options,
+    queryKey: ["calendar-dots", params],
+    queryFn: () => getCalendarDots({ data: params }),
+  };
+}
+
 // -----------------------------------------------------
 
 export function useUpcomingSchedule<TData = ParsedGetOrdersScheduleResponse>(
@@ -83,6 +101,15 @@ export function useUpcomingSchedule<TData = ParsedGetOrdersScheduleResponse>(
 ) {
   return useQuery({
     ...getOrdersScheduleQueryOptions(params, options),
+  });
+}
+
+export function useCalendarDots<TData = GetCalendarDotsResponseDto>(
+  params: GetCalendarDotsQueryDto,
+  options?: GetCalendarDotsQueryOptions<TData>,
+) {
+  return useQuery({
+    ...getCalendarDotsQueryOptions(params, options),
   });
 }
 

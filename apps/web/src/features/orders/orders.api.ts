@@ -2,9 +2,12 @@ import { apiFetch } from "@/lib/api";
 import { ProblemDetailsError } from "@/shared/errors";
 import {
   createOrderSchema,
+  GetCalendarDotsQuerySchema,
   getOrderByIdParamSchema,
   GetOrdersScheduleQuerySchema,
   type CreateOrderDto,
+  type GetCalendarDotsQueryDto,
+  type GetCalendarDotsResponseDto,
   type GetOrderByIdParamDto,
   type GetOrdersScheduleQuery,
   type GetOrdersScheduleResponse,
@@ -22,6 +25,22 @@ export const getOrdersSchedule = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<GetOrdersScheduleResponse> => {
     const result = await apiFetch<GetOrdersScheduleResponse>(
       `${apiUrl}/schedule`,
+      {
+        method: "GET",
+        params: data,
+      },
+    );
+
+    return result;
+  });
+
+export const getCalendarDots = createServerFn({ method: "GET" })
+  .inputValidator((data: GetCalendarDotsQueryDto) =>
+    GetCalendarDotsQuerySchema.parse(data),
+  )
+  .handler(async ({ data }): Promise<GetCalendarDotsResponseDto> => {
+    const result = await apiFetch<GetCalendarDotsResponseDto>(
+      `${apiUrl}/calendar-dots`,
       {
         method: "GET",
         params: data,

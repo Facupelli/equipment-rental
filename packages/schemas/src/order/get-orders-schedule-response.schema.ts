@@ -41,3 +41,29 @@ export const GetOrdersScheduleQuerySchema = z.object({
 export type GetOrdersScheduleQuery = z.infer<
   typeof GetOrdersScheduleQuerySchema
 >;
+
+// CALENDAR DOTS RESPONSE
+
+export const GetCalendarDotsResponseSchema = z.object({
+  pickupDates: z.array(z.iso.date()),
+  returnDates: z.array(z.iso.date()),
+});
+
+export type GetCalendarDotsResponseDto = z.infer<
+  typeof GetCalendarDotsResponseSchema
+>;
+
+export const GetCalendarDotsQuerySchema = z
+  .object({
+    locationId: z.uuid(),
+    from: z.iso.date(),
+    to: z.iso.date(),
+  })
+  .refine((data) => data.from <= data.to, {
+    message: "from must be before or equal to to",
+    path: ["from"],
+  });
+
+export type GetCalendarDotsQueryDto = z.infer<
+  typeof GetCalendarDotsQuerySchema
+>;

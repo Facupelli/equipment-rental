@@ -25,6 +25,14 @@ export function formatDateShort(date: Dayjs | null): string {
 }
 
 /**
+ * "March 15, 2025"
+ */
+export function formatDate(date: Dayjs | null): string {
+  if (!date) return "—";
+  return date.utc().format("MMMM D, YYYY");
+}
+
+/**
  * Human-readable rental duration between two daily bounds.
  * Builds on countNights from compute.ts — no raw date math here.
  *

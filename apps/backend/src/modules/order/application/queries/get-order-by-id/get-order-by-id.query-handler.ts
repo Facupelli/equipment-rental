@@ -68,7 +68,6 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
     ]);
 
     if (!order) {
-      console.log('UQERY BY ID');
       throw new NotFoundException(`Order ${query.orderId} not found`);
     }
 

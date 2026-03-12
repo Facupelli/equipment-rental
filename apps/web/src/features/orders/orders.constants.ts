@@ -5,7 +5,7 @@ export type StatusConfig = {
   className: string;
 };
 
-export const STATUS_MAP: Record<OrderStatus, StatusConfig> = {
+export const ORDER_STATUS_MAP: Record<OrderStatus, StatusConfig> = {
   [OrderStatus.PENDING_SOURCING]: {
     label: "Pending",
     className: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
