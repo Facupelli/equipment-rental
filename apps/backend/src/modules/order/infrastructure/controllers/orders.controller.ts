@@ -1,7 +1,11 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { CreateOrderCommand } from '../../application/commands/create-order/create-order.command';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { OrderItemUnavailableError } from '../../domain/exceptions/order.exceptions';
+import {
+  InvalidPickupSlotError,
+  InvalidReturnSlotError,
+  OrderItemUnavailableError,
+} from '../../domain/exceptions/order.exceptions';
 import { CreateOrderDto } from '../../application/dto/create-order.dto';
 import { GetOrdersScheduleQueryDto } from '../../application/dto/get-orders-schedule-query.dto';
 import { GetOrdersScheduleQuery } from '../../application/queries/get-orders-schedule.query';
@@ -24,6 +28,8 @@ export class OrdersController {
       dto.locationId,
       dto.customerId ?? null,
       { start: new Date(dto.periodStart), end: new Date(dto.periodEnd) },
+      dto.pickupTime,
+      dto.returnTime,
       dto.items,
       dto.currency,
     );
@@ -32,6 +38,7 @@ export class OrdersController {
 
     if (result.isErr()) {
       const error = result.error;
+
       if (error instanceof OrderItemUnavailableError) {
         throw new ProblemException(
           HttpStatus.UNPROCESSABLE_ENTITY,
@@ -41,6 +48,25 @@ export class OrdersController {
           { unavailableItems: error.unavailableItems },
         );
       }
+
+      if (error instanceof InvalidPickupSlotError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Invalid Pickup Slot',
+          error.message,
+          'errors://invalid-pickup-slot',
+        );
+      }
+
+      if (error instanceof InvalidReturnSlotError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Invalid Return Slot',
+          error.message,
+          'errors://invalid-return-slot',
+        );
+      }
+
       throw error;
     }
 

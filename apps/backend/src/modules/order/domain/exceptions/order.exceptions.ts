@@ -29,3 +29,17 @@ export class OrderItemUnavailableError extends Error {
     this.name = 'OrderItemUnavailableError';
   }
 }
+
+export class InvalidPickupSlotError extends Error {
+  constructor(time: number) {
+    super(`Pickup time ${time} is not a valid slot for the selected location and date.`);
+    this.name = 'InvalidPickupSlotError';
+  }
+}
+
+export class InvalidReturnSlotError extends Error {
+  constructor(time: number) {
+    super(`Return time ${time} is not a valid slot for the selected location and date.`);
+    this.name = 'InvalidReturnSlotError';
+  }
+}

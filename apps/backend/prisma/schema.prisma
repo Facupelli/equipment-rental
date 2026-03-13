@@ -257,7 +257,6 @@ model Location {
 enum ScheduleSlotType {
   PICKUP
   RETURN
-  BOTH
 }
 
 model LocationSchedule {

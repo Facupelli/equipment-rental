@@ -21,6 +21,8 @@ export const createOrderSchema = z.object({
   customerId: z.uuid().optional(),
   periodStart: z.iso.datetime(),
   periodEnd: z.iso.datetime(),
+  pickupTime: z.number().min(0).max(1439),
+  returnTime: z.number().min(0).max(1439),
   items: z.array(orderItemSchema).min(1, "At least one item is required"),
   currency: z.string().min(1, "Currency is required"),
 });

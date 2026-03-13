@@ -1,4 +1,4 @@
-import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { GetLocationsQuery } from '../../application/queries/get-locations/get-locations.query';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateLocationCommand } from '../../application/commands/create-location/create-location.command';
@@ -6,6 +6,9 @@ import { CreateLocationDto } from '../../application/dto/create-location.dto';
 import { AddScheduleToLocationDto } from '../../application/dto/add-schedule-to-location.dto';
 import { AddScheduleToLocationCommand } from '../../application/commands/add-schedule-to-location/add-schedule-to-location.command';
 import { LocationNotFoundError } from '../../domain/exceptions/location.exceptions';
+import { ScheduleSlotType } from '@repo/types';
+import { GetLocationScheduleSlotsQuery } from '../../application/queries/get-location-schedule-slots/get-location-schedule-slots.query';
+import { GetLocationScheduleSlotsQueryDto } from '../../application/dto/get-location-schedule-slots-query.dto';
 
 @Controller('locations')
 export class LocationController {
@@ -24,6 +27,22 @@ export class LocationController {
   @Get()
   async getLocations() {
     return await this.queryBus.execute(new GetLocationsQuery());
+  }
+
+  @Get(':locationId/slots')
+  async getLocationScheduleSlots(
+    @Param('locationId') locationId: string,
+    @Query() query: GetLocationScheduleSlotsQueryDto,
+  ): Promise<number[]> {
+    if (isNaN(query.date.getTime())) {
+      throw new BadRequestException('Invalid date format. Expected ISO 8601 date string (e.g. 2026-03-13).');
+    }
+
+    if (query.type !== ScheduleSlotType.PICKUP && query.type !== ScheduleSlotType.RETURN) {
+      throw new BadRequestException(`Invalid type. Expected ${ScheduleSlotType.PICKUP} or ${ScheduleSlotType.RETURN}.`);
+    }
+
+    return this.queryBus.execute(new GetLocationScheduleSlotsQuery(locationId, query.date, query.type));
   }
 
   @Post(':locationId/schedules')
