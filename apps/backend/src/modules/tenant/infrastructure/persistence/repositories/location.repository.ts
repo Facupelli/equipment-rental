@@ -9,18 +9,31 @@ export class LocationRepository implements LocationRepositoryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(id: string): Promise<Location | null> {
-    const raw = await this.prisma.client.location.findUnique({ where: { id } });
-    if (!raw) return null;
+    const raw = await this.prisma.client.location.findUnique({
+      where: { id },
+      include: { schedules: true },
+    });
+
+    if (!raw) {
+      return null;
+    }
+
     return LocationMapper.toDomain(raw);
   }
 
   async save(location: Location): Promise<string> {
-    const data = LocationMapper.toPersistence(location);
-    await this.prisma.client.location.upsert({
-      where: { id: location.id },
-      create: data,
-      update: data,
-    });
+    await this.prisma.client.$transaction([
+      this.prisma.client.locationSchedule.deleteMany({
+        where: { locationId: location.id },
+      }),
+
+      this.prisma.client.location.upsert({
+        where: { id: location.id },
+        create: LocationMapper.toPersistence(location),
+        update: LocationMapper.toUpdatePersistence(location),
+      }),
+    ]);
+
     return location.id;
   }
 }
