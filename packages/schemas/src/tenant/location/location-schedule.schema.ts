@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ScheduleSlotType } from "@repo/types";
 
-export const AddScheduleToLocationSchema = z
+export const addScheduleToLocationSchema = z
   .object({
     type: z.enum(ScheduleSlotType),
 
@@ -25,5 +25,13 @@ export const AddScheduleToLocationSchema = z
   });
 
 export type AddScheduleToLocationDto = z.infer<
-  typeof AddScheduleToLocationSchema
+  typeof addScheduleToLocationSchema
+>;
+
+export const bulkAddScheduleToLocationSchema = z.object({
+  items: z.array(addScheduleToLocationSchema),
+});
+
+export type BulkAddScheduleToLocationDto = z.infer<
+  typeof bulkAddScheduleToLocationSchema
 >;

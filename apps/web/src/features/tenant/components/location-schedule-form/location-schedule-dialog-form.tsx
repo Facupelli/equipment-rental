@@ -9,13 +9,13 @@ import type { LocationScheduleResponseDto } from "@repo/schemas";
 import {
   getScheduleSlotDefaults,
   scheduleToFormValues,
-  toAddScheduleDto,
+  toAddScheduleDtos,
   type ScheduleSlotFormValues,
 } from "../../locations/schemas/location-schedule-form.schema";
 import { ScheduleSlotType } from "@repo/types";
 import { ScheduleSlotForm } from "./schedule-slot-form";
 import {
-  useCreateLocationSchedule,
+  useBulkCreateLocationSchedules,
   useUpdateLocationSchedule,
 } from "../../locations/location-schedules.queries";
 
@@ -50,28 +50,19 @@ interface ScheduleSlotModalProps {
   onClose: () => void;
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
 export function ScheduleSlotModal({
   state,
   locationId,
   onClose,
 }: ScheduleSlotModalProps) {
-  const createMutation = useCreateLocationSchedule();
-  const updateMutation = useUpdateLocationSchedule();
+  const bulkCreate = useBulkCreateLocationSchedules();
+  const update = useUpdateLocationSchedule();
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = bulkCreate.isPending || update.isPending;
 
-  // Derive form defaults from modal state
   const defaultValues: ScheduleSlotFormValues = (() => {
     if (!state.open) {
-      // Fallback — never rendered when closed, but TS needs a value
-      return getScheduleSlotDefaults({
-        type: ScheduleSlotType.PICKUP,
-        mode: "weekly",
-      });
+      return getScheduleSlotDefaults({ type: "PICKUP", mode: "weekly" });
     }
     if (state.mode === "edit") {
       return scheduleToFormValues(state.schedule);
@@ -79,27 +70,25 @@ export function ScheduleSlotModal({
     return getScheduleSlotDefaults({
       type: state.slotType,
       mode: state.dayOfWeek !== undefined ? "weekly" : "specific",
-      dayOfWeek: state.dayOfWeek,
+      daysOfWeek: state.dayOfWeek !== undefined ? [state.dayOfWeek] : [],
     });
   })();
 
-  const title = !state.open
-    ? ""
-    : state.mode === "edit"
-      ? "Edit Schedule Slot"
-      : "Add Schedule Slot";
+  const isEditMode = state.open && state.mode === "edit";
+  const title = isEditMode ? "Edit Schedule Slot" : "Add Schedule Slot";
 
   async function handleSubmit(values: ScheduleSlotFormValues) {
-    const dto = toAddScheduleDto(values);
+    const dtos = toAddScheduleDtos(values);
 
     if (state.open && state.mode === "edit") {
-      await updateMutation.mutateAsync({
-        scheduleId: state.schedule.id,
-        dto,
+      // Edit always produces exactly one DTO — the single record being updated
+      await update.mutateAsync({
         locationId,
+        scheduleId: state.schedule.id,
+        dto: dtos[0],
       });
     } else {
-      await createMutation.mutateAsync({ dto, locationId });
+      await bulkCreate.mutateAsync({ items: dtos, locationId });
     }
 
     onClose();
@@ -107,7 +96,7 @@ export function ScheduleSlotModal({
 
   return (
     <Dialog open={state.open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
@@ -118,11 +107,10 @@ export function ScheduleSlotModal({
         {state.open && (
           <ScheduleSlotForm
             key={
-              // Re-mount the form when the modal state changes so TanStack
-              // Form picks up the new defaultValues cleanly.
-              state.mode === "edit" ? state.schedule.id : "create"
+              isEditMode && state.open ? (state as any).schedule.id : "create"
             }
             defaultValues={defaultValues}
+            isEditMode={isEditMode}
             onSubmit={handleSubmit}
             onCancel={onClose}
             isPending={isPending}

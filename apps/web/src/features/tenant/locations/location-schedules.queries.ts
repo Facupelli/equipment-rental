@@ -9,6 +9,7 @@ import {
   getLocationSchedules,
   createLocationSchedule,
   updateLocationSchedule,
+  bulkCreateLocationSchedules,
 } from "./location-schedules.api";
 import type { ProblemDetailsError } from "@/shared/errors";
 import type {
@@ -29,6 +30,15 @@ type CreateScheduleMutationOptions = Omit<
     LocationScheduleResponseDto,
     ProblemDetailsError,
     { locationId: string; dto: AddScheduleToLocationDto }
+  >,
+  "mutationFn" | "mutationKey"
+>;
+
+type BulkCreateScheduleMutationOptions = Omit<
+  MutationOptions<
+    LocationScheduleResponseDto[],
+    ProblemDetailsError,
+    { locationId: string; items: AddScheduleToLocationDto[] }
   >,
   "mutationFn" | "mutationKey"
 >;
@@ -87,6 +97,32 @@ export function useCreateLocationSchedule(
     ...options,
     mutationFn: ({ locationId, dto }) =>
       createLocationSchedule({ data: { locationId, dto } }),
+    onSuccess: async (data, variables, context, onMutateResult) => {
+      await queryClient.invalidateQueries({
+        queryKey: locationSchedulesQueryKeys.all(variables.locationId),
+      });
+
+      await options?.onSuccess?.(data, variables, context, onMutateResult);
+    },
+    onError: async (error, variables, context, onMutateResult) => {
+      await options?.onError?.(error, variables, context, onMutateResult);
+    },
+  });
+}
+
+export function useBulkCreateLocationSchedules(
+  options?: BulkCreateScheduleMutationOptions,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    LocationScheduleResponseDto[],
+    ProblemDetailsError,
+    { locationId: string; items: AddScheduleToLocationDto[] }
+  >({
+    ...options,
+    mutationFn: ({ locationId, items }) =>
+      bulkCreateLocationSchedules({ data: { locationId, items } }),
     onSuccess: async (data, variables, context, onMutateResult) => {
       await queryClient.invalidateQueries({
         queryKey: locationSchedulesQueryKeys.all(variables.locationId),

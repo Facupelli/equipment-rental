@@ -1,21 +1,15 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 import {
-  AddScheduleToLocationSchema,
+  addScheduleToLocationSchema,
   type AddScheduleToLocationDto,
+  type LocationScheduleResponseDto,
 } from "@repo/schemas";
-import { ScheduleSlotType } from "@repo/types";
 
-// ---------------------------------------------------------------------------
-// Helpers — minutes <-> "HH:mm" string
-// ---------------------------------------------------------------------------
-
-/** Converts minutes-from-midnight (e.g. 540) to a time string ("09:00"). */
 export function minutesToTimeString(minutes: number): string {
   return dayjs().startOf("day").add(minutes, "minute").format("HH:mm");
 }
 
-/** Converts a time string ("09:00") to minutes from midnight (540). */
 export function timeStringToMinutes(time: string): number {
   const [hours, mins] = time.split(":").map(Number);
   return hours * 60 + mins;
@@ -23,23 +17,23 @@ export function timeStringToMinutes(time: string): number {
 
 // ---------------------------------------------------------------------------
 // Form schema
-// HTML-compatible types — strings for time pickers, nullable primitives for
-// the mutually-exclusive day/date choice. The `mode` field drives which branch
-// is active in the UI and which gets sent to the API.
+//
+// Key changes from v1:
+//   - `dayOfWeek` (singular, nullable) → `daysOfWeek` (array) so the chip
+//     toggle can drive multi-day bulk creation in a single submission.
+//   - In edit mode the array always has exactly one element.
+//   - `specificDate` stays singular — overrides target one date at a time.
 // ---------------------------------------------------------------------------
 
 export const scheduleSlotFormSchema = z
   .object({
-    type: z.enum(ScheduleSlotType),
+    type: z.enum(["PICKUP", "RETURN"]),
     mode: z.enum(["weekly", "specific"]),
 
-    // Weekly branch — integer 0-6
-    dayOfWeek: z.number().int().min(0).max(6).nullable(),
+    daysOfWeek: z.array(z.number().int().min(0).max(6)),
 
-    // Specific-date branch — ISO date string "YYYY-MM-DD"
     specificDate: z.string().nullable(),
 
-    // Native time input gives "HH:mm"
     openTime: z.string().regex(/^\d{2}:\d{2}$/, "Enter a valid time (HH:mm)"),
     closeTime: z.string().regex(/^\d{2}:\d{2}$/, "Enter a valid time (HH:mm)"),
 
@@ -47,19 +41,19 @@ export const scheduleSlotFormSchema = z
   })
   .refine(
     (data) => {
-      if (data.mode === "weekly") return data.dayOfWeek !== null;
+      if (data.mode === "weekly") return data.daysOfWeek.length > 0;
       return data.specificDate !== null && data.specificDate.length > 0;
     },
     {
-      message: "A day or specific date is required.",
-      path: ["dayOfWeek"],
+      message: "Select at least one day or provide a specific date.",
+      path: ["daysOfWeek"],
     },
   )
   .refine(
     (data) => {
-      const open = timeStringToMinutes(data.openTime);
-      const close = timeStringToMinutes(data.closeTime);
-      return open < close;
+      return (
+        timeStringToMinutes(data.openTime) < timeStringToMinutes(data.closeTime)
+      );
     },
     {
       message: "Open time must be before close time.",
@@ -74,15 +68,15 @@ export type ScheduleSlotFormValues = z.infer<typeof scheduleSlotFormSchema>;
 // ---------------------------------------------------------------------------
 
 export function getScheduleSlotDefaults(opts: {
-  type: ScheduleSlotType;
+  type: "PICKUP" | "RETURN";
   mode: "weekly" | "specific";
-  dayOfWeek?: number;
+  daysOfWeek?: number[];
   specificDate?: string;
 }): ScheduleSlotFormValues {
   return {
     type: opts.type,
     mode: opts.mode,
-    dayOfWeek: opts.dayOfWeek ?? null,
+    daysOfWeek: opts.daysOfWeek ?? [],
     specificDate: opts.specificDate ?? null,
     openTime: "08:00",
     closeTime: "18:00",
@@ -90,28 +84,19 @@ export function getScheduleSlotDefaults(opts: {
   };
 }
 
-/** Prefills the form from an existing LocationSchedule record (edit mode). */
-export function scheduleToFormValues(schedule: {
-  type: ScheduleSlotType;
-  dayOfWeek: number | null;
-  specificDate: Date | string | null;
-  openTime: number;
-  closeTime: number;
-  slotIntervalMinutes: number;
-}): ScheduleSlotFormValues {
-  const mode: "weekly" | "specific" =
-    schedule.dayOfWeek !== null ? "weekly" : "specific";
-
-  const specificDate =
-    schedule.specificDate !== null
-      ? dayjs(schedule.specificDate).format("YYYY-MM-DD")
-      : null;
-
+/** Prefills the form from an existing record (edit mode). */
+export function scheduleToFormValues(
+  schedule: LocationScheduleResponseDto,
+): ScheduleSlotFormValues {
   return {
     type: schedule.type,
-    mode,
-    dayOfWeek: schedule.dayOfWeek,
-    specificDate,
+    mode: schedule.dayOfWeek !== null ? "weekly" : "specific",
+    // Single-element array — edit always targets one existing record
+    daysOfWeek: schedule.dayOfWeek !== null ? [schedule.dayOfWeek] : [],
+    specificDate:
+      schedule.specificDate !== null
+        ? dayjs(schedule.specificDate).format("YYYY-MM-DD")
+        : null,
     openTime: minutesToTimeString(schedule.openTime),
     closeTime: minutesToTimeString(schedule.closeTime),
     slotIntervalMinutes: schedule.slotIntervalMinutes,
@@ -119,22 +104,40 @@ export function scheduleToFormValues(schedule: {
 }
 
 // ---------------------------------------------------------------------------
-// DTO conversion — form values → API payload
+// DTO conversion
+//
+// Returns an array because one form submission may produce N rows (one per
+// selected day). The caller routes to bulk-create or single-update depending
+// on modal mode — the schema layer does not need to know which.
 // ---------------------------------------------------------------------------
 
-export function toAddScheduleDto(
+export function toAddScheduleDtos(
   values: ScheduleSlotFormValues,
-): AddScheduleToLocationDto {
-  const dto = {
-    type: values.type,
-    dayOfWeek: values.mode === "weekly" ? values.dayOfWeek : null,
-    specificDate: values.mode === "specific" ? values.specificDate : null,
-    openTime: timeStringToMinutes(values.openTime),
-    closeTime: timeStringToMinutes(values.closeTime),
-    slotIntervalMinutes: values.slotIntervalMinutes,
-  };
+): AddScheduleToLocationDto[] {
+  const openTime = timeStringToMinutes(values.openTime);
+  const closeTime = timeStringToMinutes(values.closeTime);
 
-  // Validate against the canonical API schema before sending.
-  // This catches any edge-case mismatch between form and API contracts early.
-  return AddScheduleToLocationSchema.parse(dto);
+  if (values.mode === "specific") {
+    return [
+      addScheduleToLocationSchema.parse({
+        type: values.type,
+        dayOfWeek: null,
+        specificDate: values.specificDate,
+        openTime,
+        closeTime,
+        slotIntervalMinutes: values.slotIntervalMinutes,
+      }),
+    ];
+  }
+
+  return values.daysOfWeek.map((day) =>
+    addScheduleToLocationSchema.parse({
+      type: values.type,
+      dayOfWeek: day,
+      specificDate: null,
+      openTime,
+      closeTime,
+      slotIntervalMinutes: values.slotIntervalMinutes,
+    }),
+  );
 }

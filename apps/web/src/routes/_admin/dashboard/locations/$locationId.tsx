@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useParams } from "@tanstack/react-router";
-import { CloudUpload, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   formatTimeRange,
@@ -276,8 +275,8 @@ interface DayRowProps {
   onAdd: (dayOfWeek: number, type: ScheduleSlotType) => void;
 }
 
-export function DayRow({ row, onEdit, onAdd }: DayRowProps) {
-  const isClosed = row.pickup === null && row.return === null;
+function DayRow({ row, onEdit, onAdd }: DayRowProps) {
+  const isClosed = row.pickups.length === 0 && row.returns.length === 0;
 
   return (
     <tr
@@ -287,7 +286,7 @@ export function DayRow({ row, onEdit, onAdd }: DayRowProps) {
       )}
     >
       {/* Day name */}
-      <td className="py-4 pr-6 w-28">
+      <td className="py-4 pr-6 w-28 align-top">
         <span
           className={cn(
             "text-sm font-medium",
@@ -298,28 +297,28 @@ export function DayRow({ row, onEdit, onAdd }: DayRowProps) {
         </span>
       </td>
 
-      {/* Pickup window */}
-      <td className="py-4 pr-8">
+      {/* Pickup windows */}
+      <td className="py-4 pr-8 align-top">
         <SlotCell
-          schedule={row.pickup}
+          schedules={row.pickups}
           label="Pickup"
           onEdit={onEdit}
           onAdd={() => onAdd(row.dayOfWeek, ScheduleSlotType.PICKUP)}
         />
       </td>
 
-      {/* Return window */}
-      <td className="py-4 pr-8">
+      {/* Return windows */}
+      <td className="py-4 pr-8 align-top">
         <SlotCell
-          schedule={row.return}
+          schedules={row.returns}
           label="Return"
           onEdit={onEdit}
           onAdd={() => onAdd(row.dayOfWeek, ScheduleSlotType.RETURN)}
         />
       </td>
 
-      {/* Status badge */}
-      <td className="py-4 text-right">
+      {/* Status */}
+      <td className="py-4 text-right align-top">
         <span
           className={cn(
             "inline-flex items-center gap-1.5 text-xs",
@@ -340,40 +339,43 @@ export function DayRow({ row, onEdit, onAdd }: DayRowProps) {
 }
 
 interface SlotCellProps {
-  schedule: LocationScheduleResponseDto | null;
+  schedules: LocationScheduleResponseDto[];
   label: "Pickup" | "Return";
   onEdit: (schedule: LocationScheduleResponseDto) => void;
   onAdd: () => void;
 }
 
-export function SlotCell({ schedule, label, onEdit, onAdd }: SlotCellProps) {
-  if (!schedule) {
-    return (
+function SlotCell({ schedules, label, onEdit, onAdd }: SlotCellProps) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      {/* Stacked window list — each entry is independently editable */}
+      {schedules.map((schedule) => (
+        <button
+          key={schedule.id}
+          type="button"
+          onClick={() => onEdit(schedule)}
+          className="group flex flex-col items-start gap-0.5 text-left transition-opacity hover:opacity-70"
+          aria-label={`Edit ${label} window`}
+        >
+          <span className="text-sm font-medium tabular-nums">
+            {formatTimeRange(schedule.openTime, schedule.closeTime)}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {schedule.slotIntervalMinutes} min slots
+          </span>
+        </button>
+      ))}
+
+      {/* Add affordance — always visible so multiple windows can be added */}
       <button
         type="button"
         onClick={onAdd}
-        className="group flex items-center gap-1.5 text-sm text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+        className="group flex items-center gap-1.5 text-xs text-muted-foreground/50 transition-colors hover:text-muted-foreground"
         aria-label={`Add ${label} window`}
       >
-        <Plus className="size-3.5 transition-transform group-hover:scale-110" />
-        <span className="text-xs">Add {label}</span>
+        <Plus className="size-3 transition-transform group-hover:scale-110" />
+        Add {label}
       </button>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => onEdit(schedule)}
-      className="group flex flex-col items-start gap-0.5 text-left transition-opacity hover:opacity-70"
-      aria-label={`Edit ${label} window`}
-    >
-      <span className="text-sm font-medium tabular-nums">
-        {formatTimeRange(schedule.openTime, schedule.closeTime)}
-      </span>
-      <span className="text-xs text-muted-foreground">
-        {schedule.slotIntervalMinutes} min slots
-      </span>
-    </button>
+    </div>
   );
 }

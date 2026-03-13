@@ -7,19 +7,10 @@ import {
 export interface DayScheduleRow {
   dayOfWeek: number;
   label: string;
-  pickup: LocationScheduleResponseDto | null;
-  return: LocationScheduleResponseDto | null;
+  // Arrays because a day can have multiple non-overlapping windows per type
+  pickups: LocationScheduleResponseDto[];
+  returns: LocationScheduleResponseDto[];
 }
-
-// ---------------------------------------------------------------------------
-// groupSchedulesByDay
-// Partitions a flat list of LocationSchedule records into:
-//   - weeklyRows: 7 DayRow entries (Mon–Sun), each with optional pickup/return
-//   - overrides: records that have specificDate set (not null)
-//
-// Only records with dayOfWeek !== null feed the weekly table.
-// Records with specificDate !== null go to the overrides panel.
-// ---------------------------------------------------------------------------
 
 export function groupSchedulesByDay(schedules: LocationScheduleResponseDto[]): {
   weeklyRows: DayScheduleRow[];
@@ -31,40 +22,42 @@ export function groupSchedulesByDay(schedules: LocationScheduleResponseDto[]): {
   const byDay = new Map<
     number,
     {
-      pickup: LocationScheduleResponseDto | null;
-      return: LocationScheduleResponseDto | null;
+      pickups: LocationScheduleResponseDto[];
+      returns: LocationScheduleResponseDto[];
     }
   >();
 
   for (const day of ORDERED_DAYS) {
-    byDay.set(day, { pickup: null, return: null });
+    byDay.set(day, { pickups: [], returns: [] });
   }
 
   for (const schedule of weekly) {
     const day = schedule.dayOfWeek as number;
-    const entry = byDay.get(day) ?? { pickup: null, return: null };
+    const entry = byDay.get(day)!;
 
     if (schedule.type === "PICKUP") {
-      entry.pickup = schedule;
+      entry.pickups.push(schedule);
     } else {
-      entry.return = schedule;
+      entry.returns.push(schedule);
     }
-
-    byDay.set(day, entry);
   }
 
-  const weeklyRows: DayScheduleRow[] = ORDERED_DAYS.map((day) => ({
-    dayOfWeek: day,
-    label: DAY_LABELS[day],
-    pickup: byDay.get(day)!.pickup,
-    return: byDay.get(day)!.return,
-  }));
+  // Sort windows within each day by openTime so the stacked list is ordered
+  const weeklyRows: DayScheduleRow[] = ORDERED_DAYS.map((day) => {
+    const entry = byDay.get(day)!;
+    return {
+      dayOfWeek: day,
+      label: DAY_LABELS[day],
+      pickups: entry.pickups.sort((a, b) => a.openTime - b.openTime),
+      returns: entry.returns.sort((a, b) => a.openTime - b.openTime),
+    };
+  });
 
   return { weeklyRows, overrides };
 }
 
 // ---------------------------------------------------------------------------
-// formatTimeRange — "540, 1020" → "09:00 – 17:00"
+// formatTimeRange — 540, 1020 → "09:00 – 17:00"
 // ---------------------------------------------------------------------------
 
 export function formatTimeRange(openTime: number, closeTime: number): string {

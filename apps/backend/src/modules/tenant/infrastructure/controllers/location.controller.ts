@@ -3,13 +3,17 @@ import { GetLocationsQuery } from '../../application/queries/get-locations/get-l
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateLocationCommand } from '../../application/commands/create-location/create-location.command';
 import { CreateLocationDto } from '../../application/dto/create-location.dto';
-import { AddScheduleToLocationDto } from '../../application/dto/add-schedule-to-location.dto';
+import {
+  AddScheduleToLocationDto,
+  BulkAddScheduleToLocationDto,
+} from '../../application/dto/add-schedule-to-location.dto';
 import { AddScheduleToLocationCommand } from '../../application/commands/add-schedule-to-location/add-schedule-to-location.command';
 import { LocationNotFoundError } from '../../domain/exceptions/location.exceptions';
 import { ScheduleSlotType } from '@repo/types';
 import { GetLocationScheduleSlotsQuery } from '../../application/queries/get-location-schedule-slots/get-location-schedule-slots.query';
 import { GetLocationScheduleSlotsQueryDto } from '../../application/dto/get-location-schedule-slots-query.dto';
 import { GetLocationSchedulesQuery } from '../../application/queries/get-location-schedules/get-location-schedules.query';
+import { BulkAddSchedulesToLocationCommand } from '../../application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command';
 
 @Controller('locations')
 export class LocationController {
@@ -52,7 +56,7 @@ export class LocationController {
   }
 
   @Post(':locationId/schedules')
-  async execute(@Param('locationId') locationId: string, @Body() dto: AddScheduleToLocationDto): Promise<void> {
+  async createSchedule(@Param('locationId') locationId: string, @Body() dto: AddScheduleToLocationDto): Promise<void> {
     const command = new AddScheduleToLocationCommand({
       locationId,
       type: dto.type,
@@ -62,6 +66,34 @@ export class LocationController {
       closeTime: dto.closeTime,
       slotIntervalMinutes: dto.slotIntervalMinutes,
     });
+
+    const result = await this.commandBus.execute(command);
+
+    if (result.isErr()) {
+      const error = result.error;
+      if (error instanceof LocationNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Post(':locationId/schedules/bulk')
+  async bulkAdd(@Param('locationId') locationId: string, @Body() dto: BulkAddScheduleToLocationDto): Promise<void> {
+    const command = new BulkAddSchedulesToLocationCommand(
+      locationId,
+      dto.items.map((item) => ({
+        locationId,
+        type: item.type,
+        dayOfWeek: item.dayOfWeek,
+        specificDate: item.specificDate ? new Date(item.specificDate) : null,
+        window: {
+          openTime: item.openTime,
+          closeTime: item.closeTime,
+          slotIntervalMinutes: item.slotIntervalMinutes,
+        },
+      })),
+    );
 
     const result = await this.commandBus.execute(command);
 

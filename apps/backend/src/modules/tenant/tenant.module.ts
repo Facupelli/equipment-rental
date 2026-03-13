@@ -31,6 +31,7 @@ import { FindTenantBySlugQueryHandler } from './application/queries/find-tenant-
 import { GetLocationScheduleSlotsQueryHandler } from './application/queries/get-location-schedule-slots/get-location-schedule-slots.query-handler';
 import { GetLocationSchedulesQueryHandler } from './application/queries/get-location-schedules/get-location-schedules.query-handler';
 import { AddScheduleToLocationCommandHandler } from './application/commands/add-schedule-to-location/add-schedule-to-location.command-handler';
+import { BulkAddSchedulesToLocationCommandHandler } from './application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command-handler';
 
 const commandHandlers = [
   CreateTenantUserCommandHandler,
@@ -40,6 +41,7 @@ const commandHandlers = [
   SyncTenantBillingUnitsCommandHandler,
   // location schedule
   AddScheduleToLocationCommandHandler,
+  BulkAddSchedulesToLocationCommandHandler,
 ];
 const queryHandlers = [
   IsSlugTakenQueryHandler,

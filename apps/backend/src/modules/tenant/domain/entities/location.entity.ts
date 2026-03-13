@@ -55,6 +55,28 @@ export class Location {
     this.isActive = false;
   }
 
+  addSchedules(items: CreateLocationScheduleProps[]): void {
+    const candidates = items.map((props) => LocationSchedule.create(props));
+
+    // Check candidates against existing schedules
+    for (const candidate of candidates) {
+      if (this.schedules.some((existing) => existing.conflictsWith(candidate))) {
+        throw new LocationScheduleOverlapException();
+      }
+    }
+
+    // Check candidates against each other within the batch
+    for (let i = 0; i < candidates.length; i++) {
+      for (let j = i + 1; j < candidates.length; j++) {
+        if (candidates[i].conflictsWith(candidates[j])) {
+          throw new LocationScheduleOverlapException();
+        }
+      }
+    }
+
+    this.schedules.push(...candidates);
+  }
+
   addSchedule(props: CreateLocationScheduleProps): void {
     const candidate = LocationSchedule.create(props);
 

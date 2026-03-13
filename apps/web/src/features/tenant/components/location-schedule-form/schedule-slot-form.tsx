@@ -7,34 +7,37 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   scheduleSlotFormSchema,
   type ScheduleSlotFormValues,
 } from "../../locations/schemas/location-schedule-form.schema";
-import { ScheduleSlotType } from "@repo/types";
 import {
   DAYS_OF_WEEK,
   SLOT_INTERVAL_OPTIONS,
 } from "../../locations/constants/location-schedule.constants";
 
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
 interface ScheduleSlotFormProps {
   defaultValues: ScheduleSlotFormValues;
+  /** Edit mode — day chips are locked to the single existing day. */
+  isEditMode: boolean;
   onSubmit: (values: ScheduleSlotFormValues) => Promise<void>;
   onCancel: () => void;
   isPending: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export function ScheduleSlotForm({
   defaultValues,
+  isEditMode,
   onSubmit,
   onCancel,
   isPending,
@@ -57,9 +60,7 @@ export function ScheduleSlotForm({
     >
       <FieldGroup className="space-y-5">
         {/* ----------------------------------------------------------------
-            Slot Type toggle — Pickup | Return
-            Rendered as a segmented control rather than a Select because
-            there are only two mutually exclusive options.
+            Slot Type — Pickup | Return
         ----------------------------------------------------------------- */}
         <form.Field name="type">
           {(field) => {
@@ -67,9 +68,9 @@ export function ScheduleSlotForm({
               field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor="slot-type">Slot Type</FieldLabel>
+                <FieldLabel>Slot Type</FieldLabel>
                 <div className="flex rounded-lg border border-border bg-muted p-1">
-                  {Object.values(ScheduleSlotType).map((type) => (
+                  {(["PICKUP", "RETURN"] as const).map((type) => (
                     <button
                       key={type}
                       type="button"
@@ -92,9 +93,7 @@ export function ScheduleSlotForm({
         </form.Field>
 
         {/* ----------------------------------------------------------------
-            Mode toggle — Weekly recurrence | Specific date
-            Switching mode does NOT clear the sibling field immediately;
-            the DTO converter nulls the inactive branch on submission.
+            Mode — Weekly | Specific date
         ----------------------------------------------------------------- */}
         <form.Field name="mode">
           {(modeField) => (
@@ -125,40 +124,57 @@ export function ScheduleSlotForm({
                 </div>
               </Field>
 
-              {/* Conditional sub-field based on mode */}
               {modeField.state.value === "weekly" ? (
-                <form.Field name="dayOfWeek">
+                /* ------------------------------------------------------------
+                   Day chips — multi-select in create mode, locked in edit mode.
+                   Edit mode only ever has one day (the record being edited), so
+                   locking prevents accidentally changing which day the record
+                   belongs to. The user should create a new slot instead.
+                ------------------------------------------------------------ */
+                <form.Field name="daysOfWeek">
                   {(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid;
+
+                    function toggle(day: number) {
+                      if (isEditMode) return;
+                      const current = field.state.value;
+                      const next = current.includes(day)
+                        ? current.filter((d) => d !== day)
+                        : [...current, day];
+                      field.handleChange(next);
+                    }
+
                     return (
                       <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor="day-of-week">
-                          Day of Week
-                        </FieldLabel>
-                        <Select
-                          name={field.name}
-                          value={field.state.value?.toString() ?? ""}
-                          onValueChange={(v) => field.handleChange(Number(v))}
-                          items={DAYS_OF_WEEK}
-                        >
-                          <SelectTrigger
-                            id="day-of-week"
-                            aria-invalid={isInvalid}
-                          >
-                            <SelectValue placeholder="Select a day" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DAYS_OF_WEEK.map((d) => (
-                              <SelectItem
+                        <FieldLabel>{isEditMode ? "Day" : "Days"}</FieldLabel>
+                        <div className="flex gap-1.5">
+                          {DAYS_OF_WEEK.map((d) => {
+                            const isSelected = field.state.value.includes(
+                              d.value,
+                            );
+                            return (
+                              <button
                                 key={d.value}
-                                value={d.value.toString()}
+                                type="button"
+                                onClick={() => toggle(d.value)}
+                                disabled={isEditMode && !isSelected}
+                                aria-pressed={isSelected}
+                                className={cn(
+                                  "flex-1 rounded-md border py-1.5 text-xs font-medium transition-all",
+                                  isSelected
+                                    ? "border-foreground bg-foreground text-background"
+                                    : "border-border bg-transparent text-muted-foreground",
+                                  !isEditMode &&
+                                    "hover:border-foreground/40 hover:text-foreground",
+                                  isEditMode && !isSelected && "opacity-30",
+                                )}
                               >
                                 {d.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                              </button>
+                            );
+                          })}
+                        </div>
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
                         )}
@@ -167,15 +183,15 @@ export function ScheduleSlotForm({
                   }}
                 </form.Field>
               ) : (
+                /* Specific date picker */
                 <form.Field name="specificDate">
                   {(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid;
                     return (
                       <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor="specific-date">Date</FieldLabel>
+                        <FieldLabel>Date</FieldLabel>
                         <Input
-                          id="specific-date"
                           type="date"
                           name={field.name}
                           value={field.state.value ?? ""}
@@ -198,7 +214,7 @@ export function ScheduleSlotForm({
         </form.Field>
 
         {/* ----------------------------------------------------------------
-            Open Time / Close Time — side by side
+            Open Time / Close Time
         ----------------------------------------------------------------- */}
         <div className="grid grid-cols-2 gap-4">
           <form.Field name="openTime">
@@ -207,9 +223,8 @@ export function ScheduleSlotForm({
                 field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor="open-time">Open Time</FieldLabel>
+                  <FieldLabel>Open Time</FieldLabel>
                   <Input
-                    id="open-time"
                     type="time"
                     name={field.name}
                     value={field.state.value}
@@ -229,9 +244,8 @@ export function ScheduleSlotForm({
                 field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor="close-time">Close Time</FieldLabel>
+                  <FieldLabel>Close Time</FieldLabel>
                   <Input
-                    id="close-time"
                     type="time"
                     name={field.name}
                     value={field.state.value}
@@ -247,7 +261,7 @@ export function ScheduleSlotForm({
         </div>
 
         {/* ----------------------------------------------------------------
-            Slot Interval — three-button toggle
+            Slot Interval
         ----------------------------------------------------------------- */}
         <form.Field name="slotIntervalMinutes">
           {(field) => {

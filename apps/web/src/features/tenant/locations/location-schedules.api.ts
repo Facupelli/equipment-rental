@@ -1,10 +1,11 @@
 import { apiFetch } from "@/lib/api";
 import {
-  AddScheduleToLocationSchema,
+  addScheduleToLocationSchema,
   type AddScheduleToLocationDto,
   type LocationScheduleResponseDto,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
+import z from "zod";
 
 const apiUrl = (locationId: string) => `/locations/${locationId}/schedules`;
 
@@ -24,7 +25,7 @@ export const createLocationSchedule = createServerFn({ method: "POST" })
   .inputValidator(
     (data: { locationId: string; dto: AddScheduleToLocationDto }) => ({
       locationId: data.locationId,
-      dto: AddScheduleToLocationSchema.parse(data.dto),
+      dto: addScheduleToLocationSchema.parse(data.dto),
     }),
   )
   .handler(async ({ data }): Promise<LocationScheduleResponseDto> => {
@@ -32,6 +33,23 @@ export const createLocationSchedule = createServerFn({ method: "POST" })
       method: "POST",
       body: data.dto,
     });
+  });
+
+export const bulkCreateLocationSchedules = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: { locationId: string; items: AddScheduleToLocationDto[] }) => ({
+      locationId: data.locationId,
+      items: z.array(addScheduleToLocationSchema).parse(data.items),
+    }),
+  )
+  .handler(async ({ data }): Promise<LocationScheduleResponseDto[]> => {
+    return apiFetch<LocationScheduleResponseDto[]>(
+      `${apiUrl(data.locationId)}/bulk`,
+      {
+        method: "POST",
+        body: { items: data.items },
+      },
+    );
   });
 
 // ---------------------------------------------------------------------------
@@ -45,7 +63,7 @@ export const updateLocationSchedule = createServerFn({ method: "POST" })
     }) => ({
       locationId: data.locationId,
       scheduleId: data.scheduleId,
-      dto: AddScheduleToLocationSchema.parse(data.dto),
+      dto: addScheduleToLocationSchema.parse(data.dto),
     }),
   )
   .handler(async ({ data }): Promise<LocationScheduleResponseDto> => {
