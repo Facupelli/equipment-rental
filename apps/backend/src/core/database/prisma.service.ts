@@ -21,6 +21,7 @@ const TENANT_EXCLUDED_MODELS = new Set([
   'PricingTier', // scoped through ProductType or Bundle
   'RolePermission', // scoped through Role
   'UserRole', // scoped through User
+  'LocationSchedule', // scoped through Location
 ]);
 
 // Operations that only need WHERE injection
@@ -126,6 +127,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
         $allModels: {
           async $allOperations({ args, query }) {
             const start = Date.now();
+
             try {
               return await query(args);
             } finally {

@@ -260,26 +260,23 @@ enum ScheduleSlotType {
 }
 
 model LocationSchedule {
-  id         String           @id @default(uuid())
-  locationId String           @map("location_id")
-  type       ScheduleSlotType
-  
-  // Day-of-week rule (0 = Sunday, 6 = Saturday)
-  dayOfWeek  Int?  @map("day_of_week")
-  
-  // Specific date override — wins over dayOfWeek
+  id           String           @id @default(uuid())
+  locationId   String           @map("location_id")
+  type         ScheduleSlotType
+
+  dayOfWeek    Int?      @map("day_of_week")
   specificDate DateTime? @map("specific_date") @db.Date
 
-  openTime             Int // minutes from midnight, e.g. 540 = 09:00
-  closeTime            Int // minutes from midnight, e.g. 1020 = 17:00
-  slotIntervalMinutes  Int @map("slot_interval_minutes") // 15 | 30 | 60
+  openTime            Int @map("open_time")
+  closeTime           Int @map("close_time")
+  slotIntervalMinutes Int @map("slot_interval_minutes")
 
   location Location @relation(fields: [locationId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
 
-  @@map("rental_schedules")
+  @@map("location_schedules")
 }
 
 

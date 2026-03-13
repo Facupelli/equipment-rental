@@ -5,7 +5,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import type {
-  AssetListResponse,
   AssetResponse,
   GetAssetsQuery,
   PaginationMeta,
@@ -24,7 +23,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AssetsToolbar } from "./assets-toolbar";
 
 interface InventoryItemsTableProps {
-  data: AssetListResponse;
+  data: AssetResponse[];
   meta: PaginationMeta | undefined;
   columns: ColumnDef<AssetResponse>[];
   pagination: PaginationState;

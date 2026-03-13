@@ -29,7 +29,7 @@ export class LocationMapper {
       address: entity.address,
       isActive: entity.active,
       schedules: {
-        create: entity.getSchedules().map(LocationScheduleMapper.toPersistence),
+        create: entity.getSchedules().map(LocationScheduleMapper.toNestedPersistence),
       },
     };
   }
@@ -63,6 +63,18 @@ export class LocationScheduleMapper {
     return {
       id: entity.id,
       locationId: entity.locationId,
+      type: entity.type,
+      dayOfWeek: entity.dayOfWeek,
+      specificDate: entity.specificDate,
+      openTime: entity.getWindow().openTime,
+      closeTime: entity.getWindow().closeTime,
+      slotIntervalMinutes: entity.getWindow().slotIntervalMinutes,
+    };
+  }
+
+  static toNestedPersistence(entity: LocationSchedule): Prisma.LocationScheduleUncheckedCreateWithoutLocationInput {
+    return {
+      id: entity.id,
       type: entity.type,
       dayOfWeek: entity.dayOfWeek,
       specificDate: entity.specificDate,

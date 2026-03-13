@@ -2,9 +2,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUpDown } from "lucide-react";
-import type { LocationListItem } from "@repo/schemas";
+import type { LocationListItemResponse } from "@repo/schemas";
 
-export const locationColumns: ColumnDef<LocationListItem>[] = [
+export const locationColumns: ColumnDef<LocationListItemResponse>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (

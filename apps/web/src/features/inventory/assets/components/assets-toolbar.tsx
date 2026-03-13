@@ -11,9 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
 import { InventoryItemStatus } from "@repo/types";
-import type { GetInventoryItemsParams } from "../assets.api";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
 import { useCategories } from "@/features/catalog/product-categories/categories.queries";
+import type { GetAssetsQuery } from "@repo/schemas";
 
 const STATUS_OPTIONS: { value: InventoryItemStatus; label: string }[] = [
   { value: InventoryItemStatus.OPERATIONAL, label: "Operational" },
@@ -22,8 +22,8 @@ const STATUS_OPTIONS: { value: InventoryItemStatus; label: string }[] = [
 ];
 
 interface InventoryItemsToolbarProps {
-  filters: GetInventoryItemsParams;
-  onFiltersChange: (filters: GetInventoryItemsParams) => void;
+  filters: GetAssetsQuery;
+  onFiltersChange: (filters: GetAssetsQuery) => void;
 }
 
 export function AssetsToolbar({
@@ -33,7 +33,7 @@ export function AssetsToolbar({
   const { data: categories = [] } = useCategories();
   const { data: locations = [] } = useLocations();
 
-  function set(patch: Partial<GetInventoryItemsParams>) {
+  function set(patch: Partial<GetAssetsQuery>) {
     onFiltersChange({ ...filters, ...patch });
   }
 

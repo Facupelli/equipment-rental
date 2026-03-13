@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import clsx from "clsx";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -27,6 +28,7 @@ interface DataTableProps<TData, TValue> {
   searchColumn?: string;
   searchPlaceholder?: string;
   noDataMessage?: string;
+  handleRowClick?: (row: TData) => void;
 }
 
 export function OwnersDataTable<TData, TValue>({
@@ -35,6 +37,7 @@ export function OwnersDataTable<TData, TValue>({
   searchColumn,
   searchPlaceholder = "Search...",
   noDataMessage = "No owners found.",
+  handleRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -98,7 +101,14 @@ export function OwnersDataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  onClick={() => handleRowClick && handleRowClick(row.original)}
+                  className={clsx(
+                    handleRowClick &&
+                      "cursor-pointer hover:bg-muted/50 transition-colors",
+                  )}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(

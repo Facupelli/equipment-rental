@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LocationMapper } from '../mappers/location.mapper';
+import { LocationMapper, LocationScheduleMapper } from '../mappers/location.mapper';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { Location } from 'src/modules/tenant/domain/entities/location.entity';
 import { LocationRepositoryPort } from 'src/modules/tenant/domain/ports/location.repository.port';
@@ -22,17 +22,25 @@ export class LocationRepository implements LocationRepositoryPort {
   }
 
   async save(location: Location): Promise<string> {
-    await this.prisma.client.$transaction([
-      this.prisma.client.locationSchedule.deleteMany({
-        where: { locationId: location.id },
-      }),
+    const client = this.prisma.client;
 
-      this.prisma.client.location.upsert({
+    await client.$transaction(async (tx) => {
+      await tx.locationSchedule.deleteMany({
+        where: { locationId: location.id },
+      });
+
+      await tx.location.upsert({
         where: { id: location.id },
         create: LocationMapper.toPersistence(location),
         update: LocationMapper.toUpdatePersistence(location),
-      }),
-    ]);
+      });
+
+      if (location.getSchedules().length > 0) {
+        await tx.locationSchedule.createMany({
+          data: location.getSchedules().map(LocationScheduleMapper.toPersistence),
+        });
+      }
+    });
 
     return location.id;
   }

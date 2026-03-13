@@ -3,7 +3,8 @@ import { CreateLocationDialog } from "@/features/tenant/locations/components/cre
 import { locationColumns } from "@/features/tenant/locations/components/locations-column";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
 import { OwnersDataTable } from "@/features/tenant/owners/components/owners-table";
-import { createFileRoute } from "@tanstack/react-router";
+import type { LocationListItemResponse } from "@repo/schemas";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -37,6 +38,7 @@ function LocationsPage() {
 }
 
 function LocationsTable() {
+  const navigate = useNavigate();
   const { data: locations = [], isPending, isError } = useLocations();
 
   if (isError) {
@@ -51,6 +53,13 @@ function LocationsTable() {
     return <p className="text-sm text-muted-foreground">Loading...</p>;
   }
 
+  function handleRowClick(location: LocationListItemResponse) {
+    navigate({
+      to: "/dashboard/locations/$locationId",
+      params: { locationId: location.id },
+    });
+  }
+
   return (
     <OwnersDataTable
       columns={locationColumns}
@@ -58,6 +67,7 @@ function LocationsTable() {
       searchColumn="name"
       searchPlaceholder="Search locations..."
       noDataMessage="No locations found."
+      handleRowClick={handleRowClick}
     />
   );
 }

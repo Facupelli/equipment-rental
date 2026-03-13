@@ -28,6 +28,9 @@ import { TenantApplicationService } from './application/tenant.application-servi
 import { UpdateTenantConfigCommandHandler } from './application/commands/update-config/update-config.command-handler';
 import { FindTenantByCustomDomainQueryHandler } from './application/queries/find-tenant-by-custom-domain/find-tenant-by-custom-domain.query-handler';
 import { FindTenantBySlugQueryHandler } from './application/queries/find-tenant-by-slug/find-tenant-by-slug.query-handler';
+import { GetLocationScheduleSlotsQueryHandler } from './application/queries/get-location-schedule-slots/get-location-schedule-slots.query-handler';
+import { GetLocationSchedulesQueryHandler } from './application/queries/get-location-schedules/get-location-schedules.query-handler';
+import { AddScheduleToLocationCommandHandler } from './application/commands/add-schedule-to-location/add-schedule-to-location.command-handler';
 
 const commandHandlers = [
   CreateTenantUserCommandHandler,
@@ -35,6 +38,8 @@ const commandHandlers = [
   CreateOwnerCommandHandler,
   CreateLocationCommandHandler,
   SyncTenantBillingUnitsCommandHandler,
+  // location schedule
+  AddScheduleToLocationCommandHandler,
 ];
 const queryHandlers = [
   IsSlugTakenQueryHandler,
@@ -42,6 +47,9 @@ const queryHandlers = [
   GetLocationsQueryHandler,
   GetOwnersQueryHandler,
   GetTenantBillingUnitsQueryHandler,
+  // location schedule
+  GetLocationScheduleSlotsQueryHandler,
+  GetLocationSchedulesQueryHandler,
   // internal
   FindTenantByCustomDomainQueryHandler,
   FindTenantBySlugQueryHandler,
@@ -55,6 +63,7 @@ const repositories = [
 ];
 const services = [
   TenantContextService,
+  TenantApplicationService,
   {
     provide: TenantPublicApi,
     useClass: TenantApplicationService,

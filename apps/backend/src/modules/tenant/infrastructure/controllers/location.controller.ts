@@ -9,6 +9,7 @@ import { LocationNotFoundError } from '../../domain/exceptions/location.exceptio
 import { ScheduleSlotType } from '@repo/types';
 import { GetLocationScheduleSlotsQuery } from '../../application/queries/get-location-schedule-slots/get-location-schedule-slots.query';
 import { GetLocationScheduleSlotsQueryDto } from '../../application/dto/get-location-schedule-slots-query.dto';
+import { GetLocationSchedulesQuery } from '../../application/queries/get-location-schedules/get-location-schedules.query';
 
 @Controller('locations')
 export class LocationController {
@@ -43,6 +44,11 @@ export class LocationController {
     }
 
     return this.queryBus.execute(new GetLocationScheduleSlotsQuery(locationId, query.date, query.type));
+  }
+
+  @Get(':locationId/schedules')
+  async getLocationSchedules(@Param('locationId') locationId: string) {
+    return this.queryBus.execute(new GetLocationSchedulesQuery(locationId));
   }
 
   @Post(':locationId/schedules')
