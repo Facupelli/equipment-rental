@@ -20,7 +20,6 @@ import { toPriceSnapshot } from 'src/modules/order/infrastructure/persistence/ma
 import { BundleWithComponents, OrderQueryService } from 'src/modules/order/infrastructure/services/order-query.service';
 import { PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
 import { TenantPublicApi } from 'src/modules/tenant/tenant.public-api';
-import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 import { CreateOrderCommand } from './create-order.command';
 
 // ── Resolved item types ──────────────────────────────────────────────────────
@@ -69,7 +68,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   constructor(
     private readonly prisma: PrismaService,
     private readonly orderRepo: OrderRepositoryPort,
-    private readonly tenantContext: TenantContextService,
     private readonly tenantApi: TenantPublicApi,
     private readonly inventoryApi: InventoryPublicApi,
     private readonly pricingApi: PricingPublicApi,
@@ -81,17 +79,15 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
       throw new BadRequestException('An order must contain at least one item.');
     }
 
-    const tenantId = this.tenantContext.requireTenantId();
-
     const validation = await this.validateSlots(command);
     if (validation.isErr()) return validation;
 
-    const period = await this.derivePeriod(command, tenantId);
-    const resolvedItems = await this.resolveItems(command, tenantId, period);
+    const period = await this.derivePeriod(command);
+    const resolvedItems = await this.resolveItems(command, period);
 
     return this.prisma.client.$transaction(async (tx) => {
       const order = Order.create({
-        tenantId,
+        tenantId: command.tenantId,
         locationId: command.locationId,
         customerId: command.customerId ?? undefined,
       });
@@ -176,8 +172,8 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   // Derives the rental DateRange from wall-clock slot times + tenant timezone.
   // Separated from validateSlots so each method has a single responsibility.
 
-  private async derivePeriod(command: CreateOrderCommand, tenantId: string): Promise<DateRange> {
-    const tenantConfig = await this.tenantApi.getConfig(tenantId);
+  private async derivePeriod(command: CreateOrderCommand): Promise<DateRange> {
+    const tenantConfig = await this.tenantApi.getConfig(command.tenantId);
 
     return DateRange.fromLocalSlots(
       command.period.start,
@@ -193,11 +189,7 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   // This is the single place where the three parallel structures are unified.
   // All subsequent steps operate on ResolvedItem — no command passing downstream.
 
-  private async resolveItems(
-    command: CreateOrderCommand,
-    tenantId: string,
-    period: DateRange,
-  ): Promise<ResolvedItem[]> {
+  private async resolveItems(command: CreateOrderCommand, period: DateRange): Promise<ResolvedItem[]> {
     const metas = await this.loadItemMetadata(command);
     const orderItemCountByCategory = this.buildCategoryCountMap(command, metas);
 
@@ -206,7 +198,7 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
         if (item.type === 'PRODUCT') {
           return this.pricingApi
             .calculateProductPrice({
-              tenantId,
+              tenantId: command.tenantId,
               locationId: command.locationId,
               productTypeId: item.productTypeId,
               period,
@@ -225,7 +217,7 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
         } else {
           return this.pricingApi
             .calculateBundlePrice({
-              tenantId,
+              tenantId: command.tenantId,
               locationId: command.locationId,
               bundleId: item.bundleId,
               period,

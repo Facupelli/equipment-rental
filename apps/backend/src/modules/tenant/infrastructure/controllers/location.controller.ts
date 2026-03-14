@@ -14,6 +14,8 @@ import { GetLocationScheduleSlotsQuery } from '../../application/queries/get-loc
 import { GetLocationScheduleSlotsQueryDto } from '../../application/dto/get-location-schedule-slots-query.dto';
 import { GetLocationSchedulesQuery } from '../../application/queries/get-location-schedules/get-location-schedules.query';
 import { BulkAddSchedulesToLocationCommand } from '../../application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
 
 @Controller('locations')
 export class LocationController {
@@ -23,8 +25,8 @@ export class LocationController {
   ) {}
 
   @Post()
-  async createLocation(@Body() dto: CreateLocationDto): Promise<string> {
-    const command = new CreateLocationCommand(dto.name, dto.address);
+  async createLocation(@CurrentUser() user: ReqUser, @Body() dto: CreateLocationDto): Promise<string> {
+    const command = new CreateLocationCommand(user.tenantId, dto.name, dto.address);
 
     return await this.commandBus.execute(command);
   }

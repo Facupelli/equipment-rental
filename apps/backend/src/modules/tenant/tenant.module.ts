@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { TenantContextService } from '../shared/tenant/tenant-context.service';
 import { UsersModule } from '../users/users.module';
 import { CreateTenantUserCommandHandler } from './application/commands/create-tenant-user.command-handler';
 import { TenantRepositoryPort } from './domain/ports/tenant.repository.port';
@@ -64,7 +63,6 @@ const repositories = [
   { provide: OwnerRepositoryPort, useClass: OwnerRepository },
 ];
 const services = [
-  TenantContextService,
   TenantApplicationService,
   {
     provide: TenantPublicApi,
@@ -76,6 +74,6 @@ const services = [
   imports: [UsersModule, AuthModule, CqrsModule],
   controllers: [TenantController, OwnerController, LocationController],
   providers: [...repositories, ...services, ...commandHandlers, ...queryHandlers],
-  exports: [TenantContextService, TenantPublicApi],
+  exports: [TenantPublicApi],
 })
 export class TenantModule {}

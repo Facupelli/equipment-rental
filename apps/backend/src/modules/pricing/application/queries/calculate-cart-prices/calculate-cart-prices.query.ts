@@ -14,6 +14,7 @@ export type CartQueryItem = CartQueryProductItem | CartQueryBundleItem;
 
 export class CalculateCartPricesQuery {
   constructor(
+    public readonly tenantId: string,
     public readonly locationId: string,
     public readonly currency: string,
     public readonly period: { start: Date; end: Date },

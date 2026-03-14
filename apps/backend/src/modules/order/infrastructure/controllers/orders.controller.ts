@@ -13,6 +13,8 @@ import { ProblemException } from 'src/core/exceptions/problem.exception';
 import { GetOrderByIdQuery } from '../../application/queries/get-order-by-id/get-order-by-id.query';
 import { GetCalendarDotsQueryDto } from '../../application/dto/get-calendar-dots-query.dto';
 import { GetCalendarDotsQuery } from '../../application/queries/get-calendars-dots/get-calendar-dots.query';
+import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 
 @Controller('orders')
 export class OrdersController {
@@ -23,8 +25,9 @@ export class OrdersController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateOrderDto) {
+  async create(@CurrentUser() user: ReqUser, @Body() dto: CreateOrderDto) {
     const command = new CreateOrderCommand(
+      user.tenantId,
       dto.locationId,
       dto.customerId ?? null,
       { start: new Date(dto.periodStart), end: new Date(dto.periodEnd) },

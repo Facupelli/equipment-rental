@@ -30,7 +30,7 @@ export class CustomerController {
   }
 
   @Get(':id')
-  getCustomerDetail(@Param('id') id: string): Promise<CustomerDetailResponseDto> {
-    return this.queryBus.execute(new GetCustomerDetailQuery(id));
+  getCustomerDetail(@CurrentUser() user: ReqUser, @Param('id') id: string): Promise<CustomerDetailResponseDto> {
+    return this.queryBus.execute(new GetCustomerDetailQuery(user.tenantId, id));
   }
 }

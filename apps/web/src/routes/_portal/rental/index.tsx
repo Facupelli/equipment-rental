@@ -456,9 +456,10 @@ function BundlesSkeleton() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function NewArrivals({ locationId }: { locationId?: string }) {
-  const { data: items } = useSuspenseQuery(
+  const { data: items, isError } = useSuspenseQuery(
     createNewArrivalsQueryOptions({ locationId }),
   );
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scroll(direction: "left" | "right") {
@@ -471,6 +472,14 @@ function NewArrivals({ locationId }: { locationId?: string }) {
       left: direction === "left" ? -amount : amount,
       behavior: "smooth",
     });
+  }
+
+  if (isError) {
+    return (
+      <p className="text-sm text-destructive">
+        Failed to load new arrivals. Please try again.
+      </p>
+    );
   }
 
   if (!items.length) {

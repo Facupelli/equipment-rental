@@ -2,7 +2,6 @@ import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { NotFoundException } from '@nestjs/common';
 import { GetCustomerDetailQuery } from './get-customer-detail.query';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 import { CustomerDetailResponseDto } from '@repo/schemas';
 import { Prisma } from 'src/generated/prisma/client';
 
@@ -14,13 +13,10 @@ interface ActiveRentalRaw {
 
 @QueryHandler(GetCustomerDetailQuery)
 export class GetCustomerDetailQueryHandler implements IQueryHandler<GetCustomerDetailQuery> {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly tenantContextService: TenantContextService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetCustomerDetailQuery): Promise<CustomerDetailResponseDto> {
-    const { customerId } = query;
+    const { customerId, tenantId } = query;
 
     const customer = await this.prisma.client.customer.findUnique({
       where: { id: customerId },
@@ -34,8 +30,6 @@ export class GetCustomerDetailQueryHandler implements IQueryHandler<GetCustomerD
     if (!customer) {
       throw new NotFoundException(`Customer ${customerId} not found`);
     }
-
-    const tenantId = this.tenantContextService.requireTenantId();
 
     const activeRentals = await this.prisma.client.$queryRaw<ActiveRentalRaw[]>`
       SELECT

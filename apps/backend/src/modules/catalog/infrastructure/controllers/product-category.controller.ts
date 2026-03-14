@@ -4,6 +4,8 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateProductCategoryCommand } from '../../application/commands/create-product-category/create-product-category.command';
 import { GetProductCategoriesQuery } from '../../application/queries/get-product-categories/get-product-categories.query';
 import { ProductCategoryResponse } from '@repo/schemas';
+import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 
 @Controller('product-categories')
 export class ProductCategoryController {
@@ -13,8 +15,8 @@ export class ProductCategoryController {
   ) {}
 
   @Post()
-  async createProductCategory(@Body() dto: CreateProductCategoryDto): Promise<string> {
-    const command = new CreateProductCategoryCommand(dto.name, dto.description);
+  async createProductCategory(@CurrentUser() user: ReqUser, @Body() dto: CreateProductCategoryDto): Promise<string> {
+    const command = new CreateProductCategoryCommand(user.tenantId, dto.name, dto.description);
 
     return await this.commandBus.execute(command);
   }

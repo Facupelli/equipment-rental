@@ -2,22 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UpdateTenantConfigCommand } from './update-config.command';
 import { TenantRepositoryPort } from 'src/modules/tenant/domain/ports/tenant.repository.port';
-import { TenantContextService } from '../../../../shared/tenant/tenant-context.service';
 
 @Injectable()
 @CommandHandler(UpdateTenantConfigCommand)
 export class UpdateTenantConfigCommandHandler implements ICommandHandler<UpdateTenantConfigCommand, void> {
-  constructor(
-    private readonly tenantRepo: TenantRepositoryPort,
-    private readonly tenantContext: TenantContextService,
-  ) {}
+  constructor(private readonly tenantRepo: TenantRepositoryPort) {}
 
   async execute(command: UpdateTenantConfigCommand): Promise<void> {
-    const tenantId = this.tenantContext.requireTenantId();
-    const tenant = await this.tenantRepo.load(tenantId);
+    const tenant = await this.tenantRepo.load(command.tenantId);
 
     if (!tenant) {
-      throw new NotFoundException(`Tenant ${tenantId} not found`);
+      throw new NotFoundException(`Tenant ${command.tenantId} not found`);
     }
 
     tenant.updateConfig(command.patch);

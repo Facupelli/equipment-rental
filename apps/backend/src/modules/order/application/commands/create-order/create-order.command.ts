@@ -4,6 +4,7 @@ export type CreateOrderItemCommand =
 
 export class CreateOrderCommand {
   constructor(
+    public readonly tenantId: string,
     public readonly locationId: string,
     public readonly customerId: string | null,
     public readonly period: { start: Date; end: Date },

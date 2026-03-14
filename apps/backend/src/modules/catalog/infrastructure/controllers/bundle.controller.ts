@@ -11,6 +11,8 @@ import {
   PublishBundleCommand,
   RetireBundleCommand,
 } from '../../application/commands/publish-bundle/publish-bundle.command';
+import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 
 @Controller('bundles')
 export class BundleController {
@@ -20,8 +22,9 @@ export class BundleController {
   ) {}
 
   @Post()
-  async createBundle(@Body() dto: CreateBundleDto): Promise<string> {
+  async createBundle(@CurrentUser() user: ReqUser, @Body() dto: CreateBundleDto): Promise<string> {
     const command = new CreateBundleCommand(
+      user.tenantId,
       dto.billingUnitId,
       dto.name,
       dto.imageUrl,

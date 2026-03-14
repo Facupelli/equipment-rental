@@ -65,23 +65,23 @@ export class TenantController {
   }
 
   @Patch('config')
-  async updateConfig(@Body() dto: UpdateTenantConfigDto): Promise<void> {
-    await this.commandBus.execute(new UpdateTenantConfigCommand(dto));
+  async updateConfig(@CurrentUser() user: ReqUser, @Body() dto: UpdateTenantConfigDto): Promise<void> {
+    await this.commandBus.execute(new UpdateTenantConfigCommand(user.tenantId, dto));
   }
 
   @Get('billing-units')
-  async getBillingUnits() {
+  async getBillingUnits(@CurrentUser() user: ReqUser) {
     const billingUnits = await this.queryBus.execute<GetTenantBillingUnitsQuery, TenantBillingUnitListResponse | null>(
-      new GetTenantBillingUnitsQuery(),
+      new GetTenantBillingUnitsQuery(user.tenantId),
     );
 
     return billingUnits;
   }
 
   @Post('billing-units')
-  async createBillingUnit(@Body() dto: SyncTenantBillingUnitsDto) {
+  async createBillingUnit(@CurrentUser() user: ReqUser, @Body() dto: SyncTenantBillingUnitsDto) {
     const result = await this.commandBus.execute<SyncTenantBillingUnitsCommand, string>(
-      new SyncTenantBillingUnitsCommand(dto.billingUnitIds),
+      new SyncTenantBillingUnitsCommand(user.tenantId, dto.billingUnitIds),
     );
 
     return result;

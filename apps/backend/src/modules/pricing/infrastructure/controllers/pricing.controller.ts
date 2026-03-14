@@ -3,6 +3,8 @@ import { QueryBus } from '@nestjs/cqrs';
 import { CalculateCartPricesDto } from '../../application/dto/get-items-price-query.dto';
 import { CalculateCartPricesQuery } from '../../application/queries/calculate-cart-prices/calculate-cart-prices.query';
 import { CartPriceResult } from '@repo/schemas';
+import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 
 @Controller('pricing')
 export class PricingController {
@@ -17,8 +19,9 @@ export class PricingController {
    */
   @Post('cart/preview')
   @HttpCode(HttpStatus.OK)
-  async calculateCartPrices(@Body() dto: CalculateCartPricesDto) {
+  async calculateCartPrices(@CurrentUser() user: ReqUser, @Body() dto: CalculateCartPricesDto) {
     const query = new CalculateCartPricesQuery(
+      user.tenantId,
       dto.locationId,
       dto.currency,
       {

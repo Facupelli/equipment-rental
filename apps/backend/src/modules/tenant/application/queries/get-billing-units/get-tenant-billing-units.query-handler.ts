@@ -1,7 +1,6 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetTenantBillingUnitsQuery } from './get-tenant-billing-units.query';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { TenantContextService } from '../../../../shared/tenant/tenant-context.service';
 
 export interface TenantBillingUnitListItem {
   id: string;
@@ -14,16 +13,11 @@ export class GetTenantBillingUnitsQueryHandler implements IQueryHandler<
   GetTenantBillingUnitsQuery,
   TenantBillingUnitListItem[]
 > {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly tenantContext: TenantContextService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async execute(_query: GetTenantBillingUnitsQuery): Promise<TenantBillingUnitListItem[]> {
-    const tenantId = this.tenantContext.requireTenantId();
-
+  async execute(query: GetTenantBillingUnitsQuery): Promise<TenantBillingUnitListItem[]> {
     const rows = await this.prisma.client.tenantBillingUnit.findMany({
-      where: { tenantId },
+      where: { tenantId: query.tenantId },
       select: {
         id: true,
         billingUnitId: true,

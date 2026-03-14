@@ -5,7 +5,6 @@ import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range
 import { PricingPublicApi } from '../../../pricing.public-api';
 import { CalculateCartPricesQuery, CartQueryProductItem } from './calculate-cart-prices.query';
 import { PricingQueryService } from '../../../infrastructure/services/pricing-query.service';
-import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 
 export type CartPriceLineItem = {
   type: 'PRODUCT' | 'BUNDLE';
@@ -34,7 +33,6 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
   constructor(
     private readonly pricingApp: PricingPublicApi,
     private readonly pricingQuery: PricingQueryService,
-    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(query: CalculateCartPricesQuery): Promise<CartPriceResult> {
@@ -87,8 +85,7 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
     // ── Step 5: Fire all pricing calls in parallel ─────────────────────────
     // Each unit is priced independently — this matches how CreateOrderHandler
     // will price each OrderItem at order creation time.
-    const tenantId = this.tenantContext.requireTenantId();
-    const { locationId, currency, period } = query;
+    const { tenantId, locationId, currency, period } = query;
 
     const pricingTasks = query.items.flatMap((item) =>
       Array.from({ length: item.quantity }, () =>

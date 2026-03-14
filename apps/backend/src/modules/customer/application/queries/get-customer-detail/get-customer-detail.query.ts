@@ -1,3 +1,6 @@
 export class GetCustomerDetailQuery {
-  constructor(public readonly customerId: string) {}
+  constructor(
+    public readonly tenantId: string,
+    public readonly customerId: string,
+  ) {}
 }

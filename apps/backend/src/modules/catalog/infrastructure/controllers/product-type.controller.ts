@@ -11,6 +11,8 @@ import {
   PublishProductTypeCommand,
   RetireProductTypeCommand,
 } from '../../application/commands/publish-product-type/publish-product.command';
+import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 
 @Controller('product-types')
 export class ProductTypeController {
@@ -20,8 +22,8 @@ export class ProductTypeController {
   ) {}
 
   @Post()
-  async createProductType(@Body() dto: CreateProductTypeDto): Promise<string> {
-    const command = new CreateProductTypeCommand(dto);
+  async createProductType(@CurrentUser() user: ReqUser, @Body() dto: CreateProductTypeDto): Promise<string> {
+    const command = new CreateProductTypeCommand(user.tenantId, dto);
 
     return await this.commandBus.execute(command);
   }

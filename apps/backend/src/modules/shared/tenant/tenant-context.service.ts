@@ -1,10 +1,11 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { AsyncLocalStorage } from 'async_hooks';
 
 interface TenantStore {
   tenantId: string;
 }
 
+@Injectable()
 export class TenantContextService {
   private readonly als = new AsyncLocalStorage<TenantStore>();
 

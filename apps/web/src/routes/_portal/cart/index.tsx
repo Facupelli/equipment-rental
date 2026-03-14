@@ -30,6 +30,7 @@ import type { CartPriceLineItem, CartPriceResult } from "@repo/schemas";
 import clsx from "clsx";
 import { useCartOrder } from "@/features/rental/cart/hooks/use-cart-order";
 import { formatDateShort, formatRentalDuration } from "@/lib/dates/format";
+import { useLocationSchedules } from "@/features/tenant/locations/location-schedules.queries";
 
 const cartPageSearchSchema = z.object({
   startDate: z.coerce.date(),
@@ -46,12 +47,14 @@ export const Route = createFileRoute("/_portal/cart/")({
 
 function CartPage() {
   const { startDate, endDate, locationId } = useSearch({
-    from: "/_customer/cart/",
+    from: "/_portal/cart/",
   });
 
+  const { data: locationSchedules } = useLocationSchedules(locationId);
   const { data: locations } = useLocations();
   const location = locations?.find((l) => l.id === locationId);
 
+  console.log({ locationSchedules });
   const {
     cartItems,
     period,

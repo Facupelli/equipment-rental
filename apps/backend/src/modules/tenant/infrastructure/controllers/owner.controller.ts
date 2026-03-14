@@ -3,6 +3,8 @@ import { GetOwnersQuery } from '../../application/queries/get-owners/get-owners.
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CreateOwnerCommand } from '../../application/commands/create-owner/create-owner.command';
 import { CreateOwnerDto } from '../../application/dto/create-owner.dto';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
 
 @Controller('owners')
 export class OwnerController {
@@ -12,8 +14,8 @@ export class OwnerController {
   ) {}
 
   @Post()
-  async createOwner(@Body() dto: CreateOwnerDto): Promise<string> {
-    const command = new CreateOwnerCommand(dto.name, dto.email, dto.phone, dto.notes);
+  async createOwner(@CurrentUser() user: ReqUser, @Body() dto: CreateOwnerDto): Promise<string> {
+    const command = new CreateOwnerCommand(user.tenantId, dto.name, dto.email, dto.phone, dto.notes);
 
     return await this.commandBus.execute(command);
   }

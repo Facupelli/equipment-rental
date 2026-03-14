@@ -7,6 +7,8 @@ import { GetNewArrivalsQuery } from '../../application/queries/get-rental-new-ar
 import { GetRentalBundlesQuery } from '../../application/queries/get-rental-bundles/get-rental-bundles.query';
 import { GetRentalBundlesQueryDto } from '../../application/dto/rental/get-rental-bundles-query.dto';
 import { GetNewArrivalsQueryDto } from '../../application/dto/rental/get-new-arrivals-query.dto';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
 
 @Controller('rental')
 export class RentalController {
@@ -21,8 +23,8 @@ export class RentalController {
   }
 
   @Get('new-arrivals')
-  async getNewArrivals(@Query() dto: GetNewArrivalsQueryDto) {
-    return await this.queryBus.execute(new GetNewArrivalsQuery(dto.locationId));
+  async getNewArrivals(@CurrentUser() user: ReqUser, @Query() dto: GetNewArrivalsQueryDto) {
+    return await this.queryBus.execute(new GetNewArrivalsQuery(user.tenantId, dto.locationId));
   }
 
   @Get('bundles')

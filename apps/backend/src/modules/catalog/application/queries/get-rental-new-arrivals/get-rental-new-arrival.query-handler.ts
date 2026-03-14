@@ -4,20 +4,17 @@ import { GetNewArrivalsQuery } from './get-rental-new-arrival.query';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { TenantPublicApi } from 'src/modules/tenant/tenant.public-api';
 import { NewArrivalListResponseDto } from '@repo/schemas';
-import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 
 @Injectable()
 @QueryHandler(GetNewArrivalsQuery)
 export class GetNewArrivalsQueryHandler implements IQueryHandler<GetNewArrivalsQuery, NewArrivalListResponseDto> {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly tenantContext: TenantContextService,
     private readonly tenantApi: TenantPublicApi,
   ) {}
 
   async execute(query: GetNewArrivalsQuery): Promise<NewArrivalListResponseDto> {
-    const { locationId } = query;
-    const tenantId = this.tenantContext.requireTenantId();
+    const { locationId, tenantId } = query;
 
     const config = await this.tenantApi.getConfig(tenantId);
     const windowDays = config.newArrivalsWindowDays;

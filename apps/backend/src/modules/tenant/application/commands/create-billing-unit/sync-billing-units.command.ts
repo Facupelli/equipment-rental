@@ -1,5 +1,4 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { TenantContextService } from '../../../../shared/tenant/tenant-context.service';
 import { Result, ok } from 'src/core/result';
 import { SyncTenantBillingUnitsCommand } from './sync-billing-units.command-handler';
 import { PrismaService } from 'src/core/database/prisma.service';
@@ -9,16 +8,11 @@ export class SyncTenantBillingUnitsCommandHandler implements ICommandHandler<
   SyncTenantBillingUnitsCommand,
   Result<void, void>
 > {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly tenantContext: TenantContextService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async execute(command: SyncTenantBillingUnitsCommand): Promise<Result<void, void>> {
-    const tenantId = this.tenantContext.requireTenantId();
-
     const existing = await this.prisma.client.tenantBillingUnit.findMany({
-      where: { tenantId },
+      where: { tenantId: command.tenantId },
       select: { id: true, billingUnitId: true },
     });
 
@@ -37,7 +31,7 @@ export class SyncTenantBillingUnitsCommandHandler implements ICommandHandler<
     await this.prisma.client.$transaction([
       ...toCreate.map((billingUnitId) =>
         this.prisma.client.tenantBillingUnit.create({
-          data: { tenantId, billingUnitId },
+          data: { tenantId: command.tenantId, billingUnitId },
         }),
       ),
       ...toRemove.map((row) =>

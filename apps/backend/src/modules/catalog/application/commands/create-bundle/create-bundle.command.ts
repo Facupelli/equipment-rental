@@ -5,6 +5,7 @@ export interface CreateBundleComponentProps {
 
 export class CreateBundleCommand {
   constructor(
+    public readonly tenantId: string,
     public readonly billingUnitId: string,
     public readonly name: string,
     public readonly imageUrl: string | null,
