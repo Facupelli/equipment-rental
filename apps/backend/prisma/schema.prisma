@@ -456,7 +456,7 @@ model Order {
   locationId   String      @map("location_id")
   customerId   String?     @map("customer_id")
   status       OrderStatus @default(PENDING_SOURCING)
-  orderNumber  Int         @map("order_number")
+  orderNumber  Int         @map("order_number") @default(0)
   notes        String?
 
   createdAt    DateTime    @default(now()) @map("created_at")

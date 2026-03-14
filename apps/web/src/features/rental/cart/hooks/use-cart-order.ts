@@ -18,6 +18,8 @@ type UseCartOrderParams = {
   };
   startDate: Date;
   endDate: Date;
+  pickupTime: number | undefined;
+  returnTime: number | undefined;
 };
 
 export type CartOrderPeriod = {
@@ -39,6 +41,8 @@ export function useCartOrder({
   location,
   startDate,
   endDate,
+  pickupTime,
+  returnTime,
 }: UseCartOrderParams) {
   const navigate = useNavigate();
   const cartItems = useCartItems();
@@ -94,6 +98,15 @@ export function useCartOrder({
   const handleBook = async () => {
     setUnavailableIds([]);
 
+    if (!pickupTime || !returnTime) {
+      throw new ProblemDetailsError({
+        type: "errors://validation-error",
+        title: "Validation Failed",
+        status: 422,
+        detail: "Pickup and return times are required.",
+      });
+    }
+
     try {
       await createOrder({
         locationId: location.id,
@@ -102,6 +115,8 @@ export function useCartOrder({
         periodEnd: toISOString(period.end),
         currency: "USD",
         items: itemPayload,
+        pickupTime,
+        returnTime,
       });
 
       clearCart();

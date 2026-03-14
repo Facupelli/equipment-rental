@@ -30,7 +30,10 @@ import type { CartPriceLineItem, CartPriceResult } from "@repo/schemas";
 import clsx from "clsx";
 import { useCartOrder } from "@/features/rental/cart/hooks/use-cart-order";
 import { formatDateShort, formatRentalDuration } from "@/lib/dates/format";
-import { useLocationSchedules } from "@/features/tenant/locations/location-schedules.queries";
+import { useLocationScheduleSlots } from "@/features/tenant/locations/location-schedules.queries";
+import { ScheduleSlotType } from "@repo/types";
+import dayjs from "@/lib/dates/dayjs";
+import { useState, type ReactNode } from "react";
 
 const cartPageSearchSchema = z.object({
   startDate: z.coerce.date(),
@@ -50,11 +53,20 @@ function CartPage() {
     from: "/_portal/cart/",
   });
 
-  const { data: locationSchedules } = useLocationSchedules(locationId);
   const { data: locations } = useLocations();
   const location = locations?.find((l) => l.id === locationId);
 
-  console.log({ locationSchedules });
+  const [pickupTime, setPickupTime] = useState<number | undefined>(undefined);
+  const [returnTime, setReturnTime] = useState<number | undefined>(undefined);
+
+  const onPickupTimeChange = (value: number) => {
+    setPickupTime(value);
+  };
+
+  const onReturnTimeChange = (value: number) => {
+    setReturnTime(value);
+  };
+
   const {
     cartItems,
     period,
@@ -70,6 +82,8 @@ function CartPage() {
     },
     startDate,
     endDate,
+    pickupTime,
+    returnTime,
   });
 
   // Pre-join line items with cart item names before passing to the breakdown.
@@ -99,7 +113,25 @@ function CartPage() {
           startDate={period.start}
           endDate={period.end}
           locationName={location?.name}
-        />
+        >
+          <TimeSelectCell
+            label="Pickup Time"
+            date={startDate}
+            locationId={locationId}
+            type={ScheduleSlotType.PICKUP}
+            value={pickupTime}
+            onChange={onPickupTimeChange}
+          />
+
+          <TimeSelectCell
+            label="Return Time"
+            date={endDate}
+            locationId={locationId}
+            type={ScheduleSlotType.RETURN}
+            value={returnTime}
+            onChange={onReturnTimeChange}
+          />
+        </CartPagePeriod>
 
         {/*
           CSS Grid — two-column layout:
@@ -139,12 +171,14 @@ function formatCurrency(amount: number): string {
 // ─── Period ──────────────────────────────────────────────────────────────────
 
 type CartPagePeriodProps = {
-  startDate: Dayjs | undefined;
-  endDate: Dayjs | undefined;
+  children: ReactNode;
+  startDate: Dayjs;
+  endDate: Dayjs;
   locationName: string | undefined;
 };
 
 function CartPagePeriod({
+  children,
   startDate,
   endDate,
   locationName,
@@ -167,7 +201,7 @@ function CartPagePeriod({
   }
 
   return (
-    <div className="grid grid-cols-3 divide-x divide-neutral-200 py-4">
+    <div className="grid grid-cols-5 divide-x divide-neutral-200 py-4">
       <div className="px-5">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
           Rental Period
@@ -179,6 +213,9 @@ function CartPagePeriod({
           </p>
         </div>
       </div>
+
+      {children}
+
       <div className="px-5">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
           Total Duration
@@ -202,6 +239,70 @@ function CartPagePeriod({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+type TimeSelectCellProps = {
+  label: string;
+  date: Date;
+  locationId: string;
+  type: ScheduleSlotType;
+  value: number | undefined;
+  onChange: (value: number) => void;
+};
+
+const formatSlot = (minutes: number): string =>
+  dayjs().startOf("day").add(minutes, "minute").format("h:mm A");
+
+function TimeSelectCell({
+  label,
+  date,
+  locationId,
+  type,
+  value,
+  onChange,
+}: TimeSelectCellProps) {
+  const { data: slots, isLoading } = useLocationScheduleSlots({
+    date,
+    type,
+    locationId,
+  });
+
+  const isClosed = !isLoading && (!slots || slots.length === 0);
+
+  return (
+    <div className="px-5">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+        {label}
+      </p>
+      {isClosed ? (
+        <div className="mt-1 flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-1">
+          <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+            Closed
+          </p>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 pt-1">
+          <Clock className="h-4 w-4 shrink-0 text-neutral-400" />
+          <select
+            disabled={isLoading}
+            value={value ?? ""}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className="w-full bg-transparent text-sm font-semibold text-black focus:outline-none disabled:text-neutral-300"
+          >
+            <option value="" disabled>
+              {isLoading ? "Loading…" : "Select time"}
+            </option>
+            {(slots ?? []).map((slot) => (
+              <option key={slot} value={slot}>
+                {formatSlot(slot)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }

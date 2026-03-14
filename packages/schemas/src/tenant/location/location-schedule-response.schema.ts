@@ -10,7 +10,7 @@ export type LocationScheduleSlotsResponse = z.infer<
 >;
 
 export const getLocationScheduleSlotsQuerySchema = z.object({
-  date: z.iso.date().transform((s) => new Date(s)),
+  date: z.coerce.date(),
   type: z.enum([ScheduleSlotType.PICKUP, ScheduleSlotType.RETURN]),
 });
 

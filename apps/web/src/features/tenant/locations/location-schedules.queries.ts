@@ -10,11 +10,14 @@ import {
   createLocationSchedule,
   updateLocationSchedule,
   bulkCreateLocationSchedules,
+  getLocationScheduleSlots,
 } from "./location-schedules.api";
 import type { ProblemDetailsError } from "@/shared/errors";
 import type {
   AddScheduleToLocationDto,
+  GetLocationScheduleSlotsQueryDto,
   LocationScheduleResponseDto,
+  LocationScheduleSlotsResponse,
 } from "@repo/schemas";
 
 // ---------------------------------------------------------------------------
@@ -22,6 +25,12 @@ import type {
 type LocationSchedulesQueryOptions<TData = LocationScheduleResponseDto[]> =
   Omit<
     UseQueryOptions<LocationScheduleResponseDto[], ProblemDetailsError, TData>,
+    "queryKey" | "queryFn"
+  >;
+
+type LocationScheduleSlotsQueryOptions<TData = LocationScheduleSlotsResponse> =
+  Omit<
+    UseQueryOptions<LocationScheduleSlotsResponse, ProblemDetailsError, TData>,
     "queryKey" | "queryFn"
   >;
 
@@ -73,6 +82,19 @@ export function createLocationSchedulesQueryOptions<
   };
 }
 
+export function createLocationScheduleSlotsQueryOptions<
+  TData = LocationScheduleSlotsResponse,
+>(
+  params: GetLocationScheduleSlotsQueryDto & { locationId: string },
+  options?: LocationScheduleSlotsQueryOptions<TData>,
+): UseQueryOptions<LocationScheduleSlotsResponse, ProblemDetailsError, TData> {
+  return {
+    ...options,
+    queryKey: [params.date, "schedules", "slots"],
+    queryFn: () => getLocationScheduleSlots({ data: params }),
+  };
+}
+
 // ---------------------------------------------------------------------------
 
 export function useLocationSchedules<TData = LocationScheduleResponseDto[]>(
@@ -80,6 +102,13 @@ export function useLocationSchedules<TData = LocationScheduleResponseDto[]>(
   options?: LocationSchedulesQueryOptions<TData>,
 ) {
   return useQuery(createLocationSchedulesQueryOptions(locationId, options));
+}
+
+export function useLocationScheduleSlots<TData = LocationScheduleSlotsResponse>(
+  params: GetLocationScheduleSlotsQueryDto & { locationId: string },
+  options?: LocationScheduleSlotsQueryOptions<TData>,
+) {
+  return useQuery(createLocationScheduleSlotsQueryOptions(params, options));
 }
 
 // ---------------------------------------------------------------------------

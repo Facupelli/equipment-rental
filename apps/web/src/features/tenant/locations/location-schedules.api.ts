@@ -1,8 +1,11 @@
 import { apiFetch } from "@/lib/api";
 import {
   addScheduleToLocationSchema,
+  getLocationScheduleSlotsQuerySchema,
   type AddScheduleToLocationDto,
+  type GetLocationScheduleSlotsQueryDto,
   type LocationScheduleResponseDto,
+  type LocationScheduleSlotsResponse,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
@@ -17,6 +20,27 @@ export const getLocationSchedules = createServerFn({ method: "GET" })
     return apiFetch<LocationScheduleResponseDto[]>(apiUrl(data.locationId), {
       method: "GET",
     });
+  });
+
+const locationSlotsSchema = getLocationScheduleSlotsQuerySchema.extend({
+  locationId: z.string(),
+});
+
+export const getLocationScheduleSlots = createServerFn({ method: "GET" })
+  .inputValidator(
+    (data: GetLocationScheduleSlotsQueryDto & { locationId: string }) =>
+      locationSlotsSchema.parse(data),
+  )
+  .handler(async ({ data }): Promise<LocationScheduleSlotsResponse> => {
+    const { locationId, ...params } = data;
+
+    return apiFetch<LocationScheduleSlotsResponse>(
+      `${apiUrl(locationId)}/slots`,
+      {
+        method: "GET",
+        params,
+      },
+    );
   });
 
 // ---------------------------------------------------------------------------
