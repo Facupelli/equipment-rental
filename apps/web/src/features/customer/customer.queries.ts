@@ -8,6 +8,7 @@ import type {
 } from "@repo/schemas";
 import {
   keepPreviousData,
+  queryOptions,
   useQuery,
   useSuspenseQuery,
   type UseQueryOptions,
@@ -35,6 +36,14 @@ export const customerKeys = {
     [...customerKeys.details(), customerId] as const,
   profile: (customerId: string) =>
     [...customerKeys.detail(customerId), "profile"] as const,
+};
+
+export const customerQueries = {
+  detail: (customerId: string) =>
+    queryOptions<CustomerDetailResponseDto, ProblemDetailsError>({
+      queryKey: customerKeys.detail(customerId),
+      queryFn: () => getCustomerDetail({ data: { customerId } }),
+    }),
 };
 
 // -----------------------------------------------------
@@ -80,10 +89,12 @@ export function useCustomerDetail<TData = CustomerDetailResponseDto>(
   customerId: string,
   options?: CustomerDetailQueryOptions<TData>,
 ) {
+  const { queryKey, queryFn } = customerQueries.detail(customerId);
+
   return useSuspenseQuery({
     ...options,
-    queryKey: customerKeys.detail(customerId),
-    queryFn: () => getCustomerDetail({ data: { customerId } }),
+    queryKey,
+    queryFn,
   });
 }
 

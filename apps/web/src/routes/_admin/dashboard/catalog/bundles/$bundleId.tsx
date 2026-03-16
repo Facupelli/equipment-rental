@@ -7,7 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import type { BundleDetailResponseDto } from "@repo/schemas";
 import { Package, Plus } from "lucide-react";
 import {
-  createBundleDetailQueryOptions,
+  bundleKeys,
+  bundleQueries,
   usePublishBundle,
   useRetireBundle,
 } from "@/features/catalog/bundles/bundles.queries";
@@ -35,7 +36,7 @@ export const Route = createFileRoute(
   "/_admin/dashboard/catalog/bundles/$bundleId",
 )({
   loader: ({ context: { queryClient }, params: { bundleId } }) =>
-    queryClient.ensureQueryData(createBundleDetailQueryOptions(bundleId)),
+    queryClient.ensureQueryData(bundleQueries.detail(bundleId)),
   component: BundleDetailPage,
 });
 
@@ -43,9 +44,7 @@ function BundleDetailPage() {
   const { bundleId } = Route.useParams();
   const queryClient = useQueryClient();
 
-  const { data: bundle } = useSuspenseQuery(
-    createBundleDetailQueryOptions(bundleId),
-  );
+  const { data: bundle } = useSuspenseQuery(bundleQueries.detail(bundleId));
 
   const { mutateAsync: setPricingTiers } = useSetPricingTiers();
 
@@ -94,7 +93,7 @@ function BundleDetailPage() {
       });
       setPendingTiers([]);
       await queryClient.invalidateQueries({
-        queryKey: createBundleDetailQueryOptions(bundleId).queryKey,
+        queryKey: bundleKeys.detail(bundleId),
       });
     } catch (error) {
       console.log({ error });

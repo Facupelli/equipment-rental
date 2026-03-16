@@ -1,5 +1,5 @@
 import {
-  createCustomerDetailQueryOptions,
+  customerQueries,
   useCustomerDetail,
 } from "@/features/customer/customer.queries";
 import { createFileRoute } from "@tanstack/react-router";
@@ -15,7 +15,7 @@ import { ProfileTab } from "@/features/customer/components/detail/profile-tab";
 export const Route = createFileRoute("/_admin/dashboard/customers/$customerId")(
   {
     loader: ({ context: { queryClient }, params: { customerId } }) =>
-      queryClient.ensureQueryData(createCustomerDetailQueryOptions(customerId)),
+      queryClient.ensureQueryData(customerQueries.detail(customerId)),
 
     pendingComponent: () => <CustomerDetailSkeleton />,
     errorComponent: ({ error }) => <CustomerDetailError error={error} />,

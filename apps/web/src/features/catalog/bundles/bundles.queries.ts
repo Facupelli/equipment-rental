@@ -1,5 +1,6 @@
 import {
   keepPreviousData,
+  queryOptions,
   useMutation,
   useQuery,
   useSuspenseQuery,
@@ -38,6 +39,27 @@ export const bundleKeys = {
   detail: (id: string) => [...bundleKeys.details(), id] as const,
 };
 
+export const bundleQueries = {
+  list: <TData = PaginatedBundles>(
+    params: GetBundlesQueryDto = {} as GetBundlesQueryDto,
+    overrides?: BundlesQueryOptions<TData>,
+  ) =>
+    queryOptions<PaginatedBundles, ProblemDetailsError, TData>({
+      queryKey: bundleKeys.lists(),
+      queryFn: () => getBundles({ data: params }),
+      ...overrides,
+    }),
+  detail: <TData = BundleDetailResponseDto>(
+    id: string,
+    overrides?: BundleDetailQueryOptions<TData>,
+  ) =>
+    queryOptions<BundleDetailResponseDto, ProblemDetailsError, TData>({
+      queryKey: bundleKeys.detail(id),
+      queryFn: () => getBundleDetail({ data: { bundleId: id } }),
+      ...overrides,
+    }),
+};
+
 // -----------------------------------------------------
 // Types
 // -----------------------------------------------------
@@ -68,25 +90,19 @@ type BundleLifecycleMutationOptions = Omit<
 
 export function useBundles<TData = PaginatedBundles>(
   params: GetBundlesQueryDto = {} as GetBundlesQueryDto,
-  options?: BundlesQueryOptions<TData>,
+  overrides?: BundlesQueryOptions<TData>,
 ) {
   return useQuery({
-    ...options,
-    queryKey: bundleKeys.list(params),
-    queryFn: () => getBundles({ data: params }),
+    ...bundleQueries.list(params, overrides),
     placeholderData: keepPreviousData,
   });
 }
 
 export function useBundleDetail<TData = BundleDetailResponseDto>(
   id: string,
-  options?: BundleDetailQueryOptions<TData>,
+  overrides?: BundleDetailQueryOptions<TData>,
 ) {
-  return useSuspenseQuery({
-    ...options,
-    queryKey: bundleKeys.detail(id),
-    queryFn: () => getBundleDetail({ data: { bundleId: id } }),
-  });
+  return useSuspenseQuery(bundleQueries.detail(id, overrides));
 }
 
 export function useCreateBundle(options?: BundleMutationOptions) {

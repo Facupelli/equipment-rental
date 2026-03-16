@@ -1,4 +1,5 @@
 import {
+  queryOptions,
   useMutation,
   useQuery,
   type UseMutationOptions,
@@ -18,6 +19,14 @@ import type {
 export const categoryKeys = {
   all: () => ["categories"] as const,
   lists: () => [...categoryKeys.all(), "list"] as const,
+};
+
+export const categoryQueries = {
+  list: () =>
+    queryOptions<ProductCategoryListResponse, ProblemDetailsError>({
+      queryKey: categoryKeys.lists(),
+      queryFn: () => getCategories(),
+    }),
 };
 
 // -----------------------------------------------------
@@ -41,10 +50,12 @@ type CategoryMutationOptions = Omit<
 export function useCategories<TData = ProductCategoryListResponse>(
   options?: CategoryQueryOptions<TData>,
 ) {
+  const { queryKey, queryFn } = categoryQueries.list();
+
   return useQuery({
     ...options,
-    queryKey: categoryKeys.lists(),
-    queryFn: () => getCategories(),
+    queryKey,
+    queryFn,
   });
 }
 

@@ -3,12 +3,16 @@ import { useMutation } from "@tanstack/react-query";
 import type { LoginCustomerDto, RegisterCustomerDto } from "@repo/schemas";
 import { loginCustomerFn, registerCustomerFn } from "./portal-auth.api";
 import type { SessionUser } from "@/lib/session";
+import { portalCustomerKeys } from "../customer/customer.queries";
 
 export function useCustomerLogin() {
   // const queryClient = useQueryClient();
 
   return useMutation<SessionUser, ProblemDetailsError, LoginCustomerDto>({
     mutationFn: (data) => loginCustomerFn({ data }),
+    meta: {
+      invalidates: portalCustomerKeys.all(),
+    },
     onSuccess: async (result) => {
       if (result.userId) {
         // await queryClient.invalidateQueries({
@@ -27,7 +31,6 @@ export function useCustomerLogin() {
 export function useCustomerRegister() {
   return useMutation<string, ProblemDetailsError, RegisterCustomerDto>({
     mutationFn: (data) => registerCustomerFn({ data }),
-    onSuccess: async () => {},
     onError: (error) => {
       console.error(
         `[${error.problemDetails.status}] ${error.problemDetails.detail}`,

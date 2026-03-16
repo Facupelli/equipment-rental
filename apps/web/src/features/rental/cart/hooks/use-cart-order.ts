@@ -13,6 +13,7 @@ import type {
   CartPriceLineItem,
 } from "@repo/schemas";
 import { fromDate, toISOString } from "@/lib/dates/parse";
+import { useCurrentCustomer } from "../../customer/customer.queries";
 
 type UseCartOrderParams = {
   location: {
@@ -52,6 +53,7 @@ export function useCartOrder({
   endDate,
 }: UseCartOrderParams) {
   const navigate = useNavigate();
+  const { data: customer } = useCurrentCustomer();
   const cartItems = useCartItems();
   const { clearCart } = useCartActions();
 
@@ -139,10 +141,19 @@ export function useCartOrder({
       return;
     }
 
+    if (!customer) {
+      throw new ProblemDetailsError({
+        type: "about:blank",
+        title: "Unauthorized",
+        status: 401,
+        detail: "No active session. Please log in.",
+      });
+    }
+
     try {
       await createOrder({
         locationId: location.id,
-        customerId: undefined,
+        customerId: customer.id,
         periodStart: toISOString(period.start),
         periodEnd: toISOString(period.end),
         currency: "USD",

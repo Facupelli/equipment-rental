@@ -6,7 +6,8 @@ import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 import { GetCustomerDetailQuery } from '../../application/queries/get-customer-detail/get-customer-detail.query';
-import { CustomerDetailResponseDto } from '@repo/schemas';
+import { CustomerDetailResponseDto, MeCustomerResponseDto } from '@repo/schemas';
+import { GetCustomerQuery } from '../../application/queries/get-customer/get-customer.query';
 
 @Controller('customers')
 export class CustomerController {
@@ -27,6 +28,11 @@ export class CustomerController {
         dto.search,
       ),
     );
+  }
+
+  @Get('me')
+  getCustomer(@CurrentUser() user: ReqUser): Promise<MeCustomerResponseDto> {
+    return this.queryBus.execute(new GetCustomerQuery(user.id));
   }
 
   @Get(':id')

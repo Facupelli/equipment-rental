@@ -1,10 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductsTable } from "@/features/catalog/product-types/components/products-table";
-import {
-  createProductsQueryOptions,
-  useProducts,
-} from "@/features/catalog/product-types/products.queries";
+import { useProducts } from "@/features/catalog/product-types/products.queries";
+import { rentalQueries } from "@/features/rental/rental.queries";
 
 import { Link } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
@@ -13,7 +11,7 @@ import { useState } from "react";
 
 export const Route = createFileRoute("/_admin/dashboard/catalog/products/")({
   loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(createProductsQueryOptions()),
+    queryClient.ensureQueryData(rentalQueries.products()),
   component: ProductsPage,
 });
 

@@ -27,9 +27,12 @@ import {
 import { SpecificationsTab } from "@/features/catalog/product-types/components/detail/specifications-tab";
 import { formatTrackingType } from "@/features/catalog/product-types/components/products-columns";
 import {
-  createProductDetailQueryOptions,
   usePublishProductType,
   useRetireProductType,
+} from "@/features/catalog/product-types/product.mutations";
+import {
+  productKeys,
+  productQueries,
 } from "@/features/catalog/product-types/products.queries";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
@@ -40,7 +43,7 @@ export const Route = createFileRoute(
   "/_admin/dashboard/catalog/products/$productId",
 )({
   loader: ({ context: { queryClient }, params: { productId } }) =>
-    queryClient.ensureQueryData(createProductDetailQueryOptions(productId)),
+    queryClient.ensureQueryData(productQueries.detail(productId)),
   component: RouteComponent,
 });
 
@@ -48,9 +51,7 @@ function RouteComponent() {
   const { productId } = Route.useParams();
   const queryClient = useQueryClient();
 
-  const { data: product } = useSuspenseQuery(
-    createProductDetailQueryOptions(productId),
-  );
+  const { data: product } = useSuspenseQuery(productQueries.detail(productId));
 
   const { mutateAsync: setPricingTiers } = useSetPricingTiers();
 
@@ -97,7 +98,7 @@ function RouteComponent() {
       });
       setPendingTiers([]);
       await queryClient.invalidateQueries({
-        queryKey: createProductDetailQueryOptions(productId).queryKey,
+        queryKey: productKeys.detail(productId),
       });
     } catch (error) {
       console.log({ error });

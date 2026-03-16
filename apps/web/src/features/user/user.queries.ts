@@ -10,16 +10,19 @@ export const userKeys = {
   me: () => [...userKeys.all(), "me"] as const,
 };
 
-// -----------------------------------------------------
-// Hooks
-// -----------------------------------------------------
-
-export function useCurrentUser() {
-  return useQuery(
+export const userQueries = {
+  me: () =>
     queryOptions({
       queryKey: userKeys.me(),
       queryFn: () => getCurrentUser(),
       staleTime: 5 * 60 * 1000,
     }),
-  );
+};
+
+// -----------------------------------------------------
+// Hooks
+// -----------------------------------------------------
+
+export function useCurrentUser() {
+  return useQuery(userQueries.me());
 }

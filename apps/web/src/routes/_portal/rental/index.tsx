@@ -36,9 +36,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import dayjs from "@/lib/dates/dayjs";
 import {
-  createNewArrivalsQueryOptions,
-  createRentalBundlesQueryOptions,
-  createRentalProductsQueryOptions,
+  rentalQueries,
   useRentalProducts,
 } from "@/features/rental/rental.queries";
 import {
@@ -77,11 +75,11 @@ export const Route = createFileRoute("/_portal/rental/")({
     const locationId = deps.locationId;
 
     await queryClient.ensureQueryData(createLocationQueryOptions());
-    queryClient.prefetchQuery(createRentalBundlesQueryOptions({ locationId }));
-    queryClient.prefetchQuery(createNewArrivalsQueryOptions({ locationId }));
+    queryClient.prefetchQuery(rentalQueries.bundles({ locationId }));
+    queryClient.prefetchQuery(rentalQueries.newArrivals({ locationId }));
 
     if (locationId) {
-      queryClient.prefetchQuery(createRentalProductsQueryOptions(deps));
+      queryClient.prefetchQuery(rentalQueries.products(deps));
     }
   },
   component: RentalPage,
@@ -320,7 +318,7 @@ function SectionHeading({
 
 function FeaturedBundles({ locationId }: { locationId?: string }) {
   const { data: bundles } = useSuspenseQuery(
-    createRentalBundlesQueryOptions({ locationId }),
+    rentalQueries.bundles({ locationId }),
   );
 
   if (!bundles.length) {
@@ -457,7 +455,7 @@ function BundlesSkeleton() {
 
 function NewArrivals({ locationId }: { locationId?: string }) {
   const { data: items, isError } = useSuspenseQuery(
-    createNewArrivalsQueryOptions({ locationId }),
+    rentalQueries.newArrivals({ locationId }),
   );
 
   const scrollRef = useRef<HTMLDivElement>(null);

@@ -1,21 +1,21 @@
-import { queryOptions, useQuery, useMutation } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useQuery,
+  useMutation,
+  type UseMutationOptions,
+} from "@tanstack/react-query";
 import { getCurrentTenant, updateTenantConfig } from "./tenant.api";
 import type { UpdateTenantConfigDto } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
-import type { MutationOptions } from "@tanstack/react-query";
 
 // -------------------------------------------------------
-// Query Key Factory
+// Key Factory
 // -------------------------------------------------------
 
 export const tenantKeys = {
   all: () => ["tenant"] as const,
   me: () => [...tenantKeys.all(), "me"] as const,
 };
-
-// -------------------------------------------------------
-// Query Options
-// -------------------------------------------------------
 
 export const tenantQueries = {
   me: () =>
@@ -27,20 +27,16 @@ export const tenantQueries = {
 };
 
 // -------------------------------------------------------
-// Query Hook
+// Hooks
 // -------------------------------------------------------
 
 export function useCurrentTenant() {
   return useQuery(tenantQueries.me());
 }
 
-// -------------------------------------------------------
-// Mutation Hook
-// -------------------------------------------------------
-
 type UpdateTenantConfigOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, UpdateTenantConfigDto>,
-  "mutationFn" | "mutationKey"
+  UseMutationOptions<string, ProblemDetailsError, UpdateTenantConfigDto>,
+  "mutationFn"
 >;
 
 export function useUpdateTenantConfig(options?: UpdateTenantConfigOptions) {
@@ -48,7 +44,6 @@ export function useUpdateTenantConfig(options?: UpdateTenantConfigOptions) {
     ...options,
     mutationFn: (data) => updateTenantConfig({ data }),
     meta: {
-      // Invalidates all tenant queries — cascades to "me" automatically
       invalidates: tenantKeys.all(),
     },
   });

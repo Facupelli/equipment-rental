@@ -22,7 +22,7 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
-  createCategoryQueryOptions,
+  categoryQueries,
   useCategories,
   useCreateCategory,
 } from "@/features/catalog/product-categories/categories.queries";
@@ -33,7 +33,7 @@ import {
 
 export const Route = createFileRoute("/_admin/dashboard/catalog/categories/")({
   loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(createCategoryQueryOptions()),
+    queryClient.ensureQueryData(categoryQueries.list()),
   component: CategoriesPage,
 });
 

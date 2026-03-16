@@ -1,5 +1,6 @@
 import {
   keepPreviousData,
+  queryOptions,
   useQuery,
   type UseQueryOptions,
 } from "@tanstack/react-query";
@@ -44,6 +45,24 @@ export const rentalKeys = {
     [...rentalKeys.cartPreviews(), params] as const,
 };
 
+export const rentalQueries = {
+  products: (params: GetRentalProductTypesQuery = {}) =>
+    queryOptions<PaginatedRentalProducts, ProblemDetailsError>({
+      queryKey: rentalKeys.product(params),
+      queryFn: () => getRentalProducts({ data: params }),
+    }),
+  newArrivals: (params: GetNewArrivalsParams = {}) =>
+    queryOptions<NewArrivalListResponseDto, ProblemDetailsError>({
+      queryKey: rentalKeys.newArrival(params),
+      queryFn: () => getNewArrivals({ data: params }),
+    }),
+  bundles: (params: GetCombosParams = {}) =>
+    queryOptions<BundleListResponseDto, ProblemDetailsError>({
+      queryKey: rentalKeys.bundle(params),
+      queryFn: () => getRentalBundles({ data: params }),
+    }),
+};
+
 // -----------------------------------------------------
 // Types
 // -----------------------------------------------------
@@ -76,10 +95,12 @@ export function useRentalProducts<TData = PaginatedRentalProducts>(
   params: GetRentalProductTypesQuery = {},
   options?: RentalProductsQueryOptions<TData>,
 ) {
+  const { queryKey, queryFn } = rentalQueries.products(params);
+
   return useQuery({
     ...options,
-    queryKey: rentalKeys.product(params),
-    queryFn: () => getRentalProducts({ data: params }),
+    queryKey,
+    queryFn,
     placeholderData: keepPreviousData,
   });
 }
@@ -88,10 +109,12 @@ export function useNewArrivals<TData = NewArrivalListResponseDto>(
   params: GetNewArrivalsParams = {},
   options?: NewArrivalsQueryOptions<TData>,
 ) {
+  const { queryKey, queryFn } = rentalQueries.newArrivals(params);
+
   return useQuery({
     ...options,
-    queryKey: rentalKeys.newArrival(params),
-    queryFn: () => getNewArrivals({ data: params }),
+    queryKey,
+    queryFn,
     placeholderData: keepPreviousData,
   });
 }
@@ -100,10 +123,12 @@ export function useRentalBundles<TData = BundleListResponseDto>(
   params: GetCombosParams = {},
   options?: RentalBundlesQueryOptions<TData>,
 ) {
+  const { queryKey, queryFn } = rentalQueries.bundles(params);
+
   return useQuery({
     ...options,
-    queryKey: rentalKeys.bundle(params),
-    queryFn: () => getRentalBundles({ data: params }),
+    queryKey,
+    queryFn,
     placeholderData: keepPreviousData,
   });
 }
