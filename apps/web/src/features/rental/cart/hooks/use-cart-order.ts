@@ -21,8 +21,6 @@ type UseCartOrderParams = {
   };
   startDate: Date;
   endDate: Date;
-  pickupTime: number | undefined;
-  returnTime: number | undefined;
 };
 
 export type CartOrderPeriod = {
@@ -39,6 +37,8 @@ export type JoinedLineItem = CartPriceLineItem & { name: string };
  * Owns all data-fetching and mutation logic for the cart page.
  *
  * Responsibilities:
+ * - Own pickup/return time state and their change handlers
+ * - Validate times before booking and expose the error state to the view
  * - Convert native Date params to dayjs once (Layer 1 → Layer 2)
  * - Build the shared item payload (once, shared between preview + submit)
  * - Fetch the price preview
@@ -50,13 +50,25 @@ export function useCartOrder({
   location,
   startDate,
   endDate,
-  pickupTime,
-  returnTime,
 }: UseCartOrderParams) {
   const navigate = useNavigate();
   const cartItems = useCartItems();
   const { clearCart } = useCartActions();
+
+  const [pickupTime, setPickupTime] = useState<number | undefined>(undefined);
+  const [returnTime, setReturnTime] = useState<number | undefined>(undefined);
+  const [isTimesRequired, setIsTimesRequired] = useState(false);
   const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
+
+  const onPickupTimeChange = (value: number) => {
+    setPickupTime(value);
+    if (value && returnTime) setIsTimesRequired(false);
+  };
+
+  const onReturnTimeChange = (value: number) => {
+    setReturnTime(value);
+    if (pickupTime && value) setIsTimesRequired(false);
+  };
 
   // Layer boundary: native Date → dayjs, once.
   // All downstream logic and transport use these dayjs instances.
@@ -123,12 +135,8 @@ export function useCartOrder({
     setUnavailableIds([]);
 
     if (!pickupTime || !returnTime) {
-      throw new ProblemDetailsError({
-        type: "errors://validation-error",
-        title: "Validation Failed",
-        status: 422,
-        detail: "Pickup and return times are required.",
-      });
+      setIsTimesRequired(true);
+      return;
     }
 
     try {
@@ -174,6 +182,11 @@ export function useCartOrder({
     period,
     breakdown,
     joinedLineItems,
+    pickupTime,
+    returnTime,
+    onPickupTimeChange,
+    onReturnTimeChange,
+    isTimesRequired,
     isPriceLoading,
     isPriceError,
     unavailableIds,

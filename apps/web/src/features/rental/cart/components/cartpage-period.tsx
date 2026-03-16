@@ -11,6 +11,7 @@ type CartPagePeriodProps = {
   startDate: Dayjs;
   endDate: Dayjs;
   locationName: string | undefined;
+  isTimesRequired: boolean;
 };
 
 export function CartPagePeriod({
@@ -18,6 +19,7 @@ export function CartPagePeriod({
   startDate,
   endDate,
   locationName,
+  isTimesRequired,
 }: CartPagePeriodProps) {
   if (!startDate || !endDate) {
     return (
@@ -37,44 +39,56 @@ export function CartPagePeriod({
   }
 
   return (
-    <div className="grid grid-cols-5 divide-x divide-neutral-200 py-4">
-      <div className="px-5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-          Rental Period
-        </p>
-        <div className="flex items-center gap-2 pt-1">
-          <Calendar className="h-4 w-4 shrink-0 text-neutral-400" />
-          <p className="text-sm font-semibold text-black">
-            {formatDateShort(startDate)} — {formatDateShort(endDate)}
+    <div className="space-y-3">
+      <div className="grid grid-cols-5 divide-x divide-neutral-200 py-4">
+        <div className="px-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+            Rental Period
           </p>
+          <div className="flex items-center gap-2 pt-1">
+            <Calendar className="h-4 w-4 shrink-0 text-neutral-400" />
+            <p className="text-sm font-semibold text-black">
+              {formatDateShort(startDate)} — {formatDateShort(endDate)}
+            </p>
+          </div>
+        </div>
+
+        {children}
+
+        <div className="px-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+            Total Duration
+          </p>
+          <div className="flex items-center gap-2 pt-1">
+            <Clock className="h-4 w-4 shrink-0 text-neutral-400" />
+            <p className="text-sm font-semibold text-black">
+              {formatRentalDuration(startDate, endDate)}
+            </p>
+          </div>
+        </div>
+
+        <div className="px-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+            Pickup Location
+          </p>
+          <div className="pt-1">
+            {locationName ? (
+              <p className="text-sm font-semibold text-black">{locationName}</p>
+            ) : (
+              <p className="text-sm text-neutral-300">Not selected</p>
+            )}
+          </div>
         </div>
       </div>
 
-      {children}
-
-      <div className="px-5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-          Total Duration
-        </p>
-        <div className="flex items-center gap-2 pt-1">
-          <Clock className="h-4 w-4 shrink-0 text-neutral-400" />
-          <p className="text-sm font-semibold text-black">
-            {formatRentalDuration(startDate, endDate)}
+      {isTimesRequired && (
+        <div className="flex items-center gap-3 border border-amber-200 bg-amber-50 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+            Please select a pickup time and a return time before booking.
           </p>
         </div>
-      </div>
-      <div className="px-5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-          Pickup Location
-        </p>
-        <div className="pt-1">
-          {locationName ? (
-            <p className="text-sm font-semibold text-black">{locationName}</p>
-          ) : (
-            <p className="text-sm text-neutral-300">Not selected</p>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

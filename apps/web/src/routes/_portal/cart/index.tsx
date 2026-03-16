@@ -1,9 +1,8 @@
-import { createFileRoute, useSearch } from "@tanstack/react-router";
 import z from "zod";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
 import { useCartOrder } from "@/features/rental/cart/hooks/use-cart-order";
 import { ScheduleSlotType } from "@repo/types";
-import { useState } from "react";
 import { CartPageItemList } from "@/features/rental/cart/components/cartpage-itemlist";
 import { CartPageSidebar } from "@/features/rental/cart/components/cartpage-sidebar";
 import {
@@ -30,14 +29,16 @@ function CartPage() {
   const { data: locations } = useLocations();
   const location = locations?.find((l) => l.id === locationId);
 
-  const [pickupTime, setPickupTime] = useState<number | undefined>(undefined);
-  const [returnTime, setReturnTime] = useState<number | undefined>(undefined);
-
   const {
     cartItems,
     period,
     breakdown,
     joinedLineItems,
+    pickupTime,
+    returnTime,
+    onPickupTimeChange,
+    onReturnTimeChange,
+    isTimesRequired,
     isPriceLoading,
     isPriceError,
     unavailableIds,
@@ -49,8 +50,6 @@ function CartPage() {
     },
     startDate,
     endDate,
-    pickupTime,
-    returnTime,
   });
 
   return (
@@ -69,6 +68,7 @@ function CartPage() {
           startDate={period.start}
           endDate={period.end}
           locationName={location?.name}
+          isTimesRequired={isTimesRequired}
         >
           <TimeSelectCell
             label="Pickup Time"
@@ -76,7 +76,7 @@ function CartPage() {
             locationId={locationId}
             type={ScheduleSlotType.PICKUP}
             value={pickupTime}
-            onChange={setPickupTime}
+            onChange={onPickupTimeChange}
           />
           <TimeSelectCell
             label="Return Time"
@@ -84,7 +84,7 @@ function CartPage() {
             locationId={locationId}
             type={ScheduleSlotType.RETURN}
             value={returnTime}
-            onChange={setReturnTime}
+            onChange={onReturnTimeChange}
           />
         </CartPagePeriod>
 
