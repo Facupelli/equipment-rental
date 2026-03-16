@@ -1,13 +1,34 @@
 import {
+  queryOptions,
   useMutation,
   useQuery,
-  useQueryClient,
-  type MutationOptions,
+  type UseMutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { createLocation, getLocations } from "./locations.api";
 import type { ProblemDetailsError } from "@/shared/errors";
 import type { CreateLocationDto, LocationListResponse } from "@repo/schemas";
+
+// -----------------------------------------------------
+// Key Factory
+// -----------------------------------------------------
+
+export const locationKeys = {
+  all: () => ["locations"] as const,
+  lists: () => [...locationKeys.all(), "list"] as const,
+};
+
+export const locationQueries = {
+  list: () =>
+    queryOptions<LocationListResponse, ProblemDetailsError>({
+      queryKey: locationKeys.lists(),
+      queryFn: () => getLocations(),
+    }),
+};
+
+// -----------------------------------------------------
+// Types
+// -----------------------------------------------------
 
 type LocationQueryOptions<TData = LocationListResponse> = Omit<
   UseQueryOptions<LocationListResponse, ProblemDetailsError, TData>,
@@ -15,47 +36,32 @@ type LocationQueryOptions<TData = LocationListResponse> = Omit<
 >;
 
 type LocationMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, CreateLocationDto>,
-  "mutationFn" | "mutationKey"
+  UseMutationOptions<string, ProblemDetailsError, CreateLocationDto>,
+  "mutationFn"
 >;
 
 // -----------------------------------------------------
-
-export function createLocationQueryOptions<TData = LocationListResponse>(
-  options?: LocationQueryOptions<TData>,
-): UseQueryOptions<LocationListResponse, ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: ["locations"],
-    queryFn: () => getLocations(),
-  };
-}
-
+// Hooks
 // -----------------------------------------------------
 
 export function useLocations<TData = LocationListResponse>(
   options?: LocationQueryOptions<TData>,
 ) {
-  return useQuery(createLocationQueryOptions(options));
+  const { queryKey, queryFn } = locationQueries.list();
+
+  return useQuery({
+    ...options,
+    queryKey,
+    queryFn,
+  });
 }
 
-//
-
 export function useCreateLocation(options?: LocationMutationOptions) {
-  const queryClient = useQueryClient();
-
   return useMutation<string, ProblemDetailsError, CreateLocationDto>({
     ...options,
     mutationFn: (data) => createLocation({ data }),
-    onSuccess: async (data, variables, onMutateResult, context) => {
-      await queryClient.invalidateQueries({
-        queryKey: createLocationQueryOptions().queryKey,
-      });
-
-      await options?.onSuccess?.(data, variables, onMutateResult, context);
-    },
-    onError: async (error, variables, onMutateResult, context) => {
-      await options?.onError?.(error, variables, onMutateResult, context);
+    meta: {
+      invalidates: locationKeys.lists(),
     },
   });
 }

@@ -12,19 +12,19 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { RoundingRule } from "@repo/types";
 import { getRouteApi } from "@tanstack/react-router";
-import { useUpdateConfig } from "@/features/tenant/tenant.queries";
 import {
   tenantConfigFormSchema,
   tenantConfigToFormValues,
   toUpdateTenantConfigDto,
 } from "../schemas/tenant-config-form.schema";
+import { useUpdateTenantConfig } from "../tenant.queries";
 
 const authedRoute = getRouteApi("/_admin/dashboard");
 
 export function TenantConfigForm() {
   const { tenant } = authedRoute.useLoaderData();
 
-  const { mutateAsync: updateConfig } = useUpdateConfig();
+  const { mutateAsync: updateConfig } = useUpdateTenantConfig();
 
   const form = useForm({
     defaultValues: tenantConfigToFormValues(tenant.config),

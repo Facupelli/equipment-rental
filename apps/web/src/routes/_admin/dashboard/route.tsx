@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { useLogout } from "@/features/auth/auth.queries";
 import { ensureValidSession } from "@/features/auth/get-session";
-import { createLocationQueryOptions } from "@/features/tenant/locations/locations.queries";
+import { locationQueries } from "@/features/tenant/locations/locations.queries";
 import { tenantQueries } from "@/features/tenant/tenant.queries";
 import { userQueries } from "@/features/user/user.queries";
 import { LocationStoreProvider } from "@/shared/contexts/location/location.context";
@@ -41,9 +41,7 @@ export const Route = createFileRoute("/_admin/dashboard")({
     });
   },
   loader: async ({ context: { queryClient } }) => {
-    const locations = await queryClient.ensureQueryData(
-      createLocationQueryOptions(),
-    );
+    const locations = await queryClient.ensureQueryData(locationQueries.list());
     const user = await queryClient.ensureQueryData(userQueries.me());
     const tenant = await queryClient.ensureQueryData(tenantQueries.me());
 

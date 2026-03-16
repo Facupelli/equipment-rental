@@ -1,0 +1,51 @@
+import useDebounce from "@/shared/hooks/use-debounce";
+import { getRentalProductQuerySchema } from "@repo/schemas";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import z from "zod";
+
+export const rentalPageSearchSchema = getRentalProductQuerySchema.extend({
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  locationId: z.string().optional(),
+});
+
+export type RentalPageSearch = z.infer<typeof rentalPageSearchSchema>;
+
+export function useRentalPageSearch() {
+  const search = useSearch({ from: "/_portal/rental/" });
+  const navigate = useNavigate({ from: "/rental/" });
+
+  const [localSearch, setLocalSearch] = useState(search.search ?? "");
+  const debouncedSearch = useDebounce(localSearch, 300);
+
+  function setUrlParam(patch: Partial<RentalPageSearch>) {
+    navigate({ search: (prev) => ({ ...prev, ...patch }) });
+  }
+
+  // Legitimate useEffect: syncing the URL (external system) with a debounced
+  // local state value. There's no event handler that can own this — it fires
+  // automatically after the user stops typing.
+  useEffect(() => {
+    setUrlParam({ search: debouncedSearch || undefined, page: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  function handleCategorySelect(id: string) {
+    const next = search.categoryId === id ? undefined : id;
+    setUrlParam({ categoryId: next, page: 1 });
+  }
+
+  function handleLocationChange(value: string | null) {
+    setUrlParam({ locationId: value ?? undefined, page: 1 });
+  }
+
+  return {
+    search,
+    localSearch,
+    setLocalSearch,
+    setUrlParam,
+    handleCategorySelect,
+    handleLocationChange,
+  };
+}

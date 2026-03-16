@@ -1,0 +1,132 @@
+import { Skeleton } from "@/components/ui/skeleton";
+import { rentalQueries } from "@/features/rental/rental.queries";
+import type { NewArrivalItemResponseDto } from "@repo/schemas";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRef } from "react";
+
+interface NewArrivalsProps {
+  locationId?: string;
+}
+
+export function NewArrivals({ locationId }: NewArrivalsProps) {
+  const { data: items, isError } = useSuspenseQuery(
+    rentalQueries.newArrivals({ locationId }),
+  );
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  function scroll(direction: "left" | "right") {
+    if (!scrollRef.current) return;
+    const amount = 320;
+    scrollRef.current.scrollBy({
+      left: direction === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
+  }
+
+  if (isError) {
+    return (
+      <p className="text-sm text-destructive">
+        Failed to load new arrivals. Please try again.
+      </p>
+    );
+  }
+
+  if (!items.length) {
+    return (
+      <p className="text-sm text-muted-foreground">No new arrivals yet.</p>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => scroll("left")}
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white border rounded-full p-1.5 shadow-sm hover:bg-gray-50 transition-colors"
+        aria-label="Scroll left"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => scroll("right")}
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white border rounded-full p-1.5 shadow-sm hover:bg-gray-50 transition-colors"
+        aria-label="Scroll right"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+      >
+        {items.map((item) => (
+          <NewArrivalCard key={item.id} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NewArrivalCard — co-located, only used by NewArrivals
+// ─────────────────────────────────────────────────────────────────────────────
+
+function NewArrivalCard({ item }: { item: NewArrivalItemResponseDto }) {
+  const price = item.pricingPreview;
+
+  return (
+    <div>
+      <div className="aspect-square w-52 bg-gray-100 rounded-xs overflow-hidden mb-2">
+        {item.imageUrl ? (
+          <img
+            src={`${import.meta.env.VITE_R2_PUBLIC_URL}/${item.imageUrl}`}
+            alt={item.name}
+            loading="lazy"
+            decoding="async"
+            className="object-contain w-full h-full"
+          />
+        ) : (
+          <div className="w-full h-full rounded-lg bg-muted shrink-0 flex items-center justify-center">
+            <span className="text-sm text-muted-foreground">No image</span>
+          </div>
+        )}
+      </div>
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium truncate">
+        {item.category?.name ?? "General"}
+      </p>
+      <p className="text-sm font-medium leading-tight line-clamp-2 mt-0.5">
+        {item.name}
+      </p>
+      {price ? (
+        <p className="text-sm font-semibold mt-1">
+          ${price.pricePerUnit.toFixed(0)}{" "}
+          <span className="text-xs font-normal text-muted-foreground">
+            / {item.billingUnit.label}
+          </span>
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground mt-1">Contact us</p>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Skeleton — co-located, exported for Suspense fallback in the page
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function NewArrivalsSkeleton() {
+  return (
+    <div className="flex gap-4 overflow-hidden pb-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="shrink-0 w-44">
+          <Skeleton className="aspect-square rounded-xs mb-2" />
+          <Skeleton className="h-2.5 w-16 mb-1" />
+          <Skeleton className="h-4 w-full mb-1" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      ))}
+    </div>
+  );
+}
