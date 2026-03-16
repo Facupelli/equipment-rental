@@ -8,7 +8,10 @@ import {
 import { useCartPricePreview } from "@/features/rental/rental.queries";
 import { useCreateOrder } from "@/features/orders/orders.queries";
 import { ProblemDetailsError } from "@/shared/errors";
-import type { CalculateCartPricesRequest } from "@repo/schemas";
+import type {
+  CalculateCartPricesRequest,
+  CartPriceLineItem,
+} from "@repo/schemas";
 import { fromDate, toISOString } from "@/lib/dates/parse";
 
 type UseCartOrderParams = {
@@ -27,6 +30,11 @@ export type CartOrderPeriod = {
   end: Dayjs;
 };
 
+// Line item enriched with the cart item's display name.
+// Computed here because this hook already owns both cartItems and breakdown —
+// the page component shouldn't need to know about either to render the sidebar.
+export type JoinedLineItem = CartPriceLineItem & { name: string };
+
 /**
  * Owns all data-fetching and mutation logic for the cart page.
  *
@@ -34,6 +42,7 @@ export type CartOrderPeriod = {
  * - Convert native Date params to dayjs once (Layer 1 → Layer 2)
  * - Build the shared item payload (once, shared between preview + submit)
  * - Fetch the price preview
+ * - Join line items with cart item names (so views don't touch the cart store)
  * - Submit the order and navigate on success
  * - Track unavailable item IDs on 422 errors
  */
@@ -93,6 +102,21 @@ export function useCartOrder({
     enabled: Boolean(startDate && endDate && location.id),
   });
 
+  // Pre-join line items with cart item names so downstream components
+  // don't need to know about the cart store or the breakdown shape.
+  const joinedLineItems: JoinedLineItem[] | undefined = useMemo(
+    () =>
+      breakdown?.lineItems.map((line) => {
+        const cartItem = cartItems.find(
+          (i) =>
+            (i.type === "PRODUCT" && i.productTypeId === line.id) ||
+            (i.type === "BUNDLE" && i.bundleId === line.id),
+        );
+        return { ...line, name: cartItem?.name ?? line.id };
+      }),
+    [breakdown, cartItems],
+  );
+
   const { mutateAsync: createOrder } = useCreateOrder();
 
   const handleBook = async () => {
@@ -149,6 +173,7 @@ export function useCartOrder({
     cartItems,
     period,
     breakdown,
+    joinedLineItems,
     isPriceLoading,
     isPriceError,
     unavailableIds,
