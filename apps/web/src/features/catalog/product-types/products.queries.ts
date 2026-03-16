@@ -1,155 +1,91 @@
 import {
   keepPreviousData,
-  useMutation,
+  queryOptions,
   useQuery,
-  useQueryClient,
-  type MutationOptions,
+  useSuspenseQuery,
   type UseQueryOptions,
   type UseSuspenseQueryOptions,
 } from "@tanstack/react-query";
-import {
-  createProduct,
-  getProductDetail,
-  getProducts,
-  publishProductType,
-  retireProductType,
-} from "./products.api";
+import { getProductDetail, getProducts } from "./products.api";
 import type {
   GetProductTypesQuery,
   PaginatedDto,
-  CreateProductTypeDto,
   ProductTypeResponse,
 } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
 
 type PaginatedProducts = PaginatedDto<ProductTypeResponse>;
 
-type ProductsQueryOptions<TData = PaginatedProducts> = Omit<
+// -------------------------------------------------------
+// Type helpers for the "Menace" pattern (optional overrides)
+// -------------------------------------------------------
+
+export type ProductsQueryOverrides<TData = PaginatedProducts> = Omit<
   UseQueryOptions<PaginatedProducts, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
-type ProductDetailQueryOptions<TData = ProductTypeResponse> = Omit<
+export type ProductDetailQueryOverrides<TData = ProductTypeResponse> = Omit<
   UseSuspenseQueryOptions<ProductTypeResponse, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
-// -----------------------------------------------------
+// -------------------------------------------------------
+// Query Key Factory
+// -------------------------------------------------------
 
-export function createProductsQueryOptions<TData = PaginatedProducts>(
-  params: GetProductTypesQuery = {},
-  options?: ProductsQueryOptions<TData>,
-): UseQueryOptions<PaginatedProducts, ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: ["products", params],
-    queryFn: () => getProducts({ data: params }),
-  };
-}
+export const productKeys = {
+  all: () => ["products"] as const,
+  lists: () => [...productKeys.all(), "list"] as const,
+  list: (params: GetProductTypesQuery) =>
+    [...productKeys.lists(), params] as const,
+  details: () => [...productKeys.all(), "detail"] as const,
+  detail: (id: string) => [...productKeys.details(), id] as const,
+};
 
-export function createProductDetailQueryOptions<TData = ProductTypeResponse>(
-  id: string,
-  options?: ProductDetailQueryOptions<TData>,
-): UseSuspenseQueryOptions<ProductTypeResponse, ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: ["products", id],
-    queryFn: () => getProductDetail({ data: { productId: id } }),
-  };
-}
+// -------------------------------------------------------
+// Query Options
+// -------------------------------------------------------
 
-// -----------------------------------------------------
+export const productQueries = {
+  list: <TData = PaginatedProducts>(
+    params: GetProductTypesQuery = {},
+    overrides?: ProductsQueryOverrides<TData>,
+  ) =>
+    queryOptions<PaginatedProducts, ProblemDetailsError, TData>({
+      queryKey: productKeys.list(params),
+      queryFn: () => getProducts({ data: params }),
+      ...overrides,
+    }),
+
+  detail: <TData = ProductTypeResponse>(
+    id: string,
+    overrides?: ProductDetailQueryOverrides<TData>,
+  ) =>
+    queryOptions<ProductTypeResponse, ProblemDetailsError, TData>({
+      queryKey: productKeys.detail(id),
+      queryFn: () => getProductDetail({ data: { productId: id } }),
+      ...overrides,
+    }),
+};
+
+// -------------------------------------------------------
+// Hooks
+// -------------------------------------------------------
 
 export function useProducts<TData = PaginatedProducts>(
   params: GetProductTypesQuery = {},
-  options?: ProductsQueryOptions<TData>,
+  overrides?: ProductsQueryOverrides<TData>,
 ) {
   return useQuery({
-    ...createProductsQueryOptions(params, options),
+    ...productQueries.list(params, overrides),
     placeholderData: keepPreviousData,
   });
 }
 
 export function useProductDetail<TData = ProductTypeResponse>(
   id: string,
-  options?: ProductDetailQueryOptions<TData>,
+  overrides?: ProductDetailQueryOverrides<TData>,
 ) {
-  return useQuery(createProductDetailQueryOptions(id, options));
-}
-
-// MUTATIONS
-
-type ProductTypeLifecycleMutationOptions = Omit<
-  MutationOptions<void, ProblemDetailsError, { productTypeId: string }>,
-  "mutationFn" | "mutationKey"
->;
-
-type ProductMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, CreateProductTypeDto>,
-  "mutationFn" | "mutationKey"
->;
-
-// -----------------------------------------------------
-
-export function useCreateProduct(options?: ProductMutationOptions) {
-  const queryClient = useQueryClient();
-
-  return useMutation<string, ProblemDetailsError, CreateProductTypeDto>({
-    ...options,
-    mutationFn: (data) => createProduct({ data }),
-    onSuccess: async (data, variables, onMutateResult, context) => {
-      await queryClient.invalidateQueries({
-        queryKey: createProductsQueryOptions().queryKey,
-      });
-
-      await options?.onSuccess?.(data, variables, onMutateResult, context);
-    },
-    onError: async (error, variables, onMutateResult, context) => {
-      await options?.onError?.(error, variables, onMutateResult, context);
-    },
-  });
-}
-
-export function usePublishProductType(
-  options?: ProductTypeLifecycleMutationOptions,
-) {
-  const queryClient = useQueryClient();
-
-  return useMutation<void, ProblemDetailsError, { productTypeId: string }>({
-    ...options,
-    mutationFn: (data) => publishProductType({ data }),
-    onSuccess: async (data, variables, onMutateResult, context) => {
-      await queryClient.invalidateQueries({
-        queryKey: createProductDetailQueryOptions(variables.productTypeId)
-          .queryKey,
-      });
-
-      await options?.onSuccess?.(data, variables, onMutateResult, context);
-    },
-    onError: async (error, variables, onMutateResult, context) => {
-      await options?.onError?.(error, variables, onMutateResult, context);
-    },
-  });
-}
-
-export function useRetireProductType(
-  options?: ProductTypeLifecycleMutationOptions,
-) {
-  const queryClient = useQueryClient();
-
-  return useMutation<void, ProblemDetailsError, { productTypeId: string }>({
-    ...options,
-    mutationFn: (data) => retireProductType({ data }),
-    onSuccess: async (data, variables, onMutateResult, context) => {
-      await queryClient.invalidateQueries({
-        queryKey: createProductDetailQueryOptions(variables.productTypeId)
-          .queryKey,
-      });
-
-      await options?.onSuccess?.(data, variables, onMutateResult, context);
-    },
-    onError: async (error, variables, onMutateResult, context) => {
-      await options?.onError?.(error, variables, onMutateResult, context);
-    },
-  });
+  return useSuspenseQuery(productQueries.detail(id, overrides));
 }

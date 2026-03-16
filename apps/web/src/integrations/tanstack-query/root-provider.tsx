@@ -1,34 +1,48 @@
-import type { ReactNode } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from "react";
+import {
+  MutationCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 
 let context:
   | {
-      queryClient: QueryClient
+      queryClient: QueryClient;
     }
-  | undefined
+  | undefined;
 
 export function getContext() {
   if (context) {
-    return context
+    return context;
   }
 
-  const queryClient = new QueryClient()
+  const queryClient = new QueryClient({
+    mutationCache: new MutationCache({
+      onSettled: (_data, _error, _variables, _context, mutation) => {
+        if (mutation.meta?.invalidates) {
+          queryClient.invalidateQueries({
+            queryKey: mutation.meta.invalidates as readonly unknown[],
+          });
+        }
+      },
+    }),
+  });
 
   context = {
     queryClient,
-  }
+  };
 
-  return context
+  return context;
 }
 
 export default function TanStackQueryProvider({
   children,
 }: {
-  children: ReactNode
+  children: ReactNode;
 }) {
-  const { queryClient } = getContext()
+  const { queryClient } = getContext();
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  )
+  );
 }

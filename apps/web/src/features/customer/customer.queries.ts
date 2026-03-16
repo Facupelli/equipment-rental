@@ -21,6 +21,26 @@ import {
 
 type PaginatedCustomers = PaginatedDto<CustomerResponseDto>;
 
+// -----------------------------------------------------
+// Key Factory
+// -----------------------------------------------------
+
+export const customerKeys = {
+  all: () => ["customers"] as const,
+  lists: () => [...customerKeys.all(), "list"] as const,
+  list: (params: GetCustomersQueryDto) =>
+    [...customerKeys.lists(), params] as const,
+  details: () => [...customerKeys.all(), "detail"] as const,
+  detail: (customerId: string) =>
+    [...customerKeys.details(), customerId] as const,
+  profile: (customerId: string) =>
+    [...customerKeys.detail(customerId), "profile"] as const,
+};
+
+// -----------------------------------------------------
+// Types
+// -----------------------------------------------------
+
 type CustomersQueryOptions<TData = PaginatedCustomers> = Omit<
   UseQueryOptions<PaginatedCustomers, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
@@ -41,48 +61,7 @@ type CustomerProfileQueryOptions<TData = CustomerProfileResponseDto> = Omit<
 >;
 
 // -----------------------------------------------------
-
-export function createCustomersQueryOptions<TData = PaginatedCustomers>(
-  params: GetCustomersQueryDto,
-  options?: CustomersQueryOptions<TData>,
-): UseQueryOptions<PaginatedCustomers, ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: ["customers", params],
-    queryFn: () => getCustomers({ data: params }),
-  };
-}
-
-export function createCustomerDetailQueryOptions<
-  TData = CustomerDetailResponseDto,
->(
-  customerId: string,
-  options?: CustomerDetailQueryOptions<TData>,
-): UseSuspenseQueryOptions<
-  CustomerDetailResponseDto,
-  ProblemDetailsError,
-  TData
-> {
-  return {
-    ...options,
-    queryKey: ["customers", customerId],
-    queryFn: () => getCustomerDetail({ data: { customerId } }),
-  };
-}
-
-export function createCustomerProfileQueryOptions<
-  TData = CustomerProfileResponseDto,
->(
-  customerId: string,
-  options?: CustomerProfileQueryOptions<TData>,
-): UseQueryOptions<CustomerProfileResponseDto, ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: ["customers", customerId, "profile"],
-    queryFn: () => getCustomerProfile({ data: { customerId } }),
-  };
-}
-
+// Hooks
 // -----------------------------------------------------
 
 export function useCustomers<TData = PaginatedCustomers>(
@@ -90,7 +69,9 @@ export function useCustomers<TData = PaginatedCustomers>(
   options?: CustomersQueryOptions<TData>,
 ) {
   return useQuery({
-    ...createCustomersQueryOptions(params, options),
+    ...options,
+    queryKey: customerKeys.list(params),
+    queryFn: () => getCustomers({ data: params }),
     placeholderData: keepPreviousData,
   });
 }
@@ -99,14 +80,20 @@ export function useCustomerDetail<TData = CustomerDetailResponseDto>(
   customerId: string,
   options?: CustomerDetailQueryOptions<TData>,
 ) {
-  return useSuspenseQuery(
-    createCustomerDetailQueryOptions(customerId, options),
-  );
+  return useSuspenseQuery({
+    ...options,
+    queryKey: customerKeys.detail(customerId),
+    queryFn: () => getCustomerDetail({ data: { customerId } }),
+  });
 }
 
 export function useCustomerProfile<TData = CustomerProfileResponseDto>(
   customerId: string,
   options?: CustomerProfileQueryOptions<TData>,
 ) {
-  return useQuery(createCustomerProfileQueryOptions(customerId, options));
+  return useQuery({
+    ...options,
+    queryKey: customerKeys.profile(customerId),
+    queryFn: () => getCustomerProfile({ data: { customerId } }),
+  });
 }

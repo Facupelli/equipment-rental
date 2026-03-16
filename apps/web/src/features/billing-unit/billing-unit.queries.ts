@@ -3,27 +3,34 @@ import type { ProblemDetailsError } from "@/shared/errors";
 import type { BillingUnitListResponse } from "@repo/schemas";
 import { getBillingUnits } from "./billing-unit.api";
 
+// -----------------------------------------------------
+// Key Factory
+// -----------------------------------------------------
+
+export const billingUnitKeys = {
+  all: () => ["billing-units"] as const,
+  lists: () => [...billingUnitKeys.all(), "list"] as const,
+};
+
+// -----------------------------------------------------
+// Types
+// -----------------------------------------------------
+
 type BillingUnitQueryOptions<TData = BillingUnitListResponse> = Omit<
   UseQueryOptions<BillingUnitListResponse, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
 // -----------------------------------------------------
-
-export function createBillingUnitQueryOptions<TData = BillingUnitListResponse>(
-  options?: BillingUnitQueryOptions<TData>,
-): UseQueryOptions<BillingUnitListResponse, ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: ["billing-units"],
-    queryFn: () => getBillingUnits(),
-  };
-}
-
+// Hooks
 // -----------------------------------------------------
 
 export function useBillingUnits<TData = BillingUnitListResponse>(
   options?: BillingUnitQueryOptions<TData>,
 ) {
-  return useQuery(createBillingUnitQueryOptions(options));
+  return useQuery({
+    ...options,
+    queryKey: billingUnitKeys.lists(),
+    queryFn: () => getBillingUnits(),
+  });
 }

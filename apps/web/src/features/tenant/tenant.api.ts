@@ -9,7 +9,7 @@ import { createServerFn } from "@tanstack/react-start";
 const apiUrl = "/tenants";
 
 export const getCurrentTenant = createServerFn({ method: "GET" }).handler(
-  async (): Promise<TenantResponse | null> => {
+  async (): Promise<TenantResponse> => {
     const result = await apiFetch<TenantResponse>(`${apiUrl}/me`, {
       method: "GET",
     });

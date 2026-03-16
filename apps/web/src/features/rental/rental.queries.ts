@@ -2,7 +2,6 @@ import {
   keepPreviousData,
   useQuery,
   type UseQueryOptions,
-  type UseSuspenseQueryOptions,
 } from "@tanstack/react-query";
 import type {
   BundleListResponseDto,
@@ -25,22 +24,42 @@ import {
 
 type PaginatedRentalProducts = PaginatedDto<RentalProductResponse>;
 
+// -----------------------------------------------------
+// Key Factory
+// -----------------------------------------------------
+
+export const rentalKeys = {
+  all: () => ["rental"] as const,
+  products: () => [...rentalKeys.all(), "products"] as const,
+  product: (params: GetRentalProductTypesQuery) =>
+    [...rentalKeys.products(), params] as const,
+  newArrivals: () => [...rentalKeys.all(), "new-arrivals"] as const,
+  newArrival: (params: GetNewArrivalsParams) =>
+    [...rentalKeys.newArrivals(), params] as const,
+  bundles: () => [...rentalKeys.all(), "bundles"] as const,
+  bundle: (params: GetCombosParams) =>
+    [...rentalKeys.bundles(), params] as const,
+  cartPreviews: () => [...rentalKeys.all(), "cart-preview"] as const,
+  cartPreview: (params: CalculateCartPricesRequest) =>
+    [...rentalKeys.cartPreviews(), params] as const,
+};
+
+// -----------------------------------------------------
+// Types
+// -----------------------------------------------------
+
 type RentalProductsQueryOptions<TData = PaginatedRentalProducts> = Omit<
-  UseSuspenseQueryOptions<PaginatedRentalProducts, ProblemDetailsError, TData>,
+  UseQueryOptions<PaginatedRentalProducts, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
 type NewArrivalsQueryOptions<TData = NewArrivalListResponseDto> = Omit<
-  UseSuspenseQueryOptions<
-    NewArrivalListResponseDto,
-    ProblemDetailsError,
-    TData
-  >,
+  UseQueryOptions<NewArrivalListResponseDto, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
 type RentalBundlesQueryOptions<TData = BundleListResponseDto> = Omit<
-  UseSuspenseQueryOptions<BundleListResponseDto, ProblemDetailsError, TData>,
+  UseQueryOptions<BundleListResponseDto, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
@@ -50,63 +69,7 @@ type CartPricePreviewQueryOptions<TData = CartPriceResult> = Omit<
 >;
 
 // -----------------------------------------------------
-
-export function createRentalProductsQueryOptions<
-  TData = PaginatedRentalProducts,
->(
-  params: GetRentalProductTypesQuery = {},
-  options?: RentalProductsQueryOptions<TData>,
-): UseSuspenseQueryOptions<
-  PaginatedRentalProducts,
-  ProblemDetailsError,
-  TData
-> {
-  return {
-    ...options,
-    queryKey: ["rental-products", params],
-    queryFn: () => getRentalProducts({ data: params }),
-  };
-}
-
-export function createNewArrivalsQueryOptions<
-  TData = NewArrivalListResponseDto,
->(
-  params: GetNewArrivalsParams = {},
-  options?: NewArrivalsQueryOptions<TData>,
-): UseSuspenseQueryOptions<
-  NewArrivalListResponseDto,
-  ProblemDetailsError,
-  TData
-> {
-  return {
-    ...options,
-    queryKey: ["rental-new-arrivals", params],
-    queryFn: () => getNewArrivals({ data: params }),
-  };
-}
-
-export function createRentalBundlesQueryOptions<TData = BundleListResponseDto>(
-  params: GetCombosParams = {},
-  options?: RentalBundlesQueryOptions<TData>,
-): UseSuspenseQueryOptions<BundleListResponseDto, ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: ["rental-bundles", params],
-    queryFn: () => getRentalBundles({ data: params }),
-  };
-}
-
-export function createCartPricePreviewQueryOptions<TData = CartPriceResult>(
-  params: CalculateCartPricesRequest,
-  options?: CartPricePreviewQueryOptions<TData>,
-): UseQueryOptions<CartPriceResult, ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: ["cart-price-preview", params],
-    queryFn: () => getCartPricePreview({ data: params }),
-  };
-}
-
+// Hooks
 // -----------------------------------------------------
 
 export function useRentalProducts<TData = PaginatedRentalProducts>(
@@ -114,7 +77,9 @@ export function useRentalProducts<TData = PaginatedRentalProducts>(
   options?: RentalProductsQueryOptions<TData>,
 ) {
   return useQuery({
-    ...createRentalProductsQueryOptions(params, options),
+    ...options,
+    queryKey: rentalKeys.product(params),
+    queryFn: () => getRentalProducts({ data: params }),
     placeholderData: keepPreviousData,
   });
 }
@@ -124,7 +89,9 @@ export function useNewArrivals<TData = NewArrivalListResponseDto>(
   options?: NewArrivalsQueryOptions<TData>,
 ) {
   return useQuery({
-    ...createNewArrivalsQueryOptions(params, options),
+    ...options,
+    queryKey: rentalKeys.newArrival(params),
+    queryFn: () => getNewArrivals({ data: params }),
     placeholderData: keepPreviousData,
   });
 }
@@ -134,7 +101,9 @@ export function useRentalBundles<TData = BundleListResponseDto>(
   options?: RentalBundlesQueryOptions<TData>,
 ) {
   return useQuery({
-    ...createRentalBundlesQueryOptions(params, options),
+    ...options,
+    queryKey: rentalKeys.bundle(params),
+    queryFn: () => getRentalBundles({ data: params }),
     placeholderData: keepPreviousData,
   });
 }
@@ -144,7 +113,9 @@ export function useCartPricePreview<TData = CartPriceResult>(
   options?: CartPricePreviewQueryOptions<TData>,
 ) {
   return useQuery({
-    ...createCartPricePreviewQueryOptions(params, options),
+    ...options,
+    queryKey: rentalKeys.cartPreview(params),
+    queryFn: () => getCartPricePreview({ data: params }),
     placeholderData: keepPreviousData,
   });
 }

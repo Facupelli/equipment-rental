@@ -13,7 +13,7 @@ import {
 import { useLogout } from "@/features/auth/auth.queries";
 import { ensureValidSession } from "@/features/auth/get-session";
 import { createLocationQueryOptions } from "@/features/tenant/locations/locations.queries";
-import { getCurrentTenant } from "@/features/tenant/tenant.api";
+import { tenantQueries } from "@/features/tenant/tenant.queries";
 import { userQueries } from "@/features/user/user.queries";
 import { LocationStoreProvider } from "@/shared/contexts/location/location.context";
 import {
@@ -41,16 +41,11 @@ export const Route = createFileRoute("/_admin/dashboard")({
     });
   },
   loader: async ({ context: { queryClient } }) => {
-    const tenant = await getCurrentTenant();
-
-    if (!tenant) {
-      throw Error("User or Tenant not found");
-    }
-
     const locations = await queryClient.ensureQueryData(
       createLocationQueryOptions(),
     );
     const user = await queryClient.ensureQueryData(userQueries.me());
+    const tenant = await queryClient.ensureQueryData(tenantQueries.me());
 
     return { user, tenant, locations };
   },
