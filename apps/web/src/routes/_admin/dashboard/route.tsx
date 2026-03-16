@@ -10,11 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getCurrentUser } from "@/features/auth/auth.api";
 import { useLogout } from "@/features/auth/auth.queries";
 import { ensureValidSession } from "@/features/auth/get-session";
 import { createLocationQueryOptions } from "@/features/tenant/locations/locations.queries";
 import { getCurrentTenant } from "@/features/tenant/tenant.api";
+import { userQueries } from "@/features/user/user.queries";
 import { LocationStoreProvider } from "@/shared/contexts/location/location.context";
 import {
   useLocationActions,
@@ -36,31 +36,27 @@ export const Route = createFileRoute("/_admin/dashboard")({
       throw redirect({ to: "/admin/login" });
     }
 
-    const { accessToken } = await ensureValidSession({
+    await ensureValidSession({
       data: context.tenantContext.face,
     });
-    return { accessToken };
   },
   loader: async ({ context: { queryClient } }) => {
-    const [user, tenant] = await Promise.all([
-      getCurrentUser(),
-      getCurrentTenant(),
-    ]);
+    const tenant = await getCurrentTenant();
 
-    if (!user || !tenant) {
+    if (!tenant) {
       throw Error("User or Tenant not found");
     }
 
     const locations = await queryClient.ensureQueryData(
       createLocationQueryOptions(),
     );
+    const user = await queryClient.ensureQueryData(userQueries.me());
 
     return { user, tenant, locations };
   },
   component: DashboardLayout,
 });
 
-const authedRoute = getRouteApi("/_admin/dashboard");
 const dashboardRoute = getRouteApi("/_admin/dashboard");
 
 const sidebarItems = [
@@ -78,8 +74,7 @@ const sidebarItems = [
 ];
 
 function DashboardLayout() {
-  const { user, tenant } = authedRoute.useLoaderData();
-  const { locations } = dashboardRoute.useLoaderData();
+  const { user, tenant, locations } = dashboardRoute.useLoaderData();
 
   return (
     <LocationStoreProvider locations={locations}>

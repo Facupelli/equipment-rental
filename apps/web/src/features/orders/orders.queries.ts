@@ -118,6 +118,7 @@ export function useCreateOrder(options?: OrderMutationOptions) {
     ...options,
     mutationFn: async (data) => {
       const result = await createOrder({ data });
+
       if (typeof result === "object" && "error" in result) {
         throw new ProblemDetailsError(result.error);
       }

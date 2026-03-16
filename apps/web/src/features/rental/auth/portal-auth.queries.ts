@@ -1,19 +1,16 @@
 import type { ProblemDetailsError } from "@/shared/errors";
-import { loginCustomer, registerCustomer } from "./portal-auth.api";
 import { useMutation } from "@tanstack/react-query";
 import type { LoginCustomerDto, RegisterCustomerDto } from "@repo/schemas";
+import { loginCustomerFn, registerCustomerFn } from "./portal-auth.api";
+import type { SessionUser } from "@/lib/session";
 
 export function useCustomerLogin() {
   // const queryClient = useQueryClient();
 
-  return useMutation<
-    { success: boolean },
-    ProblemDetailsError,
-    LoginCustomerDto
-  >({
-    mutationFn: (data) => loginCustomer({ data }),
+  return useMutation<SessionUser, ProblemDetailsError, LoginCustomerDto>({
+    mutationFn: (data) => loginCustomerFn({ data }),
     onSuccess: async (result) => {
-      if (result.success) {
+      if (result.userId) {
         // await queryClient.invalidateQueries({
         //   queryKey: authQueryKey.currentUser,
         // });
@@ -29,7 +26,7 @@ export function useCustomerLogin() {
 
 export function useCustomerRegister() {
   return useMutation<string, ProblemDetailsError, RegisterCustomerDto>({
-    mutationFn: (data) => registerCustomer({ data }),
+    mutationFn: (data) => registerCustomerFn({ data }),
     onSuccess: async () => {},
     onError: (error) => {
       console.error(

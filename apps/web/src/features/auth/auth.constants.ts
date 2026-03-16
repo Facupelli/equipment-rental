@@ -1,4 +1,8 @@
-// How long the access token lives — must match JWT_EXPIRATION_TIME_SECONDS in NestJS.
-// We store the expiry timestamp in the session so the auth middleware can decide
-// whether to proactively refresh without decoding the JWT on every request.
-export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes
+/**
+ * Must match JWT_ACCESS_EXPIRATION_TIME_SECONDS in your NestJS env,
+ * expressed in milliseconds.
+ *
+ * Used to set accessTokenExpiresAt on login and refresh — avoids decoding
+ * the JWT payload just to read the exp claim.
+ */
+export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes — adjust to your config

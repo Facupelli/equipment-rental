@@ -7,7 +7,7 @@ import {
 } from "@better-upload/server";
 import { cloudflare } from "@better-upload/server/clients";
 import { z } from "zod";
-import { getCurrentUser } from "@/features/auth/auth.api";
+import { getAppSession } from "@/lib/session";
 
 const s3 = cloudflare({
   accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
@@ -31,9 +31,9 @@ const uploadRouter: Router = {
       clientMetadataSchema,
 
       onBeforeUpload: async ({ req: _, file, clientMetadata }) => {
-        const user = await getCurrentUser();
+        const user = await getAppSession();
 
-        if (!user) {
+        if (!user.data.userId) {
           throw new RejectUpload("Unauthorized");
         }
 

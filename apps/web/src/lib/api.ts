@@ -1,12 +1,14 @@
 import { problemDetailsSchema, type PaginatedDto } from "@repo/schemas";
 import { ProblemDetailsError } from "@/shared/errors";
-import { useAppSession } from "./session";
+import { getAppSession } from "./session";
 import { refreshSession } from "@/features/auth/refresh-session";
 
 type ApiFetchOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
   params?: Record<string, unknown>;
   authenticated?: boolean;
+  /** Pass 'admin' or 'portal' so refreshSession redirects to the right login page on failure. */
+  face?: "admin" | "portal";
 };
 
 // ── apiFetchRaw ───────────────────────────────────────────────────────────────
@@ -26,7 +28,14 @@ async function apiFetchRaw<T>(
   path: string,
   options: ApiFetchOptions = {},
 ): Promise<T> {
-  const { body, headers, params, authenticated = true, ...rest } = options;
+  const {
+    body,
+    headers,
+    params,
+    authenticated = true,
+    face = "admin",
+    ...rest
+  } = options;
 
   const url = new URL(`${process.env.NESTJS_API_URL}${path}`);
   if (params) {
@@ -45,7 +54,7 @@ async function apiFetchRaw<T>(
 
     if (authenticated) {
       if (!currentToken) {
-        const session = await useAppSession();
+        const session = await getAppSession();
         currentToken = session.data.accessToken;
       }
 
@@ -87,7 +96,7 @@ async function apiFetchRaw<T>(
 
     // ── Reactive 401 Fallback ─────────────────────────────────────────────────
     if (response.status === 401 && authenticated && !hasRetried) {
-      const refreshed = await refreshSession();
+      const refreshed = await refreshSession(face);
 
       if (refreshed) {
         currentToken = undefined; // force re-read from session on next iteration
@@ -111,6 +120,12 @@ async function apiFetchRaw<T>(
               detail: `Request to ${path} failed with status ${response.status}`,
             },
       );
+    }
+
+    // ── FIX: handle 204 No Content (e.g. POST /auth/logout) ──────────────────
+    // response.json() throws on an empty body — guard against it.
+    if (response.status === 204) {
+      return undefined as T;
     }
 
     return response.json() as Promise<T>;

@@ -6,7 +6,7 @@ export class CreateOrderCommand {
   constructor(
     public readonly tenantId: string,
     public readonly locationId: string,
-    public readonly customerId: string | null,
+    public readonly customerId: string,
     public readonly period: { start: Date; end: Date },
     public readonly pickupTime: number,
     public readonly returnTime: number,

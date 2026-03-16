@@ -1,14 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { redirect } from "@tanstack/react-router";
 import { refreshSession } from "./refresh-session";
-import { useAppSession } from "@/lib/session";
+import { getAppSession } from "@/lib/session";
 
 // How many milliseconds before expiry we proactively refresh.
 const REFRESH_BUFFER_MS = 30 * 1000; // 30 seconds
 
 // ── ensureValidSession ────────────────────────────────────────────────────────
 // The single auth entry point for all protected routes.
-// Called once in beforeLoad on the _admin/dashboard layout route.
+// Called once in beforeLoad on each protected layout route (_admin, _portal).
 //
 // Responsibilities:
 //   1. Verify a session exists
@@ -16,13 +16,14 @@ const REFRESH_BUFFER_MS = 30 * 1000; // 30 seconds
 //   3. Return the fresh access token for use in route context
 //
 // All child server functions trust that beforeLoad already guaranteed a valid
-// session — they just read it directly via useAppSession() or apiFetch().
+// session — they just read it directly via getAppSession() or apiFetch().
 
 export const ensureValidSession = createServerFn({ method: "GET" })
   .inputValidator((face: "admin" | "portal") => face)
   .handler(async ({ data: face }) => {
-    const session = await useAppSession();
-    const { accessToken, refreshToken, accessTokenExpiresAt } = session.data;
+    const session = await getAppSession();
+    const { accessToken, refreshToken, accessTokenExpiresAt } =
+      session.data ?? {};
 
     const loginRoute = face === "admin" ? "/admin/login" : "/login";
 
@@ -34,12 +35,13 @@ export const ensureValidSession = createServerFn({ method: "GET" })
     const isExpiringSoon = expiresAt - Date.now() < REFRESH_BUFFER_MS;
 
     if (isExpiringSoon) {
-      await refreshSession(face); // refreshSession needs the same treatment
+      await refreshSession(face);
     }
 
-    const freshSession = await useAppSession();
+    // Re-read after potential refresh so the returned token is always fresh.
+    const freshSession = await getAppSession();
 
     return {
-      accessToken: freshSession.data.accessToken!,
+      accessToken: freshSession.data.accessToken,
     };
   });

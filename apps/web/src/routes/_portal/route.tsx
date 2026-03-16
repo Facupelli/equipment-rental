@@ -1,4 +1,3 @@
-import { getCurrentUser } from "@/features/auth/auth.api";
 import { ensureValidSession } from "@/features/auth/get-session";
 import { createFileRoute } from "@tanstack/react-router";
 

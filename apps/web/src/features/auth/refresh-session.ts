@@ -1,4 +1,4 @@
-import { useAppSession } from "@/lib/session";
+import { getAppSession } from "@/lib/session";
 import { redirect } from "@tanstack/react-router";
 import { ACCESS_TOKEN_TTL_MS } from "./auth.constants";
 
@@ -37,13 +37,13 @@ export async function refreshSession(
 }
 
 async function attemptRefresh(face: "admin" | "portal"): Promise<boolean> {
-  const session = await useAppSession();
+  const session = await getAppSession();
   const refreshToken = session.data.refreshToken;
+
+  const loginRoute = face === "admin" ? "/admin/login" : "/login";
 
   if (!refreshToken) {
     await session.clear();
-    const loginRoute = face === "admin" ? "/admin/login" : "/login";
-
     throw redirect({ to: loginRoute });
   }
 
@@ -54,6 +54,7 @@ async function attemptRefresh(face: "admin" | "portal"): Promise<boolean> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // NestJS RefreshTokenStrategy uses fromAuthHeaderAsBearerToken()
         Authorization: `Bearer ${refreshToken}`,
       },
     });
@@ -67,7 +68,7 @@ async function attemptRefresh(face: "admin" | "portal"): Promise<boolean> {
     // API rejected the refresh token (expired, revoked, reuse detected).
     // Unrecoverable — clear session and force re-login.
     await session.clear();
-    throw redirect({ to: "/login" });
+    throw redirect({ to: loginRoute });
   }
 
   const body = (await response.json()) as {

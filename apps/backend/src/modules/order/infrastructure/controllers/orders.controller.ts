@@ -29,7 +29,7 @@ export class OrdersController {
     const command = new CreateOrderCommand(
       user.tenantId,
       dto.locationId,
-      dto.customerId ?? null,
+      dto.customerId,
       { start: new Date(dto.periodStart), end: new Date(dto.periodEnd) },
       dto.pickupTime,
       dto.returnTime,

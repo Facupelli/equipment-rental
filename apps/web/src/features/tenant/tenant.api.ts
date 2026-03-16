@@ -1,5 +1,4 @@
 import { apiFetch } from "@/lib/api";
-import { useAppSession } from "@/lib/session";
 import {
   updateTenantConfigSchema,
   type TenantResponse,
@@ -11,12 +10,6 @@ const apiUrl = "/tenants";
 
 export const getCurrentTenant = createServerFn({ method: "GET" }).handler(
   async (): Promise<TenantResponse | null> => {
-    const session = await useAppSession();
-
-    if (!session.data.accessToken) {
-      return null;
-    }
-
     const result = await apiFetch<TenantResponse>(`${apiUrl}/me`, {
       method: "GET",
     });
