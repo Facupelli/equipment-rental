@@ -5,12 +5,7 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "preDeployCommand": [
-      "/bin/sh",
-      "-c",
-      "/app/apps/backend/node_modules/.bin/prisma migrate deploy --schema=/app/apps/backend/prisma/schema.prisma"
-    ],
-    "startCommand": "node apps/backend/dist/main",
+    "startCommand": "/bin/sh -c \"node /app/apps/backend/node_modules/.bin/prisma migrate deploy --schema=/app/apps/backend/prisma/schema.prisma && node apps/backend/dist/main\"",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",
