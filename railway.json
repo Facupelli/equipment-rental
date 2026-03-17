@@ -1,10 +1,13 @@
 {
-  "$schema": "https://schema.railway.com/railway.schema.json",
+  "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
+    "preDeployCommand": [
+      "node /app/apps/backend/node_modules/.bin/prisma migrate deploy --schema=/app/apps/backend/prisma/schema.prisma"
+    ],
     "startCommand": "node apps/backend/dist/main",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 30,
