@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { CatalogImageUploader } from "@/features/catalog/components/catalog-image-uploader";
 import { useCategories } from "@/features/catalog/product-categories/categories.queries";
-import { useCreateProduct } from "@/features/catalog/product-types/products.queries";
+import { useCreateProduct } from "@/features/catalog/product-types/product.mutations";
 import {
   productTypeFormDefaults,
   productTypeFormSchema,

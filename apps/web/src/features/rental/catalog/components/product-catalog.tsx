@@ -11,10 +11,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCartActions } from "@/features/rental/cart/cart.hooks";
 import { useRentalProducts } from "@/features/rental/rental.queries";
 import type { RentalProductResponse } from "@repo/schemas";
 import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
+import { useProductCardState } from "../../cart/hooks/use-product-card-state";
+import { Minus, Plus } from "lucide-react";
 
 interface ProductCatalogProps {
   search: RentalPageSearch;
@@ -22,24 +23,10 @@ interface ProductCatalogProps {
 }
 
 export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
-  const { addProduct } = useCartActions();
-
   const { data: products, isPending } = useRentalProducts(search);
 
   const currentPage = search.page ?? 1;
   const totalPages = products?.meta.totalPages ?? 1;
-
-  function handleAddToCart(product: RentalProductResponse) {
-    addProduct({
-      name: product.name,
-      billingUnitLabel: product.billingUnit.label,
-      pricePerUnit: product.pricingTiers[0].pricePerUnit,
-      productTypeId: product.id,
-      imageUrl: "",
-      includedItems: product.includedItems,
-      assetCount: product.availableCount,
-    });
-  }
 
   return (
     <>
@@ -47,11 +34,7 @@ export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
         {isPending
           ? Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)
           : products?.data.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAdd={handleAddToCart}
-              />
+              <ProductCard key={product.id} product={product} />
             ))}
       </div>
 
@@ -68,17 +51,16 @@ export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ProductCard — co-located, only used by ProductCatalog
-// ─────────────────────────────────────────────────────────────────────────────
+function ProductCard({ product }: { product: RentalProductResponse }) {
+  const {
+    isInCart,
+    quantity,
+    maxQuantity,
+    handleAdd,
+    handleIncrement,
+    handleDecrement,
+  } = useProductCardState(product);
 
-function ProductCard({
-  product,
-  onAdd,
-}: {
-  product: RentalProductResponse;
-  onAdd: (product: RentalProductResponse) => void;
-}) {
   const unitPrice = product.pricingTiers[0].pricePerUnit;
   const category = product.category?.name ?? "General";
 
@@ -98,8 +80,11 @@ function ProductCard({
             <span className="text-sm text-muted-foreground">No image</span>
           </div>
         )}
-        <Badge className="absolute top-2 right-2" variant="secondary">
-          {category}
+        <Badge
+          className="absolute top-2 right-2"
+          variant={isInCart ? "default" : "secondary"}
+        >
+          {isInCart ? "Added" : category}
         </Badge>
       </div>
 
@@ -124,23 +109,41 @@ function ProductCard({
             <span className="text-sm text-muted-foreground">Contact us</span>
           )}
         </div>
-        <Button
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAdd(product);
-          }}
-        >
-          Add
-        </Button>
+
+        {isInCart ? (
+          <div className="flex items-center gap-2 border rounded-md px-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleDecrement}
+              aria-label="Decrease quantity"
+            >
+              <Minus className="w-3 h-3" />
+            </Button>
+            <span className="text-sm font-medium w-4 text-center">
+              {quantity}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleIncrement}
+              disabled={quantity >= maxQuantity}
+              aria-label="Increase quantity"
+            >
+              <Plus className="w-3 h-3" />
+            </Button>
+          </div>
+        ) : (
+          <Button size="sm" onClick={handleAdd}>
+            Add
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ProductSkeleton — co-located
-// ─────────────────────────────────────────────────────────────────────────────
 
 function ProductSkeleton() {
   return (
@@ -158,10 +161,6 @@ function ProductSkeleton() {
     </Card>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Pagination helpers — co-located, only used by ProductCatalog
-// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Builds a pagination window like: [1, …, 4, 5, 6, …, 12]

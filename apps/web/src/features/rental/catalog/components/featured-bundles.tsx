@@ -2,10 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCartActions } from "@/features/rental/cart/cart.hooks";
 import { rentalQueries } from "@/features/rental/rental.queries";
 import type { BundleItemResponse } from "@repo/schemas";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { useBundleCardState } from "../../cart/hooks/use-bundle-card-state";
+import { CheckCircle, Trash2, Zap } from "lucide-react";
 
 interface FeaturedBundlesProps {
   locationId?: string;
@@ -33,38 +34,20 @@ export function FeaturedBundles({ locationId }: FeaturedBundlesProps) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BundleCard — co-located, only used by FeaturedBundles
-// ─────────────────────────────────────────────────────────────────────────────
-
 function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
-  const { addBundle } = useCartActions();
+  const { isInCart, handleAdd, handleRemove } = useBundleCardState(bundle);
   const price = bundle.pricingPreview;
 
   const includedNames = bundle.components
     .map((c) => `${c.quantity}x ${c.productType.name}`)
     .join(", ");
 
-  function handleAdd() {
-    addBundle({
-      bundleId: bundle.id,
-      name: bundle.name,
-      billingUnitLabel: bundle.billingUnit.label,
-      imageUrl: "",
-      price: price?.pricePerUnit ?? 0,
-      components: bundle.components.map((component) => ({
-        productTypeId: component.productType.id,
-        name: component.productType.name,
-        quantity: component.quantity,
-        description: component.productType.description,
-        imageUrl: "",
-        includedItems: component.productType.includedItems,
-      })),
-    });
-  }
-
   return (
-    <Card className="overflow-hidden rounded-xs flex flex-col">
+    <Card
+      className={`overflow-hidden rounded-xs flex flex-col transition-all ${
+        isInCart ? "ring-2 ring-black" : ""
+      }`}
+    >
       <div className="aspect-video bg-gray-100 relative overflow-hidden">
         {bundle.imageUrl ? (
           <img
@@ -80,10 +63,12 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
           </div>
         )}
         <Badge
-          className="absolute top-2 left-2 text-[10px] uppercase tracking-widest"
-          variant="secondary"
+          className={`absolute top-2 left-2 text-[10px] uppercase tracking-widest ${
+            isInCart ? "bg-black text-white hover:bg-black" : ""
+          }`}
+          variant={isInCart ? "default" : "secondary"}
         >
-          Non-modifiable bundle
+          {isInCart ? "Added to Order" : "Non-modifiable bundle"}
         </Badge>
       </div>
 
@@ -116,17 +101,32 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
       </CardHeader>
 
       <CardFooter className="p-4 mt-auto">
-        <Button className="w-full" onClick={handleAdd}>
-          Quick Reserve Combo
-        </Button>
+        {isInCart ? (
+          <div className="flex gap-2 w-full">
+            <Button variant="outline" className="flex-1" disabled>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Reserved
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRemove}
+              className="shrink-0"
+              aria-label="Remove from order"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : (
+          <Button className="w-full" onClick={handleAdd}>
+            <Zap className="w-4 h-4 mr-2" />
+            Quick Reserve Combo
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Skeleton — co-located, exported for Suspense fallback in the page
-// ─────────────────────────────────────────────────────────────────────────────
 
 export function FeaturedBundlesSkeleton() {
   return (
