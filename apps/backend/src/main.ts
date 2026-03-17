@@ -4,6 +4,7 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { ProblemDetailsFilter } from './core/exceptions/problem-detail.filter';
 import { AppLogger } from './core/logger/app-logger.service';
 import { TransformInterceptor } from './core/response/transform.interceptor';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
