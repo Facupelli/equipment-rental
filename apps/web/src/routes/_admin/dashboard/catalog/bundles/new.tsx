@@ -5,7 +5,7 @@ import {
 } from "@tanstack/react-router";
 import { useForm, useStore } from "@tanstack/react-form";
 import type { ProductTypeResponse } from "@repo/schemas";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,11 +63,9 @@ function NewBundlePage() {
     navigate({ to: "/dashboard/catalog/bundles" });
   }
 
-  const addedIds = useStore(form.store, (s) =>
-    useMemo(
-      () => new Set(s.values.components.map((c) => c.productTypeId)),
-      [s.values.components],
-    ),
+  const addedIds = useStore(
+    form.store,
+    (s) => new Set(s.values.components.map((c) => c.productTypeId)),
   );
 
   const isSaveDisabled = useStore(form.store, (s) => {

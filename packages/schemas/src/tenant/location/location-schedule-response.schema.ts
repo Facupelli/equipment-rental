@@ -28,7 +28,7 @@ export const LocationScheduleResponseSchema = z.object({
   specificDate: z.date().nullable(),
   openTime: z.number().int().min(0).max(1439),
   closeTime: z.number().int().min(0).max(1439),
-  slotIntervalMinutes: z.number().int().positive(),
+  slotIntervalMinutes: z.number().nullable(),
 });
 
 export type LocationScheduleResponseDto = z.infer<

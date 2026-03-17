@@ -39,3 +39,12 @@ export class LocationScheduleOverlapException extends Error {
     this.name = 'LocationScheduleOverlapException';
   }
 }
+
+export class InvalidScheduleWindowInvariantException extends Error {
+  constructor() {
+    super(
+      'A fixed-hour schedule (openTime === closeTime) must have no interval, and a windowed schedule must have an interval.',
+    );
+    this.name = 'InvalidScheduleWindowInvariantException';
+  }
+}

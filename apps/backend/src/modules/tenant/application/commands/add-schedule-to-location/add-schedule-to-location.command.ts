@@ -7,7 +7,7 @@ export interface AddScheduleToLocationCommandProps {
   specificDate: Date | null;
   openTime: number;
   closeTime: number;
-  slotIntervalMinutes: number;
+  slotIntervalMinutes: number | null;
 }
 
 export class AddScheduleToLocationCommand {
@@ -17,7 +17,7 @@ export class AddScheduleToLocationCommand {
   public readonly specificDate: Date | null;
   public readonly openTime: number;
   public readonly closeTime: number;
-  public readonly slotIntervalMinutes: number;
+  public readonly slotIntervalMinutes: number | null;
 
   constructor(props: AddScheduleToLocationCommandProps) {
     this.locationId = props.locationId;

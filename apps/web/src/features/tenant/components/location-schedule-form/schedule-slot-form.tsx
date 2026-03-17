@@ -1,4 +1,4 @@
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +50,11 @@ export function ScheduleSlotForm({
     },
   });
 
+  const isFixedHour = useStore(
+    form.store,
+    (s) => s.values.openTime === s.values.closeTime,
+  );
+
   return (
     <form
       onSubmit={(e) => {
@@ -91,7 +96,6 @@ export function ScheduleSlotForm({
             );
           }}
         </form.Field>
-
         {/* ----------------------------------------------------------------
             Mode — Weekly | Specific date
         ----------------------------------------------------------------- */}
@@ -212,7 +216,6 @@ export function ScheduleSlotForm({
             </>
           )}
         </form.Field>
-
         {/* ----------------------------------------------------------------
             Open Time / Close Time
         ----------------------------------------------------------------- */}
@@ -250,7 +253,12 @@ export function ScheduleSlotForm({
                     name={field.name}
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => {
+                      field.handleChange(e.target.value);
+                      if (e.target.value === form.getFieldValue("openTime")) {
+                        form.setFieldValue("slotIntervalMinutes", null);
+                      }
+                    }}
                     aria-invalid={isInvalid}
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -259,39 +267,46 @@ export function ScheduleSlotForm({
             }}
           </form.Field>
         </div>
-
         {/* ----------------------------------------------------------------
             Slot Interval
         ----------------------------------------------------------------- */}
-        <form.Field name="slotIntervalMinutes">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldLabel>Slot Interval</FieldLabel>
-                <div className="flex gap-2">
-                  {SLOT_INTERVAL_OPTIONS.map((mins) => (
-                    <button
-                      key={mins}
-                      type="button"
-                      onClick={() => field.handleChange(mins)}
-                      className={cn(
-                        "flex-1 rounded-lg border py-2 text-sm font-medium transition-all",
-                        field.state.value === mins
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-border bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground",
-                      )}
-                    >
-                      {mins} min
-                    </button>
-                  ))}
-                </div>
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            );
-          }}
-        </form.Field>
+        {!isFixedHour && (
+          <form.Field name="slotIntervalMinutes">
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel>Slot Interval</FieldLabel>
+                  <div className="flex gap-2">
+                    {SLOT_INTERVAL_OPTIONS.map((mins) => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => field.handleChange(mins)}
+                        className={cn(
+                          "flex-1 rounded-lg border py-2 text-sm font-medium transition-all",
+                          field.state.value === mins
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-border bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                        )}
+                      >
+                        {mins} min
+                      </button>
+                    ))}
+                  </div>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
+          </form.Field>
+        )}
+        A note on the openTime field I only reset slotIntervalMinutes on
+        closeTime change because that's the natural direction — the user sets an
+        open time first, then brings close time to match it to declare a fixed
+        hour. If you also want the reverse (user changes openTime to match an
+        existing closeTime), the same reset logic can be mirrored there. Worth
+        considering?
       </FieldGroup>
 
       {/* ----------------------------------------------------------------

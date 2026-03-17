@@ -15,16 +15,6 @@ export function timeStringToMinutes(time: string): number {
   return hours * 60 + mins;
 }
 
-// ---------------------------------------------------------------------------
-// Form schema
-//
-// Key changes from v1:
-//   - `dayOfWeek` (singular, nullable) → `daysOfWeek` (array) so the chip
-//     toggle can drive multi-day bulk creation in a single submission.
-//   - In edit mode the array always has exactly one element.
-//   - `specificDate` stays singular — overrides target one date at a time.
-// ---------------------------------------------------------------------------
-
 export const scheduleSlotFormSchema = z
   .object({
     type: z.enum(["PICKUP", "RETURN"]),
@@ -37,7 +27,7 @@ export const scheduleSlotFormSchema = z
     openTime: z.string().regex(/^\d{2}:\d{2}$/, "Enter a valid time (HH:mm)"),
     closeTime: z.string().regex(/^\d{2}:\d{2}$/, "Enter a valid time (HH:mm)"),
 
-    slotIntervalMinutes: z.number().int().positive(),
+    slotIntervalMinutes: z.number().int().positive().nullable(),
   })
   .refine(
     (data) => {
@@ -50,22 +40,29 @@ export const scheduleSlotFormSchema = z
     },
   )
   .refine(
+    (data) =>
+      timeStringToMinutes(data.openTime) <= timeStringToMinutes(data.closeTime),
+    {
+      message: "Open time must be before or equal to close time.",
+      path: ["openTime"],
+    },
+  )
+  .refine(
     (data) => {
-      return (
-        timeStringToMinutes(data.openTime) < timeStringToMinutes(data.closeTime)
-      );
+      const isFixedHour =
+        timeStringToMinutes(data.openTime) ===
+        timeStringToMinutes(data.closeTime);
+      const hasInterval = data.slotIntervalMinutes !== null;
+      return isFixedHour !== hasInterval;
     },
     {
-      message: "Open time must be before close time.",
-      path: ["openTime"],
+      message:
+        "Fixed-hour schedules must have no interval. Windowed schedules must have an interval.",
+      path: ["slotIntervalMinutes"],
     },
   );
 
 export type ScheduleSlotFormValues = z.infer<typeof scheduleSlotFormSchema>;
-
-// ---------------------------------------------------------------------------
-// Defaults
-// ---------------------------------------------------------------------------
 
 export function getScheduleSlotDefaults(opts: {
   type: "PICKUP" | "RETURN";
@@ -84,14 +81,12 @@ export function getScheduleSlotDefaults(opts: {
   };
 }
 
-/** Prefills the form from an existing record (edit mode). */
 export function scheduleToFormValues(
   schedule: LocationScheduleResponseDto,
 ): ScheduleSlotFormValues {
   return {
     type: schedule.type,
     mode: schedule.dayOfWeek !== null ? "weekly" : "specific",
-    // Single-element array — edit always targets one existing record
     daysOfWeek: schedule.dayOfWeek !== null ? [schedule.dayOfWeek] : [],
     specificDate:
       schedule.specificDate !== null
@@ -102,14 +97,6 @@ export function scheduleToFormValues(
     slotIntervalMinutes: schedule.slotIntervalMinutes,
   };
 }
-
-// ---------------------------------------------------------------------------
-// DTO conversion
-//
-// Returns an array because one form submission may produce N rows (one per
-// selected day). The caller routes to bulk-create or single-update depending
-// on modal mode — the schema layer does not need to know which.
-// ---------------------------------------------------------------------------
 
 export function toAddScheduleDtos(
   values: ScheduleSlotFormValues,

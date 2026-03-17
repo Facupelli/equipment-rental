@@ -264,12 +264,12 @@ model LocationSchedule {
   locationId   String           @map("location_id")
   type         ScheduleSlotType
 
-  dayOfWeek    Int?      @map("day_of_week")
-  specificDate DateTime? @map("specific_date") @db.Date
+  dayOfWeek    Int?             @map("day_of_week")
+  specificDate DateTime?        @map("specific_date") @db.Date
 
-  openTime            Int @map("open_time")
-  closeTime           Int @map("close_time")
-  slotIntervalMinutes Int @map("slot_interval_minutes")
+  openTime            Int       @map("open_time")
+  closeTime           Int       @map("close_time")
+  slotIntervalMinutes Int?      @map("slot_interval_minutes")
 
   location Location @relation(fields: [locationId], references: [id])
 
