@@ -11,14 +11,14 @@ const OrderSummarySchema = z.object({
   id: z.string(),
   number: z.number().int(),
   status: z.enum(OrderStatus),
-  periodStart: z.string(), // "YYYY-MM-DD"
-  periodEnd: z.string(), // "YYYY-MM-DD"
+  periodStart: z.string(),
+  periodEnd: z.string(),
   customer: CustomerSummarySchema.nullable(),
 });
 
 export const ScheduleEventSchema = z.object({
   eventType: z.enum(["PICKUP", "RETURN"]),
-  eventDate: z.string(), // "YYYY-MM-DD"
+  eventDate: z.string(),
   order: OrderSummarySchema,
 });
 

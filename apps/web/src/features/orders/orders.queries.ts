@@ -16,7 +16,7 @@ import {
 } from "@tanstack/react-query";
 import { createOrder, getCalendarDots, getOrdersSchedule } from "./orders.api";
 import type { Dayjs } from "dayjs";
-import { parseDailyBound } from "@/lib/dates/parse";
+import dayjs from "@/lib/dates/dayjs";
 
 // -----------------------------------------------------
 // Parsed Types
@@ -83,11 +83,11 @@ function parseScheduleResponse(
   return {
     events: raw.events.map((e) => ({
       ...e,
-      eventDate: parseDailyBound(e.eventDate)!,
+      eventDate: dayjs(e.eventDate)!,
       order: {
         ...e.order,
-        periodStart: parseDailyBound(e.order.periodStart)!,
-        periodEnd: parseDailyBound(e.order.periodEnd)!,
+        periodStart: dayjs(e.order.periodStart)!,
+        periodEnd: dayjs(e.order.periodEnd)!,
       },
     })),
   };

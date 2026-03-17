@@ -31,13 +31,13 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<GetOrdersSch
 
     const pickupEvents: ScheduleEvent[] = pickupRows.map((row) => ({
       eventType: 'PICKUP',
-      eventDate: this.extractDateString(row.period_start),
+      eventDate: row.period_start,
       order: this.buildOrderSummary(row),
     }));
 
     const returnEvents: ScheduleEvent[] = returnRows.map((row) => ({
       eventType: 'RETURN',
-      eventDate: this.extractDateString(row.period_end),
+      eventDate: row.period_end,
       order: this.buildOrderSummary(row),
     }));
 
@@ -100,17 +100,13 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<GetOrdersSch
     `;
   }
 
-  private extractDateString(isoString: string): string {
-    return isoString.slice(0, 10);
-  }
-
   private buildOrderSummary(row: RawOrderRow): OrderSummary {
     return {
       id: row.id,
       status: row.status,
       number: row.order_number,
-      periodStart: this.extractDateString(row.period_start),
-      periodEnd: this.extractDateString(row.period_end),
+      periodStart: row.period_start,
+      periodEnd: row.period_end,
       customer: row.customer_id
         ? {
             id: row.customer_id,

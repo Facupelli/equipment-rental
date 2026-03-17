@@ -36,6 +36,7 @@ import {
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useCallback } from "react";
 import dayjs from "@/lib/dates/dayjs";
+import { useScheduleParams } from "@/features/orders/hooks/use-schedule-params";
 
 const searchSchema = z.object({
   date: z.iso.date().optional(),
@@ -47,44 +48,9 @@ export const Route = createFileRoute("/_admin/dashboard/schedule/")({
   component: TodaySchedulePage,
 });
 
+export type ScheduleRoute = typeof Route;
+
 const authedRoute = getRouteApi("/_admin/dashboard");
-
-function useScheduleParams(timezone: string) {
-  const { date, orderId } = Route.useSearch();
-  const navigate = Route.useNavigate();
-
-  const today = dayjs().tz(timezone).format("YYYY-MM-DD");
-  const selectedDate = date ?? today;
-  const isToday = selectedDate === today;
-
-  const d = dayjs(selectedDate, "YYYY-MM-DD");
-  const monthFrom = d.startOf("month").format("YYYY-MM-DD");
-  const monthTo = d.endOf("month").format("YYYY-MM-DD");
-
-  const setDate = (d: Date) => {
-    navigate({
-      search: (prev) => ({
-        ...prev,
-        date: dayjs(d).format("YYYY-MM-DD"),
-        orderId: undefined, // clear panel when changing date
-      }),
-    });
-  };
-
-  const setOrderId = (id: string | undefined) => {
-    navigate({ search: (prev) => ({ ...prev, orderId: id }) });
-  };
-
-  return {
-    selectedDate,
-    isToday,
-    monthFrom,
-    monthTo,
-    selectedOrderId: orderId,
-    setDate,
-    setOrderId,
-  };
-}
 
 function labelToDate(label: string): Date {
   const [y, m, d] = label.split("-").map(Number);
@@ -95,6 +61,7 @@ function dateToLabel(d: Date): string {
   return dayjs(d).format("YYYY-MM-DD");
 }
 
+// TODO: make a context for timezone prop
 function TodaySchedulePage() {
   const {
     tenant: { config },
@@ -108,7 +75,7 @@ function TodaySchedulePage() {
     selectedOrderId,
     setDate,
     setOrderId,
-  } = useScheduleParams(config.timezone);
+  } = useScheduleParams(Route, config.timezone);
 
   const locationId = useLocationId();
 
@@ -157,11 +124,13 @@ function TodaySchedulePage() {
           onOrderSelect={(id) =>
             setOrderId(id === selectedOrderId ? undefined : id)
           }
+          timezone={config.timezone}
         />
 
         {selectedOrderId ? (
           <OrderQuickPanel
             orderId={selectedOrderId}
+            timezone={config.timezone}
             onClose={() => setOrderId(undefined)}
           />
         ) : (
@@ -185,6 +154,7 @@ interface ScheduleContentProps {
   date: string;
   selectedOrderId: string | undefined;
   onOrderSelect: (id: string) => void;
+  timezone: string;
 }
 
 function ScheduleContent({
@@ -192,6 +162,7 @@ function ScheduleContent({
   date,
   selectedOrderId,
   onOrderSelect,
+  timezone,
 }: ScheduleContentProps) {
   const { data, isPending, isError } = useUpcomingSchedule({
     locationId,
@@ -207,8 +178,12 @@ function ScheduleContent({
     );
   }
 
-  const pickups = data?.events.filter((e) => e.eventType === "PICKUP") ?? [];
-  const returns = data?.events.filter((e) => e.eventType === "RETURN") ?? [];
+  const pickups = (
+    data?.events.filter((e) => e.eventType === "PICKUP") ?? []
+  ).sort((a, b) => a.eventDate.valueOf() - b.eventDate.valueOf());
+  const returns = (
+    data?.events.filter((e) => e.eventType === "RETURN") ?? []
+  ).sort((a, b) => a.eventDate.valueOf() - b.eventDate.valueOf());
 
   return (
     <div className="flex flex-col gap-6 overflow-y-auto">
@@ -220,6 +195,7 @@ function ScheduleContent({
         emptyMessage="No pickups scheduled"
         selectedOrderId={selectedOrderId}
         onOrderSelect={onOrderSelect}
+        timezone={timezone}
       />
       <EventSection
         title="Returns"
@@ -229,6 +205,7 @@ function ScheduleContent({
         emptyMessage="No returns scheduled"
         selectedOrderId={selectedOrderId}
         onOrderSelect={onOrderSelect}
+        timezone={timezone}
       />
     </div>
   );
@@ -244,6 +221,7 @@ interface EventSectionProps {
   emptyMessage: string;
   selectedOrderId: string | undefined;
   onOrderSelect: (id: string) => void;
+  timezone: string;
 }
 
 function EventSection({
@@ -254,6 +232,7 @@ function EventSection({
   emptyMessage,
   selectedOrderId,
   onOrderSelect,
+  timezone,
 }: EventSectionProps) {
   return (
     <section className="flex flex-col gap-3">
@@ -284,6 +263,7 @@ function EventSection({
               event={event}
               isSelected={selectedOrderId === event.order.id}
               onSelect={onOrderSelect}
+              timezone={timezone}
             />
           ))
         )}
@@ -298,9 +278,10 @@ interface EventCardProps {
   event: ParsedScheduleEvent;
   isSelected: boolean;
   onSelect: (id: string) => void;
+  timezone: string;
 }
 
-function EventCard({ event, isSelected, onSelect }: EventCardProps) {
+function EventCard({ event, isSelected, onSelect, timezone }: EventCardProps) {
   const { order } = event;
   const queryClient = useQueryClient();
 
@@ -325,32 +306,46 @@ function EventCard({ event, isSelected, onSelect }: EventCardProps) {
       onClick={() => onSelect(order.id)}
     >
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span
+        <div className="flex items-start gap-4">
+          <p
             className={cn(
               "font-mono text-xs",
               isSelected ? "text-background/60" : "text-muted-foreground",
             )}
           >
-            {formatOrderNumber(order.number)}
-          </span>
-          <span
-            className={cn(
-              "truncate text-sm font-medium",
-              isSelected ? "text-background" : "text-foreground",
-            )}
-          >
-            {order.customer ? order.customer.displayName : "No customer"}
-          </span>
+            {event.eventDate.tz(timezone).format("HH:mm")}
+          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "font-mono text-xs",
+                  isSelected ? "text-background/60" : "text-muted-foreground",
+                )}
+              >
+                {formatOrderNumber(order.number)}
+              </span>
+              <span
+                className={cn(
+                  "truncate text-sm font-medium",
+                  isSelected ? "text-background" : "text-foreground",
+                )}
+              >
+                {order.customer ? order.customer.displayName : "No customer"}
+              </span>
+            </div>
+            <div className="mt-0.5 flex items-center gap-2">
+              <p
+                className={cn(
+                  "text-xs",
+                  isSelected ? "text-background/50" : "text-muted-foreground",
+                )}
+              >
+                {dateRange}
+              </p>
+            </div>
+          </div>
         </div>
-        <p
-          className={cn(
-            "mt-0.5 text-xs",
-            isSelected ? "text-background/50" : "text-muted-foreground",
-          )}
-        >
-          {dateRange}
-        </p>
       </div>
 
       <OrderStatusBadge status={order.status} />
@@ -375,9 +370,11 @@ function EventCardSkeleton() {
 function OrderQuickPanel({
   orderId,
   onClose,
+  timezone,
 }: {
   orderId: string;
   onClose: () => void;
+  timezone: string;
 }) {
   // Resolves instantly from prefetch cache in the happy path
   const { data: order } = useSuspenseQuery(
@@ -441,8 +438,16 @@ function OrderQuickPanel({
               label="Rental Period"
             >
               <div className="grid grid-cols-2 gap-2">
-                <PeriodCell label="Pickup" date={order.period.start} />
-                <PeriodCell label="Return" date={order.period.end} />
+                <PeriodCell
+                  label="Pickup"
+                  date={order.period.start}
+                  timezone={timezone}
+                />
+                <PeriodCell
+                  label="Return"
+                  date={order.period.end}
+                  timezone={timezone}
+                />
               </div>
             </PanelSection>
           )}
@@ -512,15 +517,24 @@ function PanelSection({
   );
 }
 
-function PeriodCell({ label, date }: { label: string; date: Dayjs }) {
+function PeriodCell({
+  label,
+  date,
+  timezone,
+}: {
+  label: string;
+  date: Dayjs;
+  timezone: string;
+}) {
+  const local = date.tz(timezone);
   return (
     <div className="bg-muted/50 rounded-md border px-3 py-2.5">
       <p className="text-muted-foreground mb-1 font-mono text-[9px] uppercase tracking-widest">
         {label}
       </p>
-      <p className="text-sm font-semibold">{date.format("MMM D, YYYY")}</p>
+      <p className="text-sm font-semibold">{local.format("MMM D, YYYY")}</p>
       <p className="text-muted-foreground mt-0.5 font-mono text-[10px]">
-        {date.format("HH:mm")}
+        {local.format("HH:mm")}
       </p>
     </div>
   );
