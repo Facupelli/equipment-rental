@@ -5,8 +5,8 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "preDeployCommand": "node -e \"require('child_process').execSync('pnpm --filter @repo/backend exec prisma migrate deploy', {stdio: 'inherit'})\"",
     "startCommand": "node apps/backend/dist/main",
+    "healthcheckPath": "/health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
