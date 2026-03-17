@@ -75,4 +75,4 @@ COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 # Copy package.json so Node can resolve the package name if needed
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/package.json
 
-CMD ["/bin/sh", "-c", "node /app/apps/backend/node_modules/prisma/build/index.js migrate deploy && node /app/apps/backend/dist/main"]
+CMD ["/bin/sh", "-c", "cd /app/apps/backend && node node_modules/prisma/build/index.js migrate deploy && cd /app && node apps/backend/dist/main"]
