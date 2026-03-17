@@ -6,7 +6,7 @@
   },
   "deploy": {
     "preDeployCommand": [
-      "node /app/apps/backend/node_modules/.bin/prisma migrate deploy --schema=/app/apps/backend/prisma/schema.prisma"
+      "npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma"
     ],
     "startCommand": "node apps/backend/dist/main",
     "healthcheckPath": "/health",
