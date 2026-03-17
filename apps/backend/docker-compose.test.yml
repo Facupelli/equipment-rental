@@ -1,0 +1,12 @@
+services:
+  postgres_test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: rental_test
+    ports:
+      - '5433:5432'
+    # tmpfs keeps the DB in memory — faster and automatically clean on container stop.
+    tmpfs:
+      - /var/lib/postgresql/data

@@ -13,20 +13,28 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+
     "test": {
       "dependsOn": ["^build"],
+      "inputs": ["src/**/*.ts", "jest.config.ts"],
       "outputs": ["coverage/**"],
-      "inputs": ["src/**/*.ts", "jest.config.ts", "tsconfig.json"]
+      "cache": true
+    },
+    "test:cov": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**/*.ts", "jest.config.ts"],
+      "outputs": ["coverage/**"],
+      "cache": true
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**/*.ts", "jest.config.integration.ts"],
+      "cache": false
     },
     "test:e2e": {
       "dependsOn": ["^build"],
-      "cache": false,
-      "inputs": [
-        "src/**/*.ts",
-        "test/**/*.ts",
-        "jest.e2e.config.ts",
-        "tsconfig.json"
-      ]
+      "inputs": ["src/**/*.ts", "test/**/*.ts", "jest.config.e2e.ts"],
+      "cache": false
     }
   }
 }
