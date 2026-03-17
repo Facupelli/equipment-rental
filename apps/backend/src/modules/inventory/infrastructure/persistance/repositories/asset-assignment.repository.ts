@@ -17,6 +17,8 @@ export class AssetAssignmentRepository implements AssetAssignmentRepositoryPort 
   async save(assignment: AssetAssignment, tx: PrismaTransactionClient): Promise<void> {
     const period = formatPostgresRange(assignment.period);
 
+    console.log({ assignment, period });
+
     try {
       await tx.$executeRaw`
         INSERT INTO asset_assignments (

@@ -8,25 +8,23 @@ export type FindAvailableParams = {
   productTypeId: string;
   locationId: string;
   period: DateRange;
-  // If provided, checks only this specific asset (IDENTIFIED with caller preference).
-  // If omitted, picks any available unit of the correct product type.
-  assetId?: string;
+  quantity?: number; // defaults to 1
+  assetId?: string; // prefer a specific asset (honoured only when quantity = 1)
 };
 
-/**
- * Concrete infrastructure service for asset availability queries.
- *
- * Uses raw SQL — tstzrange is unsupported by Prisma's type system.
- * Not abstracted behind a port: it is internal to the inventory module
- * with a single implementation, making the abstraction unnecessary.
- */
 @Injectable()
 export class AssetAvailabilityService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Finds one available asset id for the given product type, location, and period.
-   * Returns null if no asset is available.
+   * Finds `quantity` distinct available asset IDs for the given product type,
+   * location, and period. Returns fewer than `quantity` IDs (including an empty
+   * array) if not enough assets are available — callers must check the length.
+   *
+   * Requesting multiple IDs in a single query guarantees each returned ID is
+   * distinct, eliminating the within-request duplicate-asset bug that would
+   * arise from calling findAvailableAssetId N times before any assignment is
+   * written.
    *
    * The NOT EXISTS subquery checks all assignment types (ORDER, BLACKOUT,
    * MAINTENANCE) — any overlapping assignment blocks availability.
@@ -35,28 +33,36 @@ export class AssetAvailabilityService {
    * a location belongs to exactly one tenant, making cross-tenant
    * asset access structurally impossible.
    */
-  async findAvailableAssetId(params: FindAvailableParams): Promise<string | null> {
+  async findAvailableAssetIds(params: FindAvailableParams): Promise<string[]> {
+    const quantity = params.quantity ?? 1;
     const tstzrange = formatPostgresRange(params.period);
 
-    const assetFilter = params.assetId ? Prisma.sql`AND a.id = ${params.assetId}` : Prisma.empty;
+    const assetFilter = params.assetId && quantity === 1 ? Prisma.sql`AND a.id = ${params.assetId}` : Prisma.empty;
 
     const rows = await this.prisma.client.$queryRaw<{ id: string }[]>`
-      SELECT a.id
-      FROM assets a
-      WHERE a.product_type_id = ${params.productTypeId}
-        AND a.location_id     = ${params.locationId}
-        AND a.is_active       = true
-        AND a.deleted_at      IS NULL
-        ${assetFilter}
-        AND NOT EXISTS (
-          SELECT 1
-          FROM asset_assignments aa
-          WHERE aa.asset_id = a.id
-            AND aa.period && ${tstzrange}::tstzrange
-        )
-      LIMIT 1
-    `;
+    SELECT a.id
+    FROM assets a
+    WHERE a.product_type_id = ${params.productTypeId}
+      AND a.location_id     = ${params.locationId}
+      AND a.is_active       = true
+      AND a.deleted_at      IS NULL
+      ${assetFilter}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM asset_assignments aa
+        WHERE aa.asset_id = a.id
+          AND aa.period && ${tstzrange}::tstzrange
+      )
+    LIMIT ${quantity}
+  `;
 
-    return rows[0]?.id ?? null;
+    return rows.map((r) => r.id);
+  }
+
+  // Keep the single-asset convenience method as a thin wrapper so existing
+  // callers (bundle component reservation, etc.) remain unchanged.
+  async findAvailableAssetId(params: FindAvailableParams): Promise<string | null> {
+    const ids = await this.findAvailableAssetIds({ ...params, quantity: 1 });
+    return ids[0] ?? null;
   }
 }

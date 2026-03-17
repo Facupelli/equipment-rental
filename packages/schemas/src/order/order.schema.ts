@@ -4,6 +4,7 @@ export const productOrderItemSchema = z.object({
   type: z.literal("PRODUCT"),
   productTypeId: z.uuid(),
   assetId: z.uuid().optional(),
+  quantity: z.number().default(1),
 });
 
 export const bundleOrderItemSchema = z.object({

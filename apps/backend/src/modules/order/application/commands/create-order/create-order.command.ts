@@ -1,5 +1,5 @@
 export type CreateOrderItemCommand =
-  | { type: 'PRODUCT'; productTypeId: string; assetId?: string }
+  | { type: 'PRODUCT'; productTypeId: string; quantity?: number; assetId?: string }
   | { type: 'BUNDLE'; bundleId: string };
 
 export class CreateOrderCommand {

@@ -53,13 +53,14 @@ const useCartStore = create<CartState>()(
             );
 
             if (existing) {
-              return {
-                items: state.items.map((item) =>
-                  item.type === "BUNDLE" && item.bundleId === bundle.bundleId
-                    ? { ...item, quantity: item.quantity + 1 }
-                    : item,
-                ),
-              };
+              // return {
+              //   items: state.items.map((item) =>
+              //     item.type === "BUNDLE" && item.bundleId === bundle.bundleId
+              //       ? { ...item, quantity: item.quantity + 1 }
+              //       : item,
+              //   ),
+              // };
+              return state;
             }
 
             return {
@@ -71,13 +72,19 @@ const useCartStore = create<CartState>()(
           }),
 
         incrementQuantity: (key) =>
-          set((state) => ({
-            items: state.items.map((item) =>
-              matchesKey(item, key)
-                ? { ...item, quantity: item.quantity + 1 }
-                : item,
-            ),
-          })),
+          set((state) => {
+            if (key.type === "BUNDLE") {
+              return state;
+            }
+
+            return {
+              items: state.items.map((item) =>
+                matchesKey(item, key)
+                  ? { ...item, quantity: item.quantity + 1 }
+                  : item,
+              ),
+            };
+          }),
 
         decrementQuantity: (key) =>
           set((state) => {

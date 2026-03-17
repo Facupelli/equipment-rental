@@ -30,6 +30,7 @@ import { CreateOrderCommand } from './create-order.command';
 type ResolvedProductItem = {
   type: 'PRODUCT';
   productTypeId: string;
+  quantity: number;
   assetId?: string;
   locationId: string;
   period: DateRange;
@@ -208,6 +209,7 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
             .then((price) => ({
               type: 'PRODUCT' as const,
               productTypeId: item.productTypeId,
+              quantity: item.quantity ?? 1,
               assetId: item.assetId,
               locationId: command.locationId,
               period,
@@ -284,50 +286,53 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
       const meta = metas.products.get(item.productTypeId);
       if (!meta?.categoryId) continue;
 
-      counts[meta.categoryId] = (counts[meta.categoryId] ?? 0) + 1;
+      counts[meta.categoryId] = (counts[meta.categoryId] ?? 0) + (item.quantity ?? 1);
     }
 
     return counts;
   }
 
   // ── Private: product item reservation ───────────────────────────────────
+  // Requests exactly item.quantity distinct asset IDs in a single query.
+  // The database returns only assets that are all available for the period,
+  // so there is no risk of two units resolving to the same asset.
 
   private async reserveProductItem(order: Order, item: ResolvedProductItem): Promise<ReservationResult> {
-    const assetId = await this.inventoryApi.findAvailableAssetId({
+    const assetIds = await this.inventoryApi.findAvailableAssetIds({
       productTypeId: item.productTypeId,
       locationId: item.locationId,
       period: item.period,
+      quantity: item.quantity,
       assetId: item.assetId,
     });
 
-    if (!assetId) {
+    if (assetIds.length < item.quantity) {
       return { ok: false, unavailableItem: { type: 'PRODUCT', productTypeId: item.productTypeId } };
     }
 
-    const orderItem = OrderItem.create({
-      orderId: order.id,
-      type: OrderItemType.PRODUCT,
-      priceSnapshot: toPriceSnapshot(item.price, item.currency),
-      productTypeId: item.productTypeId,
+    const pendingAssignments: PendingAssignment[] = assetIds.map((assetId) => {
+      const orderItem = OrderItem.create({
+        orderId: order.id,
+        type: OrderItemType.PRODUCT,
+        priceSnapshot: toPriceSnapshot(item.price, item.currency),
+        productTypeId: item.productTypeId,
+      });
+
+      order.addItem(orderItem);
+
+      return {
+        assignment: AssetAssignment.create({
+          assetId,
+          period: item.period,
+          type: AssignmentType.ORDER,
+          source: AssignmentSource.OWNED,
+          orderId: order.id,
+          orderItemId: orderItem.id,
+        }),
+      };
     });
 
-    order.addItem(orderItem);
-
-    return {
-      ok: true,
-      pendingAssignments: [
-        {
-          assignment: AssetAssignment.create({
-            assetId,
-            period: item.period,
-            type: AssignmentType.ORDER,
-            source: AssignmentSource.OWNED,
-            orderId: order.id,
-            orderItemId: orderItem.id,
-          }),
-        },
-      ],
-    };
+    return { ok: true, pendingAssignments };
   }
 
   // ── Private: bundle item reservation ────────────────────────────────────
