@@ -281,7 +281,7 @@ export function CartPopoverFooter({ onClose }: CartPopoverFooterProps) {
     <div className="border-t border-neutral-200 px-5 py-4">
       <Button
         onClick={handleReviewOrder}
-        disabled={isEmpty}
+        disabled={isEmpty || !startDate || !endDate}
         className="flex w-full items-center justify-center gap-2 py-5 rounded-none text-xs font-bold uppercase tracking-widest text-white "
       >
         Review Order

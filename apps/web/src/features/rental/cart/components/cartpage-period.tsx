@@ -1,26 +1,25 @@
 import { useLocationScheduleSlots } from "@/features/tenant/locations/location-schedules.queries";
-import type { ScheduleSlotType } from "@repo/types";
+import { ScheduleSlotType } from "@repo/types";
 import { AlertTriangle, Calendar, Clock } from "lucide-react";
 import { formatSlot } from "../cart.utils";
 import { formatDateShort, formatRentalDuration } from "@/lib/dates/format";
-import type { Dayjs } from "dayjs";
-import type { ReactNode } from "react";
+import { useCartPageContext } from "../cart-page.context";
 
-type CartPagePeriodProps = {
-  children: ReactNode;
-  startDate: Dayjs;
-  endDate: Dayjs;
-  locationName: string | undefined;
-  isTimesRequired: boolean;
-};
+export function CartPagePeriod() {
+  const {
+    period,
+    locationId,
+    locationName,
+    isTimesRequired,
+    onPickupTimeChange,
+    onReturnTimeChange,
+    pickupTime,
+    returnTime,
+  } = useCartPageContext();
 
-export function CartPagePeriod({
-  children,
-  startDate,
-  endDate,
-  locationName,
-  isTimesRequired,
-}: CartPagePeriodProps) {
+  const startDate = period.start;
+  const endDate = period.end;
+
   if (!startDate || !endDate) {
     return (
       <div className="mb-8">
@@ -53,7 +52,22 @@ export function CartPagePeriod({
           </div>
         </div>
 
-        {children}
+        <TimeSelectCell
+          label="Pickup Time"
+          date={startDate.toDate()}
+          locationId={locationId}
+          type={ScheduleSlotType.PICKUP}
+          value={pickupTime}
+          onChange={onPickupTimeChange}
+        />
+        <TimeSelectCell
+          label="Return Time"
+          date={endDate.toDate()}
+          locationId={locationId}
+          type={ScheduleSlotType.RETURN}
+          value={returnTime}
+          onChange={onReturnTimeChange}
+        />
 
         <div className="px-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
@@ -93,6 +107,8 @@ export function CartPagePeriod({
   );
 }
 
+// TimeSelectCell is intentionally prop-driven — it's a generic reusable control
+// with no knowledge of the cart feature. It must not consume CartPageContext.
 type TimeSelectCellProps = {
   label: string;
   date: Date;

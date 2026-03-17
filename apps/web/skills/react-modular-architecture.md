@@ -187,14 +187,17 @@ export interface LocalPaymentMethod {
 
 Use this as a decision checklist when building or refactoring:
 
-| Smell                                                                          | Action                               |
-| ------------------------------------------------------------------------------ | ------------------------------------ |
-| Component has `useEffect` + `fetch`                                            | Extract a service function           |
-| Component has `useState` + logic                                               | Extract a custom hook                |
-| Inline data mapping / transformation                                           | Extract a domain model class         |
-| `if/switch` on a variant (country, type, role...) scattered in multiple places | Apply Strategy pattern               |
-| Sub-section of JSX is self-contained                                           | Extract a sub-component              |
-| Inline string formatting / label logic                                         | Extract a `utils.ts` helper function |
+| Smell                                                                          | Action                                           |
+| ------------------------------------------------------------------------------ | ------------------------------------------------ |
+| Component has `useEffect` + `fetch`                                            | Extract a service function                       |
+| Component has `useState` + logic                                               | Extract a custom hook                            |
+| Inline data mapping / transformation                                           | Extract a domain model class                     |
+| `if/switch` on a variant (country, type, role...) scattered in multiple places | Apply Strategy pattern                           |
+| Sub-section of JSX is self-contained                                           | Extract a sub-component                          |
+| Inline string formatting / label logic                                         | Extract a `utils.ts` helper function             |
+| Prop passed through a component that doesn't use it                            | Feature Context (see advanced patterns)          |
+| Component accepts 5+ props controlling its internal structure                  | Compound Components (see advanced patterns)      |
+| Hook manages two or more unrelated concerns                                    | Split into focused hooks (see advanced patterns) |
 
 ---
 
@@ -210,6 +213,39 @@ When working on **existing code** that doesn't follow these patterns:
 
 ---
 
+## Single-File Adaptation
+
+When working in a **single-file context** (Claude.ai artifacts, sandboxes, demos),
+file separation is impossible — but the four layers still apply. Express them as
+named regions within the file, top to bottom:
+
+```tsx
+// ── Models ────────────────────────────────────────────────────────────────
+class PaymentMethod { ... }
+
+// ── Services ──────────────────────────────────────────────────────────────
+const fetchPaymentMethods = async (): Promise<PaymentMethod[]> => { ... }
+
+// ── Hooks ─────────────────────────────────────────────────────────────────
+const usePaymentMethods = () => { ... }
+
+// ── Components ────────────────────────────────────────────────────────────
+const PaymentList = ({ methods }: { methods: PaymentMethod[] }) => ( ... )
+const PaymentPage = () => { ... }
+```
+
+**Rules for single-file work:**
+
+- Models are still classes or typed factory functions — not inline object literals
+- Services are still named async functions — not anonymous callbacks inside `useEffect`
+- Hooks still never contain raw `fetch` calls — they call the service functions above them
+- Components are still pure — they receive everything via props or context
+- The separation is logical (clear regions), not physical (separate files)
+
+Co-location is acceptable; mixing concerns is not.
+
+---
+
 ## Patterns Reference
 
 For detailed explanations and full examples of:
@@ -220,3 +256,18 @@ For detailed explanations and full examples of:
 - **Domain Model** (encapsulating logic in plain TypeScript classes)
 
 → Read `references/patterns.md`
+
+## Advanced Patterns Reference
+
+For managing complexity beyond the four-layer split — component communication,
+prop reduction, and hook discipline:
+
+- **Feature Context** — page-level shared state to stop prop drilling
+- **Compound Components** — namespace pattern to eliminate prop-heavy leaf components
+- **Hook Splitting** — one concern per hook; compose them in a page hook
+
+→ Read `references/advanced-patterns.md`
+
+**When to reach for these:** As soon as you notice props traveling through
+components that don't use them, a component accepting 5+ structural props,
+or a hook that does more than one thing.

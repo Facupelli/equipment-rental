@@ -1,6 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import type {
-  CartItem,
   CartProductItem,
   CartBundleItem,
   CartIncludedItem,
@@ -11,20 +10,16 @@ import { Link } from "@tanstack/react-router";
 import clsx from "clsx";
 import { CheckCircle2, Package, ShoppingBag, XCircle } from "lucide-react";
 import { formatCurrency } from "../cart.utils";
+import { useCartPageContext } from "../cart-page.context";
 
-type CartPageItemListProps = {
-  items: CartItem[];
-  lines: CartPriceLineItem[];
-  isLoading: boolean;
-  unavailableIds: string[];
-};
+export function CartPageItemList() {
+  const { cartItems, breakdown, isPriceLoading, unavailableIds } =
+    useCartPageContext();
 
-export function CartPageItemList({
-  items,
-  lines,
-  isLoading,
-  unavailableIds,
-}: CartPageItemListProps) {
+  const items = cartItems;
+  const lines = breakdown?.lineItems ?? [];
+  const isLoading = isPriceLoading;
+
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
   if (items.length === 0) {

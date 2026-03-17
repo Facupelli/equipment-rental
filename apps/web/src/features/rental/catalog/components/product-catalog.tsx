@@ -145,7 +145,13 @@ function ProductCard({ product }: { product: RentalProductResponse }) {
 }
 
 export function ProductCatalogSkeleton() {
-  return Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />);
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 py-10">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <ProductSkeleton key={i} />
+      ))}
+    </div>
+  );
 }
 
 function ProductSkeleton() {

@@ -1,38 +1,30 @@
-import type { CartPriceResult } from "@repo/schemas";
 import type { JoinedLineItem } from "@/features/rental/cart/hooks/use-cart-order";
 import { AlertTriangle, ArrowRight, Banknote, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "../cart.utils";
+import { useCartPageContext } from "../cart-page.context";
 
-type CartPageSidebarProps = {
-  breakdown: CartPriceResult | undefined;
-  joinedLineItems: JoinedLineItem[] | undefined;
-  isLoading: boolean;
-  isError: boolean;
-  isBookingError: boolean;
-  isEmpty: boolean;
-  onBook: () => void;
-};
+export function CartPageSidebar() {
+  const {
+    breakdown,
+    joinedLineItems,
+    isPriceLoading,
+    isPriceError,
+    isBookingError,
+    cartItems,
+    handleBook,
+  } = useCartPageContext();
 
-export function CartPageSidebar({
-  breakdown,
-  joinedLineItems,
-  isLoading,
-  isError,
-  isBookingError,
-  isEmpty,
-  onBook,
-}: CartPageSidebarProps) {
-  const isDisabled = isEmpty || isLoading || isError;
+  const isDisabled = cartItems.length === 0 || isPriceLoading || isPriceError;
 
   return (
     <div className="sticky top-6 border border-neutral-200 bg-white p-6">
       <CartPagePriceBreakdown
         total={breakdown?.total}
         lineItems={joinedLineItems}
-        isLoading={isLoading}
-        isError={isError}
+        isLoading={isPriceLoading}
+        isError={isPriceError}
       />
 
       {isBookingError && (
@@ -45,7 +37,7 @@ export function CartPageSidebar({
       )}
 
       <Button
-        onClick={onBook}
+        onClick={handleBook}
         disabled={isDisabled}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-none bg-black py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
       >

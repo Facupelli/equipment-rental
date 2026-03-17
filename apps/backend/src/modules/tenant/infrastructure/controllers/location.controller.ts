@@ -41,8 +41,6 @@ export class LocationController {
     @Param('locationId') locationId: string,
     @Query() query: GetLocationScheduleSlotsQueryDto,
   ): Promise<number[]> {
-    console.log({ query });
-
     if (isNaN(query.date.getTime())) {
       throw new BadRequestException('Invalid date format. Expected ISO 8601 date string (e.g. 2026-03-13).');
     }

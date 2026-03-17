@@ -145,16 +145,16 @@ export function useCartOrder({
       return;
     }
 
-    if (!customer) {
-      throw new ProblemDetailsError({
-        type: "about:blank",
-        title: "Unauthorized",
-        status: 401,
-        detail: "No active session. Please log in.",
-      });
-    }
-
     try {
+      if (!customer) {
+        throw new ProblemDetailsError({
+          type: "about:blank",
+          title: "Unauthorized",
+          status: 401,
+          detail: "No active session. Please log in.",
+        });
+      }
+
       await createOrder({
         locationId: location.id,
         customerId: customer.id,

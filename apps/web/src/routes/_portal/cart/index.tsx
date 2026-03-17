@@ -1,14 +1,10 @@
 import z from "zod";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
-import { useLocations } from "@/features/tenant/locations/locations.queries";
-import { useCartOrder } from "@/features/rental/cart/hooks/use-cart-order";
-import { ScheduleSlotType } from "@repo/types";
+import { CartPageProvider } from "@/features/rental/cart/cart-page.context";
 import { CartPageItemList } from "@/features/rental/cart/components/cartpage-itemlist";
 import { CartPageSidebar } from "@/features/rental/cart/components/cartpage-sidebar";
-import {
-  CartPagePeriod,
-  TimeSelectCell,
-} from "@/features/rental/cart/components/cartpage-period";
+import { CartPagePeriod } from "@/features/rental/cart/components/cartpage-period";
+import { locationQueries } from "@/features/tenant/locations/locations.queries";
 
 const cartPageSearchSchema = z.object({
   startDate: z.coerce.date(),
@@ -19,6 +15,9 @@ const cartPageSearchSchema = z.object({
 export const Route = createFileRoute("/_portal/cart/")({
   validateSearch: cartPageSearchSchema,
   component: CartPage,
+  loader: async ({ context: { queryClient } }) => {
+    await queryClient.ensureQueryData(locationQueries.list());
+  },
 });
 
 function CartPage() {
@@ -26,94 +25,37 @@ function CartPage() {
     from: "/_portal/cart/",
   });
 
-  const { data: locations } = useLocations();
-  const location = locations?.find((l) => l.id === locationId);
-
-  const {
-    cartItems,
-    period,
-    breakdown,
-    joinedLineItems,
-    pickupTime,
-    returnTime,
-    onPickupTimeChange,
-    onReturnTimeChange,
-    isTimesRequired,
-    isPriceLoading,
-    isPriceError,
-    unavailableIds,
-    handleBook,
-    isBookingError,
-  } = useCartOrder({
-    location: {
-      id: locationId,
-      name: location?.name ?? "—",
-    },
-    startDate,
-    endDate,
-  });
-
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="mx-auto max-w-6xl px-6 py-12 space-y-8">
-        <div>
-          <h1 className="text-4xl font-black uppercase tracking-tight text-black">
-            Review Your Order
-          </h1>
-          <p className="mt-2 text-sm text-neutral-500">
-            Please check your rental details before proceeding to booking.
-          </p>
-        </div>
+    <CartPageProvider
+      startDate={startDate}
+      endDate={endDate}
+      locationId={locationId}
+    >
+      <div className="min-h-screen bg-neutral-50">
+        <div className="mx-auto max-w-6xl px-6 py-12 space-y-8">
+          <div>
+            <h1 className="text-4xl font-black uppercase tracking-tight text-black">
+              Review Your Order
+            </h1>
+            <p className="mt-2 text-sm text-neutral-500">
+              Please check your rental details before proceeding to booking.
+            </p>
+          </div>
 
-        <CartPagePeriod
-          startDate={period.start}
-          endDate={period.end}
-          locationName={location?.name}
-          isTimesRequired={isTimesRequired}
-        >
-          <TimeSelectCell
-            label="Pickup Time"
-            date={startDate}
-            locationId={locationId}
-            type={ScheduleSlotType.PICKUP}
-            value={pickupTime}
-            onChange={onPickupTimeChange}
-          />
-          <TimeSelectCell
-            label="Return Time"
-            date={endDate}
-            locationId={locationId}
-            type={ScheduleSlotType.RETURN}
-            value={returnTime}
-            onChange={onReturnTimeChange}
-          />
-        </CartPagePeriod>
+          <CartPagePeriod />
 
-        {/*
+          {/*
           CSS Grid — two-column layout:
           Left column owns the content flow.
           Right column is fixed-width sticky sidebar.
           Mobile: single column, sidebar stacks below.
         */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
-          <CartPageItemList
-            items={cartItems}
-            lines={breakdown?.lineItems ?? []}
-            isLoading={isPriceLoading}
-            unavailableIds={unavailableIds}
-          />
-
-          <CartPageSidebar
-            breakdown={breakdown}
-            joinedLineItems={joinedLineItems}
-            isLoading={isPriceLoading}
-            isError={isPriceError}
-            isEmpty={cartItems.length === 0}
-            onBook={handleBook}
-            isBookingError={isBookingError}
-          />
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
+            <CartPageItemList />
+            <CartPageSidebar />
+          </div>
         </div>
       </div>
-    </div>
+    </CartPageProvider>
   );
 }
