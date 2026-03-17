@@ -1,0 +1,42 @@
+# Dependencies — will be installed fresh inside Docker
+node_modules
+**/node_modules
+
+# Build outputs — builder stage handles this
+dist
+**/dist
+.next
+**/.next
+
+# Turbo cache
+.turbo
+**/.turbo
+
+# Test artifacts
+coverage
+**/coverage
+
+# Local env files — secrets are injected via Railway environment variables
+.env
+**/.env
+.env.*
+**/.env.*
+
+# VCS
+.git
+.gitignore
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker itself
+Dockerfile
+.dockerignore
+docker-compose*.yml
