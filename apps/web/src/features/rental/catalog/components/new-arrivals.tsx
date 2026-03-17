@@ -68,10 +68,6 @@ export function NewArrivals({ locationId }: NewArrivalsProps) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NewArrivalCard — co-located, only used by NewArrivals
-// ─────────────────────────────────────────────────────────────────────────────
-
 function NewArrivalCard({ item }: { item: NewArrivalItemResponseDto }) {
   const price = item.pricingPreview;
 
@@ -111,10 +107,6 @@ function NewArrivalCard({ item }: { item: NewArrivalItemResponseDto }) {
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Skeleton — co-located, exported for Suspense fallback in the page
-// ─────────────────────────────────────────────────────────────────────────────
 
 export function NewArrivalsSkeleton() {
   return (

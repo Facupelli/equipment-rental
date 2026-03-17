@@ -23,7 +23,7 @@ interface ProductCatalogProps {
 }
 
 export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
-  const { data: products, isPending } = useRentalProducts(search);
+  const { data: products } = useRentalProducts(search);
 
   const currentPage = search.page ?? 1;
   const totalPages = products?.meta.totalPages ?? 1;
@@ -31,14 +31,12 @@ export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
   return (
     <>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 py-10">
-        {isPending
-          ? Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)
-          : products?.data.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+        {products?.data.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
       </div>
 
-      {!isPending && totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="mt-4 mb-10 flex justify-center">
           <PaginationControls
             currentPage={currentPage}
@@ -143,6 +141,10 @@ function ProductCard({ product }: { product: RentalProductResponse }) {
       </CardFooter>
     </Card>
   );
+}
+
+export function ProductCatalogSkeleton() {
+  return Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />);
 }
 
 function ProductSkeleton() {

@@ -16,6 +16,8 @@ import appCss from "../styles.css?url";
 import type { QueryClient } from "@tanstack/react-query";
 import { resolveTenantContext } from "@/features/tenant-context/resolve-tenant-context";
 import type { ResolvedTenantContext } from "@repo/schemas";
+import { NotFoundPage } from "@/components/not-found-page";
+import { ServiceUnavailablePage } from "@/components/service-unavailable-page";
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -61,7 +63,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
-  notFoundComponent: () => <div>404 - Page not found</div>,
+  notFoundComponent: () => <NotFoundPage />,
+  errorComponent: () => <ServiceUnavailablePage />,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {

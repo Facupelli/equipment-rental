@@ -11,7 +11,11 @@ import {
   NewArrivals,
   NewArrivalsSkeleton,
 } from "@/features/rental/catalog/components/new-arrivals";
-import { ProductCatalog } from "@/features/rental/catalog/components/product-catalog";
+import {
+  ProductCatalog,
+  ProductCatalogSkeleton,
+} from "@/features/rental/catalog/components/product-catalog";
+import { SectionErrorBoundary } from "@/features/rental/catalog/components/section-error-boundary";
 import {
   rentalPageSearchSchema,
   useRentalPageSearch,
@@ -82,16 +86,20 @@ function RentalPage() {
             title="Featured Combos"
             subtitle="Curated equipment bundles at a lower daily rate."
           />
-          <Suspense fallback={<FeaturedBundlesSkeleton />}>
-            <FeaturedBundles locationId={search.locationId} />
-          </Suspense>
+          <SectionErrorBoundary message="Featured bundles could not be loaded.">
+            <Suspense fallback={<FeaturedBundlesSkeleton />}>
+              <FeaturedBundles locationId={search.locationId} />
+            </Suspense>
+          </SectionErrorBoundary>
         </section>
 
         <section className="mt-12">
           <SectionHeading title="New Arrivals" />
-          <Suspense fallback={<NewArrivalsSkeleton />}>
-            <NewArrivals locationId={search.locationId} />
-          </Suspense>
+          <SectionErrorBoundary message="New arrivals could not be loaded.">
+            <Suspense fallback={<NewArrivalsSkeleton />}>
+              <NewArrivals locationId={search.locationId} />
+            </Suspense>
+          </SectionErrorBoundary>
         </section>
 
         <section className="mt-12">
@@ -100,10 +108,14 @@ function RentalPage() {
             activeCategory={search.categoryId}
             onSelect={handleCategorySelect}
           />
-          <ProductCatalog
-            search={search}
-            onPageChange={(page) => setUrlParam({ page })}
-          />
+          <SectionErrorBoundary message="Our inventory database is currently unreachable.">
+            <Suspense fallback={<ProductCatalogSkeleton />}>
+              <ProductCatalog
+                search={search}
+                onPageChange={(page) => setUrlParam({ page })}
+              />
+            </Suspense>
+          </SectionErrorBoundary>
         </section>
       </main>
     </div>
