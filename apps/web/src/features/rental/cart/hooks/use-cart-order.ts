@@ -46,6 +46,7 @@ export type JoinedLineItem = CartPriceLineItem & { name: string };
  * - Join line items with cart item names (so views don't touch the cart store)
  * - Submit the order and navigate on success
  * - Track unavailable item IDs on 422 errors
+ * - Track unexpected booking errors (non-422) for inline error display
  */
 export function useCartOrder({
   location,
@@ -61,6 +62,7 @@ export function useCartOrder({
   const [returnTime, setReturnTime] = useState<number | undefined>(undefined);
   const [isTimesRequired, setIsTimesRequired] = useState(false);
   const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
+  const [isBookingError, setIsBookingError] = useState(false);
 
   const onPickupTimeChange = (value: number) => {
     setPickupTime(value);
@@ -134,7 +136,9 @@ export function useCartOrder({
   const { mutateAsync: createOrder } = useCreateOrder();
 
   const handleBook = async () => {
+    // Reset both error states at the start of each attempt.
     setUnavailableIds([]);
+    setIsBookingError(false);
 
     if (!pickupTime || !returnTime) {
       setIsTimesRequired(true);
@@ -184,7 +188,9 @@ export function useCartOrder({
         return;
       }
 
-      throw error;
+      // Any non-422 error (5xx, network failure, etc.) — surface inline
+      // without re-throwing, so the page stays intact and the user can retry.
+      setIsBookingError(true);
     }
   };
 
@@ -200,6 +206,7 @@ export function useCartOrder({
     isTimesRequired,
     isPriceLoading,
     isPriceError,
+    isBookingError,
     unavailableIds,
     handleBook,
   };

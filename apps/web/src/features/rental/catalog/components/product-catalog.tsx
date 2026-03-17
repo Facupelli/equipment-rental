@@ -11,11 +11,12 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRentalProducts } from "@/features/rental/rental.queries";
+import { rentalQueries } from "@/features/rental/rental.queries";
 import type { RentalProductResponse } from "@repo/schemas";
 import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
 import { useProductCardState } from "../../cart/hooks/use-product-card-state";
 import { Minus, Plus } from "lucide-react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 interface ProductCatalogProps {
   search: RentalPageSearch;
@@ -23,7 +24,7 @@ interface ProductCatalogProps {
 }
 
 export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
-  const { data: products } = useRentalProducts(search);
+  const { data: products } = useSuspenseQuery(rentalQueries.products(search));
 
   const currentPage = search.page ?? 1;
   const totalPages = products?.meta.totalPages ?? 1;

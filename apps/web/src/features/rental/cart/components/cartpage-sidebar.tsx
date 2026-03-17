@@ -10,6 +10,7 @@ type CartPageSidebarProps = {
   joinedLineItems: JoinedLineItem[] | undefined;
   isLoading: boolean;
   isError: boolean;
+  isBookingError: boolean;
   isEmpty: boolean;
   onBook: () => void;
 };
@@ -19,6 +20,7 @@ export function CartPageSidebar({
   joinedLineItems,
   isLoading,
   isError,
+  isBookingError,
   isEmpty,
   onBook,
 }: CartPageSidebarProps) {
@@ -33,10 +35,19 @@ export function CartPageSidebar({
         isError={isError}
       />
 
+      {isBookingError && (
+        <div className="mt-6 flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
+            Booking failed unexpectedly. Please try again.
+          </p>
+        </div>
+      )}
+
       <Button
         onClick={onBook}
         disabled={isDisabled}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-none bg-black py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-none bg-black py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
       >
         Book Equipment
         <ArrowRight className="h-3.5 w-3.5" />

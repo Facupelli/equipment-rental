@@ -43,6 +43,7 @@ function CartPage() {
     isPriceError,
     unavailableIds,
     handleBook,
+    isBookingError,
   } = useCartOrder({
     location: {
       id: locationId,
@@ -109,6 +110,7 @@ function CartPage() {
             isError={isPriceError}
             isEmpty={cartItems.length === 0}
             onBook={handleBook}
+            isBookingError={isBookingError}
           />
         </div>
       </div>
