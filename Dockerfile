@@ -1,7 +1,6 @@
 # =============================================================================
 # Stage 1 — base
 # Shared foundation pinned to exact Node + pnpm versions.
-# Every subsequent stage inherits from this, keeping things DRY.
 # =============================================================================
 FROM node:20-alpine AS base
 
@@ -12,30 +11,17 @@ WORKDIR /app
 
 # =============================================================================
 # Stage 2 — pruner
-# This is the key stage that makes turbo prune valuable.
+# Runs turbo prune to produce a minimal subset of the monorepo containing only
+# the packages @repo/backend depends on.
 #
-# `turbo prune @repo/backend --docker` statically analyses the workspace
-# dependency graph and outputs two directories:
-#
-#   out/json/ — only the package.json files for @repo/backend and its deps.
-#               Used in the next stage to install dependencies in a cached
-#               layer that is NOT busted by source code changes.
-#
-#   out/full/ — the full source of only the packages @repo/backend needs.
-#               Changes to unrelated apps (e.g. a frontend) do NOT appear
-#               here, so they cannot bust the Docker cache for this image.
-#
-#   out/pnpm-lock.yaml — a pruned lockfile containing only the subset of
-#               dependencies actually needed by the target package.
-#
-# Without this stage, any change to the root lockfile (e.g. adding a package
-# to an unrelated app) would bust the install cache and force a full
-# `pnpm install` on every deploy.
+# Outputs:
+#   out/json/           — package.json files only (for install cache layer)
+#   out/full/           — full source of relevant packages only
+#   out/pnpm-lock.yaml  — pruned lockfile
 # =============================================================================
 FROM base AS pruner
 
 # npm is always available in the node image and has no corepack conflicts.
-# pnpm install -g does not work with corepack-managed pnpm.
 RUN npm install -g turbo
 
 COPY . .
@@ -43,69 +29,53 @@ COPY . .
 RUN turbo prune @repo/backend --docker
 
 # =============================================================================
-# Stage 3 — installer
-# Install dependencies using the pruned lockfile and package.json files.
+# Stage 3 — builder
+# Installs all dependencies, generates Prisma client, builds the app, then
+# prunes devDependencies in place.
 #
-# The two-copy pattern is the heart of the caching strategy:
-#   COPY out/json/  → only package.json files   → cache layer A
-#   RUN pnpm install                             → cache layer B (expensive)
-#   COPY out/full/  → source files               → cache layer C
-#
-# Docker only re-runs a layer when the files copied into it change.
-# Layer B (pnpm install) is only re-run when a package.json or the pruned
-# lockfile changes — NOT when source files change. This is the key speedup.
+# Key insight: instead of surgically copying dist/ across stages (which is
+# fragile and cache-prone), we build everything here and then strip devDeps
+# with `pnpm prune --prod`. The runner stage copies the entire /app directory.
 # =============================================================================
-FROM base AS installer
+FROM base AS builder
 
-# Copy the pruned lockfile and workspace manifest first
+# Copy pruned lockfile and workspace manifest
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
-# Copy only the package.json files (no source yet) — this is cache layer A
+# Copy only package.json files first — install cache layer.
+# pnpm install only re-runs when a package.json or the lockfile changes.
 COPY --from=pruner /app/out/json/ .
 
-# Install all dependencies (dev included — needed for nest build, prisma generate)
-# This layer is cached until a package.json or the lockfile changes
 RUN pnpm install --frozen-lockfile
 
-# Now copy the pruned source — this busts cache only when relevant source changes
+# Copy full source — this layer busts on source changes only
 COPY --from=pruner /app/out/full/ .
 
-# Generate the Prisma client BEFORE nest build.
-# TypeScript needs the generated types at compile time — without this,
-# any file importing from 'generated/prisma/client' will fail with TS2307.
+# Generate Prisma client BEFORE nest build.
+# TypeScript needs the generated types at compile time.
 RUN cd apps/backend && pnpm exec prisma generate
 
-# Build all workspace packages @repo/backend depends on, then the backend itself.
-# turbo.json's "dependsOn": ["^build"] ensures correct build order.
+# Build all packages @repo/backend depends on, then the backend itself.
 RUN pnpm turbo run build --filter=@repo/backend --no-cache
 
+# Strip devDependencies in place.
+# This is safer than re-running pnpm install --prod in a new stage because
+# it operates on the same node_modules that was used for the build —
+# no risk of missing a package that was incorrectly categorised.
+RUN pnpm prune --prod --no-optional
+
 # =============================================================================
-# Stage 4 — production
-# Lean final image: re-install only production deps, copy compiled output.
-# No TypeScript, no Jest, no ESLint, no source files in the final image.
+# Stage 4 — runner
+# Minimal final image. Copies the entire /app from builder — node_modules is
+# already prod-only thanks to `pnpm prune --prod` above.
+# No source files, no devDeps, no TypeScript toolchain.
 # =============================================================================
-FROM base AS production
+FROM base AS runner
 
 ENV NODE_ENV=production
 
-# Copy the pruned lockfile and manifests for a clean production install
-COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=pruner /app/out/json/ .
-
-# Install ONLY production dependencies — no devDeps in the final image
-RUN pnpm install --frozen-lockfile --prod
-
-# Copy the compiled NestJS output from the installer stage
-COPY --from=installer /app/apps/backend/dist ./apps/backend/dist
-
-# Copy the generated Prisma client
-COPY --from=installer /app/apps/backend/src/generated ./apps/backend/src/generated
-
-# Copy Prisma schema + migrations — prisma migrate deploy reads these at runtime
-COPY --from=installer /app/apps/backend/prisma ./apps/backend/prisma
-COPY --from=installer /app/apps/backend/prisma.config.ts ./apps/backend/prisma.config.ts
+COPY --from=builder /app .
 
 # Railway injects PORT at runtime; fallback to 3000 for local docker runs
 EXPOSE 3000
