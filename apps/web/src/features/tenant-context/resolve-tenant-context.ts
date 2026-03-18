@@ -52,7 +52,7 @@ async function writeToCache(
 
 export const resolveTenantContext = createServerFn({ method: "GET" }).handler(
   async (): Promise<ResolvedTenantContext> => {
-    const nestApiUrl = process.env.NESTJS_API_URL as string | undefined;
+    const nestApiUrl = process.env.BACKEND_URL as string | undefined;
     const internalToken = process.env.INTERNAL_API_TOKEN as string | undefined;
     const rootDomain = process.env.ROOT_DOMAIN as string | undefined;
 

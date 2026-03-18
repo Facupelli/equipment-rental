@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "repo-web",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "observability": {
+    "enabled": true,
+  },
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "equipment",
+    },
+  ],
+  "vars": {
+    "CLOUDFLARE_R2_BUCKET_NAME": "equipment",
+    "VITE_R2_PUBLIC_URL": "https://pub-9b6b356e58d64ff980802ae8b0ed250e.r2.dev",
+  },
+}

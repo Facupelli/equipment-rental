@@ -50,7 +50,7 @@ async function attemptRefresh(face: "admin" | "portal"): Promise<boolean> {
   let response: Response;
 
   try {
-    response = await fetch(`${process.env.NESTJS_API_URL}/auth/refresh`, {
+    response = await fetch(`${process.env.BACKEND_URL}/auth/refresh`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

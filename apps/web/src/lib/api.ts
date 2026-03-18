@@ -37,7 +37,7 @@ async function apiFetchRaw<T>(
     ...rest
   } = options;
 
-  const url = new URL(`${process.env.NESTJS_API_URL}${path}`);
+  const url = new URL(`${process.env.BACKEND_URL}${path}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
