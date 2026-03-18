@@ -34,9 +34,9 @@ WORKDIR /app
 # =============================================================================
 FROM base AS pruner
 
-# turbo must be available before packages are installed — install it globally.
-# Pin to the same major version as in your root devDependencies.
-RUN pnpm install -g turbo@latest
+# npm is always available in the node image and has no corepack conflicts.
+# pnpm install -g does not work with corepack-managed pnpm.
+RUN npm install -g turbo
 
 COPY . .
 
