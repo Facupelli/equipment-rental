@@ -78,7 +78,7 @@ RUN cd apps/backend && pnpm exec prisma generate
 
 # Build all workspace packages @repo/backend depends on, then the backend itself.
 # turbo.json's "dependsOn": ["^build"] ensures correct build order.
-RUN pnpm turbo run build --filter=@repo/backend
+RUN pnpm turbo run build --filter=@repo/backend --no-cache
 
 # =============================================================================
 # Stage 4 — production
