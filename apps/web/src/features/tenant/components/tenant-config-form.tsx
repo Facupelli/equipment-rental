@@ -42,7 +42,7 @@ export function TenantConfigForm() {
   });
 
   return (
-    <section className="space-y-4 max-w-3xl">
+    <section className="space-y-4">
       <div>
         <h2 className="text-xl font-bold">General Configuration</h2>
         <p className="text-sm text-muted-foreground mt-1">

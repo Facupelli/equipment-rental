@@ -18,7 +18,7 @@ function RouteComponent() {
   const { data: billingUnits = [], isPending, isError } = useBillingUnits();
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="space-y-10 p-8">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
@@ -28,7 +28,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <div>
+      <div className="max-w-3xl mx-auto space-y-10">
         <section>
           {isPending && (
             <p className="text-sm text-muted-foreground">Loading...</p>

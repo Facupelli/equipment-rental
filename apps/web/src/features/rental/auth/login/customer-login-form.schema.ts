@@ -6,7 +6,6 @@ export const customerLoginSchema = z.object({
     .string()
     .min(1, "Password is required.")
     .min(8, "Password must be at least 8 characters."),
-  rememberDevice: z.boolean(),
 });
 
 export type CustomerLoginFormValues = z.infer<typeof customerLoginSchema>;
@@ -14,5 +13,4 @@ export type CustomerLoginFormValues = z.infer<typeof customerLoginSchema>;
 export const loginCustomerFormDefaults: CustomerLoginFormValues = {
   email: "",
   password: "",
-  rememberDevice: false,
 };
