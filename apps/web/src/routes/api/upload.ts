@@ -42,7 +42,17 @@ const uploadRouter: Router = {
 export const Route = createFileRoute("/api/upload")({
   server: {
     handlers: {
-      POST: async ({ request }) => handleRequest(request, uploadRouter),
+      POST: async ({ request }) => {
+        try {
+          return handleRequest(request, uploadRouter);
+        } catch (error) {
+          console.log(error);
+          return new Response(
+            JSON.stringify({ error: "Internal upload error" }),
+            { status: 500, headers: { "Content-Type": "application/json" } },
+          );
+        }
+      },
     },
   },
 });
