@@ -23,7 +23,7 @@ function OrderConfirmationPage() {
       {/* ── Top bar ── */}
       <header className="w-full bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold tracking-widest uppercase text-neutral-900">
-          <p className="text-xl font-bold text-primary">EQUIP</p>
+          <p className="text-xl font-bold text-primary">DEPIQO</p>
         </div>
         <Button
           className="text-neutral-400 hover:text-neutral-700 transition-colors"
@@ -51,24 +51,26 @@ function OrderConfirmationPage() {
           {/* Heading */}
           <div className="text-center space-y-1">
             <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
-              Your order is confirmed
+              Tu pedido se creó con éxito
             </h1>
           </div>
 
           {/* Next Steps */}
           <div className="w-full space-y-3">
-            <p className="text-sm font-semibold text-neutral-700">Next Steps</p>
+            <p className="text-sm font-semibold text-neutral-700">
+              Próximos pasos
+            </p>
 
             <StepCard
               icon={<Mail className="w-4 h-4 text-white" />}
-              title="Email confirmation sent"
-              description="Check your inbox for full rental details and receipts."
+              title="Correo electrónico de confirmación enviado"
+              description="Revisa tu correo para obtener el detalle de tu alquiler y recibos."
             />
 
             <StepCard
               icon={<CalendarCheck className="w-4 h-4 text-white" />}
-              title={`Ready for pickup on ${formattedDate}`}
-              description={`Visit ${pickupLocation} between 9 AM and 6 PM.`}
+              title={`Listo para retirar el equipo el ${formattedDate}`}
+              description={`Visita ${pickupLocation} a la hora seleccionada`}
             />
           </div>
 
@@ -77,7 +79,7 @@ function OrderConfirmationPage() {
             <Button
               className="w-full bg-neutral-900 hover:bg-neutral-700 text-white font-semibold rounded-xl h-12 text-sm tracking-wide transition-colors"
               nativeButton={false}
-              render={<Link to="/rental">Return to Catalog</Link>}
+              render={<Link to="/rental">Volver al Catálogo</Link>}
             />
           </div>
 
@@ -88,12 +90,12 @@ function OrderConfirmationPage() {
 
       {/* ── Footer ── */}
       <footer className="pb-8 text-xs text-neutral-400">
-        Need help?{" "}
+        Neceistas ayuda?{" "}
         <a
           href="mailto:support@luxerentals.com"
           className="underline underline-offset-2 hover:text-neutral-600 transition-colors"
         >
-          Contact support@luxerentals.com
+          Contacta con support@depiqo.com
         </a>
       </footer>
     </div>
@@ -142,7 +144,7 @@ function ThumbnailStrip() {
 function formatPickupDate(dateStr: string): string {
   try {
     const date = new Date(`${dateStr}T00:00:00`);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return date.toLocaleDateString("es-ES", { month: "long", day: "numeric" });
   } catch {
     return dateStr;
   }

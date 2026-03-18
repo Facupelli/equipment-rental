@@ -35,10 +35,10 @@ function CartPage() {
         <div className="mx-auto max-w-6xl px-6 py-12 space-y-8">
           <div>
             <h1 className="text-4xl font-black uppercase tracking-tight text-black">
-              Review Your Order
+              Revisa Tu Pedido
             </h1>
             <p className="mt-2 text-sm text-neutral-500">
-              Please check your rental details before proceeding to booking.
+              Revisa tu pedido y asegúrate de que todo está en orden.
             </p>
           </div>
 

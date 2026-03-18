@@ -18,11 +18,7 @@ export function FeaturedBundles({ locationId }: FeaturedBundlesProps) {
   );
 
   if (!bundles.length) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No featured combos available.
-      </p>
-    );
+    return null;
   }
 
   return (
@@ -68,7 +64,7 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
           }`}
           variant={isInCart ? "default" : "secondary"}
         >
-          {isInCart ? "Added to Order" : "Non-modifiable bundle"}
+          {isInCart ? "Agregado" : "Combo no modificable"}
         </Badge>
       </div>
 
@@ -85,7 +81,7 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
               </span>
             </div>
           ) : (
-            <span className="text-sm text-muted-foreground">Contact us</span>
+            <span className="text-sm text-muted-foreground">Contactanos</span>
           )}
         </div>
         {bundle.description && (
@@ -120,7 +116,7 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
         ) : (
           <Button className="w-full" onClick={handleAdd}>
             <Zap className="w-4 h-4 mr-2" />
-            Quick Reserve Combo
+            Reservar Combo
           </Button>
         )}
       </CardFooter>

@@ -83,7 +83,7 @@ function ProductCard({ product }: { product: RentalProductResponse }) {
           className="absolute top-2 right-2"
           variant={isInCart ? "default" : "secondary"}
         >
-          {isInCart ? "Added" : category}
+          {isInCart ? "Agregado" : category}
         </Badge>
       </div>
 
@@ -105,7 +105,7 @@ function ProductCard({ product }: { product: RentalProductResponse }) {
               </span>
             </>
           ) : (
-            <span className="text-sm text-muted-foreground">Contact us</span>
+            <span className="text-sm text-muted-foreground">Contactanos</span>
           )}
         </div>
 
@@ -136,7 +136,7 @@ function ProductCard({ product }: { product: RentalProductResponse }) {
           </div>
         ) : (
           <Button size="sm" onClick={handleAdd}>
-            Add
+            Agregar
           </Button>
         )}
       </CardFooter>

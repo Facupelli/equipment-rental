@@ -24,13 +24,13 @@ export function CartPagePeriod() {
     return (
       <div className="mb-8">
         <p className="mb-4 text-xs font-bold uppercase tracking-widest text-black">
-          Rental Period
+          Periodo de Alquiler
         </p>
         <div className="flex items-center gap-3 rounded-none border border-amber-200 bg-amber-50 px-4 py-3">
           <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-            No rental period selected — go back to set your dates before
-            booking.
+            No seleccionaste el periodo de alquiler — va a atrás para configurar
+            tus fechas antes de reservar.
           </p>
         </div>
       </div>
@@ -42,7 +42,7 @@ export function CartPagePeriod() {
       <div className="grid grid-cols-5 divide-x divide-neutral-200 py-4">
         <div className="px-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            Rental Period
+            Periodo de Alquiler
           </p>
           <div className="flex items-center gap-2 pt-1">
             <Calendar className="h-4 w-4 shrink-0 text-neutral-400" />
@@ -53,7 +53,7 @@ export function CartPagePeriod() {
         </div>
 
         <TimeSelectCell
-          label="Pickup Time"
+          label="Hora de Retiro"
           date={startDate.toDate()}
           locationId={locationId}
           type={ScheduleSlotType.PICKUP}
@@ -61,7 +61,7 @@ export function CartPagePeriod() {
           onChange={onPickupTimeChange}
         />
         <TimeSelectCell
-          label="Return Time"
+          label="Hora de Devolución"
           date={endDate.toDate()}
           locationId={locationId}
           type={ScheduleSlotType.RETURN}
@@ -71,7 +71,7 @@ export function CartPagePeriod() {
 
         <div className="px-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            Total Duration
+            Duración Total
           </p>
           <div className="flex items-center gap-2 pt-1">
             <Clock className="h-4 w-4 shrink-0 text-neutral-400" />
@@ -83,13 +83,13 @@ export function CartPagePeriod() {
 
         <div className="px-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            Pickup Location
+            Retiro Por
           </p>
           <div className="pt-1">
             {locationName ? (
               <p className="text-sm font-semibold text-black">{locationName}</p>
             ) : (
-              <p className="text-sm text-neutral-300">Not selected</p>
+              <p className="text-sm text-neutral-300">No seleccionado</p>
             )}
           </div>
         </div>
@@ -99,7 +99,8 @@ export function CartPagePeriod() {
         <div className="flex items-center gap-3 border border-amber-200 bg-amber-50 px-4 py-3">
           <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-            Please select a pickup time and a return time before booking.
+            Por favor, selecciona una hora de retiro y una hora de devolución
+            antes de alquilar.
           </p>
         </div>
       )}
@@ -156,7 +157,7 @@ export function TimeSelectCell({
             className="w-full bg-transparent text-sm font-semibold text-black focus:outline-none disabled:text-neutral-300"
           >
             <option value="" disabled>
-              {isLoading ? "Loading…" : "Select time"}
+              {isLoading ? "Cargando…" : "Seleccionar hora"}
             </option>
             {(slots ?? []).map((slot) => (
               <option key={slot} value={slot}>

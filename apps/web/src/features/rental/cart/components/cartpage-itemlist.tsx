@@ -28,17 +28,15 @@ export function CartPageItemList() {
         <ShoppingBag className="h-10 w-10 text-neutral-200" />
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-            Your order is empty
+            Tu pedido está vacío
           </p>
-          <p className="mt-1 text-xs text-neutral-300">
-            Nothing to review yet.
-          </p>
+          <p className="mt-1 text-xs text-neutral-300">Nada que revisar aún.</p>
         </div>
         <Link
           to="/rental"
           className="mt-2 text-xs font-bold uppercase tracking-widest text-black underline underline-offset-4"
         >
-          Browse Equipment →
+          Buscar Equipos →
         </Link>
       </div>
     );
@@ -48,10 +46,10 @@ export function CartPageItemList() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xs font-bold uppercase tracking-widest text-black">
-          Selected Equipment
+          Equipos Seleccionados
         </h2>
         <span className="text-xs text-neutral-400">
-          {totalQuantity} {totalQuantity === 1 ? "item" : "items"} selected
+          {totalQuantity} {totalQuantity === 1 ? "item" : "items"} seleccionados
         </span>
       </div>
 
@@ -140,8 +138,8 @@ export function CartPageStandaloneItem({
         <div className="flex items-center gap-2 border-t border-red-200 bg-red-50 px-4 py-2.5">
           <XCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
           <p className="text-[11px] font-bold uppercase tracking-widest text-red-600">
-            Not available for your selected period — change dates or remove this
-            item.
+            No disponible para tu periodo seleccionado — cambia las fechas o
+            quita este item.
           </p>
         </div>
       )}
@@ -178,7 +176,7 @@ function CartPageBundleItem({
           {item.name}
         </p>
         <span className="shrink-0 border border-neutral-300 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
-          Bundle
+          Combo
         </span>
         <div className="ml-auto shrink-0 text-right">
           {isLoading ? (
@@ -200,8 +198,8 @@ function CartPageBundleItem({
         <div className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-4 py-2.5">
           <XCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
           <p className="text-[11px] font-bold uppercase tracking-widest text-red-600">
-            Not available for your selected period — change dates or remove this
-            item.
+            No disponible para tu periodo seleccionado — cambia las fechas o
+            quita este item.
           </p>
         </div>
       )}
@@ -235,7 +233,9 @@ function CartPageBundleComponent({ component }: CartPageBundleComponentProps) {
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-xs italic text-neutral-400">Included in Bundle</p>
+          <p className="text-xs italic text-neutral-400">
+            Incluido en el Combo
+          </p>
           <p className="mt-0.5 text-[11px] uppercase tracking-wider text-neutral-400">
             Qty: {component.quantity}
           </p>
@@ -282,7 +282,7 @@ function CartPageIncludedItems({ items }: CartPageIncludedItemsProps) {
   return (
     <div className="mt-3 border border-neutral-100 bg-neutral-50 px-4 py-3">
       <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-        Included with this rental
+        Incluido con este alquiler
       </p>
       <div className="flex flex-wrap gap-x-6 gap-y-1.5">
         {items.map((item, index) => (

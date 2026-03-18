@@ -50,7 +50,7 @@ export function CartPopover() {
               )}
             </span>
             <span className="text-xs font-bold uppercase tracking-widest">
-              Review Order
+              Revisar Pedido
             </span>
           </Button>
         }
@@ -78,7 +78,7 @@ export function CartPopoverHeader({ onClose }: CartPopoverHeaderProps) {
   return (
     <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4">
       <span className="text-xs font-bold uppercase tracking-widest text-black">
-        Order
+        Pedido
       </span>
       <button
         onClick={onClose}
@@ -108,12 +108,12 @@ function CartPopoverContext() {
         <MapPin className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 pb-1">
-            Pickup Location
+            Ubicación de retiro
           </p>
           {location ? (
             <p className="text-sm text-black">{location.name}</p>
           ) : (
-            <p className="text-sm text-neutral-300">Not selected</p>
+            <p className="text-sm text-neutral-300">No seleccionado</p>
           )}
         </div>
       </div>
@@ -122,14 +122,16 @@ function CartPopoverContext() {
         <Calendar className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 pb-1">
-            Rental Period
+            Perido de Alquiler
           </p>
           {startDate && endDate ? (
             <p className="text-sm text-black">
               {formatDate(startDate)} — {formatDate(endDate)}
             </p>
           ) : (
-            <p className="text-sm text-neutral-300">No period selected</p>
+            <p className="text-sm text-neutral-300">
+              No seleccionate el periodo
+            </p>
           )}
         </div>
       </div>
@@ -146,10 +148,10 @@ function CartPopoverItemList() {
         <ShoppingBag className="h-8 w-8 text-neutral-200" />
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-            Your order is empty
+            Tu pedido está vacío
           </p>
           <p className="mt-1 text-xs text-neutral-300">
-            Browse the catalog and add equipment to get started.
+            Navega el catálogo y agrega equipo para comenzar.
           </p>
         </div>
       </div>
@@ -284,7 +286,7 @@ export function CartPopoverFooter({ onClose }: CartPopoverFooterProps) {
         disabled={isEmpty || !startDate || !endDate}
         className="flex w-full items-center justify-center gap-2 py-5 rounded-none text-xs font-bold uppercase tracking-widest text-white "
       >
-        Review Order
+        Revisar Pedido
         <ArrowRight className="h-3.5 w-3.5" />
       </Button>
     </div>

@@ -34,7 +34,9 @@ export function RentalFilters({
   return (
     <div className="pt-4 flex items-center gap-20">
       <div className="flex items-center gap-4">
-        <p className="text-sm font-semibold text-black/50">RENTAL LOCATION</p>
+        <p className="text-sm font-semibold text-black/50">
+          UBICACIÓN DEL RENTAL
+        </p>
         <Select
           value={search.locationId ?? "all"}
           onValueChange={(value) =>
@@ -46,10 +48,10 @@ export function RentalFilters({
           }))}
         >
           <SelectTrigger className="w-52">
-            <SelectValue placeholder="Select location" />
+            <SelectValue placeholder="Seleccionar ubicación" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Locations</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
             {locations?.map((location) => (
               <SelectItem key={location.id} value={location.id}>
                 {location.name}
@@ -60,7 +62,9 @@ export function RentalFilters({
       </div>
 
       <div className="flex items-center gap-4">
-        <p className="text-sm font-semibold text-black/50">RENTAL PERIOD</p>
+        <p className="text-sm font-semibold text-black/50">
+          PERIODO DE ALQUILER
+        </p>
         <DateRangePicker
           startDate={search.startDate}
           endDate={search.endDate}
@@ -91,12 +95,12 @@ function DateRangePicker({
   const value = { from: startDate, to: endDate };
 
   const fromLabel = value.from
-    ? dayjs(value.from).format("MM/DD/YYYY")
-    : "MM/DD/YYYY";
+    ? dayjs(value.from).format("DD/MM/YYYY")
+    : "Seleccionar";
 
   const toLabel = value.to
-    ? dayjs(value.to).format("MM/DD/YYYY")
-    : "MM/DD/YYYY";
+    ? dayjs(value.to).format("DD/MM/YYYY")
+    : "Seleccionar";
 
   return (
     <Popover>

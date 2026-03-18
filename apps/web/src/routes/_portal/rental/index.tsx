@@ -83,10 +83,10 @@ function RentalPage() {
 
         <section className="mt-10">
           <SectionHeading
-            title="Featured Combos"
-            subtitle="Curated equipment bundles at a lower daily rate."
+            title="Combos Destacados"
+            subtitle="Combos de equipo destacados a un precio menor diario."
           />
-          <SectionErrorBoundary message="Featured bundles could not be loaded.">
+          <SectionErrorBoundary message="Los combos destacados no pudieron cargarse.">
             <Suspense fallback={<FeaturedBundlesSkeleton />}>
               <FeaturedBundles locationId={search.locationId} />
             </Suspense>
@@ -94,8 +94,8 @@ function RentalPage() {
         </section>
 
         <section className="mt-12">
-          <SectionHeading title="New Arrivals" />
-          <SectionErrorBoundary message="New arrivals could not be loaded.">
+          <SectionHeading title="Nuevos Productos" />
+          <SectionErrorBoundary message="No se pudieron cargar los nuevos productos.">
             <Suspense fallback={<NewArrivalsSkeleton />}>
               <NewArrivals locationId={search.locationId} />
             </Suspense>
@@ -103,12 +103,12 @@ function RentalPage() {
         </section>
 
         <section className="mt-12">
-          <SectionHeading title="Browse All Equipment" />
+          <SectionHeading title="Todos los Equipos" />
           <CategoryFilter
             activeCategory={search.categoryId}
             onSelect={handleCategorySelect}
           />
-          <SectionErrorBoundary message="Our inventory database is currently unreachable.">
+          <SectionErrorBoundary message="Nuestro inventario no está disponible.">
             <Suspense fallback={<ProductCatalogSkeleton />}>
               <ProductCatalog
                 search={search}
@@ -152,11 +152,8 @@ export function RentalHeader({
     <header className="sticky top-0 z-10 bg-white border-b">
       <div className="container flex items-center justify-between h-16 mx-auto px-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-primary">EQUIP</h1>
+          <h1 className="text-xl font-bold text-primary">DEPIQO</h1>
           <nav className="hidden md:flex gap-4 text-sm font-medium">
-            <Button variant="ghost" className="text-muted-foreground">
-              Home
-            </Button>
             <Button variant="ghost" className="text-primary">
               Rental
             </Button>
@@ -167,7 +164,7 @@ export function RentalHeader({
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search equipment..."
+            placeholder="Buscar equipo..."
             className="pl-8"
             value={localSearch}
             onChange={(e) => onSearchChange(e.target.value)}

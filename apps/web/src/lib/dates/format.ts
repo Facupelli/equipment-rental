@@ -44,10 +44,10 @@ export function formatRentalDuration(start: Dayjs, end: Dayjs): string {
   const days = totalDays % 7;
 
   if (weeks === 0) {
-    return `${totalDays} ${totalDays === 1 ? "Day" : "Days"}`;
+    return `${totalDays} ${totalDays === 1 ? "Día" : "Días"}`;
   }
   if (days === 0) {
-    return `${weeks} ${weeks === 1 ? "Week" : "Weeks"}`;
+    return `${weeks} ${weeks === 1 ? "Semana" : "Semanas"}`;
   }
-  return `${weeks} ${weeks === 1 ? "Week" : "Weeks"}, ${days} ${days === 1 ? "Day" : "Days"}`;
+  return `${weeks} ${weeks === 1 ? "Semana" : "Semanas"}, ${days} ${days === 1 ? "Día" : "Días"}`;
 }

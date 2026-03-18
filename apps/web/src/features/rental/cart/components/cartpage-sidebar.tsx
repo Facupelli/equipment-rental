@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "../cart.utils";
 import { useCartPageContext } from "../cart-page.context";
+import { PRDOUCT_TYPE_DICT } from "@/features/catalog/catalog.constants";
 
 export function CartPageSidebar() {
   const {
@@ -31,7 +32,7 @@ export function CartPageSidebar() {
         <div className="mt-6 flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
           <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
-            Booking failed unexpectedly. Please try again.
+            La reserva falló inesperadamente. Por favor, inténtalo de nuevo.
           </p>
         </div>
       )}
@@ -41,7 +42,7 @@ export function CartPageSidebar() {
         disabled={isDisabled}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-none bg-black py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
       >
-        Book Equipment
+        Alquilar Equipo
         <ArrowRight className="h-3.5 w-3.5" />
       </Button>
 
@@ -49,13 +50,13 @@ export function CartPageSidebar() {
         <div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
           <Banknote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
           <p className="text-[11px] text-neutral-500">
-            Payment is collected at pickup.
+            El pago se cobra al retirar los equipos.
           </p>
         </div>
         <div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
           <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
           <p className="text-[11px] text-neutral-500">
-            You can cancel before the order is confirmed.
+            Puedes cancelar antes de que el pedido sea confirmado.
           </p>
         </div>
       </div>
@@ -81,7 +82,7 @@ function CartPagePriceBreakdown({
       <div className="flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
         <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
-          Unable to compute pricing. Please try again.
+          No se puede calcular el precio. Por favor, inténtalo de nuevo.
         </p>
       </div>
     );
@@ -90,7 +91,7 @@ function CartPagePriceBreakdown({
   return (
     <div>
       <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-black">
-        Price Breakdown
+        Desglose de precio
       </h3>
 
       <div className="space-y-3">
@@ -109,7 +110,7 @@ function CartPagePriceBreakdown({
                 <div>
                   <p className="text-sm text-black">{item.name}</p>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-                    {item.type}
+                    {PRDOUCT_TYPE_DICT[item.type]}
                   </p>
                 </div>
                 <p className="shrink-0 text-sm font-semibold text-black">
@@ -136,7 +137,7 @@ function CartPagePriceBreakdown({
 
       <div className="flex items-center justify-between">
         <p className="text-sm font-black uppercase tracking-widest text-black">
-          Total Amount
+          Total a pagar
         </p>
         {isLoading ? (
           <Skeleton className="h-7 w-28" />
