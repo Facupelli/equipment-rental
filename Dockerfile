@@ -63,7 +63,7 @@ RUN pnpm turbo run build --filter=@repo/backend --no-cache
 # This is safer than re-running pnpm install --prod in a new stage because
 # it operates on the same node_modules that was used for the build —
 # no risk of missing a package that was incorrectly categorised.
-RUN pnpm prune --prod --no-optional
+RUN CI=true pnpm prune --prod --no-optional
 
 # =============================================================================
 # Stage 4 — runner
