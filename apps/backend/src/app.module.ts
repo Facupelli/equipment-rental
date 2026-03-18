@@ -17,6 +17,7 @@ import { BillingUnitModule } from './modules/billing-unit/billing-unit.module';
 import { PricingModule } from './modules/pricing/pricing.module';
 import { InternalModule } from './modules/internal/internal.module';
 import { SharedModule } from './modules/shared/shared.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -46,5 +47,6 @@ import { SharedModule } from './modules/shared/shared.module';
       useClass: TenantInterceptor,
     },
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}
