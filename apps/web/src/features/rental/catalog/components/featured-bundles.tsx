@@ -7,6 +7,7 @@ import type { BundleItemResponse } from "@repo/schemas";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useBundleCardState } from "../../cart/hooks/use-bundle-card-state";
 import { CheckCircle, Trash2, Zap } from "lucide-react";
+import clsx from "clsx";
 
 interface FeaturedBundlesProps {
   locationId?: string;
@@ -22,7 +23,7 @@ export function FeaturedBundles({ locationId }: FeaturedBundlesProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+    <div className="grid  gap-6 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
       {bundles.map((bundle) => (
         <BundleCard key={bundle.id} bundle={bundle} />
       ))}
@@ -40,9 +41,10 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
 
   return (
     <Card
-      className={`overflow-hidden rounded-xs flex flex-col transition-all ${
-        isInCart ? "ring-2 ring-black" : ""
-      }`}
+      className={clsx(
+        "overflow-hidden rounded-xs flex flex-col py-0 pb-4 transition-all",
+        isInCart && "ring-2 ring-black ",
+      )}
     >
       <div className="aspect-video bg-gray-100 relative overflow-hidden">
         {bundle.imageUrl ? (
@@ -68,7 +70,7 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
         </Badge>
       </div>
 
-      <CardHeader className="p-4 pb-0">
+      <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <CardTitle className="text-lg leading-tight">{bundle.name}</CardTitle>
           {price ? (
@@ -96,7 +98,7 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
         )}
       </CardHeader>
 
-      <CardFooter className="p-4 mt-auto">
+      <CardFooter>
         {isInCart ? (
           <div className="flex gap-2 w-full">
             <Button variant="outline" className="flex-1" disabled>

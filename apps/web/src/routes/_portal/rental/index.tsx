@@ -130,7 +130,7 @@ function SectionHeading({
   subtitle?: string;
 }) {
   return (
-    <div className="mb-4">
+    <div className="pb-4">
       <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
       {subtitle && (
         <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
