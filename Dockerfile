@@ -71,13 +71,14 @@ RUN pnpm install --frozen-lockfile
 # Now copy the pruned source — this busts cache only when relevant source changes
 COPY --from=pruner /app/out/full/ .
 
+# Generate the Prisma client BEFORE nest build.
+# TypeScript needs the generated types at compile time — without this,
+# any file importing from 'generated/prisma/client' will fail with TS2307.
+RUN cd apps/backend && pnpm exec prisma generate
+
 # Build all workspace packages @repo/backend depends on, then the backend itself.
 # turbo.json's "dependsOn": ["^build"] ensures correct build order.
 RUN pnpm turbo run build --filter=@repo/backend
-
-# Generate the Prisma client into src/generated/prisma (as per your schema config).
-# Runs after nest build because Prisma needs the compiled output path to exist.
-RUN cd apps/backend && pnpm exec prisma generate
 
 # =============================================================================
 # Stage 4 — production
