@@ -23,6 +23,7 @@ import {
   registerFormSchema,
   toRegisterDto,
 } from "@/features/auth/schemas/register-form.schema";
+import { ProblemDetailsError } from "@/shared/errors";
 
 export const Route = createFileRoute("/_admin/admin/register")({
   component: RegisterPage,
@@ -31,15 +32,7 @@ export const Route = createFileRoute("/_admin/admin/register")({
 const formId = "register-user-tenant";
 
 function RegisterPage() {
-  const { mutate: createTenantUser, isPending } = useCreateTenantUser({
-    onSuccess: (data) => {
-      setSuccessData(data);
-    },
-    onError: (error) => {
-      console.log({ error });
-      setServerError(error.message);
-    },
-  });
+  const { mutateAsync: createTenantUser, isPending } = useCreateTenantUser();
 
   const form = useForm({
     defaultValues: registerFormDefaults,
@@ -48,9 +41,19 @@ function RegisterPage() {
     },
     onSubmit: async ({ value }) => {
       const dto = toRegisterDto(value);
-      await createTenantUser(dto);
+      try {
+        const data = await createTenantUser(dto);
+        setSuccessData(data);
+      } catch (error) {
+        console.log(error);
+        if (error instanceof ProblemDetailsError || error instanceof Error) {
+          setServerError(error.message);
+        }
+      }
     },
   });
+
+  console.log({ errors: form.getAllErrors() });
 
   const [successData, setSuccessData] = useState<{
     userId: string;

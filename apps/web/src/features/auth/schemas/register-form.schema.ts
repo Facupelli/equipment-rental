@@ -1,19 +1,13 @@
 import { registerSchema, type RegisterDto } from "@repo/schemas";
 import { z } from "zod";
 
-export const registerFormSchema = z
-  .object({
-    tenantName: z.string().min(1, "Tenant name is required"),
-    email: z.email("Invalid email"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-    firstName: z.string().min(1, "First name is required"),
-    lastName: z.string().min(1, "Last name is required"),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+export const registerFormSchema = z.object({
+  tenantName: z.string().min(1, "Tenant name is required"),
+  email: z.email("Invalid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+});
 
 export type RegisterFormValues = z.infer<typeof registerFormSchema>;
 
@@ -21,7 +15,6 @@ export const registerFormDefaults: RegisterFormValues = {
   tenantName: "",
   email: "",
   password: "",
-  confirmPassword: "",
   firstName: "",
   lastName: "",
 };
