@@ -6,7 +6,7 @@
   },
   "deploy": {
     "preDeployCommand": "/bin/sh -c 'cd apps/backend && node_modules/.bin/prisma migrate deploy'",
-    "startCommand": "node apps/backend/dist/main.js",
+    "startCommand": "node apps/backend/dist/src/main.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",

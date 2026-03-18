@@ -85,4 +85,4 @@ USER nodejs
 # Railway injects PORT at runtime; fallback to 3000 for local docker runs
 EXPOSE 3000
 
-CMD ["node", "apps/backend/dist/main.js"]
+CMD ["node", "apps/backend/dist/src/main.js"]
