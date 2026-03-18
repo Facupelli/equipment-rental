@@ -11,6 +11,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import clsx from "clsx";
 import {
   ArrowRight,
+  BadgeDollarSign,
   CheckCircle2,
   Clock,
   FileText,
@@ -39,55 +40,63 @@ interface StepConfig {
 const STOREFRONT_STEPS: StepConfig[] = [
   {
     id: "billing-unit",
-    title: "Define Your Rental Type",
-    description: "Configure if you will operate on a daily or hourly basis.",
+    title: "Define tu Tipo de Alquiler",
+    description: "Configura si operarás por día o por hora.",
     icon: MapPin,
     path: "/dashboard/settings",
   },
   {
     id: "location",
-    title: "Define Your Location",
+    title: "Define tu Ubicación",
     description:
-      "Set your business address to enable local delivery and shipping zones.",
+      "Agrega la dirección de tu negocio para habilitar entregas locales y zonas de envío.",
     icon: MapPin,
     path: "/dashboard/locations",
   },
   {
     id: "hours",
-    title: "Set Operational Hours",
+    title: "Establece tu Horario de Operación",
     description:
-      "Let customers know when you are open for business or delivery.",
+      "Indica a tus clientes cuándo estás disponible para atender o hacer entregas.",
     icon: Clock,
     path: `/dashboard/locations/locationId/`,
   },
   {
     id: "catalog",
-    title: "Organize Your Catalog",
-    description: "Create categories to structure your menu or product list.",
+    title: "Organiza tu Catálogo",
+    description:
+      "Crea categorías para estructurar tu menú o lista de productos.",
     icon: LayoutGrid,
     path: "/dashboard/catalog/categories",
   },
   {
     id: "product",
-    title: "Draft Your First Product",
+    title: "Crea tu Primer Producto",
     description:
-      "Add your first item to the catalog to start building your inventory.",
+      "Agrega tu primer artículo al catálogo para comenzar a construir tu inventario.",
     icon: FileText,
     path: "/dashboard/catalog/products",
   },
   {
-    id: "assets",
-    title: "Add Physical Assets",
+    id: "pricing",
+    title: "Define el Precio de tu Producto",
     description:
-      "Upload images and details for your store layout or equipment.",
+      "Asigna una tarifa por día u hora a tu producto para que pueda ser publicado.",
+    icon: BadgeDollarSign,
+    path: "/dashboard/catalog/products/productId",
+  },
+  {
+    id: "assets",
+    title: "Agrega Unidades Físicas",
+    description:
+      "Registra las unidades físicas asociadas a tu producto, como bicicletas, habitaciones o equipos específicos.",
     icon: Warehouse,
     path: "/dashboard/catalog/products/productId",
   },
   {
     id: "golive",
-    title: "Go Live",
-    description:
-      "Review your settings and launch your storefront to the public.",
+    title: "Publica tu Tienda",
+    description: "Revisa tu configuración y lanza tu tienda al público.",
     icon: Rocket,
     path: "/setup/go-live",
   },
