@@ -102,7 +102,7 @@ export function ActiveBillingUnitsForm({
     <section className="space-y-4">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-white">Active Billing Units</h2>
+        <h2 className="text-xl font-bold">Active Billing Units</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Select the time increments available for your rental assets across all
           locations.

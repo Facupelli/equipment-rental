@@ -72,7 +72,7 @@ function DashboardLayout() {
   return (
     <LocationStoreProvider locations={locations}>
       <div className="grid h-screen grid-cols-[280px_1fr]">
-        <aside className="flex flex-col h-full border-r border-gray-200 bg-neutral-900 text-white p-4">
+        <aside className="sticky top-0 flex h-svh flex-col border-r border-gray-200 bg-neutral-900 p-4 text-white overflow-y-auto">
           {/* Tenant header */}
           <div>
             <p className="font-bold">{tenant.name}</p>
@@ -84,7 +84,7 @@ function DashboardLayout() {
           </div>
 
           {/* Nav links */}
-          <div className="grid gap-y-4">
+          <div className="grid gap-y-4 overflow-y-auto">
             {sidebarItems.map((item) => (
               <Link to={item.href} key={item.href}>
                 {item.name}
@@ -102,7 +102,7 @@ function DashboardLayout() {
           </div>
         </aside>
 
-        <div className="grid h-full grid-rows-[auto_1fr] bg-gray-50">
+        <div className="h-full overflow-y-auto bg-gray-50">
           <Outlet />
         </div>
       </div>

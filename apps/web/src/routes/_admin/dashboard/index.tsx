@@ -38,6 +38,13 @@ interface StepConfig {
 // Static configuration for the steps (UI text, icons, routes)
 const STOREFRONT_STEPS: StepConfig[] = [
   {
+    id: "billing-unit",
+    title: "Define Your Rental Type",
+    description: "Configure if you will operate on a daily or hourly basis.",
+    icon: MapPin,
+    path: "/dashboard/settings",
+  },
+  {
     id: "location",
     title: "Define Your Location",
     description:
