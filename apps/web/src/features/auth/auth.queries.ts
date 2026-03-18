@@ -22,23 +22,12 @@ type OwnerMutationOptions = Omit<
 // -----------------------------------------------------
 
 export function useLogin() {
-  const router = useRouter();
   const login = useServerFn(loginUserFn);
 
   return useMutation<SessionUser, ProblemDetailsError, LoginDto>({
     mutationFn: (data) => login({ data }),
     meta: {
       invalidates: userKeys.all(),
-    },
-    onSuccess: (result) => {
-      if (result.userId) {
-        router.navigate({ to: "/dashboard" });
-      }
-    },
-    onError: (error) => {
-      console.error(
-        `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
-      );
     },
   });
 }
