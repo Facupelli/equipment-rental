@@ -4,9 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CalendarRange } from "lucide-react";
 import type { GetOwnerResponseDto } from "@repo/schemas";
 import { Mail, Phone, StickyNote } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
 import { ContractHistoryTable } from "@/features/tenant/owners/components/contract-history-table";
 import { ownerQueries } from "@/features/tenant/owners/owners.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -14,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { Suspense } from "react";
 import { NewOwnerContractDialog } from "@/features/tenant/owners/components/owner-contract-dialog-form";
+import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
 
 export const Route = createFileRoute("/_admin/dashboard/owners/$ownerId")({
   loader: ({ context: { queryClient }, params: { ownerId } }) =>
@@ -39,18 +38,11 @@ function RouteComponent() {
     <ErrorBoundary FallbackComponent={OwnerDetailError}>
       <Suspense fallback={<OwnerDetailSkeleton />}>
         <div className="min-h-screen bg-neutral-50">
-          <div className="mx-auto max-w-6xl px-6 py-10">
-            {/* Breadcrumb */}
-            <nav className="mb-6 flex items-center gap-1.5 text-xs text-neutral-400">
-              <Link
-                to="/dashboard/owners"
-                className="transition-colors hover:text-neutral-600"
-              >
-                Propietarios
-              </Link>
-              <ChevronRight className="h-3 w-3" />
-              <span className="text-neutral-600">{owner.name}</span>
-            </nav>
+          <div className="mx-auto max-w-6xl px-8">
+            <PageBreadcrumb
+              parent={{ label: "Propietarios", to: "/dashboard/owners" }}
+              current={owner.name}
+            />
 
             {/* Page header */}
             <div className="mb-8 flex items-start justify-between gap-4">

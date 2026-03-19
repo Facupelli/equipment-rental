@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { OverviewTab } from "@/features/customer/components/detail/overview-tab";
 import { ProfileTab } from "@/features/customer/components/detail/profile-tab";
+import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
 
 export const Route = createFileRoute("/_admin/dashboard/customers/$customerId")(
   {
@@ -28,9 +29,9 @@ function CustomerDetailPage() {
   const { customerId } = Route.useParams();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background px-8">
       <CustomerPageHeader customerId={customerId} />
-      <div className="p-6">
+      <div className="py-8">
         <CustomerTabs customerId={customerId} />
       </div>
     </div>
@@ -69,32 +70,39 @@ export function CustomerPageHeader({ customerId }: CustomerPageHeaderProps) {
   const fullName = `${customer.firstName} ${customer.lastName}`;
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-      <div className="flex items-center gap-3">
-        <h1 className="text-xl font-semibold text-foreground">{fullName}</h1>
-        <Badge
-          variant={customer.isActive ? "default" : "secondary"}
-          className={
-            customer.isActive
-              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
-              : "bg-muted text-muted-foreground"
-          }
-        >
-          {customer.isActive ? "Active" : "Inactive"}
-        </Badge>
-      </div>
+    <header>
+      <PageBreadcrumb
+        parent={{ label: "Clientes", to: "/dashboard/customers" }}
+        current={customer.firstName}
+      />
 
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search resources..."
-            className="pl-9 w-64 bg-muted border-transparent"
-          />
+      <div className="flex items-center justify-between border-b border-border pb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-semibold text-foreground">{fullName}</h1>
+          <Badge
+            variant={customer.isActive ? "default" : "secondary"}
+            className={
+              customer.isActive
+                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+                : "bg-muted text-muted-foreground"
+            }
+          >
+            {customer.isActive ? "Active" : "Inactive"}
+          </Badge>
         </div>
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-        </Button>
+
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search resources..."
+              className="pl-9 w-64 bg-muted border-transparent"
+            />
+          </div>
+          <Button variant="ghost" size="icon">
+            <Bell className="h-5 w-5 text-muted-foreground" />
+          </Button>
+        </div>
       </div>
     </header>
   );

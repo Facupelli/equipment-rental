@@ -18,6 +18,7 @@ import dayjs from "@/lib/dates/dayjs";
 import { cn } from "@/lib/utils";
 import { useLocationSchedules } from "@/features/tenant/locations/location-schedules.queries";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
+import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
 
 export const Route = createFileRoute("/_admin/dashboard/locations/$locationId")(
   {
@@ -60,57 +61,61 @@ function LocationDetailPage() {
   const location = locationQuery.data?.find((l) => l.id === locationId);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl space-y-8 px-6 py-8">
-        {/* ----------------------------------------------------------------
-            Header
-        ----------------------------------------------------------------- */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              {location?.name}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Location Schedule Management &amp; Operating Hours
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-background px-9">
+      <div className="mx-auto max-w-5xl">
+        <PageBreadcrumb
+          parent={{ label: "Sucursales", to: "/dashboard/locations" }}
+          current={location?.name ?? "-"}
+        />
 
-        {/* ----------------------------------------------------------------
+        <div className="space-y-8">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">
+                {location?.name}
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Location Schedule Management &amp; Operating Hours
+              </p>
+            </div>
+          </div>
+
+          {/* ----------------------------------------------------------------
             Two-column layout: schedule table + sidebar
         ----------------------------------------------------------------- */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
-          {/* Weekly Cycle */}
-          <WeeklyCycleTable
-            rows={weeklyRows}
-            onEdit={(schedule) =>
-              setModalState({ open: true, mode: "edit", schedule })
-            }
-            onAdd={(dayOfWeek, type) =>
-              setModalState({
-                open: true,
-                mode: "create",
-                slotType: type,
-                dayOfWeek,
-              })
-            }
-          />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+            {/* Weekly Cycle */}
+            <WeeklyCycleTable
+              rows={weeklyRows}
+              onEdit={(schedule) =>
+                setModalState({ open: true, mode: "edit", schedule })
+              }
+              onAdd={(dayOfWeek, type) =>
+                setModalState({
+                  open: true,
+                  mode: "create",
+                  slotType: type,
+                  dayOfWeek,
+                })
+              }
+            />
 
-          {/* Date Overrides */}
-          <DateOverridesPanel
-            overrides={overrides}
-            onManage={(schedule) =>
-              setModalState({ open: true, mode: "edit", schedule })
-            }
-            onAdd={() =>
-              setModalState({
-                open: true,
-                mode: "create",
-                slotType: ScheduleSlotType.PICKUP,
-                // No dayOfWeek → modal defaults to "specific" mode
-              })
-            }
-          />
+            {/* Date Overrides */}
+            <DateOverridesPanel
+              overrides={overrides}
+              onManage={(schedule) =>
+                setModalState({ open: true, mode: "edit", schedule })
+              }
+              onAdd={() =>
+                setModalState({
+                  open: true,
+                  mode: "create",
+                  slotType: ScheduleSlotType.PICKUP,
+                  // No dayOfWeek → modal defaults to "specific" mode
+                })
+              }
+            />
+          </div>
         </div>
       </div>
 

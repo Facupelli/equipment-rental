@@ -1,3 +1,4 @@
+import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -118,43 +119,50 @@ function RouteComponent() {
   return (
     <>
       <ProductProvider product={product}>
-        <div className="space-y-12 p-6">
-          <ProductHeader />
+        <div className=" px-8">
+          <PageBreadcrumb
+            parent={{ label: "Productos", to: "/dashboard/catalog/products" }}
+            current={product.name}
+          />
 
-          <Tabs
-            defaultValue="specifications"
-            className="flex flex-col gap-y-10"
-          >
-            <TabsList>
-              <TabsTrigger value="specifications">Specifications</TabsTrigger>
-              <TabsTrigger value="pricing">Pricing</TabsTrigger>
-              <TabsTrigger value="physical-items">Physical Items</TabsTrigger>
-            </TabsList>
+          <div className="space-y-8">
+            <ProductHeader />
 
-            <TabsContent value="specifications">
-              <SpecificationsTab />
-            </TabsContent>
+            <Tabs
+              defaultValue="specifications"
+              className="flex flex-col gap-y-10"
+            >
+              <TabsList>
+                <TabsTrigger value="specifications">Specifications</TabsTrigger>
+                <TabsTrigger value="pricing">Pricing</TabsTrigger>
+                <TabsTrigger value="physical-items">Physical Items</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="pricing">
-              <div className="flex items-center justify-between pb-4">
-                <Button size="sm" onClick={() => setDialogOpen(true)}>
-                  <Plus className="mr-1.5 size-3.5" />
-                  Add Pricing Tier
-                </Button>
+              <TabsContent value="specifications">
+                <SpecificationsTab />
+              </TabsContent>
 
-                {hasUnsavedChanges && (
-                  <Button onClick={handleSaveChanges} disabled={isSaving}>
-                    {isSaving ? "Saving…" : "Save Changes"}
+              <TabsContent value="pricing">
+                <div className="flex items-center justify-between pb-4">
+                  <Button size="sm" onClick={() => setDialogOpen(true)}>
+                    <Plus className="mr-1.5 size-3.5" />
+                    Add Pricing Tier
                   </Button>
-                )}
-              </div>
-              <PricingTab pendingTiers={pendingTiers} />
-            </TabsContent>
 
-            <TabsContent value="physical-items">
-              <AssetsTab />
-            </TabsContent>
-          </Tabs>
+                  {hasUnsavedChanges && (
+                    <Button onClick={handleSaveChanges} disabled={isSaving}>
+                      {isSaving ? "Saving…" : "Save Changes"}
+                    </Button>
+                  )}
+                </div>
+                <PricingTab pendingTiers={pendingTiers} />
+              </TabsContent>
+
+              <TabsContent value="physical-items">
+                <AssetsTab />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
 
         {/* Add pricing tier dialog */}

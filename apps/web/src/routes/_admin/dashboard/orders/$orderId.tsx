@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { formatOrderNumber } from "@/features/orders/order.utils";
 import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
+import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
 
 export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
   loader: ({ context: { queryClient }, params: { orderId } }) => {
@@ -33,10 +34,15 @@ function RouteComponent() {
   );
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-950">
+    <div className="min-h-screen bg-stone-50 text-stone-950 px-8">
+      <PageBreadcrumb
+        parent={{ label: "Pedidos", to: "/dashboard/schedule" }}
+        current={String(order.number)}
+      />
+
       <OrderHeader order={order} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] px-8 py-10 gap-20">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] py-10 gap-20">
         {/* Left */}
         <div>
           <OrderTabs order={order} />
@@ -57,7 +63,7 @@ type Props = { order: ParsedOrderDetailResponseDto };
 
 function OrderHeader({ order }: Props) {
   return (
-    <header className="px-8 pt-8 pb-6 bg-white border-b border-stone-200">
+    <header className="bg-white border-b border-stone-200">
       <div className="flex items-start justify-between gap-6">
         {/* Title + meta */}
         <div>

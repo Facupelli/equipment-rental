@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { BundleDetailResponseDto } from "@repo/schemas";
-import { Package, Plus } from "lucide-react";
+import { ChevronRight, Package, Plus } from "lucide-react";
 import {
   bundleKeys,
   bundleQueries,
@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSetPricingTiers } from "@/features/catalog/pricing-tier/pricing-tier.queries";
 import { PricingTiersTable } from "@/features/catalog/pricing-tier/components/pricing-tiers-table";
+import { Link } from "@tanstack/react-router";
+import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
 
 export const Route = createFileRoute(
   "/_admin/dashboard/catalog/bundles/$bundleId",
@@ -104,21 +106,30 @@ function BundleDetailPage() {
 
   return (
     <>
-      <div className="mx-auto w-5xl space-y-8 p-8">
-        <BundleHeader
-          bundle={bundle}
-          hasUnsavedChanges={hasUnsavedChanges}
-          isSaving={isSaving}
-          onSave={handleSaveChanges}
+      <div className="mx-auto w-5xl px-8">
+        <PageBreadcrumb
+          parent={{ label: "Combos", to: "/dashboard/catalog/bundles" }}
+          current={bundle.name}
         />
-        <Separator />
-        <BundleComponents bundle={bundle} />
-        <Separator />
-        <BundlePricingTiers
-          bundle={bundle}
-          pendingTiers={pendingTiers}
-          onOpenDialog={() => setDialogOpen(true)}
-        />
+
+        <div className="space-y-8">
+          <BundleHeader
+            bundle={bundle}
+            hasUnsavedChanges={hasUnsavedChanges}
+            isSaving={isSaving}
+            onSave={handleSaveChanges}
+          />
+
+          <Separator />
+          <BundleComponents bundle={bundle} />
+          <Separator />
+
+          <BundlePricingTiers
+            bundle={bundle}
+            pendingTiers={pendingTiers}
+            onOpenDialog={() => setDialogOpen(true)}
+          />
+        </div>
       </div>
 
       {/* Add pricing tier dialog */}
