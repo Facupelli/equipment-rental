@@ -31,24 +31,32 @@ import { AddScheduleToLocationCommandHandler } from './location/application/comm
 import { BulkAddSchedulesToLocationCommandHandler } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command-handler';
 import { OwnerController } from './owner/infrastructure/controllers/owner.controller';
 import { GetLocationScheduleSlotsQueryHandler } from './location/presentation/queries/get-location-schedule-slots/get-location-schedule-slots.query-handler';
+import { GetOwnerQueryHandler } from './owner/presentation/queries/get-owner/get-owner.query-handler';
+import { CreateOwnerContractCommandHandler } from './owner/application/commands/create-owner-contract/create-owner-contract.command-handler';
+import { OwnerContractRepositoryPort } from './owner/domain/ports/owner-contract.repository.port';
+import { OwnerContractRepository } from './owner/infrastructure/persistence/repositories/owner-contract.repository';
 
 const commandHandlers = [
   CreateTenantUserCommandHandler,
   UpdateTenantConfigCommandHandler,
-  CreateOwnerCommandHandler,
-  CreateLocationCommandHandler,
   SyncTenantBillingUnitsCommandHandler,
-  // location schedule
+  // owner
+  CreateOwnerCommandHandler,
+  CreateOwnerContractCommandHandler,
+  // location
+  CreateLocationCommandHandler,
   AddScheduleToLocationCommandHandler,
   BulkAddSchedulesToLocationCommandHandler,
 ];
 const queryHandlers = [
   IsSlugTakenQueryHandler,
   GetTenantQueryHandler,
-  GetLocationsQueryHandler,
-  GetOwnersQueryHandler,
   GetTenantBillingUnitsQueryHandler,
-  // location schedule
+  // owner
+  GetOwnersQueryHandler,
+  GetOwnerQueryHandler,
+  // location
+  GetLocationsQueryHandler,
   GetLocationScheduleSlotsQueryHandler,
   GetLocationSchedulesQueryHandler,
   // internal
@@ -61,6 +69,7 @@ const repositories = [
   { provide: TenantBillingUnitRepositoryPort, useClass: TenantBillingUnitRepository },
   { provide: LocationRepositoryPort, useClass: LocationRepository },
   { provide: OwnerRepositoryPort, useClass: OwnerRepository },
+  { provide: OwnerContractRepositoryPort, useClass: OwnerContractRepository },
 ];
 const services = [
   TenantApplicationService,

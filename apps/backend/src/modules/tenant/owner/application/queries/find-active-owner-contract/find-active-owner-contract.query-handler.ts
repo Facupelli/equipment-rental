@@ -53,34 +53,4 @@ export class OwnerContractQueryService implements IQueryHandler<FindActiveContra
       basis: contract.basis,
     };
   }
-
-  /**
-   * Returns true if an active contract already exists for the given
-   * owner + asset scope that overlaps with the proposed validity window.
-   *
-   * Used exclusively by CreateOwnerContractHandler as a write-side guard.
-   */
-  async hasOverlappingContract(
-    tenantId: string,
-    ownerId: string,
-    assetId: string | null,
-    validFrom: Date,
-    validUntil: Date | null,
-  ): Promise<boolean> {
-    const conflict = await this.prisma.client.ownerContract.findFirst({
-      where: {
-        tenantId,
-        ownerId,
-        assetId: assetId ?? null,
-        isActive: true,
-        // Existing contract overlaps if it starts before our end (or we have no end)
-        // AND it ends after our start (or it has no end)
-        validFrom: validUntil ? { lte: validUntil } : undefined,
-        OR: [{ validUntil: null }, { validUntil: { gte: validFrom } }],
-      },
-      select: { id: true },
-    });
-
-    return conflict !== null;
-  }
 }

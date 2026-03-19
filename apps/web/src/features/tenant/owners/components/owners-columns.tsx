@@ -1,9 +1,9 @@
-import type { OwnerResponseDto } from "@repo/schemas";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
+import type { OwnerListItemResponse } from "@repo/schemas";
 
-export const ownerColumns: ColumnDef<OwnerResponseDto>[] = [
+export const ownerColumns: ColumnDef<OwnerListItemResponse>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (

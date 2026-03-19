@@ -43,15 +43,17 @@ export const getOwner = createServerFn({ method: "GET" })
   });
 
 export const createOwnerContract = createServerFn({ method: "POST" })
-  .inputValidator((data: { ownerId: string; dto: CreateOwnerContractDto }) => ({
-    ownerId: data.ownerId,
+  .inputValidator((data: { dto: CreateOwnerContractDto }) => ({
     dto: createOwnerContractSchema.parse(data.dto),
   }))
-  .handler(async ({ data: { ownerId, dto } }): Promise<string> => {
-    const result = await apiFetch<string>(`${apiUrl}/${ownerId}/contracts`, {
-      method: "POST",
-      body: dto,
-    });
+  .handler(async ({ data: { dto } }): Promise<string> => {
+    const result = await apiFetch<string>(
+      `${apiUrl}/${dto.ownerId}/contracts`,
+      {
+        method: "POST",
+        body: dto,
+      },
+    );
 
     return result;
   });

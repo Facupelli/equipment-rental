@@ -3,7 +3,8 @@ import { CreateOwnerDialog } from "@/features/tenant/owners/components/create-ow
 import { ownerColumns } from "@/features/tenant/owners/components/owners-columns";
 import { OwnersDataTable } from "@/features/tenant/owners/components/owners-table";
 import { useOwners } from "@/features/tenant/owners/owners.queries";
-import { createFileRoute } from "@tanstack/react-router";
+import type { OwnerListItemResponse } from "@repo/schemas";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -12,7 +13,16 @@ export const Route = createFileRoute("/_admin/dashboard/owners/")({
 });
 
 function OwnersPage() {
+  const navigate = useNavigate();
+
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  function handleRowClick(owner: OwnerListItemResponse) {
+    navigate({
+      to: "/dashboard/owners/$ownerId",
+      params: { ownerId: owner.id },
+    });
+  }
 
   return (
     <div className="space-y-6 p-8">
@@ -31,14 +41,18 @@ function OwnersPage() {
         </Button>
       </div>
 
-      <OwnersTable />
+      <OwnersTable handleRowClick={handleRowClick} />
 
       <CreateOwnerDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   );
 }
 
-function OwnersTable() {
+function OwnersTable({
+  handleRowClick,
+}: {
+  handleRowClick: (owner: OwnerListItemResponse) => void;
+}) {
   const { data: owners = [], isPending, isError } = useOwners();
 
   if (isError) {
@@ -59,6 +73,7 @@ function OwnersTable() {
       data={owners}
       searchColumn="name"
       searchPlaceholder="Search owners..."
+      handleRowClick={handleRowClick}
     />
   );
 }

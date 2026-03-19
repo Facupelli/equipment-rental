@@ -117,8 +117,7 @@ export function useCreateOwnerContract(
   return useMutation<string, ProblemDetailsError, CreateOwnerContractVariables>(
     {
       ...options,
-      mutationFn: ({ ownerId, dto }) =>
-        createOwnerContract({ data: { ownerId, dto } }),
+      mutationFn: ({ dto }) => createOwnerContract({ data: { dto } }),
       meta: {
         invalidates: (variables: CreateOwnerContractVariables) =>
           ownerKeys.detail(variables.ownerId),

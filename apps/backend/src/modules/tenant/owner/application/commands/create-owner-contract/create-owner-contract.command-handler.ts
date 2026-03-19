@@ -3,7 +3,6 @@ import Decimal from 'decimal.js';
 import { CreateOwnerContractCommand } from './create-owner-contract.command';
 import { OwnerRepositoryPort } from 'src/modules/tenant/owner/domain/ports/owner.repository.port';
 import { OwnerContractRepositoryPort } from '../../../domain/ports/owner-contract.repository.port';
-import { OwnerContractQueryService } from '../../queries/find-active-owner-contract/find-active-owner-contract.query-handler';
 import { err, ok, Result } from 'src/core/result';
 import { OwnerContract } from '../../../domain/entities/owner-contract.entity';
 import { ShareSplit } from '../../../domain/value-objects/share-split.vo';
@@ -25,11 +24,10 @@ type CreateOwnerContractError =
   | OverlappingContractError;
 
 @CommandHandler(CreateOwnerContractCommand)
-export class CreateOwnerContractHandler implements ICommandHandler<CreateOwnerContractCommand> {
+export class CreateOwnerContractCommandHandler implements ICommandHandler<CreateOwnerContractCommand> {
   constructor(
     private readonly ownerRepo: OwnerRepositoryPort,
     private readonly contractRepo: OwnerContractRepositoryPort,
-    private readonly contractQueryService: OwnerContractQueryService,
     private readonly queryBus: QueryBus,
   ) {}
 
@@ -53,7 +51,7 @@ export class CreateOwnerContractHandler implements ICommandHandler<CreateOwnerCo
       }
     }
 
-    const hasOverlap = await this.contractQueryService.hasOverlappingContract(
+    const hasOverlap = await this.contractRepo.hasOverlappingContract(
       command.tenantId,
       command.ownerId,
       command.assetId,
