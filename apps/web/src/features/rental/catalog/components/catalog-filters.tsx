@@ -26,6 +26,7 @@ import dayjs from "@/lib/dates/dayjs";
 import { CalendarIcon, SlidersHorizontal } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
+import { es } from "date-fns/locale";
 
 interface RentalFiltersProps {
   search: RentalPageSearch;
@@ -232,6 +233,7 @@ function DateRangePicker({
       />
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
+          locale={es}
           mode="range"
           defaultMonth={value?.from}
           selected={value}
