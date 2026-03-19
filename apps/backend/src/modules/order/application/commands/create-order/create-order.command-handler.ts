@@ -10,6 +10,7 @@ import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domai
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
 import {
+  ConflictGroup,
   InvalidPickupSlotError,
   InvalidReturnSlotError,
   OrderItemUnavailableError,
@@ -23,9 +24,6 @@ import { TenantPublicApi } from 'src/modules/tenant/tenant.public-api';
 import { CreateOrderCommand } from './create-order.command';
 
 // ── Resolved item types ──────────────────────────────────────────────────────
-// These types unify command data, loaded metadata, and calculated prices into a
-// single object per item. Private methods receive only what they need — no
-// command passing, no positional array lookups.
 
 type ResolvedProductItem = {
   type: 'PRODUCT';
@@ -50,15 +48,20 @@ type ResolvedBundleItem = {
 
 type ResolvedItem = ResolvedProductItem | ResolvedBundleItem;
 
-// ── Internal types ───────────────────────────────────────────────────────────
+// ── Demand types ─────────────────────────────────────────────────────────────
+// One DemandUnit per physical asset unit required across the entire order.
+// resolvedAssetId is written by resolveAssets() and read by the domain builder.
+// Binding asset IDs to units (rather than a shared pool) makes the data flow
+// explicit and order-independent — no implicit pop mechanic.
 
-type PendingAssignment = {
-  assignment: AssetAssignment;
+type DemandUnit = {
+  productTypeId: string;
+  locationId: string;
+  period: DateRange;
+  pinnedAssetId?: string;
+  provenance: { type: 'PRODUCT'; productTypeId: string } | { type: 'BUNDLE'; bundleId: string };
+  resolvedAssetId?: string;
 };
-
-type ReservationResult =
-  | { ok: true; pendingAssignments: PendingAssignment[] }
-  | { ok: false; unavailableItem: UnavailableItem };
 
 type CreateOrderError = OrderItemUnavailableError | InvalidPickupSlotError | InvalidReturnSlotError;
 
@@ -93,35 +96,124 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
         customerId: command.customerId ?? undefined,
       });
 
-      const reservationResults = await Promise.all(
-        resolvedItems.map((item) =>
-          item.type === 'PRODUCT' ? this.reserveProductItem(order, item) : this.reserveBundleItem(order, item),
-        ),
-      );
+      // ── Phase 1: aggregate demand ──────────────────────────────────────
+      // One DemandUnit per physical unit needed across all items and bundle
+      // components. No DB access yet — pure data transformation.
 
-      const unavailableItems = reservationResults
-        .filter((r): r is { ok: false; unavailableItem: UnavailableItem } => !r.ok)
-        .map((r) => r.unavailableItem);
+      const demandUnits = this.buildDemandUnits(resolvedItems);
 
-      if (unavailableItems.length > 0) {
-        return err(new OrderItemUnavailableError(unavailableItems));
+      // ── Phase 2: resolve assets ────────────────────────────────────────
+      // Groups units by productTypeId and resolves all asset IDs in bulk.
+      // Writes resolvedAssetId onto each unit in place.
+      // Returns the list of provenances that could not be fulfilled.
+
+      const { unavailableItems, conflictGroups } = await this.resolveAssets(demandUnits);
+
+      if (unavailableItems.length > 0 || conflictGroups.length > 0) {
+        return err(new OrderItemUnavailableError(unavailableItems, conflictGroups));
       }
 
-      const pendingAssignments = reservationResults
-        .filter((r): r is { ok: true; pendingAssignments: PendingAssignment[] } => r.ok)
-        .flatMap((r) => r.pendingAssignments);
+      // ── Phase 3: build domain objects ──────────────────────────────────
+      // All asset IDs are already bound to their DemandUnits.
+      // We slice the unit list per item using an index cursor so each item
+      // consumes exactly the units it contributed in Phase 1.
+
+      let unitCursor = 0;
+
+      const pendingAssignments: AssetAssignment[] = [];
+
+      for (const item of resolvedItems) {
+        if (item.type === 'PRODUCT') {
+          const units = demandUnits.slice(unitCursor, unitCursor + item.quantity);
+          unitCursor += item.quantity;
+
+          for (const unit of units) {
+            const orderItem = OrderItem.create({
+              orderId: order.id,
+              type: OrderItemType.PRODUCT,
+              priceSnapshot: toPriceSnapshot(item.price, item.currency),
+              productTypeId: item.productTypeId,
+            });
+
+            order.addItem(orderItem);
+
+            pendingAssignments.push(
+              AssetAssignment.create({
+                assetId: unit.resolvedAssetId!,
+                period: item.period,
+                type: AssignmentType.ORDER,
+                source: AssignmentSource.OWNED,
+                orderId: order.id,
+                orderItemId: orderItem.id,
+              }),
+            );
+          }
+        } else {
+          const totalComponentUnits = item.bundle.components.reduce((sum, c) => sum + c.quantity, 0);
+          const units = demandUnits.slice(unitCursor, unitCursor + totalComponentUnits);
+          unitCursor += totalComponentUnits;
+
+          const snapshotComponents = item.bundle.components.map((c) =>
+            BundleSnapshotComponent.create({
+              productTypeId: c.productTypeId,
+              productTypeName: c.productTypeName,
+              quantity: c.quantity,
+            }),
+          );
+
+          const orderItem = OrderItem.create({
+            orderId: order.id,
+            type: OrderItemType.BUNDLE,
+            priceSnapshot: toPriceSnapshot(item.price, item.currency),
+            bundleId: item.bundleId,
+          });
+
+          const snapshot = BundleSnapshot.create({
+            orderItemId: orderItem.id,
+            bundleId: item.bundle.id,
+            bundleName: item.bundle.name,
+            bundlePrice: item.price.finalPrice.toDecimal(),
+            components: snapshotComponents,
+          });
+
+          const orderItemWithSnapshot = OrderItem.reconstitute({
+            id: orderItem.id,
+            orderId: orderItem.orderId,
+            type: orderItem.type,
+            priceSnapshot: orderItem.priceSnapshot,
+            productTypeId: orderItem.productTypeId,
+            bundleId: orderItem.bundleId,
+            bundleSnapshot: snapshot,
+          });
+
+          order.addItem(orderItemWithSnapshot);
+
+          for (const unit of units) {
+            pendingAssignments.push(
+              AssetAssignment.create({
+                assetId: unit.resolvedAssetId!,
+                period: item.period,
+                type: AssignmentType.ORDER,
+                source: AssignmentSource.OWNED,
+                orderId: order.id,
+                orderItemId: orderItemWithSnapshot.id,
+              }),
+            );
+          }
+        }
+      }
 
       order.transitionTo(OrderStatus.SOURCED);
       await this.orderRepo.save(order, tx);
 
       const saveResults = await Promise.all(
-        pendingAssignments.map(({ assignment }) => this.inventoryApi.saveAssignment(assignment, tx)),
+        pendingAssignments.map((assignment) => this.inventoryApi.saveAssignment(assignment, tx)),
       );
 
       if (saveResults.some((r) => r.isErr())) {
-        // EXCLUDE violation at write time — a race condition, not a user error.
-        // We don't know which item lost the race, so we report all items as a
-        // generic conflict rather than surfacing partial information.
+        // EXCLUDE violation at write time — a race condition with a concurrent
+        // order, not a self-collision. The application-level check above
+        // eliminates self-collisions; only true concurrency reaches here.
         return err(
           new OrderItemUnavailableError(
             resolvedItems.map((item) =>
@@ -138,9 +230,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   }
 
   // ── Private: slot validation ─────────────────────────────────────────────
-  // Business rule: pickup and return times must match the location's configured
-  // schedule. Returns err so the controller can translate to a structured HTTP
-  // response — these are valid domain errors, not malformed requests.
 
   private async validateSlots(
     command: CreateOrderCommand,
@@ -170,8 +259,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   }
 
   // ── Private: period derivation ───────────────────────────────────────────
-  // Derives the rental DateRange from wall-clock slot times + tenant timezone.
-  // Separated from validateSlots so each method has a single responsibility.
 
   private async derivePeriod(command: CreateOrderCommand): Promise<DateRange> {
     const tenantConfig = await this.tenantApi.getConfig(command.tenantId);
@@ -186,9 +273,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   }
 
   // ── Private: item resolution ─────────────────────────────────────────────
-  // Loads metadata and prices, then zips them with command data into ResolvedItems.
-  // This is the single place where the three parallel structures are unified.
-  // All subsequent steps operate on ResolvedItem — no command passing downstream.
 
   private async resolveItems(command: CreateOrderCommand, period: DateRange): Promise<ResolvedItem[]> {
     const metas = await this.loadItemMetadata(command);
@@ -271,8 +355,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   }
 
   // ── Private: category count map ──────────────────────────────────────────
-  // Required for VOLUME pricing rule evaluation.
-  // Only PRODUCT items contribute — bundle items use bundle-level pricing.
 
   private buildCategoryCountMap(
     command: CreateOrderCommand,
@@ -292,128 +374,172 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     return counts;
   }
 
-  // ── Private: product item reservation ───────────────────────────────────
-  // Requests exactly item.quantity distinct asset IDs in a single query.
-  // The database returns only assets that are all available for the period,
-  // so there is no risk of two units resolving to the same asset.
+  // ── Private: Phase 1 — build demand units ───────────────────────────────
+  // Emits one DemandUnit per physical asset unit needed across all items.
+  // Preserves insertion order so the Phase 3 cursor-slice pattern is valid.
 
-  private async reserveProductItem(order: Order, item: ResolvedProductItem): Promise<ReservationResult> {
-    const assetIds = await this.inventoryApi.findAvailableAssetIds({
-      productTypeId: item.productTypeId,
-      locationId: item.locationId,
-      period: item.period,
-      quantity: item.quantity,
-      assetId: item.assetId,
-    });
+  private buildDemandUnits(resolvedItems: ResolvedItem[]): DemandUnit[] {
+    const units: DemandUnit[] = [];
 
-    if (assetIds.length < item.quantity) {
-      return { ok: false, unavailableItem: { type: 'PRODUCT', productTypeId: item.productTypeId } };
-    }
-
-    const pendingAssignments: PendingAssignment[] = assetIds.map((assetId) => {
-      const orderItem = OrderItem.create({
-        orderId: order.id,
-        type: OrderItemType.PRODUCT,
-        priceSnapshot: toPriceSnapshot(item.price, item.currency),
-        productTypeId: item.productTypeId,
-      });
-
-      order.addItem(orderItem);
-
-      return {
-        assignment: AssetAssignment.create({
-          assetId,
-          period: item.period,
-          type: AssignmentType.ORDER,
-          source: AssignmentSource.OWNED,
-          orderId: order.id,
-          orderItemId: orderItem.id,
-        }),
-      };
-    });
-
-    return { ok: true, pendingAssignments };
-  }
-
-  // ── Private: bundle item reservation ────────────────────────────────────
-
-  private async reserveBundleItem(order: Order, item: ResolvedBundleItem): Promise<ReservationResult> {
-    // ── Step 1: reserve assets ───────────────────────────────────────────
-    // Collect all asset IDs before building any domain objects.
-    // Exit early if any component is unavailable.
-
-    const reservedAssetIds: string[] = [];
-
-    for (const component of item.bundle.components) {
-      for (let qty = 0; qty < component.quantity; qty++) {
-        const assetId = await this.inventoryApi.findAvailableAssetId({
-          productTypeId: component.productTypeId,
-          locationId: item.locationId,
-          period: item.period,
-        });
-
-        if (!assetId) {
-          return { ok: false, unavailableItem: { type: 'BUNDLE', bundleId: item.bundleId } };
+    for (const item of resolvedItems) {
+      if (item.type === 'PRODUCT') {
+        for (let i = 0; i < item.quantity; i++) {
+          units.push({
+            productTypeId: item.productTypeId,
+            locationId: item.locationId,
+            period: item.period,
+            pinnedAssetId: item.assetId,
+            provenance: { type: 'PRODUCT', productTypeId: item.productTypeId },
+          });
         }
-
-        reservedAssetIds.push(assetId);
+      } else {
+        for (const component of item.bundle.components) {
+          for (let i = 0; i < component.quantity; i++) {
+            units.push({
+              productTypeId: component.productTypeId,
+              locationId: item.locationId,
+              period: item.period,
+              provenance: { type: 'BUNDLE', bundleId: item.bundleId },
+            });
+          }
+        }
       }
     }
 
-    // ── Step 2: build domain objects bottom-up ───────────────────────────
-    // Components first — they carry no parent reference.
-    // OrderItem next — generates its own ID; all downstream objects derive from it.
-    // Snapshot last — receives orderItem.id.
+    return units;
+  }
 
-    const snapshotComponents = item.bundle.components.map((c) =>
-      BundleSnapshotComponent.create({
-        productTypeId: c.productTypeId,
-        productTypeName: c.productTypeName,
-        quantity: c.quantity,
-      }),
-    );
+  // ── Private: Phase 2 — resolve assets ───────────────────────────────────
+  // Groups DemandUnits by productTypeId. Within each group:
+  //   1. Resolves pinned units first (assetId fixed by the caller).
+  //      A pinned failure is absolute — that specific asset is unavailable.
+  //   2. Resolves free-choice units in a single bulk query, excluding
+  //      already-resolved pinned IDs.
+  //      A free-choice shortage is classified as:
+  //        - absolute (unavailableItems)  if availableCount === 0
+  //        - contention (conflictGroups)  if availableCount > 0 but < requestedCount
+  //
+  // Writes resolvedAssetId onto each unit in place.
+  // Returns two de-duplicated buckets for the caller to surface to the client.
 
-    const orderItem = OrderItem.create({
-      orderId: order.id,
-      type: OrderItemType.BUNDLE,
-      priceSnapshot: toPriceSnapshot(item.price, item.currency),
-      bundleId: item.bundleId,
-    });
+  private async resolveAssets(
+    demandUnits: DemandUnit[],
+  ): Promise<{ unavailableItems: UnavailableItem[]; conflictGroups: ConflictGroup[] }> {
+    const groups = new Map<string, DemandUnit[]>();
 
-    const snapshot = BundleSnapshot.create({
-      orderItemId: orderItem.id,
-      bundleId: item.bundle.id,
-      bundleName: item.bundle.name,
-      bundlePrice: item.price.finalPrice.toDecimal(),
-      components: snapshotComponents,
-    });
+    for (const unit of demandUnits) {
+      const group = groups.get(unit.productTypeId) ?? [];
+      group.push(unit);
+      groups.set(unit.productTypeId, group);
+    }
 
-    // OrderItem is immutable — reconstitute with snapshot attached.
-    // Avoids a mutable `attachSnapshot` method on the entity.
-    const orderItemWithSnapshot = OrderItem.reconstitute({
-      id: orderItem.id,
-      orderId: orderItem.orderId,
-      type: orderItem.type,
-      priceSnapshot: orderItem.priceSnapshot,
-      productTypeId: orderItem.productTypeId,
-      bundleId: orderItem.bundleId,
-      bundleSnapshot: snapshot,
-    });
+    const absoluteProvenances: DemandUnit['provenance'][] = [];
+    const conflictGroups: ConflictGroup[] = [];
 
-    order.addItem(orderItemWithSnapshot);
+    for (const [productTypeId, units] of groups) {
+      const pinnedUnits = units.filter((u) => u.pinnedAssetId != null);
+      const freeUnits = units.filter((u) => u.pinnedAssetId == null);
+
+      // All units in a group share the same locationId and period.
+      const { locationId, period } = units[0];
+
+      // ── Step 1: resolve pinned units ───────────────────────────────────
+      // Validate each pinned asset is still available for the period.
+      // A failure here is absolute — the customer asked for a specific asset
+      // that is no longer free. There is nothing to choose between.
+
+      const resolvedPinnedIds: string[] = [];
+
+      for (const unit of pinnedUnits) {
+        const ids = await this.inventoryApi.findAvailableAssetIds({
+          productTypeId,
+          locationId,
+          period,
+          quantity: 1,
+          assetId: unit.pinnedAssetId,
+        });
+
+        if (ids.length === 0) {
+          absoluteProvenances.push(unit.provenance);
+        } else {
+          unit.resolvedAssetId = ids[0];
+          resolvedPinnedIds.push(ids[0]);
+        }
+      }
+
+      // ── Step 2: resolve free-choice units ─────────────────────────────
+      // Single bulk query for all free units, excluding pinned IDs already
+      // claimed above so the same asset cannot satisfy two slots.
+      //
+      // On shortage, classify by availableCount:
+      //   0        → absolute unavailability  → unavailableItems bucket
+      //   1..N-1   → self-contention          → conflictGroups bucket
+      //
+      // requestedCount is total group demand (pinned + free) so the customer
+      // sees "you need 3, only 2 exist" rather than a confusing partial count.
+
+      if (freeUnits.length > 0) {
+        const ids = await this.inventoryApi.findAvailableAssetIds({
+          productTypeId,
+          locationId,
+          period,
+          quantity: freeUnits.length,
+          excludeAssetIds: resolvedPinnedIds,
+        });
+
+        if (ids.length < freeUnits.length) {
+          const affectedProvenances = freeUnits.map((u) => u.provenance);
+
+          if (ids.length === 0) {
+            // Nothing available at all — absolute failure for all free units.
+            for (const provenance of affectedProvenances) {
+              absoluteProvenances.push(provenance);
+            }
+          } else {
+            // Some assets exist but not enough — the customer's own items are
+            // competing. Surface as a conflict so the UI can ask them to choose.
+            conflictGroups.push({
+              productTypeId,
+              availableCount: ids.length,
+              requestedCount: units.length,
+              affectedItems: deduplicateProvenances(affectedProvenances),
+            });
+          }
+        } else {
+          freeUnits.forEach((unit, idx) => {
+            unit.resolvedAssetId = ids[idx];
+          });
+        }
+      }
+    }
 
     return {
-      ok: true,
-      pendingAssignments: reservedAssetIds.map((assetId) => ({
-        assignment: AssetAssignment.create({
-          assetId,
-          period: item.period,
-          type: AssignmentType.ORDER,
-          source: AssignmentSource.OWNED,
-          orderId: order.id,
-          orderItemId: orderItemWithSnapshot.id,
-        }),
-      })),
+      unavailableItems: deduplicateProvenances(absoluteProvenances),
+      conflictGroups,
     };
   }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+// Accepts a raw provenance list (may contain duplicates) and returns a
+// de-duplicated UnavailableItem array. Used for both the absolute and
+// contention buckets — a bundle with two failing components should appear once.
+
+function deduplicateProvenances(provenances: DemandUnit['provenance'][]): UnavailableItem[] {
+  const seen = new Set<string>();
+  const result: UnavailableItem[] = [];
+
+  for (const p of provenances) {
+    const key = p.type === 'PRODUCT' ? `PRODUCT:${p.productTypeId}` : `BUNDLE:${p.bundleId}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(
+        p.type === 'PRODUCT'
+          ? { type: 'PRODUCT', productTypeId: p.productTypeId }
+          : { type: 'BUNDLE', bundleId: p.bundleId },
+      );
+    }
+  }
+
+  return result;
 }

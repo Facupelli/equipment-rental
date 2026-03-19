@@ -21,14 +21,29 @@ export class OrderItemNotFoundException extends Error {
   }
 }
 
+// -----------------------------------------------------------------------
+
 export type UnavailableItem = { type: 'PRODUCT'; productTypeId: string } | { type: 'BUNDLE'; bundleId: string };
+export type ConflictGroup = {
+  productTypeId: string;
+  availableCount: number;
+  requestedCount: number;
+  affectedItems: UnavailableItem[];
+};
 
 export class OrderItemUnavailableError extends Error {
-  constructor(public readonly unavailableItems: UnavailableItem[]) {
-    super('One or more order items are not available for the requested period.');
+  readonly unavailableItems: UnavailableItem[];
+  readonly conflictGroups: ConflictGroup[];
+
+  constructor(unavailableItems: UnavailableItem[], conflictGroups: ConflictGroup[] = []) {
+    super('One or more order items are unavailable for the requested period.');
     this.name = 'OrderItemUnavailableError';
+    this.unavailableItems = unavailableItems;
+    this.conflictGroups = conflictGroups;
   }
 }
+
+// -----------------------------------------------------------------------
 
 export class InvalidPickupSlotError extends Error {
   constructor(time: number) {

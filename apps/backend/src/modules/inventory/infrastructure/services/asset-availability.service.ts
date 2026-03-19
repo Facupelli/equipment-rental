@@ -8,8 +8,9 @@ export type FindAvailableParams = {
   productTypeId: string;
   locationId: string;
   period: DateRange;
-  quantity?: number; // defaults to 1
-  assetId?: string; // prefer a specific asset (honoured only when quantity = 1)
+  quantity?: number;
+  assetId?: string;
+  excludeAssetIds?: string[];
 };
 
 @Injectable()
@@ -26,6 +27,10 @@ export class AssetAvailabilityService {
    * arise from calling findAvailableAssetId N times before any assignment is
    * written.
    *
+   * `excludeAssetIds` allows the caller to exclude assets already claimed
+   * earlier in the same allocation pass (e.g. pinned assets resolved first
+   * within the same productTypeId group).
+   *
    * The NOT EXISTS subquery checks all assignment types (ORDER, BLACKOUT,
    * MAINTENANCE) — any overlapping assignment blocks availability.
    *
@@ -39,22 +44,28 @@ export class AssetAvailabilityService {
 
     const assetFilter = params.assetId && quantity === 1 ? Prisma.sql`AND a.id = ${params.assetId}` : Prisma.empty;
 
+    const excludeFilter =
+      params.excludeAssetIds && params.excludeAssetIds.length > 0
+        ? Prisma.sql`AND a.id != ALL(${params.excludeAssetIds})`
+        : Prisma.empty;
+
     const rows = await this.prisma.client.$queryRaw<{ id: string }[]>`
-    SELECT a.id
-    FROM assets a
-    WHERE a.product_type_id = ${params.productTypeId}
-      AND a.location_id     = ${params.locationId}
-      AND a.is_active       = true
-      AND a.deleted_at      IS NULL
-      ${assetFilter}
-      AND NOT EXISTS (
-        SELECT 1
-        FROM asset_assignments aa
-        WHERE aa.asset_id = a.id
-          AND aa.period && ${tstzrange}::tstzrange
-      )
-    LIMIT ${quantity}
-  `;
+      SELECT a.id
+      FROM assets a
+      WHERE a.product_type_id = ${params.productTypeId}
+        AND a.location_id     = ${params.locationId}
+        AND a.is_active       = true
+        AND a.deleted_at      IS NULL
+        ${assetFilter}
+        ${excludeFilter}
+        AND NOT EXISTS (
+          SELECT 1
+          FROM asset_assignments aa
+          WHERE aa.asset_id = a.id
+            AND aa.period && ${tstzrange}::tstzrange
+        )
+      LIMIT ${quantity}
+    `;
 
     return rows.map((r) => r.id);
   }

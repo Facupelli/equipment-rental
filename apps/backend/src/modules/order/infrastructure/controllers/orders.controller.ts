@@ -48,7 +48,7 @@ export class OrdersController {
           'Order Items Unavailable',
           error.message,
           'errors://order-items-unavailable',
-          { unavailableItems: error.unavailableItems },
+          { unavailableItems: error.unavailableItems, conflictGroups: error.conflictGroups },
         );
       }
 

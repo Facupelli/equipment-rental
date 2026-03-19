@@ -5,6 +5,7 @@ import { CartPageItemList } from "@/features/rental/cart/components/cartpage-ite
 import { CartPageSidebar } from "@/features/rental/cart/components/cartpage-sidebar";
 import { CartPagePeriod } from "@/features/rental/cart/components/cartpage-period";
 import { locationQueries } from "@/features/tenant/locations/locations.queries";
+import { CartPageConflictPanel } from "@/features/rental/cart/components/cartpage-conflict-panel";
 
 const cartPageSearchSchema = z.object({
   startDate: z.coerce.date(),
@@ -43,6 +44,8 @@ function CartPage() {
           </div>
 
           <CartPagePeriod />
+
+          <CartPageConflictPanel />
 
           {/*
           CSS Grid — two-column layout:

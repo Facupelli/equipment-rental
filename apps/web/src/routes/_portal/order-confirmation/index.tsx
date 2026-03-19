@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 const orderConfirmationSearchSchema = z.object({
   pickupDate: z.string().catch("—"),
   pickupLocation: z.string().catch("—"),
+  pickupTime: z.string().catch("—"),
 });
 
 export const Route = createFileRoute("/_portal/order-confirmation/")({
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/_portal/order-confirmation/")({
 });
 
 function OrderConfirmationPage() {
-  const { pickupDate, pickupLocation } = Route.useSearch();
+  const { pickupDate, pickupLocation, pickupTime } = Route.useSearch();
 
   const formattedDate = formatPickupDate(pickupDate);
 
@@ -70,7 +71,7 @@ function OrderConfirmationPage() {
             <StepCard
               icon={<CalendarCheck className="w-4 h-4 text-white" />}
               title={`Listo para retirar el equipo el ${formattedDate}`}
-              description={`Visita ${pickupLocation} a la hora seleccionada`}
+              description={`Visita ${pickupLocation} a las ${pickupTime}hs`}
             />
           </div>
 

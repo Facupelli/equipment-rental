@@ -47,11 +47,23 @@ export type CartItemKey =
   | { type: "PRODUCT"; productTypeId: string }
   | { type: "BUNDLE"; bundleId: string };
 
+export type ConflictAffectedItem =
+  | { type: "PRODUCT"; productTypeId: string }
+  | { type: "BUNDLE"; bundleId: string };
+
+export type ConflictGroup = {
+  productTypeId: string; // the contested physical asset's product type
+  availableCount: number; // how many units actually exist and are free
+  requestedCount: number; // how many units the current order is asking for
+  affectedItems: ConflictAffectedItem[]; // which cart items are fighting over it
+};
+
 export type CartActions = {
   addProduct: (product: Omit<CartProductItem, "type" | "quantity">) => void;
   addBundle: (bundle: Omit<CartBundleItem, "type" | "quantity">) => void;
   incrementQuantity: (key: CartItemKey) => void;
   decrementQuantity: (key: CartItemKey) => void;
+  setQuantity: (key: CartItemKey, value: number) => void;
   removeItem: (key: CartItemKey) => void;
   clearCart: () => void;
 };

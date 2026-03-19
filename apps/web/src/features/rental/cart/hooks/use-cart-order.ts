@@ -14,6 +14,8 @@ import type {
 } from "@repo/schemas";
 import { fromDate, toISOString } from "@/lib/dates/parse";
 import { useCurrentCustomer } from "../../customer/customer.queries";
+import type { ConflictGroup } from "../cart.types";
+import { formatSlot } from "../cart.utils";
 
 type UseCartOrderParams = {
   location: {
@@ -62,6 +64,7 @@ export function useCartOrder({
   const [returnTime, setReturnTime] = useState<number | undefined>(undefined);
   const [isTimesRequired, setIsTimesRequired] = useState(false);
   const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
+  const [conflictGroups, setConflictGroups] = useState<ConflictGroup[]>([]);
   const [isBookingError, setIsBookingError] = useState(false);
 
   const onPickupTimeChange = (value: number) => {
@@ -173,6 +176,7 @@ export function useCartOrder({
         search: {
           pickupDate: period.start.format("YYYY-MM-DD"),
           pickupLocation: location.name,
+          pickupTime: formatSlot(pickupTime),
         },
       });
     } catch (error) {
@@ -185,6 +189,11 @@ export function useCartOrder({
             i.productTypeId ?? i.bundleId ?? "",
         );
         setUnavailableIds(ids.filter(Boolean));
+
+        const groups: ConflictGroup[] =
+          error.problemDetails.conflictGroups ?? [];
+        setConflictGroups(groups);
+
         return;
       }
 
@@ -208,6 +217,7 @@ export function useCartOrder({
     isPriceError,
     isBookingError,
     unavailableIds,
+    conflictGroups,
     handleBook,
   };
 }

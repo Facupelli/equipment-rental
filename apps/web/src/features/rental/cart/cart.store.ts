@@ -102,6 +102,24 @@ const useCartStore = create<CartState>()(
             };
           }),
 
+        setQuantity: (key, value) =>
+          set((state) => {
+            if (key.type === "BUNDLE") return state;
+            if (value < 0) return state;
+
+            if (value === 0) {
+              return {
+                items: state.items.filter((i) => !matchesKey(i, key)),
+              };
+            }
+
+            return {
+              items: state.items.map((i) =>
+                matchesKey(i, key) ? { ...i, quantity: value } : i,
+              ),
+            };
+          }),
+
         removeItem: (key) =>
           set((state) => ({
             items: state.items.filter((item) => !matchesKey(item, key)),
