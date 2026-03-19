@@ -12,3 +12,4 @@ export * from "./enums/pricing.enum";
 export * from "./enums/onboard-status.enum";
 export * from "./enums/token-actor-type.enum";
 export * from "./enums/location-schedule.enum";
+export * from "./enums/contract-basis.enum";

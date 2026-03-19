@@ -1,9 +1,11 @@
 import { JsonValue } from '@prisma/client/runtime/client';
 import { OrderStatus, OrderItemType } from '@repo/types';
+import { ContractBasis } from 'src/generated/prisma/client';
 import Decimal from 'decimal.js';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
+import { OrderItemOwnerSplit, SplitStatus } from 'src/modules/order/domain/entities/order-item-owner-split.entity';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.vo';
 
 // ── Prisma row shapes (from include queries) ──────────────────────────────────
@@ -14,6 +16,7 @@ type BundleSnapshotComponentRow = {
   productTypeId: string;
   productTypeName: string;
   quantity: number;
+  pricePerUnit: Decimal;
 };
 
 type BundleSnapshotRow = {
@@ -25,6 +28,22 @@ type BundleSnapshotRow = {
   components: BundleSnapshotComponentRow[];
 };
 
+type OrderItemOwnerSplitRow = {
+  id: string;
+  orderItemId: string;
+  assetId: string;
+  ownerId: string;
+  contractId: string;
+  status: string;
+  ownerShare: Decimal;
+  rentalShare: Decimal;
+  basis: string;
+  grossAmount: Decimal;
+  netAmount: Decimal;
+  ownerAmount: Decimal;
+  rentalAmount: Decimal;
+};
+
 type OrderItemRow = {
   id: string;
   orderId: string;
@@ -33,6 +52,7 @@ type OrderItemRow = {
   productTypeId: string | null;
   bundleId: string | null;
   bundleSnapshot: BundleSnapshotRow | null;
+  ownerSplits: OrderItemOwnerSplitRow[];
 };
 
 type OrderRow = {
@@ -50,7 +70,7 @@ type OrderRow = {
 export class OrderMapper {
   static toDomain(row: OrderRow): Order {
     const items = row.items.map((itemRow) => {
-      const snapshot = itemRow.bundleSnapshot
+      const bundleSnapshot = itemRow.bundleSnapshot
         ? BundleSnapshot.reconstitute({
             id: itemRow.bundleSnapshot.id,
             orderItemId: itemRow.bundleSnapshot.orderItemId,
@@ -60,15 +80,32 @@ export class OrderMapper {
             components: itemRow.bundleSnapshot.components.map((c) =>
               BundleSnapshotComponent.reconstitute({
                 id: c.id,
-                // bundleSnapshotId is not part of the domain entity —
-                // it exists only in the DB row and is dropped here intentionally
                 productTypeId: c.productTypeId,
                 productTypeName: c.productTypeName,
                 quantity: c.quantity,
+                pricePerUnit: c.pricePerUnit,
               }),
             ),
           })
         : null;
+
+      const ownerSplits = itemRow.ownerSplits.map((s) =>
+        OrderItemOwnerSplit.reconstitute({
+          id: s.id,
+          orderItemId: s.orderItemId,
+          assetId: s.assetId,
+          ownerId: s.ownerId,
+          contractId: s.contractId,
+          status: s.status as SplitStatus,
+          ownerShare: s.ownerShare,
+          rentalShare: s.rentalShare,
+          basis: s.basis as ContractBasis,
+          grossAmount: s.grossAmount,
+          netAmount: s.netAmount,
+          ownerAmount: s.ownerAmount,
+          rentalAmount: s.rentalAmount,
+        }),
+      );
 
       return OrderItem.reconstitute({
         id: itemRow.id,
@@ -77,7 +114,8 @@ export class OrderMapper {
         priceSnapshot: PriceSnapshot.fromJSON(itemRow.priceSnapshot),
         productTypeId: itemRow.productTypeId,
         bundleId: itemRow.bundleId,
-        bundleSnapshot: snapshot,
+        bundleSnapshot,
+        ownerSplits,
       });
     });
 
@@ -105,6 +143,7 @@ export class OrderMapper {
     const itemRows = [];
     const snapshotRows = [];
     const snapshotComponentRows = [];
+    const splitRows = [];
 
     for (const item of order.getItems()) {
       itemRows.push({
@@ -128,17 +167,34 @@ export class OrderMapper {
         for (const component of item.bundleSnapshot.components) {
           snapshotComponentRows.push({
             id: component.id,
-            // bundleSnapshotId is injected from the parent here —
-            // the entity does not carry it, the mapper owns the FK wiring
             bundleSnapshotId: item.bundleSnapshot.id,
             productTypeId: component.productTypeId,
             productTypeName: component.productTypeName,
             quantity: component.quantity,
+            pricePerUnit: component.pricePerUnit,
           });
         }
       }
+
+      for (const split of item.ownerSplits) {
+        splitRows.push({
+          id: split.id,
+          orderItemId: split.orderItemId,
+          assetId: split.assetId,
+          ownerId: split.ownerId,
+          contractId: split.contractId,
+          status: split.status,
+          ownerShare: split.ownerShare,
+          rentalShare: split.rentalShare,
+          basis: split.basis,
+          grossAmount: split.grossAmount,
+          netAmount: split.netAmount,
+          ownerAmount: split.ownerAmount,
+          rentalAmount: split.rentalAmount,
+        });
+      }
     }
 
-    return { orderRow, itemRows, snapshotRows, snapshotComponentRows };
+    return { orderRow, itemRows, snapshotRows, snapshotComponentRows, splitRows };
   }
 }

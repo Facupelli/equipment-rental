@@ -21,6 +21,27 @@ export class OrderItemNotFoundException extends Error {
   }
 }
 
+export class BundleComponentNotFoundException extends Error {
+  constructor(componentId: string) {
+    super(`Bundle component '${componentId}' not found.`);
+    this.name = 'BundleComponentNotFoundException';
+  }
+}
+
+export class OwnerSplitAlreadyVoidedException extends Error {
+  constructor() {
+    super('Owner split has already been voided.');
+    this.name = 'OwnerSplitAlreadyVoidedException';
+  }
+}
+
+export class OwnerSplitAlreadyAssignedException extends Error {
+  constructor() {
+    super('Owner split has already been assigned.');
+    this.name = 'OwnerSplitAlreadyAssignedException';
+  }
+}
+
 // -----------------------------------------------------------------------
 
 export type UnavailableItem = { type: 'PRODUCT'; productTypeId: string } | { type: 'BUNDLE'; bundleId: string };

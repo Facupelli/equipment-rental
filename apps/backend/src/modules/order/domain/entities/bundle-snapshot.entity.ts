@@ -1,9 +1,6 @@
 import { randomUUID } from 'crypto';
 import Decimal from 'decimal.js';
-
-// ---------------------------------------------------------------------------
-// BundleSnapshot
-// ---------------------------------------------------------------------------
+import { BundleComponentNotFoundException } from '../exceptions/order.exceptions';
 
 export interface CreateBundleSnapshotProps {
   orderItemId: string;
@@ -53,6 +50,31 @@ export class BundleSnapshot {
       props.components,
     );
   }
+
+  /**
+   * Computes the pro-rata attributed price for a specific component
+   * within this bundle, based on standalone prices at snapshot time.
+   *
+   * Formula:
+   *   (component.pricePerUnit / sum of all pricePerUnit) × bundleFinalPrice
+   *
+   * The bundleFinalPrice passed in is the order item's finalPrice —
+   * the net collected amount after discounts. This means the owner
+   * shares the bundle discount burden proportionally.
+   *
+   * Throws if the productTypeId is not found among components.
+   */
+  attributedPriceFor(productTypeId: string, bundleFinalPrice: Decimal): Decimal {
+    const component = this.components.find((c) => c.productTypeId === productTypeId);
+
+    if (!component) {
+      throw new BundleComponentNotFoundException(productTypeId);
+    }
+
+    const standaloneSum = this.components.reduce((sum, c) => sum.plus(c.pricePerUnit), new Decimal(0));
+
+    return component.pricePerUnit.dividedBy(standaloneSum).times(bundleFinalPrice);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -67,6 +89,7 @@ export interface CreateBundleSnapshotComponentProps {
   productTypeId: string;
   productTypeName: string;
   quantity: number;
+  pricePerUnit: Decimal;
 }
 
 export interface ReconstituteBundleSnapshotComponentProps {
@@ -74,6 +97,7 @@ export interface ReconstituteBundleSnapshotComponentProps {
   productTypeId: string;
   productTypeName: string;
   quantity: number;
+  pricePerUnit: Decimal;
 }
 
 export class BundleSnapshotComponent {
@@ -82,13 +106,26 @@ export class BundleSnapshotComponent {
     public readonly productTypeId: string,
     public readonly productTypeName: string,
     public readonly quantity: number,
+    public readonly pricePerUnit: Decimal,
   ) {}
 
   static create(props: CreateBundleSnapshotComponentProps): BundleSnapshotComponent {
-    return new BundleSnapshotComponent(randomUUID(), props.productTypeId, props.productTypeName, props.quantity);
+    return new BundleSnapshotComponent(
+      randomUUID(),
+      props.productTypeId,
+      props.productTypeName,
+      props.quantity,
+      props.pricePerUnit,
+    );
   }
 
   static reconstitute(props: ReconstituteBundleSnapshotComponentProps): BundleSnapshotComponent {
-    return new BundleSnapshotComponent(props.id, props.productTypeId, props.productTypeName, props.quantity);
+    return new BundleSnapshotComponent(
+      props.id,
+      props.productTypeId,
+      props.productTypeName,
+      props.quantity,
+      props.pricePerUnit,
+    );
   }
 }

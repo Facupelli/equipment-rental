@@ -646,6 +646,7 @@ model BundleSnapshotComponent {
   productTypeId    String @map("product_type_id")
   productTypeName  String @map("product_type_name")
   quantity         Int
+  pricePerUnit     Decimal @map("price_per_unit") @default(0)  // standalone price at snapshot time
 
   bundleSnapshot BundleSnapshot @relation(fields: [bundleSnapshotId], references: [id])
   productType    ProductType    @relation(fields: [productTypeId], references: [id])

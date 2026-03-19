@@ -28,6 +28,7 @@ export class OrderRepository implements OrderRepositoryPort {
             bundleSnapshot: {
               include: { components: true },
             },
+            ownerSplits: true,
           },
         },
       },
@@ -41,16 +42,14 @@ export class OrderRepository implements OrderRepositoryPort {
   }
 
   async save(order: Order, tx: PrismaTransactionClient): Promise<string> {
-    const { orderRow, itemRows, snapshotRows, snapshotComponentRows } = OrderMapper.toPersistence(order);
+    const { orderRow, itemRows, snapshotRows, snapshotComponentRows, splitRows } = OrderMapper.toPersistence(order);
 
-    // Upsert order
     await tx.order.upsert({
       where: { id: orderRow.id },
       create: orderRow,
       update: orderRow,
     });
 
-    // Upsert items
     for (const item of itemRows) {
       await tx.orderItem.upsert({
         where: { id: item.id },
@@ -59,7 +58,6 @@ export class OrderRepository implements OrderRepositoryPort {
       });
     }
 
-    // Upsert bundle snapshots and their components
     for (const snapshot of snapshotRows) {
       await tx.bundleSnapshot.upsert({
         where: { id: snapshot.id },
@@ -73,6 +71,16 @@ export class OrderRepository implements OrderRepositoryPort {
         where: { id: component.id },
         create: component,
         update: component,
+      });
+    }
+
+    // status is explicitly included in update — splits transition from PENDING to VOID
+    // when an item is removed or an order is cancelled
+    for (const split of splitRows) {
+      await tx.orderItemOwnerSplit.upsert({
+        where: { id: split.id },
+        create: split,
+        update: { status: split.status },
       });
     }
 

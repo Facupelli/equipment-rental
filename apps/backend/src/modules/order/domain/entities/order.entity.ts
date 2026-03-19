@@ -91,11 +91,12 @@ export class Order {
     this.items.push(item);
   }
 
-  removeItem(itemId: string): void {
+  removeItem(itemId: string, assetId: string): void {
     const idx = this.items.findIndex((i) => i.id === itemId);
     if (idx === -1) {
       throw new OrderItemNotFoundException(itemId);
     }
+    this.items[idx].voidOwnerSplitForAsset(assetId);
     this.items.splice(idx, 1);
   }
 
@@ -108,6 +109,7 @@ export class Order {
   }
 
   cancel(): void {
+    this.items.forEach((item) => item.voidAllOwnerSplits());
     this.transitionTo(OrderStatus.CANCELLED);
   }
 }
