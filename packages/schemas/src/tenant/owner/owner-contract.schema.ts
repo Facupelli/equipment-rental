@@ -3,14 +3,10 @@ import z from "zod";
 
 const contractBasisSchema = z.enum(ContractBasis);
 
-// ---------------------------------------------------------------------------
-// Schema
-// ---------------------------------------------------------------------------
-
 export const createOwnerContractSchema = z
   .object({
-    ownerId: z.string().uuid(),
-    assetId: z.string().uuid().optional(),
+    ownerId: z.uuid(),
+    assetId: z.uuid().optional(),
 
     ownerShare: z.number().positive().max(1),
     rentalShare: z.number().positive().max(1),

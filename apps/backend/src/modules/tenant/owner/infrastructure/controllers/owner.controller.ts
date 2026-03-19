@@ -7,6 +7,8 @@ import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy
 import { CreateOwnerDto } from '../../application/dto/create-owner.dto';
 import { CreateOwnerContractDto } from '../../application/dto/create-owner-contract.dto';
 import { CreateOwnerContractCommand } from '../../application/commands/create-owner-contract/create-owner-contract.command';
+import { GetOwnerQuery } from '../../presentation/queries/get-owner/get-owner.query';
+import { GetOwnerResponseDto } from '@repo/schemas';
 
 @Controller('owners')
 export class OwnerController {
@@ -46,5 +48,10 @@ export class OwnerController {
   @Get()
   async getOwners() {
     return await this.queryBus.execute(new GetOwnersQuery());
+  }
+
+  @Get(':ownerId')
+  async getOwner(@Param('ownerId') ownerId: string): Promise<GetOwnerResponseDto> {
+    return await this.queryBus.execute(new GetOwnerQuery(ownerId));
   }
 }
