@@ -225,6 +225,8 @@ model Tenant {
   roles               Role[]
   invitations         Invitation[]
   TenantOrderSequence TenantOrderSequence[]
+  ownerPayments       OwnerPayment[] 
+  ownerContracts      OwnerContract[]
 
   @@map("tenants")
 }
@@ -298,9 +300,41 @@ model Owner {
 
   tenant Tenant  @relation(fields: [tenantId], references: [id])
   assets Asset[]
+  contracts OwnerContract[]
+  splits    OrderItemOwnerSplit[]
+  payments  OwnerPayment[]
 
   @@index([tenantId, isActive])
   @@map("owners")
+}
+
+enum ContractBasis {
+  NET_COLLECTED
+}
+
+model OwnerContract {
+  id          String        @id @default(uuid())
+  tenantId    String        @map("tenant_id")
+  ownerId     String        @map("owner_id")
+  assetId     String?       @map("asset_id")       // null = owner-level default
+  ownerShare  Decimal       @map("owner_share")     // e.g. 0.70
+  rentalShare Decimal       @map("rental_share")    // e.g. 0.30
+  basis       ContractBasis @default(NET_COLLECTED)
+  validFrom   DateTime      @map("valid_from")
+  validUntil  DateTime?     @map("valid_until")     // null = indefinite
+  notes       String?
+  isActive    Boolean       @default(true) @map("is_active")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  tenant  Tenant              @relation(fields: [tenantId], references: [id])
+  owner   Owner               @relation(fields: [ownerId], references: [id])
+  asset   Asset?              @relation(fields: [assetId], references: [id])
+  splits  OrderItemOwnerSplit[]
+
+  @@index([ownerId, assetId, validFrom, validUntil])
+  @@index([tenantId, isActive])
+  @@map("owner_contracts")
 }
 
 // ---------------------------------------------------------------------------
@@ -402,6 +436,8 @@ model Asset {
   productType ProductType       @relation(fields: [productTypeId], references: [id])
   owner       Owner?            @relation(fields: [ownerId], references: [id])
   assignments AssetAssignment[]
+  contracts OwnerContract[]
+  splits    OrderItemOwnerSplit[]
 
   @@index([locationId, productTypeId, isActive, deletedAt])
   @@index([productTypeId, locationId, isActive, deletedAt])
@@ -488,6 +524,7 @@ model OrderItem {
   productType      ProductType?         @relation(fields: [productTypeId], references: [id])
   bundle           Bundle?              @relation(fields: [bundleId], references: [id])
   assetAssignments AssetAssignment[]
+  ownerSplits      OrderItemOwnerSplit[] 
   bundleSnapshot   BundleSnapshot?
 
   @@index([orderId])
@@ -502,6 +539,47 @@ model TenantOrderSequence {
   tenant      Tenant    @relation(fields: [tenantId], references: [id])
 
   @@map("tenant_order_sequences")
+}
+
+enum SplitStatus {
+  PENDING    // order created, amounts computed
+  CONFIRMED  // reserved for future async checkout confirmation
+  VOID       // order cancelled or item removed
+  SETTLED    // payment recorded
+}
+
+model OrderItemOwnerSplit {
+  id          String      @id @default(uuid())
+  orderItemId String      @map("order_item_id")
+  assetId     String      @map("asset_id")
+  ownerId     String      @map("owner_id")
+  contractId  String      @map("contract_id")
+  status      SplitStatus @default(PENDING)
+
+  // snapshot of contract terms at assignment time
+  ownerShare  Decimal     @map("owner_share")
+  rentalShare Decimal     @map("rental_share")
+  basis       ContractBasis
+
+  // computed amounts
+  grossAmount  Decimal    @map("gross_amount")
+  netAmount    Decimal    @map("net_amount")
+  ownerAmount  Decimal    @map("owner_amount")
+  rentalAmount Decimal    @map("rental_amount")
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  orderItem OrderItem           @relation(fields: [orderItemId], references: [id])
+  asset     Asset               @relation(fields: [assetId], references: [id])
+  owner     Owner               @relation(fields: [ownerId], references: [id])
+  contract  OwnerContract       @relation(fields: [contractId], references: [id])
+  payment   OwnerPaymentSplit?
+
+  @@unique([orderItemId, assetId])
+  @@index([ownerId, status])
+  @@index([orderItemId])
+  @@map("order_item_owner_splits")
 }
 
 // ---------------------------------------------------------------------------
@@ -617,6 +695,47 @@ model PricingRule {
 
   @@index([tenantId, isActive, type, scope])
   @@map("pricing_rules")
+}
+
+// ---------------------------------------------------------------------------
+// OWNER PAYMENT
+// ---------------------------------------------------------------------------
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  PIX
+  CASH
+  OTHER
+}
+
+model OwnerPayment {
+  id          String        @id @default(uuid())
+  tenantId    String        @map("tenant_id")
+  ownerId     String        @map("owner_id")
+  totalAmount Decimal       @map("total_amount")
+  method      PaymentMethod
+  reference   String?
+  notes       String?
+  paidAt      DateTime      @map("paid_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  owner       Owner               @relation(fields: [ownerId], references: [id])
+  splits      OwnerPaymentSplit[]
+
+  @@index([tenantId, ownerId, paidAt])
+  @@map("owner_payments")
+}
+
+model OwnerPaymentSplit {
+  id        String @id @default(uuid())
+  paymentId String @map("payment_id")
+  splitId   String @unique @map("split_id")
+
+  payment OwnerPayment        @relation(fields: [paymentId], references: [id])
+  split   OrderItemOwnerSplit @relation(fields: [splitId], references: [id])
+
+  @@map("owner_payment_splits")
 }
 
 

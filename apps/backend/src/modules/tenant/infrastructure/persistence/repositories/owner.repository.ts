@@ -10,7 +10,11 @@ export class OwnerRepository implements OwnerRepositoryPort {
 
   async load(id: string): Promise<Owner | null> {
     const raw = await this.prisma.client.owner.findUnique({ where: { id } });
-    if (!raw) return null;
+
+    if (!raw) {
+      return null;
+    }
+
     return OwnerMapper.toDomain(raw);
   }
 
