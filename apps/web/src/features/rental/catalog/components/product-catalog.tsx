@@ -31,7 +31,7 @@ export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
 
   return (
     <>
-      <div className="grid gap-6 py-10 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
+      <div className="grid gap-6 py-10 grid-cols-[repeat(auto-fit,minmax(280px,350px))]">
         {products?.data.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
