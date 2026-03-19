@@ -1,9 +1,9 @@
 import dayjs from "@/lib/dates/dayjs";
 
-export const formatCurrency = (amount: number): string =>
-  new Intl.NumberFormat("en-US", {
+export const formatCurrency = (amount: number, currency?: string): string =>
+  new Intl.NumberFormat("es-ES", {
     style: "currency",
-    currency: "USD",
+    currency: currency ?? "ARS",
   }).format(amount);
 
 export const formatSlot = (minutes: number): string =>

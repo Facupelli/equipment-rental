@@ -32,7 +32,7 @@ function CartPage() {
       locationId={locationId}
     >
       <div className="min-h-screen bg-neutral-50">
-        <div className="mx-auto max-w-6xl px-6 py-12 space-y-8">
+        <div className="mx-auto max-w-6xl px-4 md:px-6 py-8 md:py-12 space-y-8">
           <div>
             <h1 className="text-4xl font-black uppercase tracking-tight text-black">
               Revisa Tu Pedido

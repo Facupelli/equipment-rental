@@ -5,6 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "../cart.utils";
 import { useCartPageContext } from "../cart-page.context";
 import { PRDOUCT_TYPE_DICT } from "@/features/catalog/catalog.constants";
+import { cn } from "@/lib/utils";
+import { useIsVisible } from "@/shared/hooks/use-is-visible";
 
 export function CartPageSidebar() {
   const {
@@ -19,48 +21,87 @@ export function CartPageSidebar() {
 
   const isDisabled = cartItems.length === 0 || isPriceLoading || isPriceError;
 
+  const [bookButtonRef, isBookButtonVisible] =
+    useIsVisible<HTMLButtonElement>();
+
   return (
-    <div className="sticky top-6 border border-neutral-200 bg-white p-6">
-      <CartPagePriceBreakdown
-        total={breakdown?.total}
-        lineItems={joinedLineItems}
-        isLoading={isPriceLoading}
-        isError={isPriceError}
-      />
+    <>
+      {/* ── Desktop/tablet sidebar — sticky only on lg+ ── */}
+      <div className="lg:sticky lg:top-6 border border-neutral-200 bg-white p-6">
+        <CartPagePriceBreakdown
+          total={breakdown?.total}
+          lineItems={joinedLineItems}
+          isLoading={isPriceLoading}
+          isError={isPriceError}
+        />
 
-      {isBookingError && (
-        <div className="mt-6 flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
-          <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
-            La reserva falló inesperadamente. Por favor, inténtalo de nuevo.
-          </p>
-        </div>
-      )}
+        {isBookingError && (
+          <div className="mt-6 flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+            <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
+              La reserva falló inesperadamente. Por favor, inténtalo de nuevo.
+            </p>
+          </div>
+        )}
 
-      <Button
-        onClick={handleBook}
-        disabled={isDisabled}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-none bg-black py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
-      >
-        Alquilar Equipo
-        <ArrowRight className="h-3.5 w-3.5" />
-      </Button>
+        <Button
+          ref={bookButtonRef}
+          onClick={handleBook}
+          disabled={isDisabled}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-none bg-black py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
+        >
+          Alquilar Equipo
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
 
-      <div className="mt-4 space-y-2">
-        <div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
-          <Banknote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
-          <p className="text-[11px] text-neutral-500">
-            El pago se cobra al retirar los equipos.
-          </p>
-        </div>
-        <div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
-          <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
-          <p className="text-[11px] text-neutral-500">
-            Puedes cancelar antes de que el pedido sea confirmado.
-          </p>
+        <div className="mt-4 space-y-2">
+          <div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
+            <Banknote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+            <p className="text-[11px] text-neutral-500">
+              El pago se cobra al retirar los equipos.
+            </p>
+          </div>
+          <div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
+            <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+            <p className="text-[11px] text-neutral-500">
+              Puedes cancelar antes de que el pedido sea confirmado.
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* ── Floating CTA bar — mobile only, hides when real button is visible ── */}
+      <div
+        className={cn(
+          "lg:hidden fixed bottom-0 left-0 right-0 z-20",
+          "border-t border-neutral-200 bg-white px-4 py-3",
+          "flex items-center justify-between gap-4",
+          "transition-transform duration-200",
+          isBookButtonVisible ? "translate-y-full" : "translate-y-0",
+        )}
+      >
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+            Total a pagar
+          </p>
+          {isPriceLoading ? (
+            <Skeleton className="mt-1 h-5 w-24" />
+          ) : (
+            <p className="text-lg font-black text-black">
+              {breakdown?.total != null ? formatCurrency(breakdown.total) : "—"}
+            </p>
+          )}
+        </div>
+        <Button
+          onClick={handleBook}
+          disabled={isDisabled}
+          className="flex items-center gap-2 rounded-none bg-black px-6 py-3 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
+        >
+          Alquilar Equipo
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </>
   );
 }
 
@@ -136,7 +177,7 @@ function CartPagePriceBreakdown({
       <div className="my-4 border-t border-neutral-200" />
 
       <div className="flex items-center justify-between">
-        <p className="text-sm font-black uppercase tracking-widest text-black">
+        <p className="text-sm font-black uppercase md:tracking-widest text-black">
           Total a pagar
         </p>
         {isLoading ? (

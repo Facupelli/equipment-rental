@@ -39,59 +39,122 @@ export function CartPagePeriod() {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-5 divide-x divide-neutral-200 py-4">
-        <div className="px-5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            Periodo de Alquiler
-          </p>
-          <div className="flex items-center gap-2 pt-1">
-            <Calendar className="h-4 w-4 shrink-0 text-neutral-400" />
+      {/*
+        Mobile:  2-column grid — cells pair up naturally:
+                 [Rental Period | Location]
+                 [Pickup Time   | Return Time]
+                 [Duration      | — ]
+        Desktop: single-row 5-column strip with dividers, unchanged.
+      */}
+      <div className="border border-neutral-200 bg-white">
+        {/* ── Desktop layout: 5-col strip ── */}
+        <div className="hidden md:grid md:grid-cols-5 md:divide-x md:divide-neutral-200 py-4">
+          <PeriodCell
+            label="Periodo de Alquiler"
+            icon={<Calendar className="h-4 w-4 shrink-0 text-neutral-400" />}
+          >
             <p className="text-sm font-semibold text-black">
               {formatDateShort(startDate)} — {formatDateShort(endDate)}
             </p>
-          </div>
-        </div>
+          </PeriodCell>
 
-        <TimeSelectCell
-          label="Hora de Retiro"
-          date={startDate.toDate()}
-          locationId={locationId}
-          type={ScheduleSlotType.PICKUP}
-          value={pickupTime}
-          onChange={onPickupTimeChange}
-        />
-        <TimeSelectCell
-          label="Hora de Devolución"
-          date={endDate.toDate()}
-          locationId={locationId}
-          type={ScheduleSlotType.RETURN}
-          value={returnTime}
-          onChange={onReturnTimeChange}
-        />
+          <TimeSelectCell
+            label="Hora de Retiro"
+            date={startDate.toDate()}
+            locationId={locationId}
+            type={ScheduleSlotType.PICKUP}
+            value={pickupTime}
+            onChange={onPickupTimeChange}
+          />
 
-        <div className="px-5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            Duración Total
-          </p>
-          <div className="flex items-center gap-2 pt-1">
-            <Clock className="h-4 w-4 shrink-0 text-neutral-400" />
+          <TimeSelectCell
+            label="Hora de Devolución"
+            date={endDate.toDate()}
+            locationId={locationId}
+            type={ScheduleSlotType.RETURN}
+            value={returnTime}
+            onChange={onReturnTimeChange}
+          />
+
+          <PeriodCell
+            label="Duración Total"
+            icon={<Clock className="h-4 w-4 shrink-0 text-neutral-400" />}
+          >
             <p className="text-sm font-semibold text-black">
               {formatRentalDuration(startDate, endDate)}
             </p>
-          </div>
-        </div>
+          </PeriodCell>
 
-        <div className="px-5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            Retiro Por
-          </p>
-          <div className="pt-1">
+          <PeriodCell label="Retiro Por">
             {locationName ? (
               <p className="text-sm font-semibold text-black">{locationName}</p>
             ) : (
               <p className="text-sm text-neutral-300">No seleccionado</p>
             )}
+          </PeriodCell>
+        </div>
+
+        {/* ── Mobile layout: 2-col grid ── */}
+        <div className="md:hidden grid grid-cols-2 divide-y divide-neutral-200">
+          <div className="col-span-2 border-t border-neutral-200">
+            <PeriodCell
+              label="Periodo de Alquiler"
+              icon={<Calendar className="size-3.5 shrink-0 text-neutral-400" />}
+            >
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-black">
+                  {formatDateShort(startDate)}
+                </p>
+                <span> - </span>
+                <p className="text-sm font-semibold text-black">
+                  {formatDateShort(endDate)}
+                </p>
+              </div>
+            </PeriodCell>
           </div>
+          {/* Row 1 */}
+          <div className="divide-x divide-neutral-200 contents">
+            <PeriodCell label="Retiro Por">
+              {locationName ? (
+                <p className="text-sm font-semibold text-black leading-tight">
+                  {locationName}
+                </p>
+              ) : (
+                <p className="text-sm text-neutral-300">No seleccionado</p>
+              )}
+            </PeriodCell>
+
+            <PeriodCell
+              label="Duración Total"
+              icon={<Clock className="h-3.5 w-3.5 shrink-0 text-neutral-400" />}
+            >
+              <p className="text-sm font-semibold text-black">
+                {formatRentalDuration(startDate, endDate)}
+              </p>
+            </PeriodCell>
+          </div>
+
+          {/* Row 2 */}
+          <div className="col-span-2 grid grid-cols-2 divide-x divide-neutral-200 border-t border-neutral-200">
+            <TimeSelectCell
+              label="Hora de Retiro"
+              date={startDate.toDate()}
+              locationId={locationId}
+              type={ScheduleSlotType.PICKUP}
+              value={pickupTime}
+              onChange={onPickupTimeChange}
+            />
+            <TimeSelectCell
+              label="Hora de Devolución"
+              date={endDate.toDate()}
+              locationId={locationId}
+              type={ScheduleSlotType.RETURN}
+              value={returnTime}
+              onChange={onReturnTimeChange}
+            />
+          </div>
+
+          {/* Row 3 — Duration, spans full width */}
         </div>
       </div>
 
@@ -108,8 +171,28 @@ export function CartPagePeriod() {
   );
 }
 
-// TimeSelectCell is intentionally prop-driven — it's a generic reusable control
-// with no knowledge of the cart feature. It must not consume CartPageContext.
+function PeriodCell({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="px-4 py-3 md:px-5 md:py-0">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1 md:mb-0">
+        {label}
+      </p>
+      <div className="flex items-center gap-1.5 pt-0 md:items-center md:gap-2 md:pt-1">
+        {icon && <span className="mt-0.5 md:mt-0">{icon}</span>}
+        <div className="flex flex-col gap-0.5 md:contents">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 type TimeSelectCellProps = {
   label: string;
   date: Date;
@@ -136,37 +219,34 @@ export function TimeSelectCell({
   const isClosed = !isLoading && (!slots || slots.length === 0);
 
   return (
-    <div className="px-5">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-        {label}
-      </p>
+    <PeriodCell
+      label={label}
+      icon={<Clock className="h-4 w-4 shrink-0 text-neutral-400" />}
+    >
       {isClosed ? (
-        <div className="mt-1 flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-1">
+        <div className="flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-1">
           <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
           <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">
             Closed
           </p>
         </div>
       ) : (
-        <div className="flex items-center gap-2 pt-1">
-          <Clock className="h-4 w-4 shrink-0 text-neutral-400" />
-          <select
-            disabled={isLoading}
-            value={value ?? ""}
-            onChange={(e) => onChange(Number(e.target.value))}
-            className="w-full bg-transparent text-sm font-semibold text-black focus:outline-none disabled:text-neutral-300"
-          >
-            <option value="" disabled>
-              {isLoading ? "Cargando…" : "Seleccionar hora"}
+        <select
+          disabled={isLoading}
+          value={value ?? ""}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="w-full bg-transparent text-sm font-semibold text-black focus:outline-none disabled:text-neutral-300"
+        >
+          <option value="" disabled>
+            {isLoading ? "Cargando…" : "Seleccionar"}
+          </option>
+          {(slots ?? []).map((slot) => (
+            <option key={slot} value={slot}>
+              {formatSlot(slot)}
             </option>
-            {(slots ?? []).map((slot) => (
-              <option key={slot} value={slot}>
-                {formatSlot(slot)}
-              </option>
-            ))}
-          </select>
-        </div>
+          ))}
+        </select>
       )}
-    </div>
+    </PeriodCell>
   );
 }
