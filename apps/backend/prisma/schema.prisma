@@ -436,8 +436,8 @@ model Asset {
   productType ProductType       @relation(fields: [productTypeId], references: [id])
   owner       Owner?            @relation(fields: [ownerId], references: [id])
   assignments AssetAssignment[]
-  contracts OwnerContract[]
-  splits    OrderItemOwnerSplit[]
+  contracts   OwnerContract[]
+  splits      OrderItemOwnerSplit[]
 
   @@index([locationId, productTypeId, isActive, deletedAt])
   @@index([productTypeId, locationId, isActive, deletedAt])
