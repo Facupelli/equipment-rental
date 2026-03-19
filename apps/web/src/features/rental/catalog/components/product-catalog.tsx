@@ -64,7 +64,7 @@ function ProductCard({ product }: { product: RentalProductResponse }) {
   const category = product.category?.name ?? "General";
 
   return (
-    <Card className="overflow-hidden rounded-xs">
+    <Card className="overflow-hidden rounded-xs py-0 pb-6">
       <div className="aspect-4/3 bg-gray-100 relative overflow-hidden">
         {product.imageUrl ? (
           <img
@@ -87,14 +87,14 @@ function ProductCard({ product }: { product: RentalProductResponse }) {
         </Badge>
       </div>
 
-      <CardHeader className="p-4 pb-0">
+      <CardHeader>
         <CardTitle className="text-lg line-clamp-1">{product.name}</CardTitle>
         <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
           {product.description}
         </p>
       </CardHeader>
 
-      <CardFooter className="p-4 flex items-center justify-between">
+      <CardFooter className="flex items-center justify-between">
         <div>
           {unitPrice != null ? (
             <>

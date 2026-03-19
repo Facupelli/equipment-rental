@@ -49,8 +49,8 @@ export function CartPopover() {
                 </span>
               )}
             </span>
-            <span className="text-xs font-bold uppercase tracking-widest">
-              Revisar Pedido
+            <span className="text-xs font-bold uppercase md:tracking-widest">
+              <span className="hidden md:inline-block">Revisar</span> Pedido
             </span>
           </Button>
         }

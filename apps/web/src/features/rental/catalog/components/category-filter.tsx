@@ -15,7 +15,7 @@ export function CategoryFilter({
 
   if (isFetching) {
     return (
-      <div className="flex gap-2 pb-4 border-b">
+      <div className="hidden md:flex gap-2 pb-4 border-b">
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-9 w-24 rounded-full" />
         ))}
@@ -28,7 +28,7 @@ export function CategoryFilter({
   }
 
   return (
-    <div className="flex gap-2 pb-4 overflow-x-auto border-b scrollbar-hide">
+    <div className="hidden md:flex gap-2 pb-4 overflow-x-auto border-b scrollbar-hide">
       {categories.map((cat) => (
         <Button
           key={cat.id}

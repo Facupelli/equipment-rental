@@ -22,9 +22,10 @@ import {
 } from "@/features/rental/catalog/hooks/use-catalog-page-search";
 import { rentalQueries } from "@/features/rental/rental.queries";
 import { locationQueries } from "@/features/tenant/locations/locations.queries";
+import { cn } from "@/lib/utils";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { Search } from "lucide-react";
-import { Suspense } from "react";
+import { Search, X } from "lucide-react";
+import { Suspense, useState } from "react";
 
 export const Route = createFileRoute("/_portal/rental/")({
   validateSearch: rentalPageSearchSchema,
@@ -71,7 +72,7 @@ function RentalPage() {
   } = useRentalPageSearch();
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50/50">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <RentalHeader localSearch={localSearch} onSearchChange={setLocalSearch} />
 
       <main className="container mx-auto px-4">
@@ -79,6 +80,7 @@ function RentalPage() {
           search={search}
           onLocationChange={handleLocationChange}
           setUrlParam={setUrlParam}
+          onCategorySelect={handleCategorySelect}
         />
 
         <section className="mt-10">
@@ -148,10 +150,18 @@ export function RentalHeader({
   localSearch,
   onSearchChange,
 }: RentalHeaderProps) {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-10 bg-white border-b">
       <div className="container flex items-center justify-between h-16 mx-auto px-4">
-        <div className="flex items-center gap-4">
+        {/* ── Logo + nav — hidden when mobile search is open ── */}
+        <div
+          className={cn(
+            "flex items-center gap-4 transition-all",
+            isSearchOpen && "hidden",
+          )}
+        >
           <h1 className="text-xl font-bold text-primary">DEPIQO</h1>
           <nav className="hidden md:flex gap-4 text-sm font-medium">
             <Button variant="ghost" className="text-primary">
@@ -160,7 +170,16 @@ export function RentalHeader({
           </nav>
         </div>
 
-        <div className="relative w-full max-w-sm">
+        {/* ── Search bar: always visible on md+, expandable on mobile ── */}
+        <div
+          className={cn(
+            "relative transition-all",
+            // Desktop: fixed width, centered
+            "md:w-full md:max-w-sm",
+            // Mobile: full width when open, hidden when closed
+            isSearchOpen ? "flex-1" : "hidden md:block",
+          )}
+        >
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
@@ -168,10 +187,36 @@ export function RentalHeader({
             className="pl-8"
             value={localSearch}
             onChange={(e) => onSearchChange(e.target.value)}
+            // Auto-focus when the mobile search expands
+            autoFocus={isSearchOpen}
           />
         </div>
 
-        <CartPopover />
+        {/* ── Right actions ── */}
+        <div className="flex items-center gap-1">
+          {/* Search icon — mobile only, toggles the search bar */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            aria-label={isSearchOpen ? "Cerrar búsqueda" : "Buscar"}
+            onClick={() => {
+              setIsSearchOpen((prev) => !prev);
+              // Clear the search value when closing
+              if (isSearchOpen) {
+                onSearchChange("");
+              }
+            }}
+          >
+            {isSearchOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Search className="h-5 w-5" />
+            )}
+          </Button>
+
+          <CartPopover />
+        </div>
       </div>
     </header>
   );
