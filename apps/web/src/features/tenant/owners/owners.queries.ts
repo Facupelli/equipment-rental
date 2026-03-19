@@ -1,61 +1,128 @@
 import {
+  queryOptions,
   useMutation,
   useQuery,
-  useQueryClient,
-  type MutationOptions,
+  type UseMutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
-import { createOwner, getOwners } from "./owners.api";
+import {
+  createOwner,
+  createOwnerContract,
+  getOwner,
+  getOwners,
+} from "./owners.api";
 import type { ProblemDetailsError } from "@/shared/errors";
-import type { CreateOwnerDto, OwnerListResponse } from "@repo/schemas";
+import type {
+  CreateOwnerContractDto,
+  CreateOwnerDto,
+  GetOwnerResponseDto,
+  OwnerListResponse,
+} from "@repo/schemas";
 
-type OwnerQueryOptions<TData = OwnerListResponse> = Omit<
+// -----------------------------------------------------
+// Key Factory
+// -----------------------------------------------------
+
+export const ownerKeys = {
+  all: () => ["owners"] as const,
+  lists: () => [...ownerKeys.all(), "list"] as const,
+  details: () => [...ownerKeys.all(), "detail"] as const,
+  detail: (ownerId: string) => [...ownerKeys.details(), ownerId] as const,
+};
+
+export const ownerQueries = {
+  list: () =>
+    queryOptions<OwnerListResponse, ProblemDetailsError>({
+      queryKey: ownerKeys.lists(),
+      queryFn: () => getOwners(),
+    }),
+  detail: (ownerId: string) =>
+    queryOptions<GetOwnerResponseDto, ProblemDetailsError>({
+      queryKey: ownerKeys.detail(ownerId),
+      queryFn: () => getOwner({ data: ownerId }),
+    }),
+};
+
+// -----------------------------------------------------
+// Types
+// -----------------------------------------------------
+
+type OwnerListQueryOptions<TData = OwnerListResponse> = Omit<
   UseQueryOptions<OwnerListResponse, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"
 >;
 
-type OwnerMutationOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, CreateOwnerDto>,
-  "mutationFn" | "mutationKey"
+type OwnerDetailQueryOptions<TData = GetOwnerResponseDto> = Omit<
+  UseQueryOptions<GetOwnerResponseDto, ProblemDetailsError, TData>,
+  "queryKey" | "queryFn"
+>;
+
+type CreateOwnerMutationOptions = Omit<
+  UseMutationOptions<string, ProblemDetailsError, CreateOwnerDto>,
+  "mutationFn"
+>;
+
+type CreateOwnerContractVariables = {
+  ownerId: string;
+  dto: CreateOwnerContractDto;
+};
+
+type CreateOwnerContractMutationOptions = Omit<
+  UseMutationOptions<string, ProblemDetailsError, CreateOwnerContractVariables>,
+  "mutationFn"
 >;
 
 // -----------------------------------------------------
-
-export function createOwnerQueryOptions<TData = OwnerListResponse>(
-  options?: OwnerQueryOptions<TData>,
-): UseQueryOptions<OwnerListResponse, ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: ["owners"],
-    queryFn: () => getOwners(),
-  };
-}
-
+// Hooks
 // -----------------------------------------------------
 
 export function useOwners<TData = OwnerListResponse>(
-  options?: OwnerQueryOptions<TData>,
+  options?: OwnerListQueryOptions<TData>,
 ) {
-  return useQuery(createOwnerQueryOptions(options));
+  const { queryKey, queryFn } = ownerQueries.list();
+
+  return useQuery({
+    ...options,
+    queryKey,
+    queryFn,
+  });
 }
 
-//
+export function useOwner<TData = GetOwnerResponseDto>(
+  ownerId: string,
+  options?: OwnerDetailQueryOptions<TData>,
+) {
+  const { queryKey, queryFn } = ownerQueries.detail(ownerId);
 
-export function useCreateOwner(options?: OwnerMutationOptions) {
-  const queryClient = useQueryClient();
+  return useQuery({
+    ...options,
+    queryKey,
+    queryFn,
+  });
+}
 
+export function useCreateOwner(options?: CreateOwnerMutationOptions) {
   return useMutation<string, ProblemDetailsError, CreateOwnerDto>({
     ...options,
     mutationFn: (data) => createOwner({ data }),
-    onSuccess: async (data, variables, onMutateResult, context) => {
-      await queryClient.invalidateQueries({
-        queryKey: createOwnerQueryOptions().queryKey,
-      });
-
-      await options?.onSuccess?.(data, variables, onMutateResult, context);
-    },
-    onError: async (error, variables, onMutateResult, context) => {
-      await options?.onError?.(error, variables, onMutateResult, context);
+    meta: {
+      invalidates: ownerKeys.lists(),
     },
   });
+}
+
+export function useCreateOwnerContract(
+  options?: CreateOwnerContractMutationOptions,
+) {
+  return useMutation<string, ProblemDetailsError, CreateOwnerContractVariables>(
+    {
+      ...options,
+      mutationFn: ({ ownerId, dto }) =>
+        createOwnerContract({ data: { ownerId, dto } }),
+      meta: {
+        invalidates: (variables: CreateOwnerContractVariables) =>
+          ownerKeys.detail(variables.ownerId),
+      },
+    },
+  );
 }

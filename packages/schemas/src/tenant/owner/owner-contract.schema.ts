@@ -31,3 +31,5 @@ export const createOwnerContractSchema = z
       path: ["validUntil"],
     },
   );
+
+export type CreateOwnerContractDto = z.infer<typeof createOwnerContractSchema>;

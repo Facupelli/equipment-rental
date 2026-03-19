@@ -1,7 +1,10 @@
 import { apiFetch } from "@/lib/api";
 import {
+  createOwnerContractSchema,
   createOwnerSchema,
+  type CreateOwnerContractDto,
   type CreateOwnerDto,
+  type GetOwnerResponseDto,
   type OwnerListResponse,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
@@ -28,3 +31,27 @@ export const getOwners = createServerFn({ method: "GET" }).handler(
     return result;
   },
 );
+
+export const getOwner = createServerFn({ method: "GET" })
+  .inputValidator((ownerId: string) => ownerId)
+  .handler(async ({ data: ownerId }): Promise<GetOwnerResponseDto> => {
+    const result = await apiFetch<GetOwnerResponseDto>(`${apiUrl}/${ownerId}`, {
+      method: "GET",
+    });
+
+    return result;
+  });
+
+export const createOwnerContract = createServerFn({ method: "POST" })
+  .inputValidator((data: { ownerId: string; dto: CreateOwnerContractDto }) => ({
+    ownerId: data.ownerId,
+    dto: createOwnerContractSchema.parse(data.dto),
+  }))
+  .handler(async ({ data: { ownerId, dto } }): Promise<string> => {
+    const result = await apiFetch<string>(`${apiUrl}/${ownerId}/contracts`, {
+      method: "POST",
+      body: dto,
+    });
+
+    return result;
+  });
