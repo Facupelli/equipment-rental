@@ -1,7 +1,7 @@
 import { LocationSchedule as PrismaRentalSchedule, Prisma } from 'src/generated/prisma/client';
 import { ScheduleSlotType } from '@repo/types';
-import { LocationSchedule } from 'src/modules/tenant/domain/entities/location-schedule.entity';
-import { Location } from 'src/modules/tenant/domain/entities/location.entity';
+import { Location } from '../../../domain/entities/location.entity';
+import { LocationSchedule } from '../../../domain/entities/location-schedule.entity';
 
 type PrismaLocationWithSchedules = Prisma.LocationGetPayload<{
   include: {

@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { InvalidOwnerNameException } from '../exceptions/owner.exceptions';
+import { InvalidOwnerNameException } from '../expcetions/owner.exceptions';
 
 export interface CreateOwnerProps {
   tenantId: string;

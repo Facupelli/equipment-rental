@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { OwnerMapper } from '../mappers/owner.mapper';
-import { OwnerRepositoryPort } from 'src/modules/tenant/domain/ports/owner.repository.port';
+import { OwnerRepositoryPort } from 'src/modules/tenant/owner/domain/ports/owner.repository.port';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { Owner } from 'src/modules/tenant/domain/entities/owner.entity';
+import { Owner } from '../../../domain/entities/owner.entity';
 
 @Injectable()
 export class OwnerRepository implements OwnerRepositoryPort {

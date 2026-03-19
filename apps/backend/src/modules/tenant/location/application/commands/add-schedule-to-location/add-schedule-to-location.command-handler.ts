@@ -1,7 +1,7 @@
 import { err, ok, Result } from 'src/core/result';
 import { LocationRepositoryPort } from 'src/modules/tenant/domain/ports/location.repository.port';
 import { AddScheduleToLocationCommand } from './add-schedule-to-location.command';
-import { LocationNotFoundError } from 'src/modules/tenant/domain/exceptions/location.exceptions';
+import { LocationNotFoundError } from 'src/modules/tenant/location/domain/exceptions/location.exceptions';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
 export type AddScheduleToLocationResult = Result<void, LocationNotFoundError>;

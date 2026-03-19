@@ -2,7 +2,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CreateLocationCommand } from './create-location.command';
 import { LocationRepositoryPort } from 'src/modules/tenant/domain/ports/location.repository.port';
 import { ok, Result } from 'src/core/result';
-import { Location } from 'src/modules/tenant/domain/entities/location.entity';
+import { Location } from '../../../domain/entities/location.entity';
 
 @CommandHandler(CreateLocationCommand)
 export class CreateLocationCommandHandler implements ICommandHandler<CreateLocationCommand, Result<string>> {

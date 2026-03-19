@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetLocationScheduleSlotsDto, TenantPublicApi } from '../tenant.public-api';
 import { TenantConfig } from '../domain/value-objects/tenant-config.vo';
-import { ScheduleWindow } from '../domain/value-objects/location-schedule-window.vo';
+import { ScheduleWindow } from '../location/domain/value-objects/location-schedule-window.vo';
 
 @Injectable()
 export class TenantApplicationService implements TenantPublicApi {

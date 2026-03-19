@@ -1,21 +1,21 @@
 import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
-import { GetLocationsQuery } from '../../application/queries/get-locations/get-locations.query';
+import { GetLocationsQuery } from '../../presentation/queries/get-locations/get-locations.query';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateLocationCommand } from '../../application/commands/create-location/create-location.command';
 import { CreateLocationDto } from '../../application/dto/create-location.dto';
 import {
   AddScheduleToLocationDto,
   BulkAddScheduleToLocationDto,
-} from '../../application/dto/add-schedule-to-location.dto';
+} from '../../../application/dto/add-schedule-to-location.dto';
 import { AddScheduleToLocationCommand } from '../../application/commands/add-schedule-to-location/add-schedule-to-location.command';
 import { LocationNotFoundError } from '../../domain/exceptions/location.exceptions';
 import { ScheduleSlotType } from '@repo/types';
-import { GetLocationScheduleSlotsQuery } from '../../application/queries/get-location-schedule-slots/get-location-schedule-slots.query';
-import { GetLocationScheduleSlotsQueryDto } from '../../application/dto/get-location-schedule-slots-query.dto';
-import { GetLocationSchedulesQuery } from '../../application/queries/get-location-schedules/get-location-schedules.query';
+import { GetLocationScheduleSlotsQueryDto } from '../../../application/dto/get-location-schedule-slots-query.dto';
+import { GetLocationSchedulesQuery } from '../../presentation/queries/get-location-schedules/get-location-schedules.query';
 import { BulkAddSchedulesToLocationCommand } from '../../application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { GetLocationScheduleSlotsQuery } from '../../presentation/queries/get-location-schedule-slots/get-location-schedule-slots.query';
 
 @Controller('locations')
 export class LocationController {

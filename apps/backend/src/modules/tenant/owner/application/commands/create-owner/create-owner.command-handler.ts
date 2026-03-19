@@ -1,8 +1,8 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CreateOwnerCommand } from './create-owner.command';
 import { ok, Result } from 'src/core/result';
-import { Owner } from 'src/modules/tenant/domain/entities/owner.entity';
-import { OwnerRepositoryPort } from 'src/modules/tenant/domain/ports/owner.repository.port';
+import { OwnerRepositoryPort } from 'src/modules/tenant/owner/domain/ports/owner.repository.port';
+import { Owner } from '../../../domain/entities/owner.entity';
 
 @CommandHandler(CreateOwnerCommand)
 export class CreateOwnerCommandHandler implements ICommandHandler<CreateOwnerCommand, Result<string>> {

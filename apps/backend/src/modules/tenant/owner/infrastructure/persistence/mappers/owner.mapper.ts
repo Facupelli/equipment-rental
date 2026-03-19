@@ -1,5 +1,5 @@
 import { Owner as PrismaOwner, Prisma } from 'src/generated/prisma/client';
-import { Owner } from 'src/modules/tenant/domain/entities/owner.entity';
+import { Owner } from '../../../domain/entities/owner.entity';
 
 export class OwnerMapper {
   static toDomain(raw: PrismaOwner): Owner {

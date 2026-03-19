@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { LocationMapper, LocationScheduleMapper } from '../mappers/location.mapper';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { Location } from 'src/modules/tenant/domain/entities/location.entity';
 import { LocationRepositoryPort } from 'src/modules/tenant/domain/ports/location.repository.port';
+import { Location } from '../../../domain/entities/location.entity';
 
 @Injectable()
 export class LocationRepository implements LocationRepositoryPort {

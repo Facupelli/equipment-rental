@@ -1,9 +1,9 @@
 import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
 import Decimal from 'decimal.js';
 import { CreateOwnerContractCommand } from './create-owner-contract.command';
-import { OwnerRepositoryPort } from 'src/modules/tenant/domain/ports/owner.repository.port';
+import { OwnerRepositoryPort } from 'src/modules/tenant/owner/domain/ports/owner.repository.port';
 import { OwnerContractRepositoryPort } from '../../../domain/ports/owner-contract.repository.port';
-import { OwnerContractQueryService } from '../../queries/fin-active-owner-contract/find-active-owner-contract.query-handler';
+import { OwnerContractQueryService } from '../../queries/find-active-owner-contract/find-active-owner-contract.query-handler';
 import { err, ok, Result } from 'src/core/result';
 import { OwnerContract } from '../../../domain/entities/owner-contract.entity';
 import { ShareSplit } from '../../../domain/value-objects/share-split.vo';

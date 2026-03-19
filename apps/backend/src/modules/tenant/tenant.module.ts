@@ -8,15 +8,14 @@ import { TenantController } from './infrastructure/controllers/tenant.controller
 import { AuthModule } from '../auth/auth.module';
 import { IsSlugTakenQueryHandler } from './application/queries/is-slug-taken/is-slug-taken.query-handler';
 import { GetTenantQueryHandler } from './application/queries/get-tenant/get-tenant.query-handler';
-import { GetLocationsQueryHandler } from './application/queries/get-locations/get-locations.query-handler';
-import { GetOwnersQueryHandler } from './application/queries/get-owners/get-owners.query-handler';
-import { OwnerController } from './infrastructure/controllers/owner.controller';
-import { LocationController } from './infrastructure/controllers/location.controller';
-import { CreateOwnerCommandHandler } from './application/commands/create-owner/create-owner.command-handler';
-import { CreateLocationCommandHandler } from './application/commands/create-location/create-location.command-handler';
-import { LocationRepository } from './infrastructure/persistence/repositories/location.repository';
-import { OwnerRepository } from './infrastructure/persistence/repositories/owner.repository';
-import { OwnerRepositoryPort } from './domain/ports/owner.repository.port';
+import { GetLocationsQueryHandler } from './location/presentation/queries/get-locations/get-locations.query-handler';
+import { GetOwnersQueryHandler } from './owner/presentation/queries/get-owners/get-owners.query-handler';
+import { LocationController } from './location/infrastrcuture/controllers/location.controller';
+import { CreateOwnerCommandHandler } from './owner/application/commands/create-owner/create-owner.command-handler';
+import { CreateLocationCommandHandler } from './location/application/commands/create-location/create-location.command-handler';
+import { LocationRepository } from './location/infrastrcuture/persistence/repositories/location.repository';
+import { OwnerRepository } from './owner/infrastructure/persistence/repositories/owner.repository';
+import { OwnerRepositoryPort } from './owner/domain/ports/owner.repository.port';
 import { LocationRepositoryPort } from './domain/ports/location.repository.port';
 import { TenantBillingUnitRepositoryPort } from './domain/ports/billing-unit.repository.port';
 import { TenantBillingUnitRepository } from './infrastructure/persistence/repositories/billing-unit.repository';
@@ -27,10 +26,11 @@ import { TenantApplicationService } from './application/tenant.application-servi
 import { UpdateTenantConfigCommandHandler } from './application/commands/update-config/update-config.command-handler';
 import { FindTenantByCustomDomainQueryHandler } from './application/queries/find-tenant-by-custom-domain/find-tenant-by-custom-domain.query-handler';
 import { FindTenantBySlugQueryHandler } from './application/queries/find-tenant-by-slug/find-tenant-by-slug.query-handler';
-import { GetLocationScheduleSlotsQueryHandler } from './application/queries/get-location-schedule-slots/get-location-schedule-slots.query-handler';
-import { GetLocationSchedulesQueryHandler } from './application/queries/get-location-schedules/get-location-schedules.query-handler';
-import { AddScheduleToLocationCommandHandler } from './application/commands/add-schedule-to-location/add-schedule-to-location.command-handler';
-import { BulkAddSchedulesToLocationCommandHandler } from './application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command-handler';
+import { GetLocationSchedulesQueryHandler } from './location/presentation/queries/get-location-schedules/get-location-schedules.query-handler';
+import { AddScheduleToLocationCommandHandler } from './location/application/commands/add-schedule-to-location/add-schedule-to-location.command-handler';
+import { BulkAddSchedulesToLocationCommandHandler } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command-handler';
+import { OwnerController } from './owner/infrastructure/controllers/owner.controller';
+import { GetLocationScheduleSlotsQueryHandler } from './location/presentation/queries/get-location-schedule-slots/get-location-schedule-slots.query-handler';
 
 const commandHandlers = [
   CreateTenantUserCommandHandler,

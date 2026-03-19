@@ -1,5 +1,5 @@
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { GetOwnersQuery } from '../../application/queries/get-owners/get-owners.query-handler';
+import { GetOwnersQuery } from '../../presentation/queries/get-owners/get-owners.query-handler';
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CreateOwnerCommand } from '../../application/commands/create-owner/create-owner.command';
 import { CreateOwnerDto } from '../../application/dto/create-owner.dto';

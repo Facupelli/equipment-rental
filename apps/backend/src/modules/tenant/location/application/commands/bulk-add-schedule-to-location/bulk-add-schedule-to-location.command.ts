@@ -1,4 +1,4 @@
-import { CreateLocationScheduleProps } from 'src/modules/tenant/domain/entities/location-schedule.entity';
+import { CreateLocationScheduleProps } from '../../../domain/entities/location-schedule.entity';
 
 export class BulkAddSchedulesToLocationCommand {
   constructor(
