@@ -1,7 +1,8 @@
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
 import { AssignmentSource, AssignmentType, OrderItemType, OrderStatus, ScheduleSlotType } from '@repo/types';
 import { err, ok, Result } from 'src/core/result';
+import Decimal from 'decimal.js';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { AssetAssignment } from 'src/modules/inventory/domain/entities/asset-assignment.entity';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
@@ -9,19 +10,24 @@ import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
-import {
-  ConflictGroup,
-  InvalidPickupSlotError,
-  InvalidReturnSlotError,
-  OrderItemUnavailableError,
-  UnavailableItem,
-} from 'src/modules/order/domain/exceptions/order.exceptions';
 import { OrderRepositoryPort } from 'src/modules/order/domain/ports/order.repository.port';
 import { toPriceSnapshot } from 'src/modules/order/infrastructure/persistence/mappers/price-snapshot.mapper';
 import { BundleWithComponents, OrderQueryService } from 'src/modules/order/infrastructure/services/order-query.service';
 import { PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
 import { TenantPublicApi } from 'src/modules/tenant/tenant.public-api';
 import { CreateOrderCommand } from './create-order.command';
+import {
+  InvalidPickupSlotError,
+  ConflictGroup,
+  InvalidReturnSlotError,
+  NoActiveContractForAssetError,
+  OrderItemUnavailableError,
+  UnavailableItem,
+} from '../../errors/order.errors';
+import {
+  ActiveContractDto,
+  FindActiveContractForScopeQuery,
+} from 'src/modules/tenant/owner/application/queries/find-active-owner-contract/find-active-owner-contract.query';
 
 // ── Resolved item types ──────────────────────────────────────────────────────
 
@@ -44,15 +50,12 @@ type ResolvedBundleItem = {
   period: DateRange;
   currency: string;
   price: Awaited<ReturnType<typeof PricingPublicApi.prototype.calculateBundlePrice>>;
+  componentStandalonePrices: Map<string, Decimal>;
 };
 
 type ResolvedItem = ResolvedProductItem | ResolvedBundleItem;
 
 // ── Demand types ─────────────────────────────────────────────────────────────
-// One DemandUnit per physical asset unit required across the entire order.
-// resolvedAssetId is written by resolveAssets() and read by the domain builder.
-// Binding asset IDs to units (rather than a shared pool) makes the data flow
-// explicit and order-independent — no implicit pop mechanic.
 
 type DemandUnit = {
   productTypeId: string;
@@ -63,7 +66,12 @@ type DemandUnit = {
   resolvedAssetId?: string;
 };
 
-type CreateOrderError = OrderItemUnavailableError | InvalidPickupSlotError | InvalidReturnSlotError;
+// ── CHANGED: added NoActiveContractForAssetError to the error union ──────────
+type CreateOrderError =
+  | OrderItemUnavailableError
+  | InvalidPickupSlotError
+  | InvalidReturnSlotError
+  | NoActiveContractForAssetError;
 
 // ── Handler ──────────────────────────────────────────────────────────────────
 
@@ -76,6 +84,7 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     private readonly inventoryApi: InventoryPublicApi,
     private readonly pricingApi: PricingPublicApi,
     private readonly orderQuery: OrderQueryService,
+    private readonly queryBus: QueryBus, // CHANGED: injected for contract lookup
   ) {}
 
   async execute(command: CreateOrderCommand): Promise<Result<string, CreateOrderError>> {
@@ -97,15 +106,10 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
       });
 
       // ── Phase 1: aggregate demand ──────────────────────────────────────
-      // One DemandUnit per physical unit needed across all items and bundle
-      // components. No DB access yet — pure data transformation.
 
       const demandUnits = this.buildDemandUnits(resolvedItems);
 
       // ── Phase 2: resolve assets ────────────────────────────────────────
-      // Groups units by productTypeId and resolves all asset IDs in bulk.
-      // Writes resolvedAssetId onto each unit in place.
-      // Returns the list of provenances that could not be fulfilled.
 
       const { unavailableItems, conflictGroups } = await this.resolveAssets(demandUnits);
 
@@ -113,13 +117,45 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
         return err(new OrderItemUnavailableError(unavailableItems, conflictGroups));
       }
 
+      // ── CHANGED: batch fetch ownerId for all resolved assets ───────────
+      // Single query after Phase 2 when all asset IDs are known.
+      // Only external-owned assets (ownerId != null) will need a split.
+
+      const resolvedAssetIds = demandUnits.map((u) => u.resolvedAssetId).filter((id): id is string => id !== undefined);
+
+      const assetOwnerRows = await this.prisma.client.asset.findMany({
+        where: { id: { in: resolvedAssetIds } },
+        select: { id: true, ownerId: true },
+      });
+
+      const ownerByAssetId = new Map<string, string | null>(assetOwnerRows.map((a) => [a.id, a.ownerId]));
+
+      // ── CHANGED: pre-fetch contracts for all external-owned assets ─────
+      // Batch contract lookups before the domain builder loop so we can
+      // fail fast if any external asset has no active contract — before
+      // any domain objects are mutated.
+
+      const contractByAssetId = new Map<string, ActiveContractDto>();
+      const bookingDate = command.period.start;
+
+      for (const assetId of resolvedAssetIds) {
+        const ownerId = ownerByAssetId.get(assetId) ?? null;
+        if (!ownerId) continue;
+
+        const contract = await this.queryBus.execute<FindActiveContractForScopeQuery, ActiveContractDto | null>(
+          new FindActiveContractForScopeQuery(command.tenantId, ownerId, assetId, bookingDate),
+        );
+
+        if (!contract) {
+          return err(new NoActiveContractForAssetError(assetId, ownerId));
+        }
+
+        contractByAssetId.set(assetId, contract);
+      }
+
       // ── Phase 3: build domain objects ──────────────────────────────────
-      // All asset IDs are already bound to their DemandUnits.
-      // We slice the unit list per item using an index cursor so each item
-      // consumes exactly the units it contributed in Phase 1.
 
       let unitCursor = 0;
-
       const pendingAssignments: AssetAssignment[] = [];
 
       for (const item of resolvedItems) {
@@ -135,6 +171,20 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
               productTypeId: item.productTypeId,
             });
 
+            // CHANGED: assign owner split if this asset has an external owner
+            const contract = contractByAssetId.get(unit.resolvedAssetId!);
+            if (contract) {
+              orderItem.assignOwnerSplit({
+                assetId: unit.resolvedAssetId!,
+                ownerId: contract.ownerId,
+                contractId: contract.contractId,
+                ownerShare: new Decimal(contract.ownerShare),
+                rentalShare: new Decimal(contract.rentalShare),
+                basis: contract.basis as any,
+                productTypeId: item.productTypeId,
+              });
+            }
+
             order.addItem(orderItem);
 
             pendingAssignments.push(
@@ -142,7 +192,9 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
                 assetId: unit.resolvedAssetId!,
                 period: item.period,
                 type: AssignmentType.ORDER,
-                source: AssignmentSource.OWNED,
+                source: contractByAssetId.has(unit.resolvedAssetId!)
+                  ? AssignmentSource.EXTERNAL // CHANGED: mark external-owned assignments
+                  : AssignmentSource.OWNED,
                 orderId: order.id,
                 orderItemId: orderItem.id,
               }),
@@ -153,11 +205,14 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
           const units = demandUnits.slice(unitCursor, unitCursor + totalComponentUnits);
           unitCursor += totalComponentUnits;
 
+          // componentStandalonePrices was already fetched in resolveItems
+          // alongside calculateBundlePrice — no extra DB call needed here.
           const snapshotComponents = item.bundle.components.map((c) =>
             BundleSnapshotComponent.create({
               productTypeId: c.productTypeId,
               productTypeName: c.productTypeName,
               quantity: c.quantity,
+              pricePerUnit: item.componentStandalonePrices.get(c.productTypeId) ?? new Decimal(0),
             }),
           );
 
@@ -184,7 +239,24 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
             productTypeId: orderItem.productTypeId,
             bundleId: orderItem.bundleId,
             bundleSnapshot: snapshot,
+            ownerSplits: [],
           });
+
+          // CHANGED: assign owner splits for each external-owned component asset
+          for (const unit of units) {
+            const contract = contractByAssetId.get(unit.resolvedAssetId!);
+            if (contract) {
+              orderItemWithSnapshot.assignOwnerSplit({
+                assetId: unit.resolvedAssetId!,
+                ownerId: contract.ownerId,
+                contractId: contract.contractId,
+                ownerShare: new Decimal(contract.ownerShare),
+                rentalShare: new Decimal(contract.rentalShare),
+                basis: contract.basis as any,
+                productTypeId: unit.productTypeId,
+              });
+            }
+          }
 
           order.addItem(orderItemWithSnapshot);
 
@@ -194,7 +266,9 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
                 assetId: unit.resolvedAssetId!,
                 period: item.period,
                 type: AssignmentType.ORDER,
-                source: AssignmentSource.OWNED,
+                source: contractByAssetId.has(unit.resolvedAssetId!)
+                  ? AssignmentSource.EXTERNAL // CHANGED: mark external-owned assignments
+                  : AssignmentSource.OWNED,
                 orderId: order.id,
                 orderItemId: orderItemWithSnapshot.id,
               }),
@@ -211,9 +285,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
       );
 
       if (saveResults.some((r) => r.isErr())) {
-        // EXCLUDE violation at write time — a race condition with a concurrent
-        // order, not a self-collision. The application-level check above
-        // eliminates self-collisions; only true concurrency reaches here.
         return err(
           new OrderItemUnavailableError(
             resolvedItems.map((item) =>
@@ -301,24 +372,34 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
               price,
             }));
         } else {
-          return this.pricingApi
-            .calculateBundlePrice({
+          const bundle = metas.bundles.get(item.bundleId)!;
+          // Fetch bundle price and component standalone prices in parallel —
+          // component prices are one batched DB query regardless of component count.
+          return Promise.all([
+            this.pricingApi.calculateBundlePrice({
               tenantId: command.tenantId,
               locationId: command.locationId,
               bundleId: item.bundleId,
               period,
               currency: command.currency,
               orderItemCountByCategory,
-            })
-            .then((price) => ({
-              type: 'BUNDLE' as const,
-              bundleId: item.bundleId,
-              bundle: metas.bundles.get(item.bundleId)!,
+            }),
+            this.pricingApi.getComponentStandalonePrices({
+              tenantId: command.tenantId,
               locationId: command.locationId,
+              componentProductTypeIds: bundle.components.map((c) => c.productTypeId),
               period,
-              currency: command.currency,
-              price,
-            }));
+            }),
+          ]).then(([price, componentStandalonePrices]) => ({
+            type: 'BUNDLE' as const,
+            bundleId: item.bundleId,
+            bundle,
+            locationId: command.locationId,
+            period,
+            currency: command.currency,
+            price,
+            componentStandalonePrices,
+          }));
         }
       }),
     );
@@ -375,8 +456,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   }
 
   // ── Private: Phase 1 — build demand units ───────────────────────────────
-  // Emits one DemandUnit per physical asset unit needed across all items.
-  // Preserves insertion order so the Phase 3 cursor-slice pattern is valid.
 
   private buildDemandUnits(resolvedItems: ResolvedItem[]): DemandUnit[] {
     const units: DemandUnit[] = [];
@@ -410,17 +489,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   }
 
   // ── Private: Phase 2 — resolve assets ───────────────────────────────────
-  // Groups DemandUnits by productTypeId. Within each group:
-  //   1. Resolves pinned units first (assetId fixed by the caller).
-  //      A pinned failure is absolute — that specific asset is unavailable.
-  //   2. Resolves free-choice units in a single bulk query, excluding
-  //      already-resolved pinned IDs.
-  //      A free-choice shortage is classified as:
-  //        - absolute (unavailableItems)  if availableCount === 0
-  //        - contention (conflictGroups)  if availableCount > 0 but < requestedCount
-  //
-  // Writes resolvedAssetId onto each unit in place.
-  // Returns two de-duplicated buckets for the caller to surface to the client.
 
   private async resolveAssets(
     demandUnits: DemandUnit[],
@@ -440,13 +508,7 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
       const pinnedUnits = units.filter((u) => u.pinnedAssetId != null);
       const freeUnits = units.filter((u) => u.pinnedAssetId == null);
 
-      // All units in a group share the same locationId and period.
       const { locationId, period } = units[0];
-
-      // ── Step 1: resolve pinned units ───────────────────────────────────
-      // Validate each pinned asset is still available for the period.
-      // A failure here is absolute — the customer asked for a specific asset
-      // that is no longer free. There is nothing to choose between.
 
       const resolvedPinnedIds: string[] = [];
 
@@ -467,17 +529,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
         }
       }
 
-      // ── Step 2: resolve free-choice units ─────────────────────────────
-      // Single bulk query for all free units, excluding pinned IDs already
-      // claimed above so the same asset cannot satisfy two slots.
-      //
-      // On shortage, classify by availableCount:
-      //   0        → absolute unavailability  → unavailableItems bucket
-      //   1..N-1   → self-contention          → conflictGroups bucket
-      //
-      // requestedCount is total group demand (pinned + free) so the customer
-      // sees "you need 3, only 2 exist" rather than a confusing partial count.
-
       if (freeUnits.length > 0) {
         const ids = await this.inventoryApi.findAvailableAssetIds({
           productTypeId,
@@ -491,13 +542,10 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
           const affectedProvenances = freeUnits.map((u) => u.provenance);
 
           if (ids.length === 0) {
-            // Nothing available at all — absolute failure for all free units.
             for (const provenance of affectedProvenances) {
               absoluteProvenances.push(provenance);
             }
           } else {
-            // Some assets exist but not enough — the customer's own items are
-            // competing. Surface as a conflict so the UI can ask them to choose.
             conflictGroups.push({
               productTypeId,
               availableCount: ids.length,
@@ -521,9 +569,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-// Accepts a raw provenance list (may contain duplicates) and returns a
-// de-duplicated UnavailableItem array. Used for both the absolute and
-// contention buckets — a bundle with two failing components should appear once.
 
 function deduplicateProvenances(provenances: DemandUnit['provenance'][]): UnavailableItem[] {
   const seen = new Set<string>();

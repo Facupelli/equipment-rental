@@ -14,13 +14,13 @@ export type BundleMeta = {
   billingUnitDurationMinutes: number;
 };
 
-/**
- * Concrete infrastructure service for pricing reads.
- *
- * Loads pricing data (tiers, rules, product meta) needed by PricingCalculator.
- * Not abstracted behind a port — it is internal to the pricing module
- * with a single implementation, making the abstraction unnecessary.
- */
+// CHANGED: richer type that carries billingUnit alongside tiers —
+// needed to resolve units per component when computing standalone prices
+export type ComponentTierData = {
+  billingUnitDurationMinutes: number;
+  tiers: PricingTier[];
+};
+
 @Injectable()
 export class PricingQueryService {
   constructor(private readonly prisma: PrismaService) {}
@@ -42,13 +42,6 @@ export class PricingQueryService {
     };
   }
 
-  /**
-   * Batch variant of loadProductTypeMeta.
-   *
-   * Loads meta for multiple product types in a single query — avoids N+1
-   * when pricing a full cart. Returns a Map keyed by productTypeId.
-   * Missing IDs are simply absent from the map — callers must check presence.
-   */
   async loadProductTypeMetaBatch(productTypeIds: string[]): Promise<Map<string, ProductTypeMeta>> {
     const rows = await this.prisma.client.productType.findMany({
       where: { id: { in: productTypeIds } },
@@ -107,6 +100,54 @@ export class PricingQueryService {
     return this.resolveLocationTiers(rows.map(PricingTierMapper.toDomain), locationId);
   }
 
+  /**
+   * Loads standalone pricing tiers and billing unit durations for all
+   * bundle component product types in a single DB round trip.
+   *
+   * Used exclusively for pro-rata owner split attribution on bundle items.
+   * Rules are intentionally excluded — we want raw tier prices as weights,
+   * not discounted prices. A component's intrinsic value is its tier price.
+   *
+   * Returns a Map keyed by productTypeId. Components with no tiers at the
+   * given location will have an empty tiers array — callers must handle this.
+   */
+  async loadTiersForBundleComponents(
+    productTypeIds: string[],
+    locationId: string,
+  ): Promise<Map<string, ComponentTierData>> {
+    // Single query for all component tiers across all productTypeIds
+    const [tierRows, metaRows] = await Promise.all([
+      this.prisma.client.pricingTier.findMany({
+        where: {
+          productTypeId: { in: productTypeIds },
+          OR: [{ locationId }, { locationId: null }],
+        },
+      }),
+      this.prisma.client.productType.findMany({
+        where: { id: { in: productTypeIds } },
+        select: {
+          id: true,
+          billingUnit: { select: { durationMinutes: true } },
+        },
+      }),
+    ]);
+
+    const metaByProductTypeId = new Map(metaRows.map((r) => [r.id, r.billingUnit.durationMinutes]));
+
+    const result = new Map<string, ComponentTierData>();
+
+    for (const productTypeId of productTypeIds) {
+      const rawTiers = tierRows.filter((r) => r.productTypeId === productTypeId).map(PricingTierMapper.toDomain);
+
+      result.set(productTypeId, {
+        billingUnitDurationMinutes: metaByProductTypeId.get(productTypeId) ?? 60,
+        tiers: this.resolveLocationTiers(rawTiers, locationId),
+      });
+    }
+
+    return result;
+  }
+
   async loadActiveRulesForTenant(tenantId: string): Promise<PricingRule[]> {
     const rows = await this.prisma.client.pricingRule.findMany({
       where: { tenantId, isActive: true },
@@ -118,24 +159,15 @@ export class PricingQueryService {
 
   // ── Private Helpers ────────────────────────────────────────────────────────
 
-  /**
-   * Location-specific tiers shadow global tiers for the same fromUnit band.
-   *
-   * For each fromUnit value, if a location-specific tier exists it wins.
-   * If only a global tier exists for that band, it is kept as the fallback.
-   * This means the calculator always receives at most one tier per band.
-   */
   private resolveLocationTiers(tiers: PricingTier[], locationId: string): PricingTier[] {
     const byFromUnit = new Map<number, PricingTier>();
 
-    // First pass: insert global tiers as defaults
     for (const tier of tiers) {
       if (tier.locationId === null) {
         byFromUnit.set(tier.fromUnit, tier);
       }
     }
 
-    // Second pass: location-specific tiers override globals for same fromUnit
     for (const tier of tiers) {
       if (tier.locationId === locationId) {
         byFromUnit.set(tier.fromUnit, tier);

@@ -1,9 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
 import { RuleApplicationContext } from '../domain/types/pricing-rule.types';
-import { CalculateBundlePriceDto, CalculateProductPriceDto, PricingPublicApi } from '../pricing.public-api';
+import {
+  CalculateBundlePriceDto,
+  CalculateProductPriceDto,
+  GetComponentStandalonePricesDto,
+  PricingPublicApi,
+} from '../pricing.public-api';
 import { PricingCalculator, PricingResult } from '../domain/services/pricing-calculator';
 import { PricingQueryService } from '../infrastructure/services/pricing-query.service';
+import Decimal from 'decimal.js';
 
 @Injectable()
 export class PricingApplicationService implements PricingPublicApi {
@@ -72,5 +78,40 @@ export class PricingApplicationService implements PricingPublicApi {
       currency: dto.currency,
       entityId: dto.bundleId,
     });
+  }
+
+  async getComponentStandalonePrices(dto: GetComponentStandalonePricesDto): Promise<Map<string, Decimal>> {
+    const componentData = await this.pricingQuery.loadTiersForBundleComponents(
+      dto.componentProductTypeIds,
+      dto.locationId,
+    );
+
+    const result = new Map<string, Decimal>();
+
+    for (const [productTypeId, { billingUnitDurationMinutes, tiers }] of componentData) {
+      // Resolve units using the component's own billing unit duration —
+      // components may have different billing units than the bundle itself.
+      const units = Math.ceil(
+        DateRange.create(dto.period.start, dto.period.end).durationInMinutes() / billingUnitDurationMinutes,
+      );
+
+      // Find the tier that covers this unit count.
+      // If no tier is configured for this component at this location,
+      // we cannot compute a meaningful weight — throw so misconfiguration
+      // is caught at order creation time rather than silently producing
+      // wrong attribution amounts.
+      const tier = tiers.find((t) => t.coversUnits(units));
+      if (!tier) {
+        throw new Error(
+          `No pricing tier found for component product type "${productTypeId}" ` +
+            `at location "${dto.locationId}" for ${units} units. ` +
+            `Configure a standalone pricing tier to enable pro-rata owner attribution.`,
+        );
+      }
+
+      result.set(productTypeId, tier.pricePerUnit);
+    }
+
+    return result;
   }
 }

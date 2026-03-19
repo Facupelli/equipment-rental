@@ -25,6 +25,7 @@ export class BundleSnapshotMapper {
         productTypeId: c.productTypeId,
         productTypeName: c.productTypeName,
         quantity: c.quantity,
+        pricePerUnit: new Decimal(c.pricePerUnit.toString()),
       }),
     );
 

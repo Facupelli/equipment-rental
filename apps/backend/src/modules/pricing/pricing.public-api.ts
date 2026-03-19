@@ -1,3 +1,5 @@
+import Decimal from 'decimal.js';
+import { DateRange } from '../inventory/domain/value-objects/date-range.vo';
 import { PricingResult } from './domain/services/pricing-calculator';
 
 export type CalculateProductPriceDto = {
@@ -20,6 +22,13 @@ export type CalculateBundlePriceDto = {
   orderItemCountByCategory: Record<string, number>;
 };
 
+export type GetComponentStandalonePricesDto = {
+  tenantId: string;
+  locationId: string;
+  componentProductTypeIds: string[];
+  period: DateRange;
+};
+
 /**
  * Cross-module contract for pricing calculations.
  * Implemented by PricingApplicationService.
@@ -31,4 +40,5 @@ export type CalculateBundlePriceDto = {
 export abstract class PricingPublicApi {
   abstract calculateProductPrice(dto: CalculateProductPriceDto): Promise<PricingResult>;
   abstract calculateBundlePrice(dto: CalculateBundlePriceDto): Promise<PricingResult>;
+  abstract getComponentStandalonePrices(dto: GetComponentStandalonePricesDto): Promise<Map<string, Decimal>>;
 }

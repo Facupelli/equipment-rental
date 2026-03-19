@@ -1,11 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { CreateOrderCommand } from '../../application/commands/create-order/create-order.command';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import {
-  InvalidPickupSlotError,
-  InvalidReturnSlotError,
-  OrderItemUnavailableError,
-} from '../../domain/exceptions/order.exceptions';
 import { CreateOrderDto } from '../../application/dto/create-order.dto';
 import { GetOrdersScheduleQueryDto } from '../../application/dto/get-orders-schedule-query.dto';
 import { GetOrdersScheduleQuery } from '../../application/queries/get-orders-schedule.query';
@@ -15,6 +10,11 @@ import { GetCalendarDotsQueryDto } from '../../application/dto/get-calendar-dots
 import { GetCalendarDotsQuery } from '../../application/queries/get-calendars-dots/get-calendar-dots.query';
 import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import {
+  InvalidPickupSlotError,
+  InvalidReturnSlotError,
+  OrderItemUnavailableError,
+} from '../../application/errors/order.errors';
 
 @Controller('orders')
 export class OrdersController {
