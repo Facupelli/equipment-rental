@@ -56,7 +56,7 @@ function CreateProductPage() {
   const form = useForm({
     defaultValues: productTypeFormDefaults,
     validators: {
-      onChange: productTypeFormSchema,
+      onSubmit: productTypeFormSchema,
     },
     onSubmit: async ({ value }) => {
       try {
@@ -200,20 +200,27 @@ function CreateProductPage() {
 
               <form.Field
                 name="imageUrl"
-                children={(field) => (
-                  <Field>
-                    <FieldLabel>
-                      Product Image{" "}
-                      <span className="text-muted-foreground text-xs">
-                        (optional)
-                      </span>
-                    </FieldLabel>
-                    <CatalogImageUploader
-                      currentPath={field.state.value}
-                      onUploadComplete={(path) => field.handleChange(path)}
-                    />
-                  </Field>
-                )}
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field>
+                      <FieldLabel>
+                        Product Image{" "}
+                        <span className="text-muted-foreground text-xs">
+                          (optional)
+                        </span>
+                      </FieldLabel>
+                      <CatalogImageUploader
+                        currentPath={field.state.value}
+                        onUploadComplete={(path) => field.handleChange(path)}
+                      />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
               />
 
               {/* Description Field */}

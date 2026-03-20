@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { OrderItemType } from "@repo/types";
 import {
   FileText,
   Pencil,
@@ -15,10 +14,30 @@ import {
   Clock,
   Package,
   ExternalLink,
+  User2Icon,
 } from "lucide-react";
-import { formatOrderNumber } from "@/features/orders/order.utils";
+import {
+  formatMoney,
+  formatOrderNumber,
+  getExternalOwnersByProductType,
+} from "@/features/orders/order.utils";
+import {
+  getItemSerialNumber,
+  getItemQty,
+  getBundleSummary,
+  getOwnerDisplay,
+} from "@/features/orders/order.utils";
 import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
 import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
+import {
+  OrderDetailProvider,
+  useOrderDetailContext,
+} from "@/features/orders/contexts/order-detail.context";
+import {
+  getCustomerContactName,
+  getCustomerDisplayName,
+  getCustomerInitials,
+} from "@/features/customer/customer.utils";
 
 export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
   loader: ({ context: { queryClient }, params: { orderId } }) => {
@@ -34,36 +53,38 @@ function RouteComponent() {
   );
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-950 px-8">
-      <PageBreadcrumb
-        parent={{ label: "Pedidos", to: "/dashboard/schedule" }}
-        current={String(order.number)}
-      />
+    <OrderDetailProvider order={order}>
+      <div className="min-h-screen bg-neutral-50 text-neutral-950 px-8">
+        <PageBreadcrumb
+          parent={{ label: "Pedidos", to: "/dashboard/schedule" }}
+          current={String(order.number)}
+        />
 
-      <OrderHeader order={order} />
+        <OrderHeader />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] py-10 gap-20">
-        {/* Left */}
-        <div>
-          <OrderTabs order={order} />
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] py-10 gap-20">
+          {/* Left */}
+          <div>
+            <OrderTabs />
+          </div>
 
-        {/* Right */}
-        <div className="space-y-4">
-          {order.customer && <OrderClientCard customer={order.customer} />}
-          <OrderLogisticsCard location={order.location} period={order.period} />
-          <OrderFinancialsCard financial={order.financial} />
+          {/* Right */}
+          <div className="space-y-4">
+            {order.customer && <OrderClientCard />}
+            <OrderLogisticsCard />
+            <OrderFinancialsCard />
+          </div>
         </div>
       </div>
-    </div>
+    </OrderDetailProvider>
   );
 }
 
-type Props = { order: ParsedOrderDetailResponseDto };
+function OrderHeader() {
+  const { order, actions } = useOrderDetailContext();
 
-function OrderHeader({ order }: Props) {
   return (
-    <header className="bg-white border-b border-stone-200">
+    <header className="bg-white border-b border-neutral-200">
       <div className="flex items-start justify-between gap-6">
         {/* Title + meta */}
         <div>
@@ -73,7 +94,7 @@ function OrderHeader({ order }: Props) {
             </h1>
             <OrderStatusBadge status={order.status} />
           </div>
-          <p className="text-sm text-stone-400 mt-2">
+          <p className="text-sm text-neutral-400 mt-2">
             Created on {order.createdAt.format("MMM DD, YYYY")} ·{" "}
             {order.createdAt.format("HH:mm A")}
           </p>
@@ -84,20 +105,16 @@ function OrderHeader({ order }: Props) {
           <Button
             variant="outline"
             size="sm"
-            className="text-sm text-stone-700 border-stone-300 hover:bg-stone-100 rounded-md h-9 px-4"
-            onClick={() => {
-              /* TODO */
-            }}
+            className="text-sm text-neutral-700 border-neutral-300 hover:bg-neutral-100 rounded-md h-9 px-4"
+            onClick={actions.handlePrintPdf}
           >
             <FileText className="w-4 h-4 mr-1.5" />
             Print PDF
           </Button>
           <Button
             size="sm"
-            className="text-sm rounded-md bg-stone-950 text-white hover:bg-stone-800 h-9 px-4"
-            onClick={() => {
-              /* TODO */
-            }}
+            className="text-sm rounded-md bg-neutral-950 text-white hover:bg-neutral-800 h-9 px-4"
+            onClick={actions.handleEditOrder}
           >
             <Pencil className="w-4 h-4 mr-1.5" />
             Edit Order
@@ -108,11 +125,9 @@ function OrderHeader({ order }: Props) {
   );
 }
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
-function OrderTabs({ order }: Props) {
+function OrderTabs() {
   return (
     <Tabs defaultValue="equipment" className="flex flex-col gap-y-6">
       <TabsList>
@@ -130,8 +145,8 @@ function OrderTabs({ order }: Props) {
       </TabsList>
 
       <TabsContent value="equipment">
-        <OrderItemsTable order={order} />
-        <ActivityLog createdAt={order.createdAt} />
+        <OrderItemsTable />
+        <ActivityLog />
       </TabsContent>
 
       <TabsContent value="documents">
@@ -147,15 +162,16 @@ function OrderTabs({ order }: Props) {
 
 function TabPlaceholder({ label }: { label: string }) {
   return (
-    <div className="border border-dashed border-stone-200 py-16 flex items-center justify-center rounded-md">
-      <span className="text-sm text-stone-300">{label}</span>
+    <div className="border border-dashed border-neutral-200 py-16 flex items-center justify-center rounded-md">
+      <span className="text-sm text-neutral-300">{label}</span>
     </div>
   );
 }
 
 // ─── Items Table ──────────────────────────────────────────────────────────────
 
-function OrderItemsTable({ order }: Props) {
+function OrderItemsTable() {
+  const { order } = useOrderDetailContext();
   const { items, financial } = order;
 
   // Build a map from orderItemId → financial line for O(1) lookup per row
@@ -166,17 +182,17 @@ function OrderItemsTable({ order }: Props) {
   return (
     <section className="mb-10">
       {/* Column headers */}
-      <div className="grid grid-cols-[1fr_80px_100px_100px] gap-4 pb-3 border-b border-stone-200">
-        <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-stone-400">
+      <div className="grid grid-cols-[1fr_80px_100px_100px] gap-4 pb-3 border-b border-neutral-200">
+        <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-neutral-400">
           Item Description
         </span>
-        <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-stone-400 text-center">
+        <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-neutral-400 text-center">
           Quantity
         </span>
-        <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-stone-400 text-right">
+        <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-neutral-400 text-right">
           Base Price
         </span>
-        <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-stone-400 text-right">
+        <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-neutral-400 text-right">
           Total
         </span>
       </div>
@@ -196,6 +212,10 @@ function OrderItemsTable({ order }: Props) {
 
 // ─── Item Row ─────────────────────────────────────────────────────────────────
 
+// OrderItemRow still receives props: it's a repeated row inside a list,
+// and each instance has its own item + financialLine data. Context would
+// require passing the item id and doing a lookup inside — props are cleaner here.
+
 function OrderItemRow({
   item,
   financialLine,
@@ -205,39 +225,60 @@ function OrderItemRow({
     | ParsedOrderDetailResponseDto["financial"]["items"][number]
     | null;
 }) {
-  const isBundle = item.type === OrderItemType.BUNDLE;
+  const serialNumber = getItemSerialNumber(item);
+  const bundleSummary = getBundleSummary(item);
+  const qty = getItemQty(item);
 
-  const serialNumber =
-    !isBundle && item.assets[0]?.serialNumber
-      ? item.assets[0].serialNumber
-      : null;
-
-  const bundleSummary = isBundle
-    ? item.components
-        .map((c) => `${c.quantity}× ${c.productTypeName}`)
-        .join(" · ")
-    : null;
-
-  const qty = item.assets.length || 1;
+  // For product items: show a single owner name if the asset is externally owned.
+  // For bundle items: show per-product-type external ownership — getOwnerDisplay
+  // would incorrectly imply the entire bundle is externally owned.
+  const productOwner =
+    item.type !== "BUNDLE" ? getOwnerDisplay(item.assets) : null;
+  const bundleExternalOwners =
+    item.type === "BUNDLE" ? getExternalOwnersByProductType(item) : [];
 
   return (
-    <div className="grid grid-cols-[1fr_80px_100px_100px] gap-4 items-center py-4 border-b border-stone-100 hover:bg-stone-50 transition-colors rounded-sm">
+    <div className="grid grid-cols-[1fr_80px_100px_100px] gap-4 items-center py-4 border-b border-neutral-100 hover:bg-neutral-50 transition-colors rounded-sm">
       {/* Info */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-14 bg-stone-100 border border-stone-200 flex items-center justify-center shrink-0 rounded-sm">
-          <Package className="w-5 h-5 text-stone-300" />
+        <div className="w-16 h-14 bg-neutral-100 border border-neutral-200 flex items-center justify-center shrink-0 rounded-sm">
+          <Package className="w-5 h-5 text-neutral-300" />
         </div>
         <div className="flex flex-col gap-0.5 min-w-0">
-          <span className="text-sm font-semibold text-stone-950 leading-snug">
+          <span className="text-sm font-semibold text-neutral-950 leading-snug">
             {item.name}
           </span>
+
+          {/* Product item: single owner line */}
+          {productOwner && (
+            <span className="text-[11px] text-neutral-500 flex items-center gap-1">
+              <User2Icon className="size-3 shrink-0" />
+              {productOwner}
+            </span>
+          )}
+
+          {/* Bundle item: one line per externally-owned product type */}
+          {bundleExternalOwners.map((entry) => (
+            <span
+              key={entry.productTypeName}
+              className="text-[11px] text-neutral-500 flex items-center gap-1"
+            >
+              <User2Icon className="size-3 shrink-0" />
+              <span className="font-medium text-neutral-600">
+                {entry.productTypeName}
+              </span>
+              <span className="text-neutral-400">·</span>
+              {entry.ownerNames}
+            </span>
+          ))}
+
           {serialNumber && (
-            <span className="font-mono text-[11px] text-stone-400">
+            <span className="font-mono text-[11px] text-neutral-400">
               S/N: {serialNumber}
             </span>
           )}
           {bundleSummary && (
-            <span className="text-[11px] text-stone-500 font-medium">
+            <span className="text-[11px] text-neutral-500 font-medium">
               Bundle: {bundleSummary}
             </span>
           )}
@@ -246,19 +287,19 @@ function OrderItemRow({
 
       {/* Qty */}
       <div className="text-center">
-        <span className="font-mono text-sm text-stone-600">{qty}</span>
+        <span className="font-mono text-sm text-neutral-600">{qty}</span>
       </div>
 
       {/* Base price */}
       <div className="text-right">
-        <span className="font-mono text-sm text-stone-500">
+        <span className="font-mono text-sm text-neutral-500">
           {financialLine ? `${financialLine.basePrice}` : `—`}
         </span>
       </div>
 
       {/* Final price */}
       <div className="text-right">
-        <span className="font-mono text-sm font-bold text-stone-950">
+        <span className="font-mono text-sm font-bold text-neutral-950">
           {financialLine ? `${financialLine.finalPrice}` : `—`}
         </span>
       </div>
@@ -268,16 +309,14 @@ function OrderItemRow({
 
 // ─── Activity Log ─────────────────────────────────────────────────────────────
 
-function ActivityLog({
-  createdAt,
-}: {
-  createdAt: ParsedOrderDetailResponseDto["createdAt"];
-}) {
+function ActivityLog() {
+  const { order } = useOrderDetailContext();
+
   return (
     <section>
       <div className="flex items-center gap-2 mb-5">
-        <Clock className="w-4 h-4 text-stone-400" />
-        <span className="text-sm font-semibold text-stone-950">
+        <Clock className="w-4 h-4 text-neutral-400" />
+        <span className="text-sm font-semibold text-neutral-950">
           Activity Log
         </span>
       </div>
@@ -285,7 +324,7 @@ function ActivityLog({
       <div>
         <ActivityEntry
           label="Order created"
-          timestamp={createdAt.format("MMM DD, YYYY [at] HH:mm")}
+          timestamp={order.createdAt.format("MMM DD, YYYY [at] HH:mm")}
           actor="System"
           isLast
         />
@@ -309,16 +348,16 @@ function ActivityEntry({
     <div className="flex items-start gap-4">
       {/* Timeline column */}
       <div className="flex flex-col items-center shrink-0 pt-1">
-        <div className="w-8 h-8 rounded-full bg-stone-950 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-neutral-950 flex items-center justify-center">
           <Clock className="w-3.5 h-3.5 text-white" />
         </div>
-        {!isLast && <div className="w-px flex-1 bg-stone-200 mt-1 min-h-6" />}
+        {!isLast && <div className="w-px flex-1 bg-neutral-200 mt-1 min-h-6" />}
       </div>
 
       {/* Content */}
       <div className="flex flex-col gap-0.5 pb-6">
-        <span className="text-sm font-semibold text-stone-950">{label}</span>
-        <span className="text-xs text-stone-400">
+        <span className="text-sm font-semibold text-neutral-950">{label}</span>
+        <span className="text-xs text-neutral-400">
           {timestamp} · {actor}
         </span>
       </div>
@@ -328,34 +367,27 @@ function ActivityEntry({
 
 // ─── Client Card ──────────────────────────────────────────────────────────────
 
-function OrderClientCard({
-  customer,
-}: {
-  customer: NonNullable<ParsedOrderDetailResponseDto["customer"]>;
-}) {
-  const displayName =
-    customer.isCompany && customer.companyName
-      ? customer.companyName
-      : `${customer.firstName} ${customer.lastName}`;
+function OrderClientCard() {
+  const { order } = useOrderDetailContext();
 
-  const contactName = customer.isCompany
-    ? `${customer.firstName} ${customer.lastName}`
-    : null;
+  // Guarded by the conditional render in OrderDetailPage
+  const customer = order.customer!;
 
-  const initials =
-    `${customer.firstName[0] ?? ``}${customer.lastName[0] ?? ``}`.toUpperCase();
+  const displayName = getCustomerDisplayName(customer);
+  const contactName = getCustomerContactName(customer);
+  const initials = getCustomerInitials(customer);
 
   return (
-    <section className="bg-white border border-stone-200 rounded-lg p-5">
+    <section className="bg-white border border-neutral-200 rounded-lg p-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-stone-100">
-        <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-stone-400">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-100">
+        <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-neutral-400">
           Customer Information
         </span>
         <Link
           to="/dashboard/customers/$customerId"
           params={{ customerId: customer.id }}
-          className="flex items-center gap-1 text-xs font-medium text-stone-500 hover:text-stone-950 transition-colors"
+          className="flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-950 transition-colors"
         >
           View Profile
           <ExternalLink className="w-3 h-3" />
@@ -364,15 +396,15 @@ function OrderClientCard({
 
       {/* Avatar + name */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-stone-200 flex items-center justify-center shrink-0">
-          <span className="text-sm font-bold text-stone-600">{initials}</span>
+        <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center shrink-0">
+          <span className="text-sm font-bold text-neutral-600">{initials}</span>
         </div>
         <div>
-          <p className="text-sm font-bold text-stone-950 leading-tight">
+          <p className="text-sm font-bold text-neutral-950 leading-tight">
             {displayName}
           </p>
           {contactName && (
-            <p className="text-xs text-stone-400 mt-0.5">{contactName}</p>
+            <p className="text-xs text-neutral-400 mt-0.5">{contactName}</p>
           )}
         </div>
       </div>
@@ -390,51 +422,48 @@ function OrderClientCard({
 
 // ─── Logistics Card ───────────────────────────────────────────────────────────
 
-function OrderLogisticsCard({
-  location,
-  period,
-}: {
-  location: ParsedOrderDetailResponseDto["location"];
-  period: ParsedOrderDetailResponseDto["period"];
-}) {
+function OrderLogisticsCard() {
+  const { order } = useOrderDetailContext();
+  const { location, period } = order;
+
   return (
-    <section className="bg-white border border-stone-200 rounded-lg p-5">
+    <section className="bg-white border border-neutral-200 rounded-lg p-5">
       <SidebarSectionLabel label="Logistics" />
 
       {period && (
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-stone-400 mb-1">
+            <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-neutral-400 mb-1">
               Pickup Date
             </p>
-            <p className="text-sm font-bold text-stone-950">
+            <p className="text-sm font-bold text-neutral-950">
               {period.start.format("MMM DD, YYYY")}
             </p>
-            <p className="font-mono text-[10px] text-stone-400 mt-0.5">
+            <p className="font-mono text-[10px] text-neutral-400 mt-0.5">
               {period.start.format("HH:mm")}
             </p>
           </div>
           <div>
-            <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-stone-400 mb-1">
+            <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-neutral-400 mb-1">
               Return Date
             </p>
-            <p className="text-sm font-bold text-stone-950">
+            <p className="text-sm font-bold text-neutral-950">
               {period.end.format("MMM DD, YYYY")}
             </p>
-            <p className="font-mono text-[10px] text-stone-400 mt-0.5">
+            <p className="font-mono text-[10px] text-neutral-400 mt-0.5">
               {period.end.format("HH:mm")}
             </p>
           </div>
         </div>
       )}
 
-      <div className="flex items-center gap-3 bg-stone-50 border border-stone-100 rounded-md px-3 py-2.5">
-        <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+      <div className="flex items-center gap-3 bg-neutral-50 border border-neutral-100 rounded-md px-3 py-2.5">
+        <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
         <div>
-          <p className="font-mono text-[9px] tracking-widest uppercase text-stone-400 mb-0.5">
+          <p className="font-mono text-[9px] tracking-widest uppercase text-neutral-400 mb-0.5">
             Location
           </p>
-          <p className="text-sm font-semibold text-stone-950">
+          <p className="text-sm font-semibold text-neutral-950">
             {location.name}
           </p>
         </div>
@@ -445,53 +474,92 @@ function OrderLogisticsCard({
 
 // ─── Financials Card ──────────────────────────────────────────────────────────
 
-function OrderFinancialsCard({
-  financial,
-}: {
-  financial: ParsedOrderDetailResponseDto["financial"];
-}) {
+function OrderFinancialsCard() {
+  const { order, actions } = useOrderDetailContext();
+  const { financial } = order;
+  const hasOwnerObligations = financial.ownerObligations !== "0";
+
   return (
-    <section className="bg-white border border-stone-200 rounded-lg p-5">
+    <section className="bg-white border border-neutral-200 rounded-lg p-5">
       <SidebarSectionLabel label="Financial Summary" />
 
       <div>
         {financial.items.map((line, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-between py-2.5 border-b border-stone-100"
-          >
-            <span className="text-sm text-stone-500">{line.label}</span>
-            <span className="font-mono text-sm text-stone-950">
-              {line.finalPrice}
-            </span>
+          <div key={i} className="border-b border-neutral-100">
+            {/* Item line */}
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-sm text-neutral-500">{line.label}</span>
+              <span className="font-mono text-sm text-neutral-950">
+                {formatMoney(line.finalPrice)}
+              </span>
+            </div>
+
+            {/* Owner split breakdown — only shown for external-owned items */}
+            {line.ownerSplit && (
+              <div className="border-l border-accent pb-2.5 pl-3 flex flex-col gap-1">
+                {line.ownerSplit.componentName && (
+                  <span className="text-[10px] font-mono tracking-wide uppercase text-neutral-400 mt-0.5">
+                    {line.ownerSplit.componentName}
+                  </span>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-neutral-400">
+                    Owner — {line.ownerSplit.ownerName}
+                  </span>
+                  <span className="font-mono text-[11px] text-neutral-400">
+                    {formatMoney(line.ownerSplit.ownerAmount)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-neutral-400">Rental</span>
+                  <span className="font-mono text-[11px] text-neutral-400">
+                    {formatMoney(line.ownerSplit.rentalAmount)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
+      {/* Revenue breakdown — only shown when order has external-owned assets */}
+      {hasOwnerObligations && (
+        <div className="mt-3 pt-3 border-t border-dashed border-neutral-200 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-neutral-500">Your Revenue</span>
+            <span className="font-mono text-xs font-medium text-emerald-700">
+              {formatMoney(financial.yourRevenue)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-neutral-500">Owner Obligations</span>
+            <span className="font-mono text-xs font-medium text-amber-600">
+              {formatMoney(financial.ownerObligations)}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Total */}
       <div className="flex items-baseline justify-between pt-4 mt-1">
-        <span className="text-sm font-bold text-stone-950">Total Amount</span>
-        <span className="font-mono text-xl font-bold text-stone-950 tracking-tight">
-          {financial.total}
+        <span className="text-sm font-bold text-neutral-950">Total Amount</span>
+        <span className="font-mono text-xl font-bold text-neutral-950 tracking-tight">
+          {formatMoney(financial.total)}
         </span>
       </div>
 
       {/* CTA buttons */}
       <div className="mt-5 space-y-2">
         <Button
-          className="w-full rounded-md bg-stone-950 text-white hover:bg-stone-800 font-medium text-sm h-11 transition-colors"
-          onClick={() => {
-            /* TODO: release equipment */
-          }}
+          className="w-full rounded-md bg-neutral-950 text-white hover:bg-neutral-800 font-medium text-sm h-11 transition-colors"
+          onClick={actions.handleReleaseEquipment}
         >
           Release Equipment →
         </Button>
         <Button
           variant="outline"
-          className="w-full rounded-md border-stone-200 hover:border-stone-400 hover:bg-stone-50 font-medium text-sm h-9 transition-colors"
-          onClick={() => {
-            /* TODO: process payment */
-          }}
+          className="w-full rounded-md border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 font-medium text-sm h-9 transition-colors"
+          onClick={actions.handleProcessPayment}
         >
           Process Payment
         </Button>
@@ -504,7 +572,7 @@ function OrderFinancialsCard({
 
 function SidebarSectionLabel({ label }: { label: string }) {
   return (
-    <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-stone-400 mb-4 pb-3 border-b border-stone-100">
+    <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-neutral-400 mb-4 pb-3 border-b border-neutral-100">
       {label}
     </p>
   );
@@ -519,8 +587,8 @@ function SidebarField({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-stone-400 shrink-0">{icon}</span>
-      <span className="text-xs text-stone-500">{value}</span>
+      <span className="text-neutral-400 shrink-0">{icon}</span>
+      <span className="text-xs text-neutral-500">{value}</span>
     </div>
   );
 }

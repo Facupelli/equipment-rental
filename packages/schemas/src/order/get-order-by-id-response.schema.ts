@@ -22,6 +22,9 @@ const RentalPeriodSchema = z.object({
 const AssetSummarySchema = z.object({
   id: z.uuid(),
   serialNumber: z.string().nullable(),
+  productTypeId: z.string(),
+  ownerId: z.string().nullable(),
+  ownerName: z.string().nullable(),
 });
 
 const ProductTypeItemSchema = z.object({
@@ -54,21 +57,33 @@ const DiscountLineSchema = z.object({
   ruleId: z.uuid(),
   type: z.enum(["PERCENTAGE", "FLAT"]),
   value: z.number(),
-  discountAmount: z.string(), // Decimal serialized as string
+  discountAmount: z.string(),
 });
+
+const OwnerSplitLineSchema = z
+  .object({
+    ownerName: z.string(),
+    ownerAmount: z.string(),
+    rentalAmount: z.string(),
+    componentName: z.string().nullable(),
+  })
+  .nullable();
 
 const FinancialLineSchema = z.object({
   orderItemId: z.uuid(),
   label: z.string(),
   currency: z.string(),
-  basePrice: z.string(), // Decimal serialized as string
-  finalPrice: z.string(), // Decimal serialized as string
+  basePrice: z.string(),
+  finalPrice: z.string(),
   discounts: z.array(DiscountLineSchema),
+  ownerSplit: OwnerSplitLineSchema,
 });
 
 const FinancialBreakdownSchema = z.object({
   items: z.array(FinancialLineSchema),
-  total: z.string(), // Decimal serialized as string — sum of finalPrices
+  total: z.string(),
+  yourRevenue: z.string(),
+  ownerObligations: z.string(),
 });
 
 export const orderDetailSchema = z.object({

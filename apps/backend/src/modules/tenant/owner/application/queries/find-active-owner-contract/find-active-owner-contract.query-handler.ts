@@ -3,7 +3,7 @@ import { PrismaService } from 'src/core/database/prisma.service';
 import { ActiveContractDto, FindActiveContractForScopeQuery } from './find-active-owner-contract.query';
 
 @QueryHandler(FindActiveContractForScopeQuery)
-export class OwnerContractQueryService implements IQueryHandler<FindActiveContractForScopeQuery> {
+export class FindActiveContractForScopeQueryHandler implements IQueryHandler<FindActiveContractForScopeQuery> {
   constructor(private readonly prisma: PrismaService) {}
 
   /**

@@ -256,7 +256,7 @@ function CartPageImage({ src, alt, className = "" }: CartPageImageProps) {
   if (src) {
     return (
       <img
-        src={src}
+        src={`${import.meta.env.VITE_R2_PUBLIC_URL}/${src}`}
         alt={alt}
         className={`h-full w-full object-cover ${className}`}
       />

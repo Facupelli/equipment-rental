@@ -35,6 +35,7 @@ import { GetOwnerQueryHandler } from './owner/presentation/queries/get-owner/get
 import { CreateOwnerContractCommandHandler } from './owner/application/commands/create-owner-contract/create-owner-contract.command-handler';
 import { OwnerContractRepositoryPort } from './owner/domain/ports/owner-contract.repository.port';
 import { OwnerContractRepository } from './owner/infrastructure/persistence/repositories/owner-contract.repository';
+import { FindActiveContractForScopeQueryHandler } from './owner/application/queries/find-active-owner-contract/find-active-owner-contract.query-handler';
 
 const commandHandlers = [
   CreateTenantUserCommandHandler,
@@ -55,6 +56,7 @@ const queryHandlers = [
   // owner
   GetOwnersQueryHandler,
   GetOwnerQueryHandler,
+  FindActiveContractForScopeQueryHandler,
   // location
   GetLocationsQueryHandler,
   GetLocationScheduleSlotsQueryHandler,

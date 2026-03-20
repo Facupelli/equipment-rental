@@ -25,7 +25,7 @@ export const productTypeFormSchema = z.object({
   categoryId: z.string().or(z.literal("")),
   billingUnitId: z.string().min(1, "Billing unit is required"),
   name: z.string().min(1, "Name is required"),
-  imageUrl: z.string(),
+  imageUrl: z.string().min(1, "Product image is required"),
   description: z.string().or(z.literal("")),
   trackingMode: z.enum(TrackingMode),
   attributes: z.array(attributeRowSchema),
