@@ -18,6 +18,7 @@ export enum PricingRuleScope {
 
 export interface CreatePricingRuleProps {
   tenantId: string;
+  name: string;
   type: PricingRuleType;
   scope: PricingRuleScope;
   priority: number;
@@ -29,6 +30,7 @@ export interface CreatePricingRuleProps {
 export interface ReconstitutePricingRuleProps {
   id: string;
   tenantId: string;
+  name: string;
   type: PricingRuleType;
   scope: PricingRuleScope;
   priority: number;
@@ -42,6 +44,7 @@ export class PricingRule {
   private constructor(
     public readonly id: string,
     public readonly tenantId: string,
+    public readonly name: string,
     public readonly type: PricingRuleType,
     public readonly scope: PricingRuleScope,
     public readonly priority: number,
@@ -58,6 +61,7 @@ export class PricingRule {
     return new PricingRule(
       randomUUID(),
       props.tenantId,
+      props.name,
       props.type,
       props.scope,
       props.priority,
@@ -72,6 +76,7 @@ export class PricingRule {
     return new PricingRule(
       props.id,
       props.tenantId,
+      props.name,
       props.type,
       props.scope,
       props.priority,

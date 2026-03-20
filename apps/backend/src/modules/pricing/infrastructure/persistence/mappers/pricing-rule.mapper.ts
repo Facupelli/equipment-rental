@@ -8,6 +8,7 @@ export class PricingRuleMapper {
     return PricingRule.reconstitute({
       id: raw.id,
       tenantId: raw.tenantId,
+      name: raw.name,
       type: raw.type as PricingRuleType,
       scope: raw.scope as PricingRuleScope,
       priority: raw.priority,
@@ -22,6 +23,7 @@ export class PricingRuleMapper {
     return {
       id: entity.id,
       tenantId: entity.tenantId,
+      name: entity.name,
       type: entity.type,
       scope: entity.scope,
       priority: entity.priority,

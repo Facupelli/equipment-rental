@@ -4,6 +4,7 @@ import { PricingRuleScope, PricingRuleType } from '../../../domain/entities/pric
 export class CreatePricingRuleCommand {
   constructor(
     public readonly tenantId: string,
+    public readonly name: string,
     public readonly type: PricingRuleType,
     public readonly scope: PricingRuleScope,
     public readonly priority: number,

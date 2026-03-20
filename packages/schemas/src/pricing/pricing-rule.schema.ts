@@ -61,6 +61,7 @@ export const PricingRuleEffectSchema = z.discriminatedUnion("type", [
 
 export const createPricingRuleSchema = z
   .object({
+    name: z.string().min(1, "Name is required"),
     type: z.enum(PricingRuleType),
     scope: z.enum(PricingRuleScope),
     priority: z.number().int().min(0),

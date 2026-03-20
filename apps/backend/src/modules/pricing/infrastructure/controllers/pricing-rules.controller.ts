@@ -15,6 +15,7 @@ export class PricingRulesController {
     const id: string = await this.commandBus.execute(
       new CreatePricingRuleCommand(
         user.tenantId,
+        dto.name,
         dto.type,
         dto.scope,
         dto.priority,

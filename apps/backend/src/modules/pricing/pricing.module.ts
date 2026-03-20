@@ -17,6 +17,8 @@ import { CreatePricingRuleCommandHandler } from './application/commands/create-p
 import { CreateCouponCommandHandler } from './application/commands/create-coupon/create-coupon.command-handler';
 import { PricingRuleRepository } from './infrastructure/repositories/pricing-rule.repository';
 import { PricingRuleRepositoryPort } from './domain/ports/pricing-rule.repository.port';
+import { ListPricingRulesHandler } from './presentation/queries/list-pricing-rules/list-pricing-rules.query-handler';
+import { ListCouponsHandler } from './presentation/queries/list-coupons/list-coupons.query-handler';
 
 @Module({
   imports: [CatalogModule],
@@ -36,6 +38,8 @@ import { PricingRuleRepositoryPort } from './domain/ports/pricing-rule.repositor
     CreateCouponCommandHandler,
     // queries
     CalculateCartPricesQueryHandler,
+    ListPricingRulesHandler,
+    ListCouponsHandler,
   ],
   exports: [
     PricingPublicApi,

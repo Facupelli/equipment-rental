@@ -688,6 +688,7 @@ model PricingTier {
 model PricingRule {
   id        String           @id @default(uuid())
   tenantId  String           @map("tenant_id")
+  name      String
   type      PricingRuleType
   scope     PricingRuleScope
   priority  Int

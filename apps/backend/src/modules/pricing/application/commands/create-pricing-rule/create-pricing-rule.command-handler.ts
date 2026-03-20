@@ -10,6 +10,7 @@ export class CreatePricingRuleCommandHandler implements ICommandHandler<CreatePr
   async execute(command: CreatePricingRuleCommand): Promise<string> {
     const rule = PricingRule.create({
       tenantId: command.tenantId,
+      name: command.name,
       type: command.type,
       scope: command.scope,
       priority: command.priority,

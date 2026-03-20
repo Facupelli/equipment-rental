@@ -4,3 +4,17 @@ export class InvalidPricingRulePriorityException extends Error {
     this.name = 'InvalidPricingRulePriorityException';
   }
 }
+
+export class PricingRuleNotFoundException extends Error {
+  constructor(id: string) {
+    super(`Pricing rule "${id}" not found.`);
+    this.name = 'PricingRuleNotFoundException';
+  }
+}
+
+export class InvalidCouponPricingRuleTypeException extends Error {
+  constructor(id: string) {
+    super(`Pricing rule "${id}" is not of type COUPON.`);
+    this.name = 'InvalidCouponPricingRuleTypeException';
+  }
+}
