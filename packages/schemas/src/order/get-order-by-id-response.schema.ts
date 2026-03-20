@@ -1,4 +1,4 @@
-import { OrderItemType, OrderStatus } from "@repo/types";
+import { OrderItemType, OrderStatus, PricingRuleEffectType } from "@repo/types";
 import { z } from "zod";
 
 const CustomerSummarySchema = z.object({
@@ -55,7 +55,7 @@ const OrderItemDetailSchema = z.discriminatedUnion("type", [
 
 const DiscountLineSchema = z.object({
   ruleId: z.uuid(),
-  type: z.enum(["PERCENTAGE", "FLAT"]),
+  type: z.enum(PricingRuleEffectType),
   value: z.number(),
   discountAmount: z.string(),
 });

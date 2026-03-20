@@ -11,3 +11,8 @@ export enum PricingRuleScope {
   CATEGORY = "CATEGORY",
   BUNDLE = "BUNDLE",
 }
+
+export enum PricingRuleEffectType {
+  PERCENTAGE = "PERCENTAGE",
+  FLAT = "FLAT",
+}

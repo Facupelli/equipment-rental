@@ -1,32 +1,95 @@
-import { PricingRuleScope, PricingRuleType } from "@repo/types";
-import z from "zod";
+import {
+  PricingRuleEffectType,
+  PricingRuleScope,
+  PricingRuleType,
+} from "@repo/types";
+import { z } from "zod";
 
-export const PricingRuleSchema = z.object({
-  id: z.uuid(),
-  tenantId: z.uuid(),
-  type: z.enum(PricingRuleType),
-  scope: z.enum(PricingRuleScope),
-  priority: z.number().int(),
-  stackable: z.boolean().default(false),
-  isActive: z.boolean().default(true),
-  condition: z.record(z.string(), z.unknown()),
-  effect: z.record(z.string(), z.unknown()),
-  createdAt: z.date().default(() => new Date()),
-  updatedAt: z.date(),
+// ── Condition schemas ─────────────────────────────────────────────────────────
+
+export const SeasonalConditionSchema = z.object({
+  type: z.literal(PricingRuleType.SEASONAL),
+  dateFrom: z.iso.datetime({
+    message: "dateFrom must be a valid ISO datetime string",
+  }),
+  dateTo: z.iso.datetime({
+    message: "dateTo must be a valid ISO datetime string",
+  }),
 });
 
-export const PricingRuleCreateSchema = PricingRuleSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const VolumeConditionSchema = z.object({
+  type: z.literal(PricingRuleType.VOLUME),
+  categoryId: z.uuid(),
+  threshold: z.number().int().positive(),
 });
 
-export const PricingRuleUpdateSchema = PricingRuleSchema.partial().omit({
-  id: true,
-  tenantId: true,
-  createdAt: true,
+export const CouponConditionSchema = z.object({
+  type: z.literal(PricingRuleType.COUPON),
+  code: z.string().min(1).trim().toUpperCase(),
 });
 
-export type PricingRule = z.infer<typeof PricingRuleSchema>;
-export type PricingRuleCreate = z.infer<typeof PricingRuleCreateSchema>;
-export type PricingRuleUpdate = z.infer<typeof PricingRuleUpdateSchema>;
+export const CustomerSpecificConditionSchema = z.object({
+  type: z.literal(PricingRuleType.CUSTOMER_SPECIFIC),
+  customerId: z.uuid(),
+});
+
+export const PricingRuleConditionSchema = z.discriminatedUnion("type", [
+  SeasonalConditionSchema,
+  VolumeConditionSchema,
+  CouponConditionSchema,
+  CustomerSpecificConditionSchema,
+]);
+
+// ── Effect schemas ────────────────────────────────────────────────────────────
+
+export const PercentageEffectSchema = z.object({
+  type: z.literal(PricingRuleEffectType.PERCENTAGE),
+  value: z.number().min(0).max(100),
+});
+
+export const FlatEffectSchema = z.object({
+  type: z.literal(PricingRuleEffectType.FLAT),
+  value: z.number().positive(),
+});
+
+export const PricingRuleEffectSchema = z.discriminatedUnion("type", [
+  PercentageEffectSchema,
+  FlatEffectSchema,
+]);
+
+// ── Create pricing rule schema ────────────────────────────────────────────────
+
+export const CreatePricingRuleSchema = z
+  .object({
+    type: z.enum(PricingRuleType),
+    scope: z.enum(PricingRuleScope),
+    priority: z.number().int().min(0),
+    stackable: z.boolean(),
+    condition: PricingRuleConditionSchema,
+    effect: PricingRuleEffectSchema,
+  })
+  .superRefine((data, ctx) => {
+    const conditionType = data.condition.type;
+    const ruleType = data.type;
+
+    if (conditionType !== ruleType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["condition"],
+        message: `condition.type "${conditionType}" does not match rule type "${ruleType}"`,
+      });
+    }
+
+    if (
+      data.condition.type === "SEASONAL" &&
+      data.condition.dateFrom >= data.condition.dateTo
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["condition", "dateTo"],
+        message: "dateTo must be strictly after dateFrom",
+      });
+    }
+  });
+
+export type CreatePricingRuleDto = z.infer<typeof CreatePricingRuleSchema>;

@@ -5,6 +5,7 @@ import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.ex
 import { PricingRuleCondition, PricingRuleEffect, RuleApplicationContext } from '../types/pricing-rule.types';
 import { PricingCalculator, PricingCalculatorInput } from './pricing-calculator';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { PricingRuleEffectType } from '@repo/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test Fixtures
@@ -70,14 +71,14 @@ function makeRule(
 
 /** A SEASONAL condition that always matches the fixed period from makePeriod(). */
 const ALWAYS_ACTIVE_CONDITION: PricingRuleCondition = {
-  type: 'SEASONAL',
+  type: PricingRuleType.SEASONAL,
   dateFrom: '2024-01-01T00:00:00Z',
   dateTo: '2026-12-31T23:59:59Z',
 };
 
 /** A SEASONAL condition that never matches the fixed period from makePeriod(). */
 const NEVER_ACTIVE_CONDITION: PricingRuleCondition = {
-  type: 'SEASONAL',
+  type: PricingRuleType.SEASONAL,
   dateFrom: '2020-01-01T00:00:00Z',
   dateTo: '2020-12-31T23:59:59Z',
 };
@@ -220,7 +221,7 @@ describe('PricingCalculator', () => {
       const inactiveRule = makeRule(
         'rule-inactive',
         ALWAYS_ACTIVE_CONDITION,
-        { type: 'PERCENTAGE', value: 50 },
+        { type: PricingRuleEffectType.PERCENTAGE, value: 50 },
         { isActive: false },
       );
 
@@ -231,7 +232,7 @@ describe('PricingCalculator', () => {
     });
 
     it('non-applicable rule (condition not met) is ignored', () => {
-      const rule = makeRule('rule-past', NEVER_ACTIVE_CONDITION, { type: 'PERCENTAGE', value: 50 });
+      const rule = makeRule('rule-past', NEVER_ACTIVE_CONDITION, { type: PricingRuleEffectType.PERCENTAGE, value: 50 });
 
       const result = calculator.calculate(makeInput({ rules: [rule] }));
 
@@ -244,13 +245,13 @@ describe('PricingCalculator', () => {
       const highPriority = makeRule(
         'rule-high',
         ALWAYS_ACTIVE_CONDITION,
-        { type: 'PERCENTAGE', value: 30 },
+        { type: PricingRuleEffectType.PERCENTAGE, value: 30 },
         { stackable: false, priority: 0 },
       );
       const lowPriority = makeRule(
         'rule-low',
         ALWAYS_ACTIVE_CONDITION,
-        { type: 'PERCENTAGE', value: 10 },
+        { type: PricingRuleEffectType.PERCENTAGE, value: 10 },
         { stackable: false, priority: 1 },
       );
 
@@ -261,8 +262,18 @@ describe('PricingCalculator', () => {
     });
 
     it('stackable rules: all applicable rules are applied', () => {
-      const rule1 = makeRule('rule-1', ALWAYS_ACTIVE_CONDITION, { type: 'PERCENTAGE', value: 10 }, { stackable: true });
-      const rule2 = makeRule('rule-2', ALWAYS_ACTIVE_CONDITION, { type: 'PERCENTAGE', value: 5 }, { stackable: true });
+      const rule1 = makeRule(
+        'rule-1',
+        ALWAYS_ACTIVE_CONDITION,
+        { type: PricingRuleEffectType.PERCENTAGE, value: 10 },
+        { stackable: true },
+      );
+      const rule2 = makeRule(
+        'rule-2',
+        ALWAYS_ACTIVE_CONDITION,
+        { type: PricingRuleEffectType.PERCENTAGE, value: 5 },
+        { stackable: true },
+      );
 
       const result = calculator.calculate(makeInput({ rules: [rule1, rule2] }));
 
@@ -273,13 +284,13 @@ describe('PricingCalculator', () => {
       const nonStackable = makeRule(
         'rule-non-stackable',
         ALWAYS_ACTIVE_CONDITION,
-        { type: 'PERCENTAGE', value: 20 },
+        { type: PricingRuleEffectType.PERCENTAGE, value: 20 },
         { stackable: false, priority: 0 },
       );
       const stackable = makeRule(
         'rule-stackable',
         ALWAYS_ACTIVE_CONDITION,
-        { type: 'PERCENTAGE', value: 10 },
+        { type: PricingRuleEffectType.PERCENTAGE, value: 10 },
         { stackable: true },
       );
 
@@ -291,7 +302,10 @@ describe('PricingCalculator', () => {
     describe('SEASONAL condition', () => {
       it('applies when period.start falls within the seasonal window', () => {
         // Period starts 2025-01-01 — window is 2024–2026
-        const rule = makeRule('rule-seasonal', ALWAYS_ACTIVE_CONDITION, { type: 'PERCENTAGE', value: 10 });
+        const rule = makeRule('rule-seasonal', ALWAYS_ACTIVE_CONDITION, {
+          type: PricingRuleEffectType.PERCENTAGE,
+          value: 10,
+        });
 
         const result = calculator.calculate(makeInput({ rules: [rule] }));
 
@@ -299,7 +313,10 @@ describe('PricingCalculator', () => {
       });
 
       it('does not apply when period.start falls outside the seasonal window', () => {
-        const rule = makeRule('rule-seasonal', NEVER_ACTIVE_CONDITION, { type: 'PERCENTAGE', value: 10 });
+        const rule = makeRule('rule-seasonal', NEVER_ACTIVE_CONDITION, {
+          type: PricingRuleEffectType.PERCENTAGE,
+          value: 10,
+        });
 
         const result = calculator.calculate(makeInput({ rules: [rule] }));
 
@@ -310,11 +327,11 @@ describe('PricingCalculator', () => {
     describe('VOLUME condition', () => {
       it('applies when category item count meets the threshold', () => {
         const condition: PricingRuleCondition = {
-          type: 'VOLUME',
+          type: PricingRuleType.VOLUME,
           categoryId: CATEGORY_ID,
           threshold: 3,
         };
-        const rule = makeRule('rule-volume', condition, { type: 'PERCENTAGE', value: 10 });
+        const rule = makeRule('rule-volume', condition, { type: PricingRuleEffectType.PERCENTAGE, value: 10 });
         const context = makeContext({ orderItemCountByCategory: { [CATEGORY_ID]: 3 } });
 
         const result = calculator.calculate(makeInput({ rules: [rule], context }));
@@ -324,11 +341,11 @@ describe('PricingCalculator', () => {
 
       it('does not apply when category item count is below the threshold', () => {
         const condition: PricingRuleCondition = {
-          type: 'VOLUME',
+          type: PricingRuleType.VOLUME,
           categoryId: CATEGORY_ID,
           threshold: 3,
         };
-        const rule = makeRule('rule-volume', condition, { type: 'PERCENTAGE', value: 10 });
+        const rule = makeRule('rule-volume', condition, { type: PricingRuleEffectType.PERCENTAGE, value: 10 });
         const context = makeContext({ orderItemCountByCategory: { [CATEGORY_ID]: 2 } });
 
         const result = calculator.calculate(makeInput({ rules: [rule], context }));
@@ -338,11 +355,11 @@ describe('PricingCalculator', () => {
 
       it('does not apply when the category is absent from the context', () => {
         const condition: PricingRuleCondition = {
-          type: 'VOLUME',
+          type: PricingRuleType.VOLUME,
           categoryId: CATEGORY_ID,
           threshold: 1,
         };
-        const rule = makeRule('rule-volume', condition, { type: 'PERCENTAGE', value: 10 });
+        const rule = makeRule('rule-volume', condition, { type: PricingRuleEffectType.PERCENTAGE, value: 10 });
         // No entry for CATEGORY_ID in the map — defaults to 0
         const context = makeContext({ orderItemCountByCategory: {} });
 
@@ -368,7 +385,7 @@ describe('PricingCalculator', () => {
 
     it('single PERCENTAGE discount: reduces base price by the correct amount', () => {
       // 10% of $100 = $10 discount → $90 final
-      const rule = makeRule('rule-pct', ALWAYS_ACTIVE_CONDITION, { type: 'PERCENTAGE', value: 10 });
+      const rule = makeRule('rule-pct', ALWAYS_ACTIVE_CONDITION, { type: PricingRuleEffectType.PERCENTAGE, value: 10 });
 
       const result = calculator.calculate(makeBaseInput({ rules: [rule] }));
 
@@ -381,13 +398,13 @@ describe('PricingCalculator', () => {
       const rule1 = makeRule(
         'rule-pct-1',
         ALWAYS_ACTIVE_CONDITION,
-        { type: 'PERCENTAGE', value: 10 },
+        { type: PricingRuleEffectType.PERCENTAGE, value: 10 },
         { stackable: true },
       );
       const rule2 = makeRule(
         'rule-pct-2',
         ALWAYS_ACTIVE_CONDITION,
-        { type: 'PERCENTAGE', value: 10 },
+        { type: PricingRuleEffectType.PERCENTAGE, value: 10 },
         { stackable: true },
       );
 
@@ -398,7 +415,7 @@ describe('PricingCalculator', () => {
 
     it('single FLAT discount: reduces price by the flat amount', () => {
       // $100 - $15 flat = $85
-      const rule = makeRule('rule-flat', ALWAYS_ACTIVE_CONDITION, { type: 'FLAT', value: 15 });
+      const rule = makeRule('rule-flat', ALWAYS_ACTIVE_CONDITION, { type: PricingRuleEffectType.FLAT, value: 15 });
 
       const result = calculator.calculate(makeBaseInput({ rules: [rule] }));
 
@@ -412,10 +429,15 @@ describe('PricingCalculator', () => {
       const pctRule = makeRule(
         'rule-pct',
         ALWAYS_ACTIVE_CONDITION,
-        { type: 'PERCENTAGE', value: 20 },
+        { type: PricingRuleEffectType.PERCENTAGE, value: 20 },
         { stackable: true },
       );
-      const flatRule = makeRule('rule-flat', ALWAYS_ACTIVE_CONDITION, { type: 'FLAT', value: 10 }, { stackable: true });
+      const flatRule = makeRule(
+        'rule-flat',
+        ALWAYS_ACTIVE_CONDITION,
+        { type: PricingRuleEffectType.FLAT, value: 10 },
+        { stackable: true },
+      );
 
       const result = calculator.calculate(makeBaseInput({ rules: [pctRule, flatRule] }));
 
@@ -424,7 +446,7 @@ describe('PricingCalculator', () => {
 
     it('discounts exceeding base price → final price clamped at zero, never negative', () => {
       // $100 base with a $200 flat discount — should not produce -$100
-      const rule = makeRule('rule-flat', ALWAYS_ACTIVE_CONDITION, { type: 'FLAT', value: 200 });
+      const rule = makeRule('rule-flat', ALWAYS_ACTIVE_CONDITION, { type: PricingRuleEffectType.FLAT, value: 200 });
 
       const result = calculator.calculate(makeBaseInput({ rules: [rule] }));
 
@@ -444,26 +466,26 @@ describe('PricingCalculator', () => {
     }
 
     it('records correct metadata for a PERCENTAGE rule', () => {
-      const rule = makeRule('rule-pct', ALWAYS_ACTIVE_CONDITION, { type: 'PERCENTAGE', value: 10 });
+      const rule = makeRule('rule-pct', ALWAYS_ACTIVE_CONDITION, { type: PricingRuleEffectType.PERCENTAGE, value: 10 });
 
       const result = calculator.calculate({ ...makeBaseInput(), rules: [rule] });
 
       const discount = result.appliedDiscounts[0];
       expect(discount.ruleId).toBe('rule-pct');
-      expect(discount.type).toBe('PERCENTAGE');
+      expect(discount.type).toBe(PricingRuleEffectType.PERCENTAGE);
       expect(discount.value).toBe(10);
       // 10% of $100 = $10 discount amount
       expect(discount.discountAmount.amount.toNumber()).toBe(10);
     });
 
     it('records correct metadata for a FLAT rule', () => {
-      const rule = makeRule('rule-flat', ALWAYS_ACTIVE_CONDITION, { type: 'FLAT', value: 25 });
+      const rule = makeRule('rule-flat', ALWAYS_ACTIVE_CONDITION, { type: PricingRuleEffectType.FLAT, value: 25 });
 
       const result = calculator.calculate({ ...makeBaseInput(), rules: [rule] });
 
       const discount = result.appliedDiscounts[0];
       expect(discount.ruleId).toBe('rule-flat');
-      expect(discount.type).toBe('FLAT');
+      expect(discount.type).toBe(PricingRuleEffectType.FLAT);
       expect(discount.value).toBe(25);
       expect(discount.discountAmount.amount.toNumber()).toBe(25);
     });
@@ -474,13 +496,13 @@ describe('PricingCalculator', () => {
       const rule1 = makeRule(
         'rule-pct-1',
         ALWAYS_ACTIVE_CONDITION,
-        { type: 'PERCENTAGE', value: 10 },
+        { type: PricingRuleEffectType.PERCENTAGE, value: 10 },
         { stackable: true },
       );
       const rule2 = makeRule(
         'rule-pct-2',
         ALWAYS_ACTIVE_CONDITION,
-        { type: 'PERCENTAGE', value: 10 },
+        { type: PricingRuleEffectType.PERCENTAGE, value: 10 },
         { stackable: true },
       );
 

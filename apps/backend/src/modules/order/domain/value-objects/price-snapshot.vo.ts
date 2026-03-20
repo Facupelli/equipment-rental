@@ -1,3 +1,4 @@
+import { PricingRuleEffectType } from '@repo/types';
 import Decimal from 'decimal.js';
 
 // ---------------------------------------------------------------------------
@@ -13,7 +14,7 @@ import Decimal from 'decimal.js';
 
 export type DiscountLineItem = {
   ruleId: string;
-  type: 'PERCENTAGE' | 'FLAT';
+  type: PricingRuleEffectType;
   value: number; // configured rule value — e.g. 10 for 10%, 20 for $20 flat
   discountAmount: Decimal; // actual money deducted for this rule
 };
@@ -82,7 +83,7 @@ export class PriceSnapshot {
       pricePerBillingUnit: new Decimal(data.pricePerBillingUnit as string),
       discounts: (data.discounts as Array<Record<string, unknown>>).map((d) => ({
         ruleId: d.ruleId as string,
-        type: d.type as 'PERCENTAGE' | 'FLAT',
+        type: d.type as PricingRuleEffectType,
         value: d.value as number,
         discountAmount: new Decimal(d.discountAmount as string),
       })),

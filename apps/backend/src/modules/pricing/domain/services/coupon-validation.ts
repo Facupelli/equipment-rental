@@ -47,7 +47,7 @@ export class CouponValidationService {
 
     // ── 3. Customer restriction ───────────────────────────────────────────
     // Guest (undefined) attempting a customer-restricted coupon fails here.
-    if (!coupon.isRestrictedTo(customerId)) {
+    if (!coupon.canBeUsedBy(customerId)) {
       return { valid: false, reason: 'CUSTOMER_RESTRICTED' };
     }
 

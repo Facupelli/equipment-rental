@@ -111,7 +111,7 @@ export class PricingRule {
     const condition = this.condition;
 
     switch (condition.type) {
-      case 'SEASONAL': {
+      case PricingRuleType.SEASONAL: {
         const from = new Date(condition.dateFrom);
         const to = new Date(condition.dateTo);
         // Rule applies if the rental starts within the seasonal window.
@@ -119,22 +119,24 @@ export class PricingRule {
         return context.period.start >= from && context.period.start <= to;
       }
 
-      case 'VOLUME': {
+      case PricingRuleType.VOLUME: {
         const count = context.orderItemCountByCategory[condition.categoryId] ?? 0;
         return count >= condition.threshold;
       }
 
-      case 'COUPON': {
+      case PricingRuleType.COUPON: {
         // The application layer validates the coupon and injects the rule ID
         // into context before the calculator runs. The domain trusts that
         // pre-validation — it only checks presence in the injected list.
         return context.applicableCouponRuleIds?.includes(this.id) ?? false;
       }
 
-      case 'CUSTOMER_SPECIFIC': {
+      case PricingRuleType.CUSTOMER_SPECIFIC: {
         // Guest orders (undefined customerId) never match customer-specific rules.
         return context.customerId === condition.customerId;
       }
     }
+
+    return false;
   }
 }

@@ -5,10 +5,11 @@ import { PricingRule } from '../entities/pricing-rule.entity';
 import { RuleApplicationContext } from '../types/pricing-rule.types';
 import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exeptions';
 import { PricingTier } from '../entities/pricing-tier.entity';
+import { PricingRuleEffectType } from '@repo/types';
 
 export type AppliedDiscount = {
   ruleId: string;
-  type: 'PERCENTAGE' | 'FLAT';
+  type: PricingRuleEffectType;
   value: number;
   discountAmount: Money;
 };
@@ -145,9 +146,14 @@ export class PricingCalculator {
       // Distribute the combined discount proportionally back to each rule
       // so each rule records its individual contribution.
       for (const rule of percentageRules) {
-        const effect = rule.effect as { type: 'PERCENTAGE'; value: number };
+        const effect = rule.effect as { type: PricingRuleEffectType.PERCENTAGE; value: number };
         const discountAmount = base.multiply(new Decimal(effect.value).div(100));
-        appliedDiscounts.push({ ruleId: rule.id, type: 'PERCENTAGE', value: effect.value, discountAmount });
+        appliedDiscounts.push({
+          ruleId: rule.id,
+          type: PricingRuleEffectType.PERCENTAGE,
+          value: effect.value,
+          discountAmount,
+        });
       }
 
       const totalDiscountAmount = base.multiply(new Decimal(totalPercentage).div(100));
@@ -156,9 +162,9 @@ export class PricingCalculator {
 
     // ── Flat discounts: applied sequentially ──────────────────────────────
     for (const rule of flatRules) {
-      const effect = rule.effect as { type: 'FLAT'; value: number };
+      const effect = rule.effect as { type: PricingRuleEffectType.FLAT; value: number };
       const discountAmount = Money.of(effect.value, currency);
-      appliedDiscounts.push({ ruleId: rule.id, type: 'FLAT', value: effect.value, discountAmount });
+      appliedDiscounts.push({ ruleId: rule.id, type: PricingRuleEffectType.FLAT, value: effect.value, discountAmount });
       result = result.subtract(discountAmount);
     }
 

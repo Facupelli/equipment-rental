@@ -2,27 +2,28 @@
 // Each rule type has a distinct, narrowly typed condition shape.
 // Using a discriminated union prevents condition/type mismatches at compile time.
 
+import { PricingRuleEffectType, PricingRuleType } from '@repo/types';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
 
 export type SeasonalCondition = {
-  type: 'SEASONAL';
+  type: PricingRuleType.SEASONAL;
   dateFrom: string; // ISO date string — compared against period.start
   dateTo: string;
 };
 
 export type VolumeCondition = {
-  type: 'VOLUME';
+  type: PricingRuleType.VOLUME;
   categoryId: string;
   threshold: number; // minimum OrderItem count in that category to trigger
 };
 
 export type CouponCondition = {
-  type: 'COUPON';
+  type: PricingRuleType.COUPON;
   code: string;
 };
 
 export type CustomerSpecificCondition = {
-  type: 'CUSTOMER_SPECIFIC';
+  type: PricingRuleType.CUSTOMER_SPECIFIC;
   customerId: string;
 };
 
@@ -31,12 +32,12 @@ export type PricingRuleCondition = SeasonalCondition | VolumeCondition | CouponC
 // ── Effects ───────────────────────────────────────────────────────────────────
 
 export type PercentageEffect = {
-  type: 'PERCENTAGE';
+  type: PricingRuleEffectType.PERCENTAGE;
   value: number; // 0–100
 };
 
 export type FlatEffect = {
-  type: 'FLAT';
+  type: PricingRuleEffectType.FLAT;
   value: number; // stored as decimal amount, currency resolved at runtime
 };
 

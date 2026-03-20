@@ -1,5 +1,11 @@
 import { randomUUID } from 'crypto';
 
+import {
+  InvalidCouponDateRangeException,
+  CouponUsageLimitException,
+  RestrictedCouponMissingPerCustomerLimitException,
+} from '../exceptions/coupon.exceptions';
+
 export interface CreateCouponProps {
   tenantId: string;
   pricingRuleId: string;
@@ -39,6 +45,18 @@ export class Coupon {
   ) {}
 
   static create(props: CreateCouponProps): Coupon {
+    if (props.validFrom && props.validUntil && props.validFrom >= props.validUntil) {
+      throw new InvalidCouponDateRangeException();
+    }
+
+    if (props.maxUses && props.maxUsesPerCustomer && props.maxUsesPerCustomer > props.maxUses) {
+      throw new CouponUsageLimitException();
+    }
+
+    if (props.restrictedToCustomerId && !props.maxUsesPerCustomer) {
+      throw new RestrictedCouponMissingPerCustomerLimitException();
+    }
+
     return new Coupon(
       randomUUID(),
       props.tenantId,
@@ -94,12 +112,12 @@ export class Coupon {
   }
 
   /**
-   * Checks whether the coupon is usable by the given customer.
+   * Checks whether the coupon can be used by the given customer.
    * - No restriction: anyone can use it, including guests.
    * - Restricted: only the specific customer matches.
    *   A guest (undefined) never matches a restricted coupon.
    */
-  isRestrictedTo(customerId: string | undefined): boolean {
+  canBeUsedBy(customerId: string | undefined): boolean {
     if (!this.restrictedToCustomerId) return true;
     return this.restrictedToCustomerId === customerId;
   }

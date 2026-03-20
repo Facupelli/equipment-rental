@@ -13,21 +13,29 @@ import { CouponApplicationService } from './application/coupon.application-servi
 import { CouponRepository } from './infrastructure/repositories/coupon.repository';
 import { CouponRepositoryPort } from './domain/ports/coupon.repository.port';
 import { CouponRedemptionRepository } from './infrastructure/repositories/coupon-redemption.repoistory';
+import { CreatePricingRuleCommandHandler } from './application/commands/create-pricing-rule/create-pricing-rule.command-handler';
+import { CreateCouponCommandHandler } from './application/commands/create-coupon/create-coupon.command-handler';
+import { PricingRuleRepository } from './infrastructure/repositories/pricing-rule.repository';
+import { PricingRuleRepositoryPort } from './domain/ports/pricing-rule.repository.port';
 
 @Module({
   imports: [CatalogModule],
   controllers: [PricingController, PricingTierController],
   providers: [
     { provide: PricingConfigurationRepositoryPort, useClass: PricingConfigurationRepository },
+    { provide: PricingRuleRepositoryPort, useClass: PricingRuleRepository },
     { provide: CouponRepositoryPort, useClass: CouponRepository },
     CouponRedemptionRepository,
     // services
     PricingQueryService,
     CouponApplicationService,
     { provide: PricingPublicApi, useClass: PricingApplicationService },
-    // cqrs
-    CalculateCartPricesQueryHandler,
+    // commands
     SetPricingTiersCommandHandler,
+    CreatePricingRuleCommandHandler,
+    CreateCouponCommandHandler,
+    // queries
+    CalculateCartPricesQueryHandler,
   ],
   exports: [
     PricingPublicApi,
