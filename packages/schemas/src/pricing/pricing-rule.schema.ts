@@ -59,7 +59,7 @@ export const PricingRuleEffectSchema = z.discriminatedUnion("type", [
 
 // ── Create pricing rule schema ────────────────────────────────────────────────
 
-export const CreatePricingRuleSchema = z
+export const createPricingRuleSchema = z
   .object({
     type: z.enum(PricingRuleType),
     scope: z.enum(PricingRuleScope),
@@ -92,4 +92,4 @@ export const CreatePricingRuleSchema = z
     }
   });
 
-export type CreatePricingRuleDto = z.infer<typeof CreatePricingRuleSchema>;
+export type CreatePricingRuleDto = z.infer<typeof createPricingRuleSchema>;
