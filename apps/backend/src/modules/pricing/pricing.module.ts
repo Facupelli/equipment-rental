@@ -9,17 +9,30 @@ import { SetPricingTiersCommandHandler } from './application/commands/set-pricin
 import { PricingConfigurationRepository } from './infrastructure/repositories/pricing-config.repository';
 import { PricingConfigurationRepositoryPort } from './domain/ports/pricing-config.repository.port';
 import { CatalogModule } from '../catalog/catalog.module';
+import { CouponApplicationService } from './application/coupon.application-service';
+import { CouponRepository } from './infrastructure/repositories/coupon.repository';
+import { CouponRepositoryPort } from './domain/ports/coupon.repository.port';
+import { CouponRedemptionRepository } from './infrastructure/repositories/coupon-redemption.repoistory';
 
 @Module({
   imports: [CatalogModule],
   controllers: [PricingController, PricingTierController],
   providers: [
     { provide: PricingConfigurationRepositoryPort, useClass: PricingConfigurationRepository },
+    { provide: CouponRepositoryPort, useClass: CouponRepository },
+    CouponRedemptionRepository,
+    // services
     PricingQueryService,
+    CouponApplicationService,
     { provide: PricingPublicApi, useClass: PricingApplicationService },
+    // cqrs
     CalculateCartPricesQueryHandler,
     SetPricingTiersCommandHandler,
   ],
-  exports: [PricingPublicApi],
+  exports: [
+    PricingPublicApi,
+    // TODO: handle this cross-module dependency, only used by order module
+    CouponApplicationService,
+  ],
 })
 export class PricingModule {}

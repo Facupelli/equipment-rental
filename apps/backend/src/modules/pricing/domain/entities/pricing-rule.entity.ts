@@ -124,13 +124,17 @@ export class PricingRule {
         return count >= condition.threshold;
       }
 
-      case 'COUPON':
-        // Not active in MVP — never matches
-        return false;
+      case 'COUPON': {
+        // The application layer validates the coupon and injects the rule ID
+        // into context before the calculator runs. The domain trusts that
+        // pre-validation — it only checks presence in the injected list.
+        return context.applicableCouponRuleIds?.includes(this.id) ?? false;
+      }
 
-      case 'CUSTOMER_SPECIFIC':
-        // Not active in MVP — never matches
-        return false;
+      case 'CUSTOMER_SPECIFIC': {
+        // Guest orders (undefined customerId) never match customer-specific rules.
+        return context.customerId === condition.customerId;
+      }
     }
   }
 }

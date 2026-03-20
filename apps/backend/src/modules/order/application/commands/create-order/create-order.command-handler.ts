@@ -28,6 +28,7 @@ import {
   ActiveContractDto,
   FindActiveContractForScopeQuery,
 } from 'src/modules/tenant/owner/application/queries/find-active-owner-contract/find-active-owner-contract.query';
+import { CouponApplicationService } from 'src/modules/pricing/application/coupon.application-service';
 
 // ── Resolved item types ──────────────────────────────────────────────────────
 
@@ -84,7 +85,8 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     private readonly inventoryApi: InventoryPublicApi,
     private readonly pricingApi: PricingPublicApi,
     private readonly orderQuery: OrderQueryService,
-    private readonly queryBus: QueryBus, // CHANGED: injected for contract lookup
+    private readonly couponService: CouponApplicationService,
+    private readonly queryBus: QueryBus,
   ) {}
 
   async execute(command: CreateOrderCommand): Promise<Result<string, CreateOrderError>> {
@@ -93,16 +95,30 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     }
 
     const validation = await this.validateSlots(command);
-    if (validation.isErr()) return validation;
+    if (validation.isErr()) {
+      return validation;
+    }
+
+    const now = new Date();
+    let resolvedCoupon: { couponId: string; ruleId: string } | undefined;
+
+    if (command.couponCode) {
+      resolvedCoupon = await this.couponService.resolveCouponForPricing({
+        tenantId: command.tenantId,
+        code: command.couponCode,
+        customerId: command.customerId,
+        now,
+      });
+    }
 
     const period = await this.derivePeriod(command);
-    const resolvedItems = await this.resolveItems(command, period);
+    const resolvedItems = await this.resolveItems(command, period, resolvedCoupon);
 
     return this.prisma.client.$transaction(async (tx) => {
       const order = Order.create({
         tenantId: command.tenantId,
         locationId: command.locationId,
-        customerId: command.customerId ?? undefined,
+        customerId: command.customerId,
       });
 
       // ── Phase 1: aggregate demand ──────────────────────────────────────
@@ -280,6 +296,18 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
       order.transitionTo(OrderStatus.SOURCED);
       await this.orderRepo.save(order, tx);
 
+      if (resolvedCoupon) {
+        await this.couponService.redeemWithinTransaction(
+          {
+            couponId: resolvedCoupon.couponId,
+            orderId: order.id,
+            customerId: command.customerId,
+            now,
+          },
+          tx,
+        );
+      }
+
       const saveResults = await Promise.all(
         pendingAssignments.map((assignment) => this.inventoryApi.saveAssignment(assignment, tx)),
       );
@@ -345,9 +373,15 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
 
   // ── Private: item resolution ─────────────────────────────────────────────
 
-  private async resolveItems(command: CreateOrderCommand, period: DateRange): Promise<ResolvedItem[]> {
+  private async resolveItems(
+    command: CreateOrderCommand,
+    period: DateRange,
+    resolvedCoupon: { couponId: string; ruleId: string } | undefined, // ADD
+  ): Promise<ResolvedItem[]> {
     const metas = await this.loadItemMetadata(command);
     const orderItemCountByCategory = this.buildCategoryCountMap(command, metas);
+
+    const applicableCouponRuleIds = resolvedCoupon ? [resolvedCoupon.ruleId] : undefined;
 
     return Promise.all(
       command.items.map((item): Promise<ResolvedItem> => {
@@ -360,6 +394,8 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
               period,
               currency: command.currency,
               orderItemCountByCategory,
+              applicableCouponRuleIds,
+              customerId: command.customerId,
             })
             .then((price) => ({
               type: 'PRODUCT' as const,
@@ -383,6 +419,8 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
               period,
               currency: command.currency,
               orderItemCountByCategory,
+              applicableCouponRuleIds,
+              customerId: command.customerId,
             }),
             this.pricingApi.getComponentStandalonePrices({
               tenantId: command.tenantId,

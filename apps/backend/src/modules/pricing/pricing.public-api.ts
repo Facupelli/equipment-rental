@@ -8,9 +8,13 @@ export type CalculateProductPriceDto = {
   productTypeId: string;
   period: { start: Date; end: Date };
   currency: string;
-  // Full count of OrderItems per category in the current order.
-  // Required for VOLUME rule evaluation — cannot be derived from a single item.
   orderItemCountByCategory: Record<string, number>;
+  // Optional — only present when a coupon has been pre-validated upstream.
+  // Injected into RuleApplicationContext for COUPON rule evaluation.
+  applicableCouponRuleIds?: string[];
+  // Optional — only present for authenticated customer orders.
+  // Injected into RuleApplicationContext for CUSTOMER_SPECIFIC rule evaluation.
+  customerId?: string;
 };
 
 export type CalculateBundlePriceDto = {
@@ -20,6 +24,8 @@ export type CalculateBundlePriceDto = {
   period: { start: Date; end: Date };
   currency: string;
   orderItemCountByCategory: Record<string, number>;
+  applicableCouponRuleIds?: string[];
+  customerId?: string;
 };
 
 export type GetComponentStandalonePricesDto = {

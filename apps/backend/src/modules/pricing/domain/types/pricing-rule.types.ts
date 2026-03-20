@@ -54,4 +54,6 @@ export type RuleApplicationContext = {
   // Count of OrderItems per category in the current order.
   // Required for VOLUME rule evaluation — a single item cannot self-evaluate.
   orderItemCountByCategory: Record<string, number>;
+  customerId?: string;
+  applicableCouponRuleIds?: string[];
 };

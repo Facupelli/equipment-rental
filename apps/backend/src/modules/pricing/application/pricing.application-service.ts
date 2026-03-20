@@ -37,6 +37,8 @@ export class PricingApplicationService implements PricingPublicApi {
       productTypeId: dto.productTypeId,
       categoryId: meta.categoryId ?? undefined,
       orderItemCountByCategory: dto.orderItemCountByCategory,
+      customerId: dto.customerId,
+      applicableCouponRuleIds: dto.applicableCouponRuleIds,
     };
 
     return this.calculator.calculate({
@@ -67,6 +69,8 @@ export class PricingApplicationService implements PricingPublicApi {
       period,
       bundleId: dto.bundleId,
       orderItemCountByCategory: dto.orderItemCountByCategory,
+      customerId: dto.customerId,
+      applicableCouponRuleIds: dto.applicableCouponRuleIds,
     };
 
     return this.calculator.calculate({
