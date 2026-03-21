@@ -1,13 +1,19 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
 import { CreateCouponCommand } from '../../application/commands/create-coupon/create-coupon.command';
-import { CreateCouponDto } from '@repo/schemas';
+import { CouponView, CreateCouponDto, PaginatedDto } from '@repo/schemas';
+import { ListCouponsQueryDto } from '../../application/dto/list-coupons-query.dto';
+import { ListCouponsQuery } from '../../presentation/queries/list-coupons/list-coupons.query';
+import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 
 @Controller('pricing/coupons')
 export class CouponsController {
-  constructor(private readonly commandBus: CommandBus) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -26,5 +32,15 @@ export class CouponsController {
     );
 
     return { id };
+  }
+
+  @Get()
+  @Paginated()
+  @HttpCode(HttpStatus.OK)
+  async listCoupons(
+    @CurrentUser() user: ReqUser,
+    @Query() query: ListCouponsQueryDto,
+  ): Promise<PaginatedDto<CouponView>> {
+    return this.queryBus.execute(new ListCouponsQuery(user.tenantId, query.page, query.limit, query.search));
   }
 }

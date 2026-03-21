@@ -19,10 +19,12 @@ import { PricingRuleRepository } from './infrastructure/repositories/pricing-rul
 import { PricingRuleRepositoryPort } from './domain/ports/pricing-rule.repository.port';
 import { ListPricingRulesHandler } from './presentation/queries/list-pricing-rules/list-pricing-rules.query-handler';
 import { ListCouponsHandler } from './presentation/queries/list-coupons/list-coupons.query-handler';
+import { PricingRulesController } from './infrastructure/controllers/pricing-rules.controller';
+import { CouponsController } from './infrastructure/controllers/coupon.controller';
 
 @Module({
   imports: [CatalogModule],
-  controllers: [PricingController, PricingTierController],
+  controllers: [PricingController, PricingTierController, PricingRulesController, CouponsController],
   providers: [
     { provide: PricingConfigurationRepositoryPort, useClass: PricingConfigurationRepository },
     { provide: PricingRuleRepositoryPort, useClass: PricingRuleRepository },

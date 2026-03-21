@@ -40,6 +40,8 @@ export const PricingRuleConditionSchema = z.discriminatedUnion("type", [
   CustomerSpecificConditionSchema,
 ]);
 
+export type PricingRuleCondition = z.infer<typeof PricingRuleConditionSchema>;
+
 // ── Effect schemas ────────────────────────────────────────────────────────────
 
 export const PercentageEffectSchema = z.object({
@@ -56,6 +58,8 @@ export const PricingRuleEffectSchema = z.discriminatedUnion("type", [
   PercentageEffectSchema,
   FlatEffectSchema,
 ]);
+
+export type PricingRuleEffect = z.infer<typeof PricingRuleEffectSchema>;
 
 // ── Create pricing rule schema ────────────────────────────────────────────────
 

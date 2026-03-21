@@ -16,10 +16,6 @@ import type { ProblemDetailsError } from "@/shared/errors";
 
 type PaginatedProducts = PaginatedDto<ProductTypeResponse>;
 
-// -------------------------------------------------------
-// Type helpers for the "Menace" pattern (optional overrides)
-// -------------------------------------------------------
-
 export type ProductsQueryOverrides<TData = PaginatedProducts> = Omit<
   UseQueryOptions<PaginatedProducts, ProblemDetailsError, TData>,
   "queryKey" | "queryFn"

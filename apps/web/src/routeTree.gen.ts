@@ -25,6 +25,7 @@ import { Route as AdminAdminRegisterRouteImport } from './routes/_admin/admin/re
 import { Route as AdminAdminLoginRouteImport } from './routes/_admin/admin/login'
 import { Route as AdminDashboardSettingsIndexRouteImport } from './routes/_admin/dashboard/settings/index'
 import { Route as AdminDashboardScheduleIndexRouteImport } from './routes/_admin/dashboard/schedule/index'
+import { Route as AdminDashboardPricingIndexRouteImport } from './routes/_admin/dashboard/pricing/index'
 import { Route as AdminDashboardOwnersIndexRouteImport } from './routes/_admin/dashboard/owners/index'
 import { Route as AdminDashboardLocationsIndexRouteImport } from './routes/_admin/dashboard/locations/index'
 import { Route as AdminDashboardCustomersIndexRouteImport } from './routes/_admin/dashboard/customers/index'
@@ -121,6 +122,12 @@ const AdminDashboardScheduleIndexRoute =
   AdminDashboardScheduleIndexRouteImport.update({
     id: '/schedule/',
     path: '/schedule/',
+    getParentRoute: () => AdminDashboardRouteRoute,
+  } as any)
+const AdminDashboardPricingIndexRoute =
+  AdminDashboardPricingIndexRouteImport.update({
+    id: '/pricing/',
+    path: '/pricing/',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
 const AdminDashboardOwnersIndexRoute =
@@ -235,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/owners/': typeof AdminDashboardOwnersIndexRoute
+  '/dashboard/pricing/': typeof AdminDashboardPricingIndexRoute
   '/dashboard/schedule/': typeof AdminDashboardScheduleIndexRoute
   '/dashboard/settings/': typeof AdminDashboardSettingsIndexRoute
   '/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdRoute
@@ -266,6 +274,7 @@ export interface FileRoutesByTo {
   '/dashboard/customers': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/owners': typeof AdminDashboardOwnersIndexRoute
+  '/dashboard/pricing': typeof AdminDashboardPricingIndexRoute
   '/dashboard/schedule': typeof AdminDashboardScheduleIndexRoute
   '/dashboard/settings': typeof AdminDashboardSettingsIndexRoute
   '/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdRoute
@@ -300,6 +309,7 @@ export interface FileRoutesById {
   '/_admin/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/_admin/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/_admin/dashboard/owners/': typeof AdminDashboardOwnersIndexRoute
+  '/_admin/dashboard/pricing/': typeof AdminDashboardPricingIndexRoute
   '/_admin/dashboard/schedule/': typeof AdminDashboardScheduleIndexRoute
   '/_admin/dashboard/settings/': typeof AdminDashboardSettingsIndexRoute
   '/_admin/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdRoute
@@ -334,6 +344,7 @@ export interface FileRouteTypes {
     | '/dashboard/customers/'
     | '/dashboard/locations/'
     | '/dashboard/owners/'
+    | '/dashboard/pricing/'
     | '/dashboard/schedule/'
     | '/dashboard/settings/'
     | '/dashboard/catalog/bundles/$bundleId'
@@ -365,6 +376,7 @@ export interface FileRouteTypes {
     | '/dashboard/customers'
     | '/dashboard/locations'
     | '/dashboard/owners'
+    | '/dashboard/pricing'
     | '/dashboard/schedule'
     | '/dashboard/settings'
     | '/dashboard/catalog/bundles/$bundleId'
@@ -398,6 +410,7 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/customers/'
     | '/_admin/dashboard/locations/'
     | '/_admin/dashboard/owners/'
+    | '/_admin/dashboard/pricing/'
     | '/_admin/dashboard/schedule/'
     | '/_admin/dashboard/settings/'
     | '/_admin/dashboard/catalog/bundles/$bundleId'
@@ -532,6 +545,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/dashboard/schedule/'
       preLoaderRoute: typeof AdminDashboardScheduleIndexRouteImport
+      parentRoute: typeof AdminDashboardRouteRoute
+    }
+    '/_admin/dashboard/pricing/': {
+      id: '/_admin/dashboard/pricing/'
+      path: '/pricing'
+      fullPath: '/dashboard/pricing/'
+      preLoaderRoute: typeof AdminDashboardPricingIndexRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
     '/_admin/dashboard/owners/': {
@@ -673,6 +693,7 @@ interface AdminDashboardRouteRouteChildren {
   AdminDashboardCustomersIndexRoute: typeof AdminDashboardCustomersIndexRoute
   AdminDashboardLocationsIndexRoute: typeof AdminDashboardLocationsIndexRoute
   AdminDashboardOwnersIndexRoute: typeof AdminDashboardOwnersIndexRoute
+  AdminDashboardPricingIndexRoute: typeof AdminDashboardPricingIndexRoute
   AdminDashboardScheduleIndexRoute: typeof AdminDashboardScheduleIndexRoute
   AdminDashboardSettingsIndexRoute: typeof AdminDashboardSettingsIndexRoute
   AdminDashboardCatalogBundlesBundleIdRoute: typeof AdminDashboardCatalogBundlesBundleIdRoute
@@ -696,6 +717,7 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
   AdminDashboardCustomersIndexRoute: AdminDashboardCustomersIndexRoute,
   AdminDashboardLocationsIndexRoute: AdminDashboardLocationsIndexRoute,
   AdminDashboardOwnersIndexRoute: AdminDashboardOwnersIndexRoute,
+  AdminDashboardPricingIndexRoute: AdminDashboardPricingIndexRoute,
   AdminDashboardScheduleIndexRoute: AdminDashboardScheduleIndexRoute,
   AdminDashboardSettingsIndexRoute: AdminDashboardSettingsIndexRoute,
   AdminDashboardCatalogBundlesBundleIdRoute:
