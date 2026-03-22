@@ -19,7 +19,6 @@ export type VolumeCondition = {
 
 export type CouponCondition = {
   type: PricingRuleType.COUPON;
-  code: string;
 };
 
 export type CustomerSpecificCondition = {

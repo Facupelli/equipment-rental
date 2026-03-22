@@ -17,17 +17,17 @@ export class CouponRepository implements CouponRepositoryPort {
   }
 
   async loadByCode(tenantId: string, code: string): Promise<Coupon | null> {
-    const raw = await this.prisma.client.coupon.findUnique({
+    const row = await this.prisma.client.coupon.findFirst({
       where: {
-        tenantId_code: {
-          tenantId,
-          // Normalize to uppercase — codes are stored uppercased at creation time.
-          code: code.trim().toUpperCase(),
-        },
+        tenantId,
+        code,
       },
     });
 
-    return raw ? CouponMapper.toDomain(raw) : null;
+    if (!row) {
+      return null;
+    }
+    return CouponMapper.toDomain(row);
   }
 
   async save(coupon: Coupon, tx?: PrismaTransactionClient): Promise<string> {

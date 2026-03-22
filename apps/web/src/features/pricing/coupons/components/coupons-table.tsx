@@ -18,10 +18,10 @@ export function CouponsTable({ coupons }: CouponsTableProps) {
   return (
     <Table>
       <TableHeader>
-        <TableRow className="text-xs uppercase tracking-widest text-muted-foreground">
-          <TableHead className="w-45">Código</TableHead>
+        <TableRow>
+          <TableHead>Código</TableHead>
           <TableHead>Regla Vinculada</TableHead>
-          <TableHead className="w-50">Uso</TableHead>
+          <TableHead>Uso</TableHead>
           <TableHead>Validez</TableHead>
           <TableHead className="text-right">Estado</TableHead>
         </TableRow>

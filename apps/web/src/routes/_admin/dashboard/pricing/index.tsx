@@ -1,11 +1,11 @@
+import z from "zod";
 import { createFileRoute } from "@tanstack/react-router";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
-import z from "zod";
 import { PricingRulesTab } from "@/features/pricing/pricing-rules/components/pricing-rules-tab";
 import { CouponsTab } from "@/features/pricing/coupons/components/coupons-tab";
+import { CreatePricingRuleDialogForm } from "@/features/pricing/pricing-rules/components/create-pricing-rule-dialog-form";
+import { CreateCouponDialogForm } from "@/features/pricing/coupons/components/create-coupon-dialog-form";
 
 const promotionsSearchSchema = z.object({
   tab: z.enum(["rules", "coupons"]).default("rules"),
@@ -45,10 +45,8 @@ function RouteComponent() {
             de alquiler.
           </p>
         </div>
-        <Button className="shrink-0 gap-2">
-          <Plus className="h-4 w-4" />
-          Nueva Regla
-        </Button>
+        {tab === "rules" && <CreatePricingRuleDialogForm />}
+        {tab === "coupons" && <CreateCouponDialogForm />}
       </div>
 
       {/* Tabs */}

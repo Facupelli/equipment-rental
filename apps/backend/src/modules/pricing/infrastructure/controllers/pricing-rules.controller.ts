@@ -41,6 +41,8 @@ export class PricingRulesController {
     @CurrentUser() user: ReqUser,
     @Query() query: ListPricingRulesQueryDto,
   ): Promise<PaginatedDto<PricingRuleView>> {
-    return this.queryBus.execute(new ListPricingRulesQuery(user.tenantId, query.page, query.limit, query.search));
+    return this.queryBus.execute(
+      new ListPricingRulesQuery(user.tenantId, query.page, query.limit, query.search, query.type),
+    );
   }
 }

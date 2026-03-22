@@ -8,7 +8,7 @@ export class ListPricingRulesHandler implements IQueryHandler<ListPricingRulesQu
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: ListPricingRulesQuery): Promise<PaginatedDto<PricingRuleView>> {
-    const { tenantId, page, limit, search } = query;
+    const { tenantId, page, limit, search, type } = query;
     const skip = (page - 1) * limit;
 
     const where = {
@@ -16,6 +16,7 @@ export class ListPricingRulesHandler implements IQueryHandler<ListPricingRulesQu
       ...(search && {
         name: { contains: search, mode: 'insensitive' as const },
       }),
+      ...(type && { type }),
     };
 
     const [rows, total] = await Promise.all([

@@ -27,8 +27,8 @@ export function PricingRulesTable({ rules }: PricingRulesTableProps) {
   return (
     <Table>
       <TableHeader>
-        <TableRow className="text-xs uppercase tracking-widest text-muted-foreground">
-          <TableHead className="w-55">Tipo de Regla</TableHead>
+        <TableRow>
+          <TableHead>Tipo de Regla</TableHead>
           <TableHead>Alcance</TableHead>
           <TableHead>Resumen Condición</TableHead>
           <TableHead>Efecto</TableHead>
@@ -75,7 +75,7 @@ function RuleTypeCell({ rule }: { rule: PricingRuleView }) {
         {rule.name}
       </span>
       <span className="text-xs text-muted-foreground">
-        {rule.stackable ? "Apilable" : "Automático"}
+        {rule.stackable ? "Apilable" : "No Apilable"}
       </span>
     </div>
   );

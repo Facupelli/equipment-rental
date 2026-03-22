@@ -5,8 +5,6 @@ import {
 } from "@repo/types";
 import { z } from "zod";
 
-// ── Condition schemas ─────────────────────────────────────────────────────────
-
 export const SeasonalConditionSchema = z.object({
   type: z.literal(PricingRuleType.SEASONAL),
   dateFrom: z.iso.datetime({
@@ -25,7 +23,6 @@ export const VolumeConditionSchema = z.object({
 
 export const CouponConditionSchema = z.object({
   type: z.literal(PricingRuleType.COUPON),
-  code: z.string().min(1).trim().toUpperCase(),
 });
 
 export const CustomerSpecificConditionSchema = z.object({
