@@ -5,6 +5,15 @@ import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range
 import { PricingPublicApi } from '../../../pricing.public-api';
 import { CalculateCartPricesQuery, CartQueryProductItem } from './calculate-cart-prices.query';
 import { PricingQueryService } from '../../../infrastructure/services/pricing-query.service';
+import Decimal from 'decimal.js';
+
+export type CartDiscountLineItem = {
+  ruleId: string;
+  ruleLabel: string;
+  type: 'PERCENTAGE' | 'FLAT';
+  value: number;
+  discountAmount: number;
+};
 
 export type CartPriceLineItem = {
   type: 'PRODUCT' | 'BUNDLE';
@@ -12,11 +21,15 @@ export type CartPriceLineItem = {
   quantity: number;
   pricePerBillingUnit: number;
   subtotal: number;
+  discounts: CartDiscountLineItem[];
 };
 
 export type CartPriceResult = {
   lineItems: CartPriceLineItem[];
   total: number;
+  totalBeforeDiscounts: number;
+  totalDiscount: number;
+  couponApplied: boolean;
 };
 
 /**
@@ -38,7 +51,13 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
   async execute(query: CalculateCartPricesQuery): Promise<CartPriceResult> {
     // ── Step 1: Guard empty cart ───────────────────────────────────────────
     if (query.items.length === 0) {
-      return { lineItems: [], total: 0 };
+      return {
+        lineItems: [],
+        total: 0,
+        totalBeforeDiscounts: 0,
+        totalDiscount: 0,
+        couponApplied: false,
+      };
     }
 
     // ── Step 2: Validate period ────────────────────────────────────────────
@@ -82,7 +101,31 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
       }
     }
 
-    // ── Step 5: Fire all pricing calls in parallel ─────────────────────────
+    // ── Step 5: Resolve coupon (NEW) ─────────────────────────────────────────
+    // Read-only resolution — no redemption recorded, no transaction needed.
+    // Failure is silent in the cart: if the code is invalid, we still return
+    // prices but with couponApplied: false. The API layer should validate the
+    // code explicitly on a dedicated endpoint if you want inline error messages.
+    // let applicableCouponRuleIds: string[] | undefined;
+    const couponApplied = false;
+
+    // if (query.couponCode) {
+    //   try {
+    //     const resolved = await this.couponService.resolveCouponForPricing({
+    //       tenantId: query.tenantId,
+    //       code: query.couponCode,
+    //       customerId: query.customerId,
+    //       now: new Date(),
+    //     });
+    //     applicableCouponRuleIds = [resolved.ruleId];
+    //     couponApplied = true;
+    //   } catch {
+    //     // Invalid or expired coupon — prices return without discount.
+    //     // couponApplied stays false.
+    //   }
+    // }
+
+    // ── Step 6: Fire all pricing calls in parallel ─────────────────────────
     // Each unit is priced independently — this matches how CreateOrderHandler
     // will price each OrderItem at order creation time.
     const { tenantId, locationId, currency, period } = query;
@@ -119,10 +162,19 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
       const unitPrices = allPrices.slice(cursor, cursor + item.quantity);
       cursor += item.quantity;
 
-      // All units for the same item share the same inputs → same price.
-      // We take index 0 as the canonical per-unit price.
       const pricePerBillingUnit = unitPrices[0].pricePerBillingUnit;
-      const subtotal = unitPrices.reduce((acc, result) => acc.add(result.finalPrice), Money.zero(query.currency));
+      const subtotal = unitPrices.reduce((acc, r) => acc.add(r.finalPrice), Money.zero(query.currency));
+
+      // Merge discounts across units of the same line item.
+      // Units share the same inputs so they produce identical discount sets —
+      // we take index 0 as canonical and multiply amounts by quantity.
+      const discounts: CartDiscountLineItem[] = unitPrices[0].appliedDiscounts.map((d) => ({
+        ruleId: d.ruleId,
+        ruleLabel: d.ruleLabel,
+        type: d.type,
+        value: d.value,
+        discountAmount: d.discountAmount.multiply(new Decimal(item.quantity)).toDecimal().toNumber(),
+      }));
 
       return {
         type: item.type,
@@ -130,12 +182,29 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
         quantity: item.quantity,
         pricePerBillingUnit: pricePerBillingUnit.toDecimal().toNumber(),
         subtotal: subtotal.toDecimal().toNumber(),
+        discounts,
       };
     });
 
-    // ── Step 7: Compute total ──────────────────────────────────────────────
+    // ── Step 8: Compute total ──────────────────────────────────────────────
     const total = lineItems.reduce((acc, line) => acc + line.subtotal, 0);
 
-    return { lineItems, total };
+    const totalBeforeDiscounts = allPrices
+      .reduce((acc, r) => acc.add(r.basePrice), Money.zero(query.currency))
+      .toDecimal()
+      .toNumber();
+
+    const totalDiscount = allPrices
+      .reduce((acc, r) => r.appliedDiscounts.reduce((s, d) => s.add(d.discountAmount), acc), Money.zero(query.currency))
+      .toDecimal()
+      .toNumber();
+
+    return {
+      lineItems,
+      total,
+      totalBeforeDiscounts,
+      totalDiscount,
+      couponApplied,
+    };
   }
 }

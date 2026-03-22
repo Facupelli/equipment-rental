@@ -9,6 +9,7 @@ import { PricingRuleEffectType } from '@repo/types';
 
 export type AppliedDiscount = {
   ruleId: string;
+  ruleLabel: string;
   type: PricingRuleEffectType;
   value: number;
   discountAmount: Money;
@@ -150,6 +151,7 @@ export class PricingCalculator {
         const discountAmount = base.multiply(new Decimal(effect.value).div(100));
         appliedDiscounts.push({
           ruleId: rule.id,
+          ruleLabel: rule.name,
           type: PricingRuleEffectType.PERCENTAGE,
           value: effect.value,
           discountAmount,
@@ -164,7 +166,13 @@ export class PricingCalculator {
     for (const rule of flatRules) {
       const effect = rule.effect as { type: PricingRuleEffectType.FLAT; value: number };
       const discountAmount = Money.of(effect.value, currency);
-      appliedDiscounts.push({ ruleId: rule.id, type: PricingRuleEffectType.FLAT, value: effect.value, discountAmount });
+      appliedDiscounts.push({
+        ruleId: rule.id,
+        ruleLabel: rule.name,
+        type: PricingRuleEffectType.FLAT,
+        value: effect.value,
+        discountAmount,
+      });
       result = result.subtract(discountAmount);
     }
 

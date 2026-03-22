@@ -55,10 +55,13 @@ const OrderItemDetailSchema = z.discriminatedUnion("type", [
 
 const DiscountLineSchema = z.object({
   ruleId: z.uuid(),
+  ruleLabel: z.string(),
   type: z.enum(PricingRuleEffectType),
   value: z.number(),
   discountAmount: z.string(),
 });
+
+export type DiscountLine = z.infer<typeof DiscountLineSchema>;
 
 const OwnerSplitLineSchema = z
   .object({

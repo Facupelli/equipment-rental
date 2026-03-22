@@ -197,6 +197,7 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
         finalPrice: snapshot.finalPrice.toString(),
         discounts: snapshot.discounts.map((d) => ({
           ruleId: d.ruleId,
+          ruleLabel: d.ruleLabel,
           type: d.type,
           value: d.value,
           discountAmount: d.discountAmount.toString(),

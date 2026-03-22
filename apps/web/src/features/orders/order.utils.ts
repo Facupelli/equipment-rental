@@ -1,5 +1,6 @@
 import { OrderItemType } from "@repo/types";
 import type { ParsedOrderDetailResponseDto } from "./queries/get-order-by-id";
+import type { DiscountLine } from "@repo/schemas";
 
 type OrderItem = ParsedOrderDetailResponseDto["items"][number];
 type AssetSummary = OrderItem["assets"][number];
@@ -59,6 +60,20 @@ export function getOwnerDisplay(assets: AssetSummary[]): string | null {
     ),
   ];
   return ownerNames.length > 0 ? ownerNames.join(", ") : null;
+}
+
+/**
+ * Returns a human-readable label for a discount line.
+ * Example: "10% discount" or "$5.00 flat discount"
+ *
+ * Note: discount rule names are not yet included in the response.
+ * This will be updated once the backend exposes the rule label.
+ */
+export function formatDiscountLine(discount: DiscountLine): string {
+  if (discount.type === "PERCENTAGE") {
+    return `${discount.value}% discount`;
+  }
+  return `${formatMoney(discount.discountAmount)} flat discount`;
 }
 
 // ─── Bundle ownership ─────────────────────────────────────────────────────────

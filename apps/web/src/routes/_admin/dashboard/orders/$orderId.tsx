@@ -17,6 +17,7 @@ import {
   User2Icon,
 } from "lucide-react";
 import {
+  formatDiscountLine,
   formatMoney,
   formatOrderNumber,
   getExternalOwnersByProductType,
@@ -479,6 +480,8 @@ function OrderFinancialsCard() {
   const { financial } = order;
   const hasOwnerObligations = financial.ownerObligations !== "0";
 
+  console.log({ financial });
+
   return (
     <section className="bg-white border border-neutral-200 rounded-lg p-5">
       <SidebarSectionLabel label="Financial Summary" />
@@ -486,13 +489,46 @@ function OrderFinancialsCard() {
       <div>
         {financial.items.map((line, i) => (
           <div key={i} className="border-b border-neutral-100">
-            {/* Item line */}
-            <div className="flex items-center justify-between py-2.5">
+            {/* Item label + base price */}
+            <div className="flex items-center justify-between">
               <span className="text-sm text-neutral-500">{line.label}</span>
-              <span className="font-mono text-sm text-neutral-950">
-                {formatMoney(line.finalPrice)}
+              <span
+                className={`font-mono text-sm ${line.discounts.length > 0 ? "text-neutral-400" : "text-neutral-950"}`}
+              >
+                {formatMoney(line.basePrice)}
               </span>
             </div>
+
+            {/* Applied discounts — only shown when discounts exist */}
+            {line.discounts.length > 0 && (
+              <div className="border-l border-neutral-200 pl-3 flex flex-col gap-1">
+                {line.discounts.map((discount) => (
+                  <div
+                    key={discount.ruleId}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="text-[11px] text-neutral-400">
+                      {formatDiscountLine(discount)}
+                    </span>
+                    <span className="font-mono text-[11px] text-emerald-600">
+                      -{formatMoney(discount.discountAmount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Final price — only shown when discounts exist, to close the math */}
+            {line.discounts.length > 0 && (
+              <div className="flex items-center justify-between pt-0.5">
+                <span className="text-[11px] text-neutral-400">
+                  After discounts
+                </span>
+                <span className="font-mono text-sm font-semibold text-neutral-950">
+                  {formatMoney(line.finalPrice)}
+                </span>
+              </div>
+            )}
 
             {/* Owner split breakdown — only shown for external-owned items */}
             {line.ownerSplit && (

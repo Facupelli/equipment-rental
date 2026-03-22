@@ -17,6 +17,7 @@ export function toPriceSnapshot(result: PricingResult, currency: string): PriceS
     pricePerBillingUnit: result.pricePerBillingUnit.toDecimal(),
     discounts: result.appliedDiscounts.map((d) => ({
       ruleId: d.ruleId,
+      ruleLabel: d.ruleLabel,
       type: d.type,
       value: d.value,
       discountAmount: d.discountAmount.toDecimal(),

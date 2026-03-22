@@ -1,12 +1,23 @@
 import type { JoinedLineItem } from "@/features/rental/cart/hooks/use-cart-order";
-import { AlertTriangle, ArrowRight, Banknote, XCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Banknote,
+  Tag,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency } from "../cart.utils";
+import {
+  computeOriginalSubtotal,
+  formatCurrency,
+  formatDiscount,
+} from "../cart.utils";
 import { useCartPageContext } from "../cart-page.context";
 import { PRDOUCT_TYPE_DICT } from "@/features/catalog/catalog.constants";
 import { cn } from "@/lib/utils";
 import { useIsVisible } from "@/shared/hooks/use-is-visible";
+import type { CartDiscountLineItem } from "@repo/schemas";
 
 export function CartPageSidebar() {
   const {
@@ -30,6 +41,8 @@ export function CartPageSidebar() {
       <div className="lg:sticky lg:top-6 border border-neutral-200 bg-white p-6">
         <CartPagePriceBreakdown
           total={breakdown?.total}
+          totalBeforeDiscounts={breakdown?.totalBeforeDiscounts}
+          totalDiscount={breakdown?.totalDiscount}
           lineItems={joinedLineItems}
           isLoading={isPriceLoading}
           isError={isPriceError}
@@ -105,15 +118,104 @@ export function CartPageSidebar() {
   );
 }
 
+type DiscountTagProps = {
+  discount: CartDiscountLineItem;
+};
+
+function DiscountTag({ discount }: DiscountTagProps) {
+  return (
+    <div className="inline-flex items-center gap-1.5 border-l-2 border-green-500 bg-green-50 pl-2 pr-2.5 py-0.5">
+      <Tag className="h-2.5 w-2.5 shrink-0 text-green-600" />
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-green-700">
+        {discount.ruleLabel}
+      </span>
+      <span className="text-[10px] font-black text-green-700">
+        {formatDiscount(discount)}
+      </span>
+    </div>
+  );
+}
+
+// ── LineItemRow ────────────────────────────────────────────────────────────────
+// Renders one cart line item with its name, type badge, discount tags,
+// and price — showing a strikethrough original when discounts apply.
+
+type LineItemRowProps = {
+  item: JoinedLineItem;
+};
+
+function LineItemRow({ item }: LineItemRowProps) {
+  const hasDiscounts = item.discounts.length > 0;
+  const originalSubtotal = hasDiscounts ? computeOriginalSubtotal(item) : null;
+
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-1">
+        <p className="text-sm text-black">{item.name}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+          {PRDOUCT_TYPE_DICT[item.type]}
+        </p>
+        {hasDiscounts && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {item.discounts.map((discount) => (
+              <DiscountTag key={discount.ruleId} discount={discount} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex shrink-0 flex-col items-end gap-0.5">
+        {originalSubtotal != null && (
+          <span className="text-xs text-neutral-400 line-through">
+            {formatCurrency(originalSubtotal)}
+          </span>
+        )}
+        <span className="text-sm font-semibold text-black">
+          {formatCurrency(item.subtotal)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── SavingsBanner ──────────────────────────────────────────────────────────────
+// Full-width row shown only when there are active discounts.
+// Stark and typography-forward — no bubble, no emoji — matches the system tone.
+
+type SavingsBannerProps = {
+  totalDiscount: number;
+};
+
+function SavingsBanner({ totalDiscount }: SavingsBannerProps) {
+  return (
+    <div className="flex items-center justify-between border-t-2 border-green-500 bg-green-50 px-4 py-2.5">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-green-700">
+        Ahorraste en este pedido
+      </p>
+      <p className="text-sm font-black text-green-700">
+        {formatCurrency(totalDiscount)}
+      </p>
+    </div>
+  );
+}
+
+// ── CartPagePriceBreakdown ─────────────────────────────────────────────────────
+// Orchestrator. Composes the line items, subtotal, discount deduction,
+// total, and savings banner. Shows pre-discount subtotal only when relevant.
+
 type CartPagePriceBreakdownProps = {
   total: number | undefined;
+  totalBeforeDiscounts: number | undefined;
+  totalDiscount: number | undefined;
   lineItems: JoinedLineItem[] | undefined;
   isLoading: boolean;
   isError: boolean;
 };
 
-function CartPagePriceBreakdown({
+export function CartPagePriceBreakdown({
   total,
+  totalBeforeDiscounts,
+  totalDiscount,
   lineItems,
   isLoading,
   isError,
@@ -129,13 +231,16 @@ function CartPagePriceBreakdown({
     );
   }
 
+  const hasSavings = (totalDiscount ?? 0) > 0;
+
   return (
     <div>
       <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-black">
         Desglose de precio
       </h3>
 
-      <div className="space-y-3">
+      {/* Line items */}
+      <div className="space-y-4">
         {isLoading
           ? Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="flex items-start justify-between gap-4">
@@ -143,39 +248,40 @@ function CartPagePriceBreakdown({
                 <Skeleton className="h-5 w-16" />
               </div>
             ))
-          : lineItems?.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-start justify-between gap-4"
-              >
-                <div>
-                  <p className="text-sm text-black">{item.name}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-                    {PRDOUCT_TYPE_DICT[item.type]}
-                  </p>
-                </div>
-                <p className="shrink-0 text-sm font-semibold text-black">
-                  {formatCurrency(item.subtotal)}
-                </p>
-              </div>
-            ))}
+          : lineItems?.map((item) => <LineItemRow key={item.id} item={item} />)}
       </div>
 
       <div className="my-4 border-t border-neutral-200" />
 
+      {/* Subtotal row — shows pre-discount amount when savings exist */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-neutral-500">Subtotal</p>
         {isLoading ? (
           <Skeleton className="h-5 w-20" />
         ) : (
           <p className="text-sm text-black">
-            {total != null ? formatCurrency(total) : "—"}
+            {hasSavings && totalBeforeDiscounts != null
+              ? formatCurrency(totalBeforeDiscounts)
+              : total != null
+                ? formatCurrency(total)
+                : "—"}
           </p>
         )}
       </div>
 
+      {/* Discount deduction row — only visible when savings exist */}
+      {!isLoading && hasSavings && totalDiscount != null && (
+        <div className="mt-2 flex items-center justify-between">
+          <p className="text-sm text-green-700">Descuentos aplicados</p>
+          <p className="text-sm font-semibold text-green-700">
+            {`\u2212${formatCurrency(totalDiscount)}`}
+          </p>
+        </div>
+      )}
+
       <div className="my-4 border-t border-neutral-200" />
 
+      {/* Total */}
       <div className="flex items-center justify-between">
         <p className="text-sm font-black uppercase md:tracking-widest text-black">
           Total a pagar
@@ -188,6 +294,13 @@ function CartPagePriceBreakdown({
           </p>
         )}
       </div>
+
+      {/* Savings banner — only visible when savings exist */}
+      {!isLoading && hasSavings && totalDiscount != null && (
+        <div className="-mx-6 mt-4">
+          <SavingsBanner totalDiscount={totalDiscount} />
+        </div>
+      )}
     </div>
   );
 }

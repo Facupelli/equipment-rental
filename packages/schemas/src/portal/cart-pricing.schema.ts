@@ -31,20 +31,32 @@ export const calculateCartPricesRequestSchema = z.object({
 
 // ── Response schemas ───────────────────────────────────────────────────────
 
+export const cartDiscountLineItemSchema = z.object({
+  ruleId: z.string(),
+  ruleLabel: z.string(),
+  type: z.enum(["PERCENTAGE", "FLAT"]),
+  value: z.number(),
+  discountAmount: z.number().nonnegative(),
+});
+
 export const cartPriceLineItemSchema = z.object({
   type: z.enum(["PRODUCT", "BUNDLE"]),
-  /** productTypeId for PRODUCT items, bundleId for BUNDLE items */
   id: z.uuid(),
   quantity: z.number().int().min(1),
-  /** Price for a single unit — decimal */
   pricePerBillingUnit: z.number().nonnegative(),
-  /** pricePerUnit × quantity — decimal */
   subtotal: z.number().nonnegative(),
+  discounts: z.array(cartDiscountLineItemSchema), // ← new
 });
+
+export type CartDiscountLineItem = z.infer<typeof cartDiscountLineItemSchema>;
+export type CartPriceLineItem = z.infer<typeof cartPriceLineItemSchema>;
 
 export const cartPriceResultSchema = z.object({
   lineItems: z.array(cartPriceLineItemSchema),
   total: z.number().nonnegative(),
+  totalBeforeDiscounts: z.number().nonnegative(),
+  totalDiscount: z.number().nonnegative(),
+  couponApplied: z.boolean(),
 });
 
 // ── Inferred types ─────────────────────────────────────────────────────────
@@ -56,4 +68,3 @@ export type CartPriceResult = z.infer<typeof cartPriceResultSchema>;
 export type CartItem = z.infer<typeof cartItemSchema>;
 export type CartProductItem = z.infer<typeof cartProductItemSchema>;
 export type CartBundleItem = z.infer<typeof cartBundleItemSchema>;
-export type CartPriceLineItem = z.infer<typeof cartPriceLineItemSchema>;
