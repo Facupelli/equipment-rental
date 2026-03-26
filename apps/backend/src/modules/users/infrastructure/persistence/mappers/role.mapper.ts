@@ -35,6 +35,7 @@ export class RolePermissionMapper {
 // ---------------------------------------------------------------------------
 
 type PrismaRoleWithRelations = PrismaRole & {
+  code: string;
   permissions: PrismaRolePermission[];
 };
 
@@ -44,6 +45,7 @@ export class RoleMapper {
     return Role.reconstitute({
       id: raw.id,
       tenantId: raw.tenantId,
+      code: raw.code,
       name: raw.name,
       description: raw.description,
       isDefault: raw.isDefault,
@@ -55,10 +57,11 @@ export class RoleMapper {
     return {
       id: entity.id,
       tenantId: entity.tenantId,
+      code: entity.code,
       name: entity.name,
       description: entity.currentDescription,
       isDefault: entity.default,
-    };
+    } as Prisma.RoleUncheckedCreateInput;
   }
 }
 

@@ -13,6 +13,7 @@ export interface UserDto {
 }
 
 export interface RoleDto {
+  code: string;
   name: string;
   description?: string;
   tenantId: string;

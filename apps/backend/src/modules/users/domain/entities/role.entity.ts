@@ -2,6 +2,7 @@ import { Permission } from '@repo/types';
 import { randomUUID } from 'crypto';
 import {
   DuplicateRolePermissionException,
+  InvalidRoleCodeException,
   InvalidRoleNameException,
   RolePermissionNotFoundException,
 } from '../expcetions/role.exceptions';
@@ -43,6 +44,7 @@ export class RolePermission {
 
 export interface CreateRoleProps {
   tenantId: string;
+  code: string;
   name: string;
   description?: string;
   isDefault?: boolean;
@@ -51,6 +53,7 @@ export interface CreateRoleProps {
 export interface ReconstituteRoleProps {
   id: string;
   tenantId: string;
+  code: string;
   name: string;
   description: string | null;
   isDefault: boolean;
@@ -61,6 +64,7 @@ export class Role {
   private constructor(
     public readonly id: string,
     public readonly tenantId: string,
+    public readonly code: string,
     public readonly name: string,
     private description: string | null,
     private isDefault: boolean,
@@ -68,12 +72,16 @@ export class Role {
   ) {}
 
   static create(props: CreateRoleProps): Role {
+    if (!props.code || props.code.trim().length === 0) {
+      throw new InvalidRoleCodeException();
+    }
     if (!props.name || props.name.trim().length === 0) {
       throw new InvalidRoleNameException();
     }
     return new Role(
       randomUUID(),
       props.tenantId,
+      props.code.trim(),
       props.name.trim(),
       props.description?.trim() ?? null,
       props.isDefault ?? false,
@@ -82,7 +90,15 @@ export class Role {
   }
 
   static reconstitute(props: ReconstituteRoleProps): Role {
-    return new Role(props.id, props.tenantId, props.name, props.description, props.isDefault, props.permissions);
+    return new Role(
+      props.id,
+      props.tenantId,
+      props.code,
+      props.name,
+      props.description,
+      props.isDefault,
+      props.permissions,
+    );
   }
 
   get currentDescription(): string | null {

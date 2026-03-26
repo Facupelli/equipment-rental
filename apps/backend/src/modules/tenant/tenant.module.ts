@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
+import { PrismaUnitOfWork } from 'src/core/database/prisma-unit-of-work';
+import { PrismaService } from 'src/core/database/prisma.service';
 import { UsersModule } from '../users/users.module';
-import { CreateTenantUserCommandHandler } from './application/commands/create-tenant-user.command-handler';
 import { TenantRepositoryPort } from './domain/ports/tenant.repository.port';
 import { TenantRepository } from './infrastructure/persistence/repositories/tenant.repository';
 import { TenantController } from './infrastructure/controllers/tenant.controller';
@@ -36,9 +37,10 @@ import { CreateOwnerContractCommandHandler } from './owner/application/commands/
 import { OwnerContractRepositoryPort } from './owner/domain/ports/owner-contract.repository.port';
 import { OwnerContractRepository } from './owner/infrastructure/persistence/repositories/owner-contract.repository';
 import { FindActiveContractForScopeQueryHandler } from './owner/application/queries/find-active-owner-contract/find-active-owner-contract.query-handler';
+import { RegisterTenantService } from './application/commands/register-tenant/register-tenant.service';
 
 const commandHandlers = [
-  CreateTenantUserCommandHandler,
+  RegisterTenantService,
   UpdateTenantConfigCommandHandler,
   SyncTenantBillingUnitsCommandHandler,
   // owner
@@ -67,7 +69,12 @@ const queryHandlers = [
 ];
 
 const repositories = [
-  { provide: TenantRepositoryPort, useClass: TenantRepository },
+  {
+    provide: TenantRepository,
+    useFactory: (prisma: PrismaService) => new TenantRepository(prisma.client),
+    inject: [PrismaService],
+  },
+  { provide: TenantRepositoryPort, useExisting: TenantRepository },
   { provide: TenantBillingUnitRepositoryPort, useClass: TenantBillingUnitRepository },
   { provide: LocationRepositoryPort, useClass: LocationRepository },
   { provide: OwnerRepositoryPort, useClass: OwnerRepository },
@@ -84,7 +91,7 @@ const services = [
 @Module({
   imports: [UsersModule, AuthModule, CqrsModule],
   controllers: [TenantController, OwnerController, LocationController],
-  providers: [...repositories, ...services, ...commandHandlers, ...queryHandlers],
+  providers: [PrismaUnitOfWork, ...repositories, ...services, ...commandHandlers, ...queryHandlers],
   exports: [TenantPublicApi],
 })
 export class TenantModule {}

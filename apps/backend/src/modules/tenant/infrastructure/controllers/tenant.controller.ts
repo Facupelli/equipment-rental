@@ -13,9 +13,6 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { Public } from 'src/modules/auth/infrastructure/is-public.decorator';
 import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
-import { RegisterDto } from '../../application/dto/create-tenant-user.dto';
-import { CreateTenantUserCommand } from '../../application/commands/create-tenant-user.command';
-import { EmailAlreadyInUseError, CompanyNameAlreadyInUseError } from '../../application/errors/tenant-user.errors';
 import { GetTenantQuery } from '../../application/queries/get-tenant/get-tenant.query';
 import { GetTenantBillingUnitsQuery } from '../../application/queries/get-billing-units/get-tenant-billing-units.query';
 import { SyncTenantBillingUnitsCommand } from '../../application/commands/create-billing-unit/sync-billing-units.command-handler';
@@ -23,6 +20,13 @@ import { SyncTenantBillingUnitsDto } from '../../application/dto/create-tenant-b
 import { TenantBillingUnitListResponse, TenantResponse } from '@repo/schemas';
 import { UpdateTenantConfigCommand } from '../../application/commands/update-config/update-config.command';
 import { UpdateTenantConfigDto } from '../../application/dto/update-config.dto';
+import { RegisterTenantCommand } from '../../application/commands/register-tenant/register-tenant.command';
+import {
+  CompanyNameAlreadyInUseError,
+  EmailAlreadyInUseError,
+} from '../../application/commands/register-tenant/register-tenant.errors';
+import { RegisterTenantRequestDto } from '../../application/commands/register-tenant/register-tenant.request.dto';
+import { RegisterTenantResponseDto } from '../../application/commands/register-tenant/register-tenant.response.dto';
 
 @Controller('tenants')
 export class TenantController {
@@ -34,8 +38,8 @@ export class TenantController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: RegisterDto): Promise<{ userId: string; tenantId: string }> {
-    const command = new CreateTenantUserCommand(dto.user, dto.tenant);
+  async register(@Body() dto: RegisterTenantRequestDto): Promise<RegisterTenantResponseDto> {
+    const command = new RegisterTenantCommand(dto.user, dto.tenant);
     const result = await this.commandBus.execute(command);
 
     if (result.isErr()) {
@@ -48,7 +52,7 @@ export class TenantController {
       throw error;
     }
 
-    return result.value;
+    return result.value as RegisterTenantResponseDto;
   }
 
   @Get('me')

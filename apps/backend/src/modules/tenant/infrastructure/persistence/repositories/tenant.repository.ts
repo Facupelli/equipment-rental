@@ -1,15 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/core/database/prisma.service';
 import { TenantRepositoryPort } from 'src/modules/tenant/domain/ports/tenant.repository.port';
 import { TenantBillingUnitMapper, TenantMapper } from '../mappers/tenant.mapper';
 import { Tenant } from 'src/modules/tenant/domain/entities/tenant.entity';
 
-@Injectable()
 export class TenantRepository implements TenantRepositoryPort {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly db: any) {}
 
   async load(id: string): Promise<Tenant | null> {
-    const raw = await this.prisma.client.tenant.findUnique({
+    const raw = await this.db.tenant.findUnique({
       where: { id },
       include: { billingUnits: true },
     });
@@ -24,22 +21,22 @@ export class TenantRepository implements TenantRepositoryPort {
     const currentUnits = tenant.getActiveBillingUnits();
     const currentUnitIds = new Set(currentUnits.map((u) => u.id));
 
-    await this.prisma.client.$transaction(async (tx) => {
-      await tx.tenant.upsert({
+    const persist = async (db: any) => {
+      await db.tenant.upsert({
         where: { id: tenant.id },
         create: rootData,
         update: rootData,
       });
 
-      const existing = await tx.tenantBillingUnit.findMany({
+      const existing = await db.tenantBillingUnit.findMany({
         where: { tenantId: tenant.id },
         select: { id: true },
       });
-      const existingIds = new Set(existing.map((u) => u.id));
+      const existingIds = new Set<string>(existing.map((u: { id: string }) => u.id));
 
-      const toDelete = [...existingIds].filter((id) => !currentUnitIds.has(id));
+      const toDelete = [...existingIds].filter((id: string) => !currentUnitIds.has(id));
       if (toDelete.length > 0) {
-        await tx.tenantBillingUnit.deleteMany({
+        await db.tenantBillingUnit.deleteMany({
           where: { id: { in: toDelete } },
         });
       }
@@ -47,13 +44,19 @@ export class TenantRepository implements TenantRepositoryPort {
       const toUpsert = currentUnits.filter((u) => !existingIds.has(u.id));
       for (const unit of toUpsert) {
         const data = TenantBillingUnitMapper.toPersistence(unit);
-        await tx.tenantBillingUnit.upsert({
+        await db.tenantBillingUnit.upsert({
           where: { id: unit.id },
           create: data,
           update: data,
         });
       }
-    });
+    };
+
+    if ('$transaction' in this.db && typeof this.db.$transaction === 'function') {
+      await this.db.$transaction(async (tx: any) => persist(tx));
+    } else {
+      await persist(this.db);
+    }
 
     return tenant.id;
   }

@@ -1,16 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/core/database/prisma.service';
 import { User } from 'src/modules/users/domain/entities/user.entity';
 import { UserMapper } from '../mappers/user.mapper';
 import { UserRepositoryPort } from 'src/modules/users/domain/ports/user.repository.port';
 import { UserRoleMapper } from '../mappers/role.mapper';
 
-@Injectable()
 export class UserRepository implements UserRepositoryPort {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly db: any) {}
 
   async load(id: string): Promise<User | null> {
-    const raw = await this.prisma.client.user.findUnique({
+    const raw = await this.db.user.findUnique({
       where: { id },
       include: {
         userRoles: true,
@@ -29,22 +26,22 @@ export class UserRepository implements UserRepositoryPort {
     const currentRoles = user.roles;
     const currentRoleIds = new Set(currentRoles.map((r) => r.id));
 
-    await this.prisma.client.$transaction(async (tx) => {
-      await tx.user.upsert({
+    const persist = async (db: any) => {
+      await db.user.upsert({
         where: { id: user.id },
         create: rootData,
         update: rootData,
       });
 
-      const existing = await tx.userRole.findMany({
+      const existing = await db.userRole.findMany({
         where: { userId: user.id },
         select: { id: true },
       });
-      const existingIds = new Set(existing.map((r) => r.id));
+      const existingIds = new Set<string>(existing.map((r: { id: string }) => r.id));
 
-      const toDelete = [...existingIds].filter((id) => !currentRoleIds.has(id));
+      const toDelete = [...existingIds].filter((id: string) => !currentRoleIds.has(id));
       if (toDelete.length > 0) {
-        await tx.userRole.deleteMany({
+        await db.userRole.deleteMany({
           where: { id: { in: toDelete } },
         });
       }
@@ -52,13 +49,19 @@ export class UserRepository implements UserRepositoryPort {
       for (const role of currentRoles) {
         const roleData = UserRoleMapper.toPersistence(role);
 
-        await tx.userRole.upsert({
+        await db.userRole.upsert({
           where: { id: role.id },
           create: roleData,
           update: roleData,
         });
       }
-    });
+    };
+
+    if ('$transaction' in this.db && typeof this.db.$transaction === 'function') {
+      await this.db.$transaction(async (tx: any) => persist(tx));
+    } else {
+      await persist(this.db);
+    }
 
     return user.id;
   }

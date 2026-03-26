@@ -7,6 +7,13 @@ export class InvalidRoleNameException extends Error {
   }
 }
 
+export class InvalidRoleCodeException extends Error {
+  constructor() {
+    super('Role code cannot be empty.');
+    this.name = 'InvalidRoleCodeException';
+  }
+}
+
 export class DuplicateRolePermissionException extends Error {
   constructor(permission: Permission) {
     super(`Permission '${permission}' is already assigned to this role.`);

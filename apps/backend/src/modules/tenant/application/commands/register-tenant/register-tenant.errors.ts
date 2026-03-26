@@ -12,4 +12,4 @@ export class CompanyNameAlreadyInUseError extends Error {
   }
 }
 
-export type TenantUserError = EmailAlreadyInUseError | CompanyNameAlreadyInUseError;
+export type RegisterTenantError = EmailAlreadyInUseError | CompanyNameAlreadyInUseError;
