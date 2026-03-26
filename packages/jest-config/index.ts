@@ -1,10 +1,10 @@
-import type { Config } from "jest";
+import type { Config } from "@jest/types";
 
 /**
  * Base config shared by all presets.
  * Each preset spreads this and overrides what it needs.
  */
-const base: Config = {
+const base: Config.InitialOptions = {
   moduleFileExtensions: ["js", "json", "ts"],
   transform: {
     "^.+\\.(t|j)s$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.json" }],
@@ -23,7 +23,7 @@ const base: Config = {
  * - Picks up *.spec.ts files
  * - Fast: no DB, no HTTP, no timeouts needed
  */
-export const unitConfig: Config = {
+export const unitConfig: Config.InitialOptions = {
   ...base,
   rootDir: ".",
   testRegex: ".*\\.spec\\.ts$",
@@ -41,7 +41,7 @@ export const unitConfig: Config = {
  * - Runs sequentially (shares a real DB instance)
  * - Longer timeout for DB round-trips
  */
-export const integrationConfig: Config = {
+export const integrationConfig: Config.InitialOptions = {
   ...base,
   rootDir: ".",
   testRegex: ".*\\.integration-spec\\.ts$",
@@ -57,7 +57,7 @@ export const integrationConfig: Config = {
  * - Runs sequentially (boots a real NestJS app + DB)
  * - Longer timeout for full app bootstrap
  */
-export const e2eConfig: Config = {
+export const e2eConfig: Config.InitialOptions = {
   ...base,
   rootDir: ".",
   testRegex: ".*\\.e2e-spec\\.ts$",

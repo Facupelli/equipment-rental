@@ -6,11 +6,11 @@ import { GetAssetByIdQueryHandler } from './application/queries/get-asset-by-id/
 import { GetAssetsQueryHandler } from './application/queries/get-assets/get-assets.query-handler';
 import { FindAssetByIdQueryHandler } from './application/queries/find-asset-by-id/find-asset-by-id.query-handler';
 import { AssetAssignmentRepository } from './infrastructure/persistance/repositories/asset-assignment.repository';
+import { InventoryFacade } from './inventory.facade';
 import { InventoryPublicApi } from './inventory.public-api';
-import { InventoryApplicationService } from './application/inventory.application-service';
-import { AssetAvailabilityService } from './infrastructure/services/asset-availability.service';
+import { AssetAvailabilityService } from './infrastructure/read-services/asset-availability.service';
 import { CatalogModule } from '../catalog/catalog.module';
-import { AssetSerialNumberService } from './infrastructure/services/asset-serial-number.service';
+import { AssetSerialNumberService } from './infrastructure/read-services/asset-serial-number.service';
 import { GetAssetsHttpController } from './application/queries/get-assets/get-assets.http.controller';
 import { GetAssetByIdHttpController } from './application/queries/get-asset-by-id/get-asset-by-id.http.controller';
 
@@ -29,7 +29,7 @@ const queryHandlers = [FindAssetByIdQueryHandler, GetAssetByIdQueryHandler, GetA
     ...queryHandlers,
     AssetAvailabilityService,
     AssetSerialNumberService,
-    { provide: InventoryPublicApi, useClass: InventoryApplicationService },
+    { provide: InventoryPublicApi, useClass: InventoryFacade },
   ],
   exports: [InventoryPublicApi],
 })

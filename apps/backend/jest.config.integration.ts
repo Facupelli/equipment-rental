@@ -1,7 +1,7 @@
 import integrationConfig from '@repo/jest-config/jest.config.integration';
-import type { Config } from 'jest';
+import type { Config } from '@jest/types';
 
-const config: Config = {
+const config: Config.InitialOptions = {
   ...integrationConfig,
   rootDir: 'src',
   globalSetup: '<rootDir>/../test/setup/global-setup.ts',

@@ -2,14 +2,14 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CreateAssetCommand } from './create-asset.command';
 import { Asset } from '../../../domain/entities/asset.entity';
 import { CatalogPublicApi } from 'src/modules/catalog/catalog.public-api';
+import { Result, err, ok } from 'neverthrow';
 import {
   DuplicateSerialNumberError,
   ProductTypeNotFoundError,
   SerialNumberRequiredError,
 } from 'src/modules/inventory/domain/errors/inventory.errors';
 import { TrackingMode } from '@repo/types';
-import { Result, err, ok } from 'src/core/result';
-import { AssetSerialNumberService } from 'src/modules/inventory/infrastructure/services/asset-serial-number.service';
+import { AssetSerialNumberService } from 'src/modules/inventory/infrastructure/read-services/asset-serial-number.service';
 import { AssetRepository } from 'src/modules/inventory/infrastructure/persistance/repositories/asset.repository';
 
 type CreateAssetResult = Result<

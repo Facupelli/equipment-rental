@@ -1,23 +1,25 @@
 import { Injectable } from '@nestjs/common';
+import { Result, err, ok } from 'neverthrow';
+
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
-import { AssetAssignment } from '../domain/entities/asset-assignment.entity';
-import { InventoryPublicApi } from '../inventory.public-api';
-import { AssetNotAvailableError } from '../domain/errors/inventory.errors';
-import { err, ok, Result } from 'src/core/result';
 import { PostgresExclusionViolationError } from 'src/core/utils/postgres-error.mapper';
-import { AssetAvailabilityService, FindAvailableParams } from '../infrastructure/services/asset-availability.service';
-import { AssetAssignmentRepository } from '../infrastructure/persistance/repositories/asset-assignment.repository';
+
+import { AssetAssignment } from './domain/entities/asset-assignment.entity';
+import { AssetNotAvailableError } from './domain/errors/inventory.errors';
+import { AssetAssignmentRepository } from './infrastructure/persistance/repositories/asset-assignment.repository';
+import { AssetAvailabilityService } from './infrastructure/read-services/asset-availability.service';
+import { FindAvailableParams } from './inventory.contracts';
+import { InventoryPublicApi } from './inventory.public-api';
 
 @Injectable()
-export class InventoryApplicationService implements InventoryPublicApi {
+export class InventoryFacade implements InventoryPublicApi {
   constructor(
     private readonly assignmentRepo: AssetAssignmentRepository,
     private readonly availabilityService: AssetAvailabilityService,
   ) {}
 
   async findAvailableAssetId(dto: FindAvailableParams): Promise<string | null> {
-    const assetId = await this.availabilityService.findAvailableAssetId(dto);
-    return assetId;
+    return this.availabilityService.findAvailableAssetId(dto);
   }
 
   async findAvailableAssetIds(dto: FindAvailableParams): Promise<string[]> {
@@ -35,6 +37,7 @@ export class InventoryApplicationService implements InventoryPublicApi {
       if (error instanceof PostgresExclusionViolationError) {
         return err(new AssetNotAvailableError(assignment.assetId));
       }
+
       throw error;
     }
   }

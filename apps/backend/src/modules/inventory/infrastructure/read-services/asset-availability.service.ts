@@ -2,16 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { formatPostgresRange } from 'src/core/utils/postgres-range.util';
 import { Prisma } from 'src/generated/prisma/client';
-import { DateRange } from '../../domain/value-objects/date-range.vo';
-
-export type FindAvailableParams = {
-  productTypeId: string;
-  locationId: string;
-  period: DateRange;
-  quantity?: number;
-  assetId?: string;
-  excludeAssetIds?: string[];
-};
+import { FindAvailableParams } from '../../inventory.contracts';
 
 @Injectable()
 export class AssetAvailabilityService {

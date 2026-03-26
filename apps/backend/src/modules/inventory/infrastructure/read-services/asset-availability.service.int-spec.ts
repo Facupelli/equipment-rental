@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import * as path from 'path';
-import { AssetAvailabilityService } from 'src/modules/inventory/infrastructure/services/asset-availability.service';
+import { AssetAvailabilityService } from 'src/modules/inventory/infrastructure/read-services/asset-availability.service';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
