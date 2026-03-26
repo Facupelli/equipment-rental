@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AssetRepository } from './infrastructure/persistence/repositories/asset.repository';
-import { CreateAssetCommandHandler } from './application/commands/create-asset/create-asset.command-handler';
+import { CreateAssetService } from './application/commands/create-asset/create-asset.service';
 import { CreateAssetHttpController } from './application/commands/create-asset/create-asset.http.controller';
 import { GetAssetByIdQueryHandler } from './application/queries/get-asset-by-id/get-asset-by-id.query-handler';
 import { GetAssetsQueryHandler } from './application/queries/get-assets/get-assets.query-handler';
@@ -16,7 +16,7 @@ import { GetAssetByIdHttpController } from './application/queries/get-asset-by-i
 
 const repositories = [AssetRepository, AssetAssignmentRepository];
 
-const commandHandlers = [CreateAssetCommandHandler];
+const commandHandlers = [CreateAssetService];
 
 const queryHandlers = [FindAssetByIdQueryHandler, GetAssetByIdQueryHandler, GetAssetsQueryHandler];
 

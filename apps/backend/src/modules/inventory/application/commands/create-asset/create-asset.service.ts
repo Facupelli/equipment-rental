@@ -18,7 +18,7 @@ type CreateAssetResult = Result<
 >;
 
 @CommandHandler(CreateAssetCommand)
-export class CreateAssetCommandHandler implements ICommandHandler<CreateAssetCommand> {
+export class CreateAssetService implements ICommandHandler<CreateAssetCommand> {
   constructor(
     private readonly catalogApi: CatalogPublicApi,
     private readonly assetRepository: AssetRepository,

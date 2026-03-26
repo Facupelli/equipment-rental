@@ -1,3 +1,4 @@
+import { Prisma } from 'src/generated/prisma/client';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { TrackingMode } from '@repo/types';
 
@@ -15,7 +16,11 @@ export class GetAssetsQueryHandler implements IQueryHandler<GetAssetsQuery, GetA
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {};
+    const where: Prisma.AssetWhereInput = {
+      location: {
+        tenantId: query.tenantId,
+      },
+    };
 
     if (query.locationId) {
       where.locationId = query.locationId;

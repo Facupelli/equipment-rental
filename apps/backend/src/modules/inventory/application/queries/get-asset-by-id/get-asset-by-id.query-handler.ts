@@ -11,8 +11,13 @@ export class GetAssetByIdQueryHandler implements IQueryHandler<GetAssetByIdQuery
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetAssetByIdQuery): Promise<AssetResponseDto | null> {
-    const asset = await this.prisma.client.asset.findUnique({
-      where: { id: query.id },
+    const asset = await this.prisma.client.asset.findFirst({
+      where: {
+        id: query.id,
+        location: {
+          tenantId: query.tenantId,
+        },
+      },
       include: {
         location: true,
         productType: true,

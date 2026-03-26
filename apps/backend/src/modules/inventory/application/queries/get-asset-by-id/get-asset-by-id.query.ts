@@ -1,3 +1,6 @@
 export class GetAssetByIdQuery {
-  constructor(public readonly id: string) {}
+  constructor(
+    public readonly tenantId: string,
+    public readonly id: string,
+  ) {}
 }
