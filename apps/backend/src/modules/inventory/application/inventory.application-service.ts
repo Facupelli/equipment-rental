@@ -1,17 +1,17 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { AssetAssignment } from '../domain/entities/asset-assignment.entity';
 import { InventoryPublicApi } from '../inventory.public-api';
-import { AssetAssignmentRepositoryPort } from '../domain/ports/asset-assignment.repository.port';
 import { AssetNotAvailableError } from '../domain/exceptions/asset.exceptions';
 import { err, ok, Result } from 'src/core/result';
 import { PostgresExclusionViolationError } from 'src/core/utils/postgres-error.mapper';
 import { AssetAvailabilityService, FindAvailableParams } from '../infrastructure/services/asset-availability.service';
-import { PrismaTransactionClient } from 'src/modules/order/domain/ports/order.repository.port';
+import { AssetAssignmentRepository } from '../infrastructure/persistance/repositories/asset-assignment.repository';
 
 @Injectable()
 export class InventoryApplicationService implements InventoryPublicApi {
   constructor(
-    private readonly assignmentRepo: AssetAssignmentRepositoryPort,
+    private readonly assignmentRepo: AssetAssignmentRepository,
     private readonly availabilityService: AssetAvailabilityService,
   ) {}
 

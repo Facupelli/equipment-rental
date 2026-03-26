@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { mapPostgresError } from 'src/core/utils/postgres-error.mapper';
 import { formatPostgresRange } from 'src/core/utils/postgres-range.util';
 import { AssetAssignment } from 'src/modules/inventory/domain/entities/asset-assignment.entity';
-import { AssetAssignmentRepositoryPort } from 'src/modules/inventory/domain/ports/asset-assignment.repository.port';
-import { PrismaTransactionClient } from 'src/modules/order/domain/ports/order.repository.port';
 
 @Injectable()
-export class AssetAssignmentRepository implements AssetAssignmentRepositoryPort {
+export class AssetAssignmentRepository {
   /**
    * Persists a new AssetAssignment via raw SQL.
    *

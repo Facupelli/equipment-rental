@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { Asset } from 'src/modules/inventory/domain/entities/asset.entity';
-import { AssetRepositoryPort } from 'src/modules/inventory/domain/ports/asset.repository.port';
 import { AssetAssignmentMapper, AssetMapper, RawAssetAssignment } from '../mappers/asset.mapper';
 import { AssignmentType } from '@repo/types';
 
@@ -16,7 +15,7 @@ export class CannotDeleteOrderAssignmentException extends Error {
 }
 
 @Injectable()
-export class AssetRepository implements AssetRepositoryPort {
+export class AssetRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(id: string): Promise<Asset | null> {

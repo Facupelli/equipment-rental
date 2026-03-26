@@ -3,11 +3,14 @@ import { CommandHandler, EventBus, ICommandHandler, QueryBus } from '@nestjs/cqr
 import { BcryptService } from 'src/modules/auth/application/bcript.service';
 import { PrismaUnitOfWork } from 'src/core/database/prisma-unit-of-work';
 import { Result, err, ok } from 'src/core/result';
+import { RoleRepository } from 'src/modules/users/infrastructure/persistence/repositories/role.repository';
+import { UserRepository } from 'src/modules/users/infrastructure/persistence/repositories/user.repository';
 import { IsEmailTakenQuery } from 'src/modules/users/application/queries/is-email-taken/is-email-taken.query';
 import { Role } from 'src/modules/users/domain/entities/role.entity';
 import { TENANT_ADMIN_PERMISSIONS } from 'src/modules/users/domain/tenant-admin.permissions';
 import { TENANT_ADMIN_ROLE_CODE, TENANT_ADMIN_ROLE_NAME } from 'src/modules/users/domain/role.constants';
 import { User } from 'src/modules/users/domain/entities/user.entity';
+import { TenantRepository } from 'src/modules/tenant/infrastructure/persistence/repositories/tenant.repository';
 
 import { Tenant } from '../../../domain/entities/tenant.entity';
 import { TenantRegisteredEvent } from '../../../domain/events/tenant-registered.event';
@@ -46,45 +49,47 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
 
     const passwordHash = await this.bcryptService.hashPassword(user.password);
 
-    const created = await this.unitOfWork.runInTransaction(
-      async ({ tenantRepository, roleRepository, userRepository }) => {
-        const createdTenant = Tenant.create({
-          name: tenant.name,
-          slug,
-        });
-        await tenantRepository.save(createdTenant);
+    const created = await this.unitOfWork.runInTransaction(async (tx) => {
+      const tenantRepository = new TenantRepository(tx);
+      const roleRepository = new RoleRepository(tx);
+      const userRepository = new UserRepository(tx);
 
-        const adminRole = Role.create({
-          tenantId: createdTenant.id,
-          code: TENANT_ADMIN_ROLE_CODE,
-          name: TENANT_ADMIN_ROLE_NAME,
-          description: 'Tenant administrator role',
-        });
+      const createdTenant = Tenant.create({
+        name: tenant.name,
+        slug,
+      });
+      await tenantRepository.save(createdTenant);
 
-        for (const permission of TENANT_ADMIN_PERMISSIONS) {
-          adminRole.addPermission(permission);
-        }
+      const adminRole = Role.create({
+        tenantId: createdTenant.id,
+        code: TENANT_ADMIN_ROLE_CODE,
+        name: TENANT_ADMIN_ROLE_NAME,
+        description: 'Tenant administrator role',
+      });
 
-        await roleRepository.save(adminRole);
+      for (const permission of TENANT_ADMIN_PERMISSIONS) {
+        adminRole.addPermission(permission);
+      }
 
-        const adminUser = User.create({
-          tenantId: createdTenant.id,
-          email: user.email,
-          passwordHash,
-          firstName: user.firstName,
-          lastName: user.lastName,
-        });
-        adminUser.assignRole({ userId: adminUser.id, roleId: adminRole.id });
-        await userRepository.save(adminUser);
+      await roleRepository.save(adminRole);
 
-        return {
-          tenantId: createdTenant.id,
-          userId: adminUser.id,
-          slug: createdTenant.slug,
-          adminEmail: adminUser.email,
-        };
-      },
-    );
+      const adminUser = User.create({
+        tenantId: createdTenant.id,
+        email: user.email,
+        passwordHash,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      });
+      adminUser.assignRole({ userId: adminUser.id, roleId: adminRole.id });
+      await userRepository.save(adminUser);
+
+      return {
+        tenantId: createdTenant.id,
+        userId: adminUser.id,
+        slug: createdTenant.slug,
+        adminEmail: adminUser.email,
+      };
+    });
 
     this.eventBus.publish(
       new TenantRegisteredEvent(created.tenantId, created.userId, created.adminEmail, created.slug),

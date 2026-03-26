@@ -1,6 +1,6 @@
 import { Result } from 'src/core/result';
+import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { AssetNotAvailableError } from './domain/exceptions/asset.exceptions';
-import { PrismaTransactionClient } from '../order/domain/ports/order.repository.port';
 import { AssetAssignment } from './domain/entities/asset-assignment.entity';
 import { FindAvailableParams } from './infrastructure/services/asset-availability.service';
 
