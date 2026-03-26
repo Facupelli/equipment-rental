@@ -5,12 +5,17 @@ import { CatalogPublicApi } from 'src/modules/catalog/catalog.public-api';
 import {
   DuplicateSerialNumberError,
   ProductTypeNotFoundError,
-  SerialNumberRequiredException,
-} from 'src/modules/inventory/domain/exceptions/asset.exceptions';
+  SerialNumberRequiredError,
+} from 'src/modules/inventory/domain/errors/inventory.errors';
 import { TrackingMode } from '@repo/types';
-import { err, ok } from 'src/core/result';
+import { Result, err, ok } from 'src/core/result';
 import { AssetSerialNumberService } from 'src/modules/inventory/infrastructure/services/asset-serial-number.service';
 import { AssetRepository } from 'src/modules/inventory/infrastructure/persistance/repositories/asset.repository';
+
+type CreateAssetResult = Result<
+  string,
+  ProductTypeNotFoundError | DuplicateSerialNumberError | SerialNumberRequiredError
+>;
 
 @CommandHandler(CreateAssetCommand)
 export class CreateAssetCommandHandler implements ICommandHandler<CreateAssetCommand> {
@@ -20,7 +25,7 @@ export class CreateAssetCommandHandler implements ICommandHandler<CreateAssetCom
     private readonly serialNumberService: AssetSerialNumberService,
   ) {}
 
-  async execute(command: CreateAssetCommand) {
+  async execute(command: CreateAssetCommand): Promise<CreateAssetResult> {
     const { productTypeId, serialNumber } = command;
 
     const product = await this.catalogApi.getProductType(productTypeId);
@@ -31,7 +36,7 @@ export class CreateAssetCommandHandler implements ICommandHandler<CreateAssetCom
 
     if (product.trackingMode === TrackingMode.IDENTIFIED) {
       if (!serialNumber) {
-        throw new SerialNumberRequiredException();
+        return err(new SerialNumberRequiredError(productTypeId));
       }
 
       const taken = await this.serialNumberService.isTaken(serialNumber);

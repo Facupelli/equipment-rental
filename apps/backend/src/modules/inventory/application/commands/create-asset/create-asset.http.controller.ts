@@ -1,7 +1,11 @@
 import { Body, ConflictException, Controller, NotFoundException, Post } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 
-import { DuplicateSerialNumberError, ProductTypeNotFoundError } from '../../../domain/exceptions/asset.exceptions';
+import {
+  DuplicateSerialNumberError,
+  ProductTypeNotFoundError,
+  SerialNumberRequiredError,
+} from '../../../domain/errors/inventory.errors';
 import { CreateAssetCommand } from './create-asset.command';
 import { CreateAssetRequestDto } from './create-asset.request.dto';
 import { CreateAssetResponseDto } from './create-asset.response.dto';
@@ -24,6 +28,10 @@ export class CreateAssetHttpController {
       }
 
       if (error instanceof DuplicateSerialNumberError) {
+        throw new ConflictException(error.message);
+      }
+
+      if (error instanceof SerialNumberRequiredError) {
         throw new ConflictException(error.message);
       }
 
