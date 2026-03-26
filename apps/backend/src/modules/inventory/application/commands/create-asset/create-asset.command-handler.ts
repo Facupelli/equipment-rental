@@ -21,7 +21,7 @@ export class CreateAssetCommandHandler implements ICommandHandler<CreateAssetCom
   ) {}
 
   async execute(command: CreateAssetCommand) {
-    const { productTypeId, serialNumber } = command.props;
+    const { productTypeId, serialNumber } = command;
 
     const product = await this.catalogApi.getProductType(productTypeId);
 
@@ -40,7 +40,13 @@ export class CreateAssetCommandHandler implements ICommandHandler<CreateAssetCom
       }
     }
 
-    const asset = Asset.create(command.props);
+    const asset = Asset.create({
+      locationId: command.locationId,
+      productTypeId: command.productTypeId,
+      ownerId: command.ownerId,
+      serialNumber: command.serialNumber,
+      notes: command.notes,
+    });
     await this.assetRepository.save(asset);
 
     return ok(asset.id);

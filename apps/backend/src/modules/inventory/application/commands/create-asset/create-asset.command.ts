@@ -1,6 +1,11 @@
 import { ICommand } from '@nestjs/cqrs';
-import { CreateAssetDto } from '../../dto/create-asset.dto';
 
 export class CreateAssetCommand implements ICommand {
-  constructor(public readonly props: CreateAssetDto) {}
+  constructor(
+    public readonly locationId: string,
+    public readonly productTypeId: string,
+    public readonly ownerId: string | null,
+    public readonly serialNumber: string | null,
+    public readonly notes: string | null,
+  ) {}
 }

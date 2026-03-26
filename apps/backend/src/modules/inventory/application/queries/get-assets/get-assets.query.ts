@@ -1,6 +1,4 @@
-import { IQuery } from '@nestjs/cqrs';
-
-export class GetAssetsQuery implements IQuery {
+export class GetAssetsQuery {
   constructor(
     public readonly locationId?: string,
     public readonly productTypeId?: string,

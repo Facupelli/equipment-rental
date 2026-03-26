@@ -1,14 +1,16 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { GetAssetsQuery } from './get-assets.query';
-import { AssetResponse, PaginatedDto } from '@repo/schemas';
 import { TrackingMode } from '@repo/types';
 
+import { PrismaService } from 'src/core/database/prisma.service';
+
+import { GetAssetsQuery } from './get-assets.query';
+import { GetAssetsResponse } from './get-assets.response.dto';
+
 @QueryHandler(GetAssetsQuery)
-export class GetAssetsQueryHandler implements IQueryHandler<GetAssetsQuery, PaginatedDto<AssetResponse>> {
+export class GetAssetsQueryHandler implements IQueryHandler<GetAssetsQuery, GetAssetsResponse> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetAssetsQuery): Promise<PaginatedDto<AssetResponse>> {
+  async execute(query: GetAssetsQuery): Promise<GetAssetsResponse> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;

@@ -46,5 +46,5 @@ export type AssetProductTypeResponse = z.infer<
   typeof assetProductTypeResponseSchema
 >;
 export type AssetOwnerResponse = z.infer<typeof assetOwnerResponseSchema>;
-export type AssetResponse = z.infer<typeof assetResponseSchema>;
+export type AssetResponseDto = z.infer<typeof assetResponseSchema>;
 export type GetAssetsQuery = z.infer<typeof getAssetsQuerySchema>;

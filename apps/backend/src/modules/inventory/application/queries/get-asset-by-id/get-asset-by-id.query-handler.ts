@@ -1,15 +1,16 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { GetAssetByIdQuery } from './get-asset-by-id.query';
-import { AssetResponse } from '@repo/schemas';
-import { NotFoundException } from '@nestjs/common';
 import { TrackingMode } from '@repo/types';
 
+import { PrismaService } from 'src/core/database/prisma.service';
+
+import { GetAssetByIdQuery } from './get-asset-by-id.query';
+import { AssetResponseDto } from '@repo/schemas';
+
 @QueryHandler(GetAssetByIdQuery)
-export class GetAssetByIdQueryHandler implements IQueryHandler<GetAssetByIdQuery, AssetResponse> {
+export class GetAssetByIdQueryHandler implements IQueryHandler<GetAssetByIdQuery, AssetResponseDto | null> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetAssetByIdQuery): Promise<AssetResponse> {
+  async execute(query: GetAssetByIdQuery): Promise<AssetResponseDto | null> {
     const asset = await this.prisma.client.asset.findUnique({
       where: { id: query.id },
       include: {
@@ -20,7 +21,7 @@ export class GetAssetByIdQueryHandler implements IQueryHandler<GetAssetByIdQuery
     });
 
     if (!asset) {
-      throw new NotFoundException('Asset not found');
+      return null;
     }
 
     return {
