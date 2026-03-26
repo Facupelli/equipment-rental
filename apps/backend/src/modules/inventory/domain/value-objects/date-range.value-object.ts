@@ -1,4 +1,4 @@
-import { InvalidDateRangeException } from '../exceptions/date-range.exceptions';
+import { InvalidDateRangeException } from '../exceptions/date-range.exception';
 
 /**
  * Encapsulates a time-bounded interval with an inclusive start and exclusive end,

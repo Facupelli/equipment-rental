@@ -10,7 +10,7 @@ import {
 } from 'src/modules/inventory/domain/errors/inventory.errors';
 import { TrackingMode } from '@repo/types';
 import { AssetSerialNumberService } from 'src/modules/inventory/infrastructure/read-services/asset-serial-number.service';
-import { AssetRepository } from 'src/modules/inventory/infrastructure/persistance/repositories/asset.repository';
+import { AssetRepository } from 'src/modules/inventory/infrastructure/persistence/repositories/asset.repository';
 
 type CreateAssetResult = Result<
   string,

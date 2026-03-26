@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import { DateRange } from '../inventory/domain/value-objects/date-range.vo';
+import { DateRange } from '../inventory/domain/value-objects/date-range.value-object';
 import { PricingResult } from './domain/services/pricing-calculator';
 
 export type CalculateProductPriceDto = {

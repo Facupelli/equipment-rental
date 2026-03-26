@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
-import { DateRange } from '../value-objects/date-range.vo';
+import { DateRange } from '../value-objects/date-range.value-object';
 import { AssetAssignment } from './asset-assignment.entity';
-import { AssetAssignmentNotFoundException } from '../exceptions/asset.exceptions';
+import { AssetAssignmentNotFoundException } from '../exceptions/asset.exception';
 
 export interface CreateAssetProps {
   locationId: string;

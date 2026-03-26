@@ -4,7 +4,7 @@ import { PricingRule, PricingRuleScope, PricingRuleType } from '../entities/pric
 import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exeptions';
 import { PricingRuleCondition, PricingRuleEffect, RuleApplicationContext } from '../types/pricing-rule.types';
 import { PricingCalculator, PricingCalculatorInput } from './pricing-calculator';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
 import { PricingRuleEffectType } from '@repo/types';
 
 // ─────────────────────────────────────────────────────────────────────────────

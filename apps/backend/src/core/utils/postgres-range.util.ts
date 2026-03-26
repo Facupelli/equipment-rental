@@ -1,4 +1,4 @@
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
 
 /**
  * Parses a PostgreSQL tstzrange string into a { start, end } pair.

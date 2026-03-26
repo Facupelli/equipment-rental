@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
 import { RuleApplicationContext } from '../domain/types/pricing-rule.types';
 import {
   CalculateBundlePriceDto,

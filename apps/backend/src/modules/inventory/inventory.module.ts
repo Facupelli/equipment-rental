@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { AssetRepository } from './infrastructure/persistance/repositories/asset.repository';
+import { AssetRepository } from './infrastructure/persistence/repositories/asset.repository';
 import { CreateAssetCommandHandler } from './application/commands/create-asset/create-asset.command-handler';
 import { CreateAssetHttpController } from './application/commands/create-asset/create-asset.http.controller';
 import { GetAssetByIdQueryHandler } from './application/queries/get-asset-by-id/get-asset-by-id.query-handler';
 import { GetAssetsQueryHandler } from './application/queries/get-assets/get-assets.query-handler';
 import { FindAssetByIdQueryHandler } from './application/queries/find-asset-by-id/find-asset-by-id.query-handler';
-import { AssetAssignmentRepository } from './infrastructure/persistance/repositories/asset-assignment.repository';
+import { AssetAssignmentRepository } from './infrastructure/persistence/repositories/asset-assignment.repository';
 import { InventoryFacade } from './inventory.facade';
 import { InventoryPublicApi } from './inventory.public-api';
 import { AssetAvailabilityService } from './infrastructure/read-services/asset-availability.service';

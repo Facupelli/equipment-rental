@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Money } from 'src/modules/order/domain/value-objects/money.vo';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
 import { PricingPublicApi } from '../../../pricing.public-api';
 import { CalculateCartPricesQuery, CartQueryProductItem } from './calculate-cart-prices.query';
 import { PricingQueryService } from '../../../infrastructure/services/pricing-query.service';

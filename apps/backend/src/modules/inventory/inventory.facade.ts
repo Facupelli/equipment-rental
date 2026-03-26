@@ -6,7 +6,7 @@ import { PostgresExclusionViolationError } from 'src/core/utils/postgres-error.m
 
 import { AssetAssignment } from './domain/entities/asset-assignment.entity';
 import { AssetNotAvailableError } from './domain/errors/inventory.errors';
-import { AssetAssignmentRepository } from './infrastructure/persistance/repositories/asset-assignment.repository';
+import { AssetAssignmentRepository } from './infrastructure/persistence/repositories/asset-assignment.repository';
 import { AssetAvailabilityService } from './infrastructure/read-services/asset-availability.service';
 import { FindAvailableParams } from './inventory.contracts';
 import { InventoryPublicApi } from './inventory.public-api';

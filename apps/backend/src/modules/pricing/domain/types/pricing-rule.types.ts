@@ -3,7 +3,7 @@
 // Using a discriminated union prevents condition/type mismatches at compile time.
 
 import { PricingRuleEffectType, PricingRuleType } from '@repo/types';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
 
 export type SeasonalCondition = {
   type: PricingRuleType.SEASONAL;

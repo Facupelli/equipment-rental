@@ -5,7 +5,7 @@ import { err, ok, Result } from 'src/core/result';
 import Decimal from 'decimal.js';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { AssetAssignment } from 'src/modules/inventory/domain/entities/asset-assignment.entity';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
 import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';

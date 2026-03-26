@@ -3,7 +3,7 @@ import { formatPostgresRange, parsePostgresRange } from 'src/core/utils/postgres
 import { Prisma, Asset as PrismaAsset } from 'src/generated/prisma/client';
 import { AssetAssignment } from 'src/modules/inventory/domain/entities/asset-assignment.entity';
 import { Asset } from 'src/modules/inventory/domain/entities/asset.entity';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
 
 // Prisma does not generate types for Unsupported("tstzrange") fields.
 // This type mirrors the raw DB row shape returned by queryRaw for asset_assignments.

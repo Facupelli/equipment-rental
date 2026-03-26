@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.vo';
+import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
 import { Money } from 'src/modules/order/domain/value-objects/money.vo';
 import { PricingRule } from '../entities/pricing-rule.entity';
 import { RuleApplicationContext } from '../types/pricing-rule.types';

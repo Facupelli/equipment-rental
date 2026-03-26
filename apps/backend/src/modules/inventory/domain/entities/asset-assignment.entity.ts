@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
-import { DateRange } from '../value-objects/date-range.vo';
+import { DateRange } from '../value-objects/date-range.value-object';
 import { AssignmentSource, AssignmentType } from '@repo/types';
-import { InvalidAssetAssignmentException } from '../exceptions/asset.exceptions';
+import { InvalidAssetAssignmentException } from '../exceptions/asset.exception';
 
 export interface CreateAssetAssignmentProps {
   assetId: string;
