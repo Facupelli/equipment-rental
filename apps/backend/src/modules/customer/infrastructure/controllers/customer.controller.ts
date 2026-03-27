@@ -3,7 +3,7 @@ import { QueryBus } from '@nestjs/cqrs';
 import { GetCustomersQuery } from '../../application/queries/get-customers/get-customers.query';
 import { GetCustomersQueryDto } from '../../application/dto/get-customers-query.dto';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 import { GetCustomerDetailQuery } from '../../application/queries/get-customer-detail/get-customer-detail.query';
 import { CustomerDetailResponseDto, MeCustomerResponseDto } from '@repo/schemas';
@@ -16,7 +16,7 @@ export class CustomerController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @Paginated()
-  async getCustomers(@CurrentUser() user: ReqUser, @Query() dto: GetCustomersQueryDto): Promise<void> {
+  async getCustomers(@CurrentUser() user: AuthenticatedUser, @Query() dto: GetCustomersQueryDto): Promise<void> {
     return this.queryBus.execute(
       new GetCustomersQuery(
         user.tenantId,
@@ -31,12 +31,15 @@ export class CustomerController {
   }
 
   @Get('me')
-  getCustomer(@CurrentUser() user: ReqUser): Promise<MeCustomerResponseDto> {
+  getCustomer(@CurrentUser() user: AuthenticatedUser): Promise<MeCustomerResponseDto> {
     return this.queryBus.execute(new GetCustomerQuery(user.id));
   }
 
   @Get(':id')
-  getCustomerDetail(@CurrentUser() user: ReqUser, @Param('id') id: string): Promise<CustomerDetailResponseDto> {
+  getCustomerDetail(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<CustomerDetailResponseDto> {
     return this.queryBus.execute(new GetCustomerDetailQuery(user.tenantId, id));
   }
 }

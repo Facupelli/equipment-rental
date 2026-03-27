@@ -2,7 +2,7 @@ import { Body, Controller, NotFoundException, Patch } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { UpdateTenantConfigCommand } from '../../application/commands/update-config/update-config.command';
 import { UpdateTenantConfigDto } from '../../application/commands/update-config/update-config.request.dto';
@@ -13,7 +13,7 @@ export class UpdateTenantConfigHttpController {
   constructor(private readonly commandBus: CommandBus) {}
 
   @Patch('config')
-  async updateConfig(@CurrentUser() user: ReqUser, @Body() dto: UpdateTenantConfigDto): Promise<void> {
+  async updateConfig(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateTenantConfigDto): Promise<void> {
     const result = await this.commandBus.execute(new UpdateTenantConfigCommand(user.tenantId, dto));
 
     if (result.isErr()) {

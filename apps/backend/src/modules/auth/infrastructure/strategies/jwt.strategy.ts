@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { Env } from 'src/config/env.schema';
 import { LogContext } from 'src/core/logger/log-context';
 import { ActorType } from '@repo/types';
+import { AuthenticatedUser } from '../../public/authenticated-user';
 
 export interface JwtPayload {
   sub: string;
@@ -13,13 +14,6 @@ export interface JwtPayload {
   actorType: ActorType;
   iat?: number;
   exp?: number;
-}
-
-export interface ReqUser {
-  id: string;
-  email: string;
-  tenantId: string;
-  actorType: ActorType;
 }
 
 @Injectable()
@@ -32,7 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<ReqUser> {
+  async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     LogContext.set('userId', payload.sub);
 
     return {

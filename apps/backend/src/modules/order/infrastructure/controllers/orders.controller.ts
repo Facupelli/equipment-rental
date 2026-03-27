@@ -8,7 +8,7 @@ import { ProblemException } from 'src/core/exceptions/problem.exception';
 import { GetOrderByIdQuery } from '../../application/queries/get-order-by-id/get-order-by-id.query';
 import { GetCalendarDotsQueryDto } from '../../application/dto/get-calendar-dots-query.dto';
 import { GetCalendarDotsQuery } from '../../application/queries/get-calendars-dots/get-calendar-dots.query';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import {
   InvalidPickupSlotError,
@@ -25,7 +25,7 @@ export class OrdersController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@CurrentUser() user: ReqUser, @Body() dto: CreateOrderDto) {
+  async create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateOrderDto) {
     const command = new CreateOrderCommand(
       user.tenantId,
       dto.locationId,

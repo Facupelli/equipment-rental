@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 
@@ -15,7 +15,10 @@ export class GetAssetsHttpController {
 
   @Get()
   @Paginated()
-  async getAll(@CurrentUser() user: ReqUser, @Query() dto: GetAssetsRequestDto): Promise<GetAssetsResponseDto> {
+  async getAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() dto: GetAssetsRequestDto,
+  ): Promise<GetAssetsResponseDto> {
     return this.queryBus.execute(
       new GetAssetsQuery(
         user.tenantId,

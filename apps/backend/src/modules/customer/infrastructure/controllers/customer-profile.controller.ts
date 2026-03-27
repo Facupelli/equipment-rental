@@ -5,7 +5,7 @@ import { SubmitCustomerProfileCommand } from '../../application/commands/submit-
 import { CustomerNotFoundException } from '../../domain/exceptions/customer.exceptions';
 import { ResubmitCustomerProfileCommand } from '../../application/commands/resubmit-customer-profile/resubmit-customer-profile.command';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { CustomerProfileResponseDto } from '@repo/schemas';
 import { GetCustomerProfileQuery } from '../../application/queries/get-customer-profile/get-customer-profile.query';
 
@@ -18,7 +18,7 @@ export class CustomerProfileHttpController {
 
   @Post()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async submit(@CurrentUser() customer: ReqUser, @Body() dto: SubmitCustomerProfileDto): Promise<void> {
+  async submit(@CurrentUser() customer: AuthenticatedUser, @Body() dto: SubmitCustomerProfileDto): Promise<void> {
     const result = await this.commandBus.execute(
       new SubmitCustomerProfileCommand(
         customer.id,
@@ -54,7 +54,7 @@ export class CustomerProfileHttpController {
 
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async resubmit(@CurrentUser() customer: ReqUser, @Body() dto: SubmitCustomerProfileDto): Promise<void> {
+  async resubmit(@CurrentUser() customer: AuthenticatedUser, @Body() dto: SubmitCustomerProfileDto): Promise<void> {
     const result = await this.commandBus.execute(
       new ResubmitCustomerProfileCommand(
         customer.id,

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { CreatePricingRuleCommand } from '../../application/commands/create-pricing-rule/create-pricing-rule.command';
 import { CreatePricingRuleDto, PaginatedDto, PricingRuleView } from '@repo/schemas';
 import { ListPricingRulesQuery } from '../../presentation/queries/list-pricing-rules/list-pricing-rules.query';
@@ -17,7 +17,10 @@ export class PricingRulesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createPricingRule(@CurrentUser() user: ReqUser, @Body() dto: CreatePricingRuleDto): Promise<{ id: string }> {
+  async createPricingRule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreatePricingRuleDto,
+  ): Promise<{ id: string }> {
     const id: string = await this.commandBus.execute(
       new CreatePricingRuleCommand(
         user.tenantId,
@@ -38,7 +41,7 @@ export class PricingRulesController {
   @Paginated()
   @HttpCode(HttpStatus.OK)
   async listPricingRules(
-    @CurrentUser() user: ReqUser,
+    @CurrentUser() user: AuthenticatedUser,
     @Query() query: ListPricingRulesQueryDto,
   ): Promise<PaginatedDto<PricingRuleView>> {
     return this.queryBus.execute(

@@ -3,7 +3,7 @@ import { QueryBus } from '@nestjs/cqrs';
 import { GetOwnerResponseDto } from '@repo/schemas';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { GetOwnerQuery } from '../../application/queries/get-owner/get-owner.query';
 
@@ -12,7 +12,10 @@ export class GetOwnerHttpController {
   constructor(private readonly queryBus: QueryBus) {}
 
   @Get(':ownerId')
-  async getOwner(@CurrentUser() user: ReqUser, @Param('ownerId') ownerId: string): Promise<GetOwnerResponseDto> {
+  async getOwner(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('ownerId') ownerId: string,
+  ): Promise<GetOwnerResponseDto> {
     const owner = await this.queryBus.execute<GetOwnerQuery, GetOwnerResponseDto | null>(
       new GetOwnerQuery(user.tenantId, ownerId),
     );

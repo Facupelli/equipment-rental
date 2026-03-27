@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { GetOwnersQuery } from '../../application/queries/get-owners/get-owners.query';
 
@@ -11,7 +11,7 @@ export class GetOwnersHttpController {
   constructor(private readonly queryBus: QueryBus) {}
 
   @Get()
-  async getOwners(@CurrentUser() user: ReqUser) {
+  async getOwners(@CurrentUser() user: AuthenticatedUser) {
     return this.queryBus.execute(new GetOwnersQuery(user.tenantId));
   }
 }

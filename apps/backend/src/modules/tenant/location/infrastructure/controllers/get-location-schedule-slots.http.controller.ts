@@ -3,7 +3,7 @@ import { QueryBus } from '@nestjs/cqrs';
 import { ScheduleSlotType } from '@repo/types';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { GetLocationScheduleSlotsQuery } from 'src/modules/tenant/public/queries/get-location-schedule-slots.query';
 
 import { GetLocationScheduleSlotsQueryDto } from '../../application/queries/get-location-schedule-slots/get-location-schedule-slots.request.dto';
@@ -14,7 +14,7 @@ export class GetLocationScheduleSlotsHttpController {
 
   @Get(':locationId/schedules/slots')
   async getLocationScheduleSlots(
-    @CurrentUser() user: ReqUser,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('locationId') locationId: string,
     @Query() query: GetLocationScheduleSlotsQueryDto,
   ): Promise<number[]> {

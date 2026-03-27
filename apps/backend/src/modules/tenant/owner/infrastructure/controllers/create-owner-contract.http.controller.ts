@@ -2,7 +2,7 @@ import { Body, ConflictException, Controller, NotFoundException, Param, Post } f
 import { CommandBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { CreateOwnerContractCommand } from '../../application/commands/create-owner-contract/create-owner-contract.command';
 import { CreateOwnerContractDto } from '../../application/commands/create-owner-contract/create-owner-contract.request.dto';
@@ -19,7 +19,7 @@ export class CreateOwnerContractHttpController {
 
   @Post(':ownerId/contracts')
   async createOwnerContract(
-    @CurrentUser() user: ReqUser,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('ownerId') ownerId: string,
     @Body() dto: CreateOwnerContractDto,
   ): Promise<string> {

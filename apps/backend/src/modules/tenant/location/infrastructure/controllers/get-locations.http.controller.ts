@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { GetLocationsQuery } from '../../application/queries/get-locations/get-locations.query';
 
@@ -11,7 +11,7 @@ export class GetLocationsHttpController {
   constructor(private readonly queryBus: QueryBus) {}
 
   @Get()
-  async getLocations(@CurrentUser() user: ReqUser) {
+  async getLocations(@CurrentUser() user: AuthenticatedUser) {
     return this.queryBus.execute(new GetLocationsQuery(user.tenantId));
   }
 }

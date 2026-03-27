@@ -6,12 +6,12 @@ import { LocalCustomerAuthGuard } from '../guards/local-customer-auth.guard';
 import { RefreshTokenGuard } from '../guards/jwt-refresh.guard';
 import { RefreshTokenUser } from '../strategies/jwt-refresh.strategy';
 import { CustomerLocalUser } from '../strategies/local-customer.strategy';
-import { ReqUser } from '../strategies/jwt.strategy';
 import { User } from 'src/modules/users/domain/entities/user.entity';
 import { ActorType } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 import { RegisterCustomerCommand } from '../../application/commands/register-customer/regsiter-customer.command';
 import { RegisterCustomerDto } from '../../application/dto/register-customer.dto';
+import { AuthenticatedUser } from '../../public/authenticated-user';
 
 @Controller('auth')
 export class AuthController {
@@ -86,7 +86,7 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async logout(@Request() req: { user: ReqUser }) {
+  async logout(@Request() req: { user: AuthenticatedUser }) {
     await this.authService.logout(req.user.id, req.user.actorType);
   }
 }

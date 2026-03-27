@@ -2,7 +2,7 @@ import { Body, Controller, NotFoundException, Param, Post } from '@nestjs/common
 import { CommandBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { ReqUser } from 'src/modules/auth/infrastructure/strategies/jwt.strategy';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { AddScheduleToLocationCommand } from '../../application/commands/add-schedule-to-location/add-schedule-to-location.command';
 import { AddScheduleToLocationDto } from '../../application/commands/add-schedule-to-location/add-schedule-to-location.request.dto';
@@ -14,7 +14,7 @@ export class AddLocationScheduleHttpController {
 
   @Post(':locationId/schedules')
   async createSchedule(
-    @CurrentUser() user: ReqUser,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('locationId') locationId: string,
     @Body() dto: AddScheduleToLocationDto,
   ): Promise<void> {
