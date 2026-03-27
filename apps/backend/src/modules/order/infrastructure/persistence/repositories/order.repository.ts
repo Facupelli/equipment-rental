@@ -1,27 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { OrderMapper } from '../mappers/order.mapper';
-import { OrderStatus } from '@repo/types';
-import { OrderRepositoryPort, PrismaTransactionClient } from 'src/modules/order/domain/ports/order.repository.port';
+import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
 
-export class CannotRemoveItemFromActiveOrderException extends Error {
-  constructor(orderId: string, status: OrderStatus) {
-    super(
-      `Cannot remove items from order '${orderId}' with status '${status}'. ` +
-        `Items can only be removed from orders in PENDING_SOURCING status.`,
-    );
-    this.name = 'CannotRemoveItemFromActiveOrderException';
-  }
-}
-
 @Injectable()
-export class OrderRepository implements OrderRepositoryPort {
+export class OrderRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async load(id: string): Promise<Order | null> {
-    const raw = await this.prisma.client.order.findUnique({
-      where: { id },
+  async load(id: string, tenantId: string): Promise<Order | null> {
+    const raw = await this.prisma.client.order.findFirst({
+      where: { id, tenantId },
       include: {
         items: {
           include: {

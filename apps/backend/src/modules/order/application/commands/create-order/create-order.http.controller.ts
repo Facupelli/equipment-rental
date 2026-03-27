@@ -1,0 +1,112 @@
+import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Post } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
+
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { ProblemException } from 'src/core/exceptions/problem.exception';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
+import { CouponNotFoundError, CouponValidationError } from 'src/modules/pricing/pricing.public-api';
+
+import { CreateOrderCommand } from './create-order.command';
+import { CreateOrderRequestDto } from './create-order.request.dto';
+import { CreateOrderResponseDto } from './create-order.response.dto';
+import {
+  BundleNotFoundError,
+  InvalidPickupSlotError,
+  InvalidReturnSlotError,
+  OrderMustContainItemsError,
+  OrderItemUnavailableError,
+  ProductTypeNotFoundError,
+} from '../../../domain/errors/order.errors';
+
+@Controller('orders')
+export class CreateOrderHttpController {
+  constructor(private readonly commandBus: CommandBus) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async create(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateOrderRequestDto,
+  ): Promise<CreateOrderResponseDto> {
+    const result = await this.commandBus.execute(
+      new CreateOrderCommand(
+        user.tenantId,
+        dto.locationId,
+        dto.customerId,
+        { start: new Date(dto.periodStart), end: new Date(dto.periodEnd) },
+        dto.pickupTime,
+        dto.returnTime,
+        dto.items,
+        dto.currency,
+      ),
+    );
+
+    if (result.isErr()) {
+      const error = result.error;
+
+      if (error instanceof OrderItemUnavailableError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Order Items Unavailable',
+          error.message,
+          'errors://order-items-unavailable',
+          { unavailableItems: error.unavailableItems, conflictGroups: error.conflictGroups },
+        );
+      }
+
+      if (error instanceof OrderMustContainItemsError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Invalid Order',
+          error.message,
+          'errors://order-must-contain-items',
+        );
+      }
+
+      if (error instanceof InvalidPickupSlotError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Invalid Pickup Slot',
+          error.message,
+          'errors://invalid-pickup-slot',
+        );
+      }
+
+      if (error instanceof InvalidReturnSlotError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Invalid Return Slot',
+          error.message,
+          'errors://invalid-return-slot',
+        );
+      }
+
+      if (error instanceof CouponNotFoundError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Coupon Not Found',
+          error.message,
+          'errors://coupon-not-found',
+        );
+      }
+
+      if (error instanceof CouponValidationError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Coupon Validation Failed',
+          error.message,
+          'errors://coupon-validation-failed',
+          { reason: error.reason },
+        );
+      }
+
+      if (error instanceof ProductTypeNotFoundError || error instanceof BundleNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+
+    return result.value;
+  }
+}

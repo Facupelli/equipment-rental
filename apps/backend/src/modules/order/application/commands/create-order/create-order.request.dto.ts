@@ -1,4 +1,4 @@
 import { createOrderSchema } from '@repo/schemas';
 import { createZodDto } from 'nestjs-zod';
 
-export class CreateOrderDto extends createZodDto(createOrderSchema) {}
+export class CreateOrderRequestDto extends createZodDto(createOrderSchema) {}

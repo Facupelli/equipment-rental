@@ -9,7 +9,7 @@ import { AssetNotAvailableError } from './domain/errors/inventory.errors';
 import { AssetAssignmentRepository } from './infrastructure/persistence/repositories/asset-assignment.repository';
 import { AssetAvailabilityService } from './infrastructure/read-services/asset-availability.service';
 import { FindAvailableParams } from './inventory.contracts';
-import { InventoryPublicApi } from './inventory.public-api';
+import { InventoryPublicApi, SaveOrderAssignmentDto } from './inventory.public-api';
 import { PrismaService } from 'src/core/database/prisma.service';
 
 @Injectable()
@@ -45,10 +45,12 @@ export class InventoryFacade implements InventoryPublicApi {
     return asset ?? null;
   }
 
-  async saveAssignment(
-    assignment: AssetAssignment,
+  async saveOrderAssignment(
+    dto: SaveOrderAssignmentDto,
     tx: PrismaTransactionClient,
   ): Promise<Result<void, AssetNotAvailableError>> {
+    const assignment = AssetAssignment.create(dto);
+
     try {
       await this.assignmentRepo.save(assignment, tx);
       return ok(undefined);

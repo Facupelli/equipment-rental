@@ -1,12 +1,11 @@
 import { JsonValue } from '@prisma/client/runtime/client';
-import { OrderStatus, OrderItemType } from '@repo/types';
-import { ContractBasis } from 'src/generated/prisma/client';
+import { ContractBasis, OrderStatus, OrderItemType } from '@repo/types';
 import Decimal from 'decimal.js';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
 import { OrderItemOwnerSplit, SplitStatus } from 'src/modules/order/domain/entities/order-item-owner-split.entity';
-import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.vo';
+import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
 
 // ── Prisma row shapes (from include queries) ──────────────────────────────────
 

@@ -1,3 +1,6 @@
 export class GetOrderByIdQuery {
-  constructor(public readonly orderId: string) {}
+  constructor(
+    public readonly tenantId: string,
+    public readonly orderId: string,
+  ) {}
 }

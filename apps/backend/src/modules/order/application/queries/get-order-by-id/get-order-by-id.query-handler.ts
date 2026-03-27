@@ -1,21 +1,21 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { NotFoundException } from '@nestjs/common';
 import { GetOrderByIdQuery } from './get-order-by-id.query';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { OrderDetailResponseDto } from '@repo/schemas';
 import { parsePostgresRange } from 'src/core/utils/postgres-range.util';
 import { OrderItemType, OrderStatus } from '@repo/types';
-import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.vo';
+import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
 import Decimal from 'decimal.js';
+import { OrderAssignmentsNotFoundException, OrderNotFoundException } from '../../../domain/exceptions/order.exceptions';
+import { GetOrderByIdResponseDto } from './get-order-by-id.response.dto';
 
 @QueryHandler(GetOrderByIdQuery)
-export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery, OrderDetailResponseDto> {
+export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery, GetOrderByIdResponseDto> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetOrderByIdQuery): Promise<OrderDetailResponseDto> {
+  async execute(query: GetOrderByIdQuery): Promise<GetOrderByIdResponseDto> {
     const [order, assignmentRows] = await Promise.all([
-      this.prisma.client.order.findUnique({
-        where: { id: query.orderId },
+      this.prisma.client.order.findFirst({
+        where: { id: query.orderId, tenantId: query.tenantId },
         include: {
           customer: {
             select: {
@@ -79,26 +79,28 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
         },
       }),
       this.prisma.client.$queryRaw<{ period: string }[]>`
-        SELECT period::text
-        FROM asset_assignments
-        WHERE order_id = ${query.orderId}
+        SELECT aa.period::text AS period
+        FROM asset_assignments aa
+        JOIN orders o ON o.id = aa.order_id
+        WHERE aa.order_id = ${query.orderId}
+          AND o.tenant_id = ${query.tenantId}
         LIMIT 1
       `,
     ]);
 
     if (!order) {
-      throw new NotFoundException(`Order ${query.orderId} not found`);
+      throw new OrderNotFoundException(query.orderId);
     }
 
     if (assignmentRows.length === 0) {
-      throw new NotFoundException(`Order ${query.orderId} has no assignments`);
+      throw new OrderAssignmentsNotFoundException(query.orderId);
     }
 
     const period = parsePostgresRange(assignmentRows[0].period);
 
     // ── Items ─────────────────────────────────────────────────────────────────
 
-    const items: OrderDetailResponseDto['items'] = order.items.map((item) => {
+    const items: GetOrderByIdResponseDto['items'] = order.items.map((item) => {
       const assets = item.assetAssignments.map((aa) => ({
         id: aa.asset.id,
         serialNumber: aa.asset.serialNumber,
@@ -141,7 +143,7 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
       const snapshot = PriceSnapshot.fromJSON(item.priceSnapshot);
       const label = item.type === OrderItemType.PRODUCT ? item.productType!.name : item.bundle!.name;
 
-      let ownerSplitLine: OrderDetailResponseDto['financial']['items'][number]['ownerSplit'] = null;
+      let ownerSplitLine: GetOrderByIdResponseDto['financial']['items'][number]['ownerSplit'] = null;
 
       if (item.ownerSplits.length > 0) {
         // Build a map from assetId → productTypeId using the asset assignments

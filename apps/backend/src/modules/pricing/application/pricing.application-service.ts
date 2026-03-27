@@ -6,17 +6,30 @@ import {
   CalculateProductPriceDto,
   GetComponentStandalonePricesDto,
   PricingPublicApi,
+  RedeemCouponDto,
+  RedeemCouponError,
+  ResolvedCouponDto,
+  ResolveCouponForPricingDto,
+  ResolveCouponForPricingError,
 } from '../pricing.public-api';
 import { PricingCalculator, PricingResult } from '../domain/services/pricing-calculator.service';
 import { PricingComputationReadService } from '../infrastructure/read-services/pricing-computation-read.service';
 import Decimal from 'decimal.js';
 import { PricingBundleNotFoundError, PricingProductTypeNotFoundError } from '../domain/errors/pricing.errors';
+import { ResolveCouponForPricingService } from './services/resolve-coupon-for-pricing.service';
+import { RedeemCouponService } from './services/redeem-coupon.service';
+import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
+import { Result } from 'src/core/result';
 
 @Injectable()
 export class PricingApplicationService implements PricingPublicApi {
   private readonly calculator = new PricingCalculator();
 
-  constructor(private readonly pricingRead: PricingComputationReadService) {}
+  constructor(
+    private readonly pricingRead: PricingComputationReadService,
+    private readonly resolveCouponForPricingService: ResolveCouponForPricingService,
+    private readonly redeemCouponService: RedeemCouponService,
+  ) {}
 
   async calculateProductPrice(dto: CalculateProductPriceDto): Promise<PricingResult> {
     const meta = await this.pricingRead.loadProductTypeMeta(dto.productTypeId);
@@ -116,5 +129,18 @@ export class PricingApplicationService implements PricingPublicApi {
     }
 
     return result;
+  }
+
+  async resolveCouponForPricing(
+    dto: ResolveCouponForPricingDto,
+  ): Promise<Result<ResolvedCouponDto, ResolveCouponForPricingError>> {
+    return this.resolveCouponForPricingService.resolveCouponForPricing(dto);
+  }
+
+  async redeemCouponWithinTransaction(
+    dto: RedeemCouponDto,
+    tx: PrismaTransactionClient,
+  ): Promise<Result<void, RedeemCouponError>> {
+    return this.redeemCouponService.redeemWithinTransaction(dto, tx);
   }
 }

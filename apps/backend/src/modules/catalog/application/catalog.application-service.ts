@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { BundleDto, CatalogPublicApi, ProductTypeDto } from '../catalog.public-api';
+import {
+  BundleDto,
+  BundleOrderMetaComponentDto,
+  BundleOrderMetaDto,
+  CatalogPublicApi,
+  ProductTypeDto,
+  ProductTypeOrderMetaDto,
+} from '../catalog.public-api';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { TrackingMode } from '@repo/types';
 
@@ -31,5 +38,47 @@ export class CatalogApplicationService implements CatalogPublicApi {
     }
 
     return new BundleDto(row.id, row.retiredAt, row.publishedAt);
+  }
+
+  async getProductTypeOrderMeta(id: string): Promise<ProductTypeOrderMetaDto | null> {
+    const row = await this.prisma.client.productType.findUnique({
+      where: { id },
+      select: { id: true, categoryId: true },
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    return new ProductTypeOrderMetaDto(row.id, row.categoryId);
+  }
+
+  async getBundleOrderMeta(id: string): Promise<BundleOrderMetaDto | null> {
+    const row = await this.prisma.client.bundle.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        components: {
+          select: {
+            quantity: true,
+            productType: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    return new BundleOrderMetaDto(
+      row.id,
+      row.name,
+      row.components.map(
+        (component) =>
+          new BundleOrderMetaComponentDto(component.productType.id, component.productType.name, component.quantity),
+      ),
+    );
   }
 }

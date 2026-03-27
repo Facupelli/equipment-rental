@@ -1,8 +1,8 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetCalendarDotsQuery } from './get-calendar-dots.query';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { GetCalendarDotsResponseDto } from '@repo/schemas';
 import { OrderStatus } from '@repo/types';
+import { GetCalendarDotsResponseDto } from './get-calendar-dots.response.dto';
 
 type RawDateRow = { date: string };
 
@@ -11,11 +11,11 @@ export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDot
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetCalendarDotsQuery): Promise<GetCalendarDotsResponseDto> {
-    const { locationId, from, to } = query;
+    const { tenantId, locationId, from, to } = query;
 
     const [pickupRows, returnRows] = await Promise.all([
-      this.fetchPickupDates(locationId, from, to),
-      this.fetchReturnDates(locationId, from, to),
+      this.fetchPickupDates(tenantId, locationId, from, to),
+      this.fetchReturnDates(tenantId, locationId, from, to),
     ]);
 
     return {
@@ -24,13 +24,20 @@ export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDot
     };
   }
 
-  private async fetchPickupDates(locationId: string, from: string, to: string): Promise<RawDateRow[]> {
+  private async fetchPickupDates(
+    tenantId: string,
+    locationId: string,
+    from: string,
+    to: string,
+  ): Promise<RawDateRow[]> {
     return this.prisma.client.$queryRaw<RawDateRow[]>`
       SELECT DISTINCT lower(aa.period)::date::text AS date
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id
       JOIN asset_assignments aa ON aa.order_item_id = oi.id
       WHERE
+        o.tenant_id = ${tenantId}
+        AND
         o.location_id = ${locationId}
         AND o.deleted_at IS NULL
         AND o.status != ${OrderStatus.CANCELLED}
@@ -38,13 +45,20 @@ export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDot
     `;
   }
 
-  private async fetchReturnDates(locationId: string, from: string, to: string): Promise<RawDateRow[]> {
+  private async fetchReturnDates(
+    tenantId: string,
+    locationId: string,
+    from: string,
+    to: string,
+  ): Promise<RawDateRow[]> {
     return this.prisma.client.$queryRaw<RawDateRow[]>`
       SELECT DISTINCT upper(aa.period)::date::text AS date
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id
       JOIN asset_assignments aa ON aa.order_item_id = oi.id
       WHERE
+        o.tenant_id = ${tenantId}
+        AND
         o.location_id = ${locationId}
         AND o.deleted_at IS NULL
         AND o.status != ${OrderStatus.CANCELLED}

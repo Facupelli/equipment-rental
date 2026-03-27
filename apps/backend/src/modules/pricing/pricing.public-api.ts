@@ -1,6 +1,9 @@
 import Decimal from 'decimal.js';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
+import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
+import { Result } from 'src/core/result';
 import { PricingResult } from './domain/services/pricing-calculator.service';
+import { CouponNotFoundError, CouponValidationError } from './domain/errors/pricing.errors';
 
 export type CalculateProductPriceDto = {
   tenantId: string;
@@ -35,6 +38,30 @@ export type GetComponentStandalonePricesDto = {
   period: DateRange;
 };
 
+export type ResolveCouponForPricingDto = {
+  tenantId: string;
+  code: string;
+  customerId: string | undefined;
+  now: Date;
+};
+
+export type ResolvedCouponDto = {
+  couponId: string;
+  ruleId: string;
+};
+
+export type RedeemCouponDto = {
+  couponId: string;
+  orderId: string;
+  customerId: string | undefined;
+  now: Date;
+};
+
+export type ResolveCouponForPricingError = CouponNotFoundError | CouponValidationError;
+export type RedeemCouponError = CouponNotFoundError | CouponValidationError;
+
+export { CouponNotFoundError, CouponValidationError };
+
 /**
  * Cross-module contract for pricing calculations.
  * Implemented by PricingApplicationService.
@@ -48,4 +75,11 @@ export abstract class PricingPublicApi {
   abstract calculateProductPrice(dto: CalculateProductPriceDto): Promise<PricingResult>;
   abstract calculateBundlePrice(dto: CalculateBundlePriceDto): Promise<PricingResult>;
   abstract getComponentStandalonePrices(dto: GetComponentStandalonePricesDto): Promise<Map<string, Decimal>>;
+  abstract resolveCouponForPricing(
+    dto: ResolveCouponForPricingDto,
+  ): Promise<Result<ResolvedCouponDto, ResolveCouponForPricingError>>;
+  abstract redeemCouponWithinTransaction(
+    dto: RedeemCouponDto,
+    tx: PrismaTransactionClient,
+  ): Promise<Result<void, RedeemCouponError>>;
 }

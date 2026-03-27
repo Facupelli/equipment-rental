@@ -1,10 +1,9 @@
 import { randomUUID } from 'crypto';
 import Decimal from 'decimal.js';
-import { ContractBasis } from 'src/generated/prisma/client';
+import { ContractBasis, OrderItemType } from '@repo/types';
 import { BundleSnapshot } from './bundle-snapshot.entity';
 import { OrderItemOwnerSplit, SplitStatus } from './order-item-owner-split.entity';
-import { OrderItemType } from '@repo/types';
-import { PriceSnapshot } from '../value-objects/price-snapshot.vo';
+import { PriceSnapshot } from '../value-objects/price-snapshot.value-object';
 
 export interface CreateOrderItemProps {
   orderId: string;

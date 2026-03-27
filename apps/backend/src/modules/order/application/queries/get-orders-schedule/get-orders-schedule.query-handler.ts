@@ -1,8 +1,9 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetOrdersScheduleQuery } from './get-orders-schedule.query';
-import { GetOrdersScheduleResponse, OrderSummary, ScheduleEvent } from '@repo/schemas';
+import { OrderSummary, ScheduleEvent } from '@repo/schemas';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { OrderStatus } from '@repo/types';
+import { GetOrdersScheduleResponseDto } from './get-orders-schedule.response.dto';
 
 type RawOrderRow = {
   id: string;
@@ -18,15 +19,18 @@ type RawOrderRow = {
 };
 
 @QueryHandler(GetOrdersScheduleQuery)
-export class GetOrdersScheduleQueryHandler implements IQueryHandler<GetOrdersScheduleQuery, GetOrdersScheduleResponse> {
+export class GetOrdersScheduleQueryHandler implements IQueryHandler<
+  GetOrdersScheduleQuery,
+  GetOrdersScheduleResponseDto
+> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetOrdersScheduleQuery): Promise<GetOrdersScheduleResponse> {
-    const { locationId, from, to } = query;
+  async execute(query: GetOrdersScheduleQuery): Promise<GetOrdersScheduleResponseDto> {
+    const { tenantId, locationId, from, to } = query;
 
     const [pickupRows, returnRows] = await Promise.all([
-      this.fetchPickups(locationId, from, to),
-      this.fetchReturns(locationId, from, to),
+      this.fetchPickups(tenantId, locationId, from, to),
+      this.fetchReturns(tenantId, locationId, from, to),
     ]);
 
     const pickupEvents: ScheduleEvent[] = pickupRows.map((row) => ({
@@ -49,7 +53,7 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<GetOrdersSch
   // Orders whose rental period starts within [from, to].
   // DISTINCT ON (o.id) ensures one row per order even when the order
   // has multiple items — each with its own asset_assignment row.
-  private async fetchPickups(locationId: string, from: string, to: string): Promise<RawOrderRow[]> {
+  private async fetchPickups(tenantId: string, locationId: string, from: string, to: string): Promise<RawOrderRow[]> {
     return this.prisma.client.$queryRaw<RawOrderRow[]>`
       SELECT DISTINCT ON (o.id)
         o.id,
@@ -67,6 +71,8 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<GetOrdersSch
       JOIN asset_assignments aa ON aa.order_item_id = oi.id
       LEFT JOIN customers c ON c.id = o.customer_id
       WHERE
+        o.tenant_id = ${tenantId}
+        AND
         o.location_id = ${locationId}
         AND o.deleted_at IS NULL
         AND o.status != ${OrderStatus.CANCELLED}
@@ -75,7 +81,7 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<GetOrdersSch
   }
 
   // Orders whose rental period ends within [from, to].
-  private async fetchReturns(locationId: string, from: string, to: string): Promise<RawOrderRow[]> {
+  private async fetchReturns(tenantId: string, locationId: string, from: string, to: string): Promise<RawOrderRow[]> {
     return this.prisma.client.$queryRaw<RawOrderRow[]>`
       SELECT DISTINCT ON (o.id)
         o.id,
@@ -93,6 +99,8 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<GetOrdersSch
       JOIN asset_assignments aa ON aa.order_item_id = oi.id
       LEFT JOIN customers c ON c.id = o.customer_id
       WHERE
+        o.tenant_id = ${tenantId}
+        AND
         o.location_id = ${locationId}
         AND o.deleted_at IS NULL
         AND o.status != ${OrderStatus.CANCELLED}

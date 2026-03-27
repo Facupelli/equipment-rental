@@ -43,6 +43,8 @@ import { CreateOwnerHttpController } from './owner/infrastructure/controllers/cr
 import { CreateOwnerContractHttpController } from './owner/infrastructure/controllers/create-owner-contract.http.controller';
 import { GetOwnersHttpController } from './owner/infrastructure/controllers/get-owners.http.controller';
 import { GetOwnerHttpController } from './owner/infrastructure/controllers/get-owner.http.controller';
+import { TenantPublicApi } from './tenant.public-api';
+import { TenantFacade } from './tenant.facade';
 
 const commandHandlers = [
   RegisterTenantService,
@@ -107,6 +109,14 @@ const controllers = [
 @Module({
   imports: [UsersModule, InventoryModule],
   controllers: controllers,
-  providers: [PrismaUnitOfWork, ...repositories, ...commandHandlers, ...queryHandlers],
+  providers: [
+    PrismaUnitOfWork,
+    ...repositories,
+    ...commandHandlers,
+    ...queryHandlers,
+    TenantFacade,
+    { provide: TenantPublicApi, useExisting: TenantFacade },
+  ],
+  exports: [TenantPublicApi],
 })
 export class TenantModule {}

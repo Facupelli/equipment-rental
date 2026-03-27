@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import Decimal from 'decimal.js';
-import { ContractBasis } from 'src/generated/prisma/client';
+import { ContractBasis } from '@repo/types';
 import { OwnerSplitAlreadyVoidedException } from '../exceptions/order.exceptions';
 
 export enum SplitStatus {

@@ -21,6 +21,27 @@ export class OrderItemNotFoundException extends Error {
   }
 }
 
+export class OrderNotFoundException extends Error {
+  constructor(orderId: string) {
+    super(`Order '${orderId}' not found.`);
+    this.name = 'OrderNotFoundException';
+  }
+}
+
+export class OrderAssignmentsNotFoundException extends Error {
+  constructor(orderId: string) {
+    super(`Order '${orderId}' has no assignments.`);
+    this.name = 'OrderAssignmentsNotFoundException';
+  }
+}
+
+export class TenantConfigNotFoundException extends Error {
+  constructor(tenantId: string) {
+    super(`Tenant '${tenantId}' config was not found.`);
+    this.name = 'TenantConfigNotFoundException';
+  }
+}
+
 export class BundleComponentNotFoundException extends Error {
   constructor(componentId: string) {
     super(`Bundle component '${componentId}' not found.`);
