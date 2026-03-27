@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Injectable } from '@nestjs/common';
-import { FindTenantByCustomDomainQuery } from './find-tenant-by-custom-domain.query';
+import { FindTenantByCustomDomainQuery } from '../../../public/queries/find-tenant-by-custom-domain.query';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { TenantContext } from '@repo/schemas';
 

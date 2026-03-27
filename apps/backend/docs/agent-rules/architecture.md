@@ -38,19 +38,78 @@ Each module represents a bounded context: a cohesive area of the domain with its
 
 ### Boundaries
 
-Modules must not import each other through private internals. The only valid direct dependency is the public facade explicitly exported by the owning NestJS module.
+Modules must not import each other through private internals. The only valid cross-module dependency is an explicit public contract exposed by the owning module.
 
 This boundary is one of the most important structural rules in the codebase. Violating it creates tight coupling that makes bounded contexts hard to reason about independently.
 
 ### Inter-module communication
 
-When one module needs another, prefer one of these explicit patterns:
+Cross-module communication is allowed only through the callee module's explicit public surface. The transport mechanism does not define the boundary; the contract location does.
 
-- Direct facade call when the coupling is intentional and easy to trace
-- CQRS Bus when the caller should depend on a command or query contract rather than a concrete class
-- Domain Events for decoupled side effects that cross module boundaries
+#### Allowed patterns
 
-Choose deliberately. Direct calls are explicit. Events are more decoupled but harder to trace. The bus sits between those extremes.
+- Public Facade/API for synchronous business capabilities and command-side collaboration
+- Public Query Contract for cross-module reads via `QueryBus`, but only when the query class is part of the callee's explicit public surface
+- Public Domain Event for decoupled side effects that should happen after a successful state change
+
+#### Default rule
+
+Default to a Public Facade/API when one module needs another module to perform work synchronously.
+
+Use a Public Query Contract only when all of the following are true:
+
+- the interaction is read-only
+- the caller needs data, not business behavior
+- the result is naturally a read model
+
+Use a Public Domain Event only for post-commit reactions that should not be orchestrated synchronously by the caller.
+
+Cross-module command dispatch through `CommandBus` is not a standard boundary pattern in this codebase. If one module needs another module to perform work synchronously, call that module's public facade instead.
+
+#### Forbidden cross-module access
+
+Modules must not import another module through its private `application/`, `domain/`, or `infrastructure/` folders.
+
+This means the following are forbidden across module boundaries:
+
+- importing commands, queries, handlers, services, repositories, entities, domain services, constants, or decorators from another module's private folders
+- importing types from another module's handler file or implementation-specific file
+- using `QueryBus` or `CommandBus` with a contract that lives in another module's private folders
+
+Allowed cross-module imports must come from an explicit public surface, such as:
+
+- `src/modules/<module>/<module>.public-api`
+- `src/modules/<module>/public/**`
+
+#### Public contract rules
+
+Public contracts may expose:
+
+- primitives
+- dedicated public DTOs or read models
+- intentionally shared kernel types
+
+Public contracts should not expose private module internals such as repositories, handler-local types, or other implementation-specific types. Leaking persistence details through a public contract should be avoided unless there is an explicitly documented exception.
+
+#### Rule of thumb
+
+- "Do something" -> Public Facade/API
+- "Tell me something" -> Public Query Contract
+- "React later" -> Public Domain Event
+
+#### Examples
+
+Allowed:
+
+- `order -> pricing` through `PricingPublicApi`
+- `order -> tenant` through `tenant/public/queries/*`
+
+Forbidden:
+
+- `tenant -> users/application/...`
+- `auth -> customer/application/...`
+- `internal -> tenant/application/...`
+- cross-module imports from `auth/infrastructure/...`
 
 ### Vertical slicing
 

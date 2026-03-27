@@ -4,7 +4,7 @@ import { Strategy } from 'passport-local';
 import { Request } from 'express';
 import { ActorType } from '@repo/types';
 import { BcryptService } from '../../application/bcript.service';
-import { UserCredentials } from 'src/modules/users/application/queries/find-credentials-by-email/find-credentials-by-email.types';
+import { UserCredentialsReadModel } from 'src/modules/users/public/read-models/user-credentials.read-model';
 
 export interface UserLocalUser {
   id: string;
@@ -30,7 +30,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('tenantId is required.');
     }
 
-    const user: UserCredentials = await this.bcryptService.validateUser(email, password, tenantId);
+    const user: UserCredentialsReadModel = await this.bcryptService.validateUser(email, password, tenantId);
 
     return {
       id: user.id,

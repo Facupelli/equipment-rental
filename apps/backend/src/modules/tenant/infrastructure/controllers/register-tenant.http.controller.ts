@@ -1,7 +1,7 @@
 import { Body, ConflictException, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 
-import { Public } from 'src/modules/auth/infrastructure/is-public.decorator';
+import { Public } from 'src/core/decorators/public.decorator';
 
 import { RegisterTenantCommand } from '../../application/commands/register-tenant/register-tenant.command';
 import { CompanyNameAlreadyInUseError, EmailAlreadyInUseError } from '../../domain/errors/tenant.errors';

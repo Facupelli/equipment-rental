@@ -1,4 +1,4 @@
-export interface UserCredentials {
+export interface UserCredentialsReadModel {
   id: string;
   tenantId: string;
   email: string;

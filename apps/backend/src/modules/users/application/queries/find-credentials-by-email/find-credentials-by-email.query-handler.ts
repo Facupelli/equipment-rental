@@ -1,16 +1,16 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { UserCredentials } from './find-credentials-by-email.types';
-import { FindCredentialsByEmailQuery } from './find-credentials-by-email.query';
+import { FindUserCredentialsByEmailQuery } from '../../../public/queries/find-user-credentials-by-email.query';
+import { UserCredentialsReadModel } from '../../../public/read-models/user-credentials.read-model';
 
-@QueryHandler(FindCredentialsByEmailQuery)
+@QueryHandler(FindUserCredentialsByEmailQuery)
 export class FindCredentialsByEmailQueryHandler implements IQueryHandler<
-  FindCredentialsByEmailQuery,
-  UserCredentials | null
+  FindUserCredentialsByEmailQuery,
+  UserCredentialsReadModel | null
 > {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: FindCredentialsByEmailQuery): Promise<UserCredentials | null> {
+  async execute(query: FindUserCredentialsByEmailQuery): Promise<UserCredentialsReadModel | null> {
     const user = await this.prisma.client.user.findFirst({
       where: {
         tenantId: query.tenantId,

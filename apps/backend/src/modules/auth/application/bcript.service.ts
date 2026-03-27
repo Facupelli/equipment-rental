@@ -1,18 +1,18 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { QueryBus } from '@nestjs/cqrs';
-import { FindCredentialsByEmailQuery } from 'src/modules/users/application/queries/find-credentials-by-email/find-credentials-by-email.query';
-import { UserCredentials } from 'src/modules/users/application/queries/find-credentials-by-email/find-credentials-by-email.types';
-import { CustomerCredentials } from 'src/modules/customer/application/queries/find-customer-credentials/find-customer-credentials.query-handler';
-import { FindCustomerCredentialsByEmailQuery } from 'src/modules/customer/application/queries/find-customer-credentials/find-customer-credentials.query';
+import { FindCustomerCredentialsByEmailQuery } from 'src/modules/customer/public/queries/find-customer-credentials-by-email.query';
+import { CustomerCredentialsReadModel } from 'src/modules/customer/public/read-models/customer-credentials.read-model';
+import { FindUserCredentialsByEmailQuery } from 'src/modules/users/public/queries/find-user-credentials-by-email.query';
+import { UserCredentialsReadModel } from 'src/modules/users/public/read-models/user-credentials.read-model';
 
 @Injectable()
 export class BcryptService {
   constructor(private readonly queryBus: QueryBus) {}
 
-  async validateUser(email: string, password: string, tenantId: string): Promise<UserCredentials> {
-    const user = await this.queryBus.execute<FindCredentialsByEmailQuery, UserCredentials | null>(
-      new FindCredentialsByEmailQuery(tenantId, email),
+  async validateUser(email: string, password: string, tenantId: string): Promise<UserCredentialsReadModel> {
+    const user = await this.queryBus.execute<FindUserCredentialsByEmailQuery, UserCredentialsReadModel | null>(
+      new FindUserCredentialsByEmailQuery(tenantId, email),
     );
 
     if (!user) {
@@ -27,10 +27,11 @@ export class BcryptService {
     return user;
   }
 
-  async validateCustomer(email: string, password: string, tenantId: string): Promise<CustomerCredentials> {
-    const customer = await this.queryBus.execute<FindCustomerCredentialsByEmailQuery, CustomerCredentials | null>(
-      new FindCustomerCredentialsByEmailQuery(email, tenantId),
-    );
+  async validateCustomer(email: string, password: string, tenantId: string): Promise<CustomerCredentialsReadModel> {
+    const customer = await this.queryBus.execute<
+      FindCustomerCredentialsByEmailQuery,
+      CustomerCredentialsReadModel | null
+    >(new FindCustomerCredentialsByEmailQuery(email, tenantId));
 
     if (!customer) {
       throw new UnauthorizedException('Invalid credentials');

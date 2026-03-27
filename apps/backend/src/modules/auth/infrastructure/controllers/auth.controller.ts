@@ -1,14 +1,16 @@
 import { Controller, Post, UseGuards, Request, HttpCode, HttpStatus, Body } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
+import { ActorType } from '@repo/types';
+
+import { Public } from 'src/core/decorators/public.decorator';
+
 import { AuthService } from '../../application/auth.service';
-import { Public } from '../is-public.decorator';
 import { LocalAuthGuard } from '../guards/local-auth.guard';
 import { LocalCustomerAuthGuard } from '../guards/local-customer-auth.guard';
 import { RefreshTokenGuard } from '../guards/jwt-refresh.guard';
 import { RefreshTokenUser } from '../strategies/jwt-refresh.strategy';
 import { CustomerLocalUser } from '../strategies/local-customer.strategy';
 import { UserLocalUser } from '../strategies/local.strategy';
-import { ActorType } from '@repo/types';
-import { CommandBus } from '@nestjs/cqrs';
 import { RegisterCustomerCommand } from '../../application/commands/register-customer/regsiter-customer.command';
 import { RegisterCustomerDto } from '../../application/dto/register-customer.dto';
 import { AuthenticatedUser } from '../../public/authenticated-user';

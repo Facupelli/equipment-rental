@@ -3,11 +3,11 @@ import { QueryBus } from '@nestjs/cqrs';
 import { InternalTokenGuard } from '../guards/internal-token.guard';
 import { BANNED_TENANT_SLUGS } from 'src/modules/tenant/domain/tenant.constants';
 import { ResolvedTenantContext, TenantContext } from '@repo/schemas';
-import { FindTenantBySlugQuery } from 'src/modules/tenant/application/queries/find-tenant-by-slug/find-tenant-by-slug.query';
-import { FindTenantByCustomDomainQuery } from 'src/modules/tenant/application/queries/find-tenant-by-custom-domain/find-tenant-by-custom-domain.query';
+import { FindTenantBySlugQuery } from 'src/modules/tenant/public/queries/find-tenant-by-slug.query';
+import { FindTenantByCustomDomainQuery } from 'src/modules/tenant/public/queries/find-tenant-by-custom-domain.query';
 import { ConfigService } from '@nestjs/config';
 import { Env } from 'src/config/env.schema';
-import { Public } from 'src/modules/auth/infrastructure/is-public.decorator';
+import { Public } from 'src/core/decorators/public.decorator';
 
 @Controller('internal')
 @UseGuards(InternalTokenGuard)

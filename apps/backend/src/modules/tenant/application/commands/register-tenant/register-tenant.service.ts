@@ -1,15 +1,9 @@
 import { CommandHandler, EventBus, ICommandHandler, QueryBus } from '@nestjs/cqrs';
 import * as bcrypt from 'bcrypt';
 
-import { PrismaTransactionClient, PrismaUnitOfWork } from 'src/core/database/prisma-unit-of-work';
+import { PrismaUnitOfWork } from 'src/core/database/prisma-unit-of-work';
 import { Result, err, ok } from 'src/core/result';
-import { IsEmailTakenQuery } from 'src/modules/users/application/queries/is-email-taken/is-email-taken.query';
-import { Role } from 'src/modules/users/domain/entities/role.entity';
-import { User } from 'src/modules/users/domain/entities/user.entity';
-import { TENANT_ADMIN_ROLE_CODE, TENANT_ADMIN_ROLE_NAME } from 'src/modules/users/domain/role.constants';
-import { TENANT_ADMIN_PERMISSIONS } from 'src/modules/users/domain/tenant-admin.permissions';
-import { RoleRepository } from 'src/modules/users/infrastructure/persistence/repositories/role.repository';
-import { UserRepository } from 'src/modules/users/infrastructure/persistence/repositories/user.repository';
+import { UsersPublicApi } from 'src/modules/users/users.public-api';
 import { TenantRepository } from 'src/modules/tenant/infrastructure/persistence/repositories/tenant.repository';
 
 import { Tenant } from '../../../domain/entities/tenant.entity';
@@ -24,11 +18,6 @@ export interface RegisterTenantResponse {
   tenantId: string;
 }
 
-interface TenantAdminBootstrapResult {
-  roleId: string;
-  userId: string;
-}
-
 type RegisterTenantError = EmailAlreadyInUseError | CompanyNameAlreadyInUseError;
 
 @CommandHandler(RegisterTenantCommand)
@@ -37,12 +26,13 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
     private readonly unitOfWork: PrismaUnitOfWork,
     private readonly queryBus: QueryBus,
     private readonly eventBus: EventBus,
+    private readonly usersApi: UsersPublicApi,
   ) {}
 
   async execute(command: RegisterTenantCommand): Promise<Result<RegisterTenantResponse, RegisterTenantError>> {
     const { user, tenant } = command;
 
-    const isEmailTaken = await this.queryBus.execute<IsEmailTakenQuery, boolean>(new IsEmailTakenQuery(user.email));
+    const isEmailTaken = await this.usersApi.isEmailTaken(user.email);
     if (isEmailTaken) {
       return err(new EmailAlreadyInUseError());
     }
@@ -64,7 +54,7 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
       });
       await tenantRepository.save(createdTenant);
 
-      const admin = await this.createTenantAdmin(tx, {
+      const admin = await this.usersApi.bootstrapTenantAdmin(tx, {
         email: user.email,
         passwordHash,
         firstName: user.firstName,
@@ -85,59 +75,5 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
     );
 
     return ok({ userId: created.userId, tenantId: created.tenantId });
-  }
-
-  private async createTenantAdmin(
-    tx: PrismaTransactionClient,
-    input: {
-      email: string;
-      passwordHash: string;
-      firstName: string;
-      lastName: string;
-      tenantId: string;
-    },
-  ): Promise<TenantAdminBootstrapResult> {
-    const roleRepository = new RoleRepository(tx);
-    const userRepository = new UserRepository(tx);
-
-    const role = Role.create({
-      code: TENANT_ADMIN_ROLE_CODE,
-      name: TENANT_ADMIN_ROLE_NAME,
-      description: 'Tenant administrator role',
-      tenantId: input.tenantId,
-    });
-
-    for (const permission of TENANT_ADMIN_PERMISSIONS) {
-      const addPermissionResult = role.addPermission(permission);
-      if (addPermissionResult.isErr()) {
-        throw addPermissionResult.error;
-      }
-    }
-
-    await roleRepository.save(role);
-
-    const user = User.create({
-      email: input.email,
-      passwordHash: input.passwordHash,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      tenantId: input.tenantId,
-    });
-
-    const assignRoleResult = user.assignRole({
-      userId: user.id,
-      roleId: role.id,
-    });
-
-    if (assignRoleResult.isErr()) {
-      throw assignRoleResult.error;
-    }
-
-    await userRepository.save(user);
-
-    return {
-      roleId: role.id,
-      userId: user.id,
-    };
   }
 }

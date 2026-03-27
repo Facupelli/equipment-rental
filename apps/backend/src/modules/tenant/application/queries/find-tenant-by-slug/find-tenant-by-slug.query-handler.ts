@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Injectable } from '@nestjs/common';
-import { FindTenantBySlugQuery } from './find-tenant-by-slug.query';
+import { FindTenantBySlugQuery } from '../../../public/queries/find-tenant-by-slug.query';
 import { TenantContext } from '@repo/schemas';
 import { PrismaService } from 'src/core/database/prisma.service';
 
