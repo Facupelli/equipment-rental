@@ -1,10 +1,10 @@
 import Decimal from 'decimal.js';
 import { PricingTier } from '../entities/pricing-tier.entity';
 import { PricingRule, PricingRuleScope, PricingRuleType } from '../entities/pricing-rule.entity';
-import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exeptions';
+import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exceptions';
 import { PricingRuleCondition, PricingRuleEffect, RuleApplicationContext } from '../types/pricing-rule.types';
-import { PricingCalculator, PricingCalculatorInput } from './pricing-calculator';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
+import { PricingCalculator, PricingCalculatorInput } from './pricing-calculator.service';
+import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { PricingRuleEffectType } from '@repo/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -59,6 +59,7 @@ function makeRule(
   return PricingRule.reconstitute({
     id,
     tenantId: TENANT_ID,
+    name: id,
     type: PricingRuleType.SEASONAL,
     scope: PricingRuleScope.ORDER,
     priority: options.priority ?? 0,

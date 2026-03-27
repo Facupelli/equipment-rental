@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { DateRange } from '../value-objects/date-range.value-object';
+import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { AssignmentSource, AssignmentType } from '@repo/types';
 import { InvalidAssetAssignmentException } from '../exceptions/asset.exception';
 

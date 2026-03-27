@@ -1,6 +1,6 @@
 import Decimal from 'decimal.js';
-import { DateRange } from '../inventory/domain/value-objects/date-range.value-object';
-import { PricingResult } from './domain/services/pricing-calculator';
+import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
+import { PricingResult } from './domain/services/pricing-calculator.service';
 
 export type CalculateProductPriceDto = {
   tenantId: string;
@@ -39,9 +39,10 @@ export type GetComponentStandalonePricesDto = {
  * Cross-module contract for pricing calculations.
  * Implemented by PricingApplicationService.
  *
- * Both methods throw on misconfiguration (no tier found, unknown entity).
- * They do not return Result — a pricing failure is not a recoverable
- * business outcome, it indicates a catalog setup problem.
+ * These methods are computation-oriented reads: they combine infrastructure
+ * read helpers with pure pricing domain logic to produce deterministic prices.
+ * They may throw pricing-owned non-HTTP errors on misconfiguration
+ * (for example, unknown priced entities or missing tiers).
  */
 export abstract class PricingPublicApi {
   abstract calculateProductPrice(dto: CalculateProductPriceDto): Promise<PricingResult>;

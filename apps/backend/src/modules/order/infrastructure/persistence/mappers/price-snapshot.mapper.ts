@@ -1,5 +1,5 @@
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.vo';
-import { PricingResult } from 'src/modules/pricing/domain/services/pricing-calculator';
+import { PricingResult } from 'src/modules/pricing/domain/services/pricing-calculator.service';
 
 /**
  * Maps a PricingResult (pricing module output) to a PriceSnapshot VO

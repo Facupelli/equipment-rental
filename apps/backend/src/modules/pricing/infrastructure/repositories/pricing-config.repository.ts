@@ -2,11 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PricingConfiguration } from '../../domain/entities/pricing-configuration.entity';
 import { PricingTargetType } from '../../domain/entities/pricing-tier.entity';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { PricingConfigurationRepositoryPort } from '../../domain/ports/pricing-config.repository.port';
 import { PricingTierMapper } from '../persistence/mappers/pricing-tier.mapper';
 
 @Injectable()
-export class PricingConfigurationRepository implements PricingConfigurationRepositoryPort {
+export class PricingConfigurationRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(targetType: PricingTargetType, targetId: string): Promise<PricingConfiguration | null> {

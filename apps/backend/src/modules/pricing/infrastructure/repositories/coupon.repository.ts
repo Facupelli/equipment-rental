@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
+import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { Coupon } from '../../domain/entities/coupon.entity';
-import { CouponRepositoryPort, PrismaTransactionClient } from '../../domain/ports/coupon.repository.port';
 import { CouponMapper } from '../persistence/mappers/coupon.mapper';
 
 @Injectable()
-export class CouponRepository implements CouponRepositoryPort {
+export class CouponRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(id: string): Promise<Coupon | null> {

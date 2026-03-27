@@ -15,6 +15,7 @@ import {
   InvalidReturnSlotError,
   OrderItemUnavailableError,
 } from '../../application/errors/order.errors';
+import { CouponNotFoundError, CouponValidationError } from 'src/modules/pricing/domain/errors/pricing.errors';
 
 @Controller('orders')
 export class OrdersController {
@@ -67,6 +68,25 @@ export class OrdersController {
           'Invalid Return Slot',
           error.message,
           'errors://invalid-return-slot',
+        );
+      }
+
+      if (error instanceof CouponNotFoundError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Coupon Not Found',
+          error.message,
+          'errors://coupon-not-found',
+        );
+      }
+
+      if (error instanceof CouponValidationError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Coupon Validation Failed',
+          error.message,
+          'errors://coupon-validation-failed',
+          { reason: error.reason },
         );
       }
 

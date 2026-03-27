@@ -1,4 +1,4 @@
-import { DateRange } from './domain/value-objects/date-range.value-object';
+import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 
 export type FindAvailableParams = {
   productTypeId: string;

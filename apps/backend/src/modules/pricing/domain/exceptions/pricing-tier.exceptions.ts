@@ -34,19 +34,6 @@ export class InvalidPricingTierParentException extends Error {
   }
 }
 
-// PRICING CONFIGURATION
-export class PricingTargetNotFoundException extends Error {
-  constructor(targetType: string, targetId: string) {
-    super(`${targetType} with id ${targetId} was not found`);
-  }
-}
-
-export class PricingTargetInactiveError extends Error {
-  constructor(targetType: string, targetId: string) {
-    super(`${targetType} with id ${targetId} is inactive and cannot be configured`);
-  }
-}
-
 export class OverlappingPricingTierException extends Error {
   constructor() {
     super('Pricing tiers have overlapping unit ranges for the same location');

@@ -1,11 +1,17 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { Money } from 'src/modules/order/domain/value-objects/money.vo';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
+import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
+import { Money } from 'src/core/domain/value-objects/money.value-object';
+import { err, ok, Result } from 'src/core/result';
 import { PricingPublicApi } from '../../../pricing.public-api';
 import { CalculateCartPricesQuery, CartQueryProductItem } from './calculate-cart-prices.query';
-import { PricingQueryService } from '../../../infrastructure/services/pricing-query.service';
+import { PricingComputationReadService } from '../../../infrastructure/read-services/pricing-computation-read.service';
 import Decimal from 'decimal.js';
+import {
+  PricingBundleNotFoundError,
+  PricingPeriodInvalidError,
+  PricingProductTypeNotFoundError,
+} from '../../../domain/errors/pricing.errors';
 
 export type CartDiscountLineItem = {
   ruleId: string;
@@ -32,32 +38,40 @@ export type CartPriceResult = {
   couponApplied: boolean;
 };
 
+export type CalculateCartPricesError =
+  | PricingPeriodInvalidError
+  | PricingProductTypeNotFoundError
+  | PricingBundleNotFoundError;
+
 /**
  * Query handler for cart price preview.
  *
  * This handler is intentionally read-only and has no side effects.
- * It deviates slightly from the pure "flat DTO + raw DB" query handler pattern
- * because pricing calculation requires domain logic (PricingCalculator).
- * This is acceptable — PricingCalculator is pure computation with no I/O.
+ * It is the narrow pricing-query exception to the default Prisma-only read rule:
+ * the handler still performs computation by calling the pricing facade because
+ * cart preview must execute pure pricing domain logic with no side effects.
  */
 @Injectable()
 @QueryHandler(CalculateCartPricesQuery)
-export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateCartPricesQuery, CartPriceResult> {
+export class CalculateCartPricesQueryHandler implements IQueryHandler<
+  CalculateCartPricesQuery,
+  Result<CartPriceResult, CalculateCartPricesError>
+> {
   constructor(
     private readonly pricingApp: PricingPublicApi,
-    private readonly pricingQuery: PricingQueryService,
+    private readonly pricingRead: PricingComputationReadService,
   ) {}
 
-  async execute(query: CalculateCartPricesQuery): Promise<CartPriceResult> {
+  async execute(query: CalculateCartPricesQuery): Promise<Result<CartPriceResult, CalculateCartPricesError>> {
     // ── Step 1: Guard empty cart ───────────────────────────────────────────
     if (query.items.length === 0) {
-      return {
+      return ok({
         lineItems: [],
         total: 0,
         totalBeforeDiscounts: 0,
         totalDiscount: 0,
         couponApplied: false,
-      };
+      });
     }
 
     // ── Step 2: Validate period ────────────────────────────────────────────
@@ -68,7 +82,7 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
     try {
       DateRange.create(query.period.start, query.period.end);
     } catch {
-      throw new BadRequestException('Rental period end must be after start.');
+      return err(new PricingPeriodInvalidError());
     }
 
     // ── Step 3: Batch load product type meta ───────────────────────────────
@@ -78,13 +92,13 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
 
     const metaMap =
       uniqueProductTypeIds.length > 0
-        ? await this.pricingQuery.loadProductTypeMetaBatch(uniqueProductTypeIds)
+        ? await this.pricingRead.loadProductTypeMetaBatch(uniqueProductTypeIds)
         : new Map<string, { billingUnitDurationMinutes: number; categoryId: string | null }>();
 
     // Verify all requested product types exist
     for (const id of uniqueProductTypeIds) {
       if (!metaMap.has(id)) {
-        throw new NotFoundException(`ProductType "${id}" not found.`);
+        return err(new PricingProductTypeNotFoundError(id));
       }
     }
 
@@ -152,7 +166,17 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
       ),
     );
 
-    const allPrices = await Promise.all(pricingTasks);
+    let allPrices;
+
+    try {
+      allPrices = await Promise.all(pricingTasks);
+    } catch (error) {
+      if (error instanceof PricingProductTypeNotFoundError || error instanceof PricingBundleNotFoundError) {
+        return err(error);
+      }
+
+      throw error;
+    }
 
     // ── Step 6: Reassemble line items ──────────────────────────────────────
     // Walk items in order, slicing allPrices by quantity to group results
@@ -199,12 +223,12 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<CalculateC
       .toDecimal()
       .toNumber();
 
-    return {
+    return ok({
       lineItems,
       total,
       totalBeforeDiscounts,
       totalDiscount,
       couponApplied,
-    };
+    });
   }
 }

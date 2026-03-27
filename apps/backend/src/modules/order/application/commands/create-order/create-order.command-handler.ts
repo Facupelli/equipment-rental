@@ -3,9 +3,9 @@ import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
 import { AssignmentSource, AssignmentType, OrderItemType, OrderStatus, ScheduleSlotType } from '@repo/types';
 import { err, ok, Result } from 'src/core/result';
 import Decimal from 'decimal.js';
+import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { AssetAssignment } from 'src/modules/inventory/domain/entities/asset-assignment.entity';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
 import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
@@ -27,7 +27,9 @@ import {
   ActiveContractDto,
   FindActiveContractForScopeQuery,
 } from 'src/modules/tenant/owner/application/queries/find-active-owner-contract/find-active-owner-contract.query';
-import { CouponApplicationService } from 'src/modules/pricing/application/coupon.application-service';
+import { CouponNotFoundError, CouponValidationError } from 'src/modules/pricing/domain/errors/pricing.errors';
+import { RedeemCouponService } from 'src/modules/pricing/application/services/redeem-coupon.service';
+import { ResolveCouponForPricingService } from 'src/modules/pricing/application/services/resolve-coupon-for-pricing.service';
 import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 import { GetLocationScheduleSlotsQuery } from 'src/modules/tenant/public/queries/get-location-schedule-slots.query';
 import { TenantConfig } from '@repo/schemas';
@@ -74,7 +76,9 @@ type CreateOrderError =
   | OrderItemUnavailableError
   | InvalidPickupSlotError
   | InvalidReturnSlotError
-  | NoActiveContractForAssetError;
+  | NoActiveContractForAssetError
+  | CouponNotFoundError
+  | CouponValidationError;
 
 // ── Handler ──────────────────────────────────────────────────────────────────
 
@@ -86,7 +90,8 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     private readonly inventoryApi: InventoryPublicApi,
     private readonly pricingApi: PricingPublicApi,
     private readonly orderQuery: OrderQueryService,
-    private readonly couponService: CouponApplicationService,
+    private readonly resolveCouponForPricingService: ResolveCouponForPricingService,
+    private readonly redeemCouponService: RedeemCouponService,
     private readonly queryBus: QueryBus,
   ) {}
 
@@ -104,12 +109,18 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     let resolvedCoupon: { couponId: string; ruleId: string } | undefined;
 
     if (command.couponCode) {
-      resolvedCoupon = await this.couponService.resolveCouponForPricing({
+      const resolveCouponResult = await this.resolveCouponForPricingService.resolveCouponForPricing({
         tenantId: command.tenantId,
         code: command.couponCode,
         customerId: command.customerId,
         now,
       });
+
+      if (resolveCouponResult.isErr()) {
+        return err(resolveCouponResult.error);
+      }
+
+      resolvedCoupon = resolveCouponResult.value;
     }
 
     const period = await this.derivePeriod(command);
@@ -298,7 +309,7 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
       await this.orderRepo.save(order, tx);
 
       if (resolvedCoupon) {
-        await this.couponService.redeemWithinTransaction(
+        const redeemCouponResult = await this.redeemCouponService.redeemWithinTransaction(
           {
             couponId: resolvedCoupon.couponId,
             orderId: order.id,
@@ -307,6 +318,10 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
           },
           tx,
         );
+
+        if (redeemCouponResult.isErr()) {
+          return err(redeemCouponResult.error);
+        }
       }
 
       const saveResults = await Promise.all(

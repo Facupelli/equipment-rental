@@ -20,6 +20,7 @@ Domain Services are pure domain objects. They operate only on domain types and h
 
 - Domain Services have no mutable instance state. They do not hold data between calls.
 - All input comes through method parameters. All output is returned.
+- If a Domain Service is stateless and has no collaborators, prefer a plain class over framework-managed wiring.
 
 ### No infrastructure dependencies
 
@@ -31,11 +32,15 @@ Domain Services are pure domain objects. They operate only on domain types and h
 
 - If the domain service can produce an expected, recoverable domain error, return a `Result` type.
 - Do not throw for expected business failures.
+- Pure calculation or validation services may also return plain values when there is no meaningful recoverable failure to model.
 
 ### NestJS integration
 
-- Domain Services are decorated with `@Injectable()` so they can be injected by Application Services.
-- They are declared as providers in the module but are not exported — they are internal to the module.
+- Domain Services are domain-layer constructs first, not framework constructs.
+- If a Domain Service is stateless, pure, and has no dependencies, prefer a plain class with no `@Injectable()`.
+- If a Domain Service benefits from dependency injection for composition, reuse, or wiring consistency, it may be decorated with `@Injectable()` and registered as a module provider.
+- Do not introduce `@Injectable()` purely to satisfy convention when direct instantiation is simpler.
+- Whether plain or injectable, Domain Services remain internal to the module unless there is a clear, intentional reason to expose them.
 
 ### Naming
 
@@ -47,13 +52,11 @@ Domain Services are pure domain objects. They operate only on domain types and h
 ## Structure
 
 ```typescript
-import { Injectable } from '@nestjs/common';
 import { Result, ok, err } from 'neverthrow';
 import { BookingEntity } from './booking.entity';
 import { BookingPeriod } from './booking-period.value-object';
 import { EquipmentUnavailableError } from './errors/booking.errors';
 
-@Injectable()
 export class BookingAvailabilityService {
   /**
    * Checks whether a given period is available for an equipment item,
@@ -70,6 +73,19 @@ export class BookingAvailabilityService {
     }
 
     return ok(undefined);
+  }
+}
+```
+
+When dependency injection genuinely adds value, an injectable Domain Service is also acceptable:
+
+```typescript
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class BookingAvailabilityService {
+  checkAvailability(period: BookingPeriod, existingBookings: BookingEntity[]) {
+    // same pure domain logic
   }
 }
 ```

@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DateRange } from 'src/modules/inventory/domain/value-objects/date-range.value-object';
+import { Injectable } from '@nestjs/common';
+import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { RuleApplicationContext } from '../domain/types/pricing-rule.types';
 import {
   CalculateBundlePriceDto,
@@ -7,27 +7,26 @@ import {
   GetComponentStandalonePricesDto,
   PricingPublicApi,
 } from '../pricing.public-api';
-import { PricingCalculator, PricingResult } from '../domain/services/pricing-calculator';
-import { PricingQueryService } from '../infrastructure/services/pricing-query.service';
+import { PricingCalculator, PricingResult } from '../domain/services/pricing-calculator.service';
+import { PricingComputationReadService } from '../infrastructure/read-services/pricing-computation-read.service';
 import Decimal from 'decimal.js';
+import { PricingBundleNotFoundError, PricingProductTypeNotFoundError } from '../domain/errors/pricing.errors';
 
 @Injectable()
 export class PricingApplicationService implements PricingPublicApi {
-  // PricingCalculator is a pure domain service — instantiated directly,
-  // no dependency injection needed.
   private readonly calculator = new PricingCalculator();
 
-  constructor(private readonly pricingQuery: PricingQueryService) {}
+  constructor(private readonly pricingRead: PricingComputationReadService) {}
 
   async calculateProductPrice(dto: CalculateProductPriceDto): Promise<PricingResult> {
-    const meta = await this.pricingQuery.loadProductTypeMeta(dto.productTypeId);
+    const meta = await this.pricingRead.loadProductTypeMeta(dto.productTypeId);
     if (!meta) {
-      throw new NotFoundException(`ProductType "${dto.productTypeId}" not found.`);
+      throw new PricingProductTypeNotFoundError(dto.productTypeId);
     }
 
     const [tiers, rules] = await Promise.all([
-      this.pricingQuery.loadTiersForProduct(dto.productTypeId, dto.locationId),
-      this.pricingQuery.loadActiveRulesForTenant(dto.tenantId),
+      this.pricingRead.loadTiersForProduct(dto.productTypeId, dto.locationId),
+      this.pricingRead.loadActiveRulesForTenant(dto.tenantId),
     ]);
 
     const period = DateRange.create(dto.period.start, dto.period.end);
@@ -53,14 +52,14 @@ export class PricingApplicationService implements PricingPublicApi {
   }
 
   async calculateBundlePrice(dto: CalculateBundlePriceDto): Promise<PricingResult> {
-    const meta = await this.pricingQuery.loadBundleMeta(dto.bundleId);
+    const meta = await this.pricingRead.loadBundleMeta(dto.bundleId);
     if (!meta) {
-      throw new NotFoundException(`Bundle "${dto.bundleId}" not found.`);
+      throw new PricingBundleNotFoundError(dto.bundleId);
     }
 
     const [tiers, rules] = await Promise.all([
-      this.pricingQuery.loadTiersForBundle(dto.bundleId, dto.locationId),
-      this.pricingQuery.loadActiveRulesForTenant(dto.tenantId),
+      this.pricingRead.loadTiersForBundle(dto.bundleId, dto.locationId),
+      this.pricingRead.loadActiveRulesForTenant(dto.tenantId),
     ]);
 
     const period = DateRange.create(dto.period.start, dto.period.end);
@@ -85,7 +84,7 @@ export class PricingApplicationService implements PricingPublicApi {
   }
 
   async getComponentStandalonePrices(dto: GetComponentStandalonePricesDto): Promise<Map<string, Decimal>> {
-    const componentData = await this.pricingQuery.loadTiersForBundleComponents(
+    const componentData = await this.pricingRead.loadTiersForBundleComponents(
       dto.componentProductTypeIds,
       dto.locationId,
     );
