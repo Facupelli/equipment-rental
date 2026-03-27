@@ -1,15 +1,40 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetBundleByIdQuery } from './get-bundle-by-id.query';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { BundleDetailResponseDto } from '@repo/schemas';
+
+type BundleDetailReadModel = {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  retiredAt: Date | null;
+  billingUnit: { id: string; label: string; durationMinutes: number };
+  components: Array<{
+    productTypeId: string;
+    quantity: number;
+    assetCount: number;
+    productType: { name: string; description: string | null };
+  }>;
+  pricingTiers: Array<{
+    id: string;
+    fromUnit: number;
+    toUnit: number | null;
+    pricePerUnit: number;
+    locationId: string | null;
+    location: { id: string; name: string } | null;
+  }>;
+};
 
 @QueryHandler(GetBundleByIdQuery)
-export class GetBundleByIdQueryHandler implements IQueryHandler<GetBundleByIdQuery> {
+export class GetBundleByIdQueryHandler implements IQueryHandler<GetBundleByIdQuery, BundleDetailReadModel | null> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetBundleByIdQuery): Promise<BundleDetailResponseDto | null> {
-    const bundle = await this.prisma.client.bundle.findUnique({
-      where: { id: query.bundleId },
+  async execute(query: GetBundleByIdQuery): Promise<BundleDetailReadModel | null> {
+    const bundle = await this.prisma.client.bundle.findFirst({
+      where: { id: query.bundleId, tenantId: query.tenantId },
       include: {
         billingUnit: {
           select: {

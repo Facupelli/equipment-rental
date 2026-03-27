@@ -1,0 +1,30 @@
+import { ConflictException, Controller, NotFoundException, Param, Patch } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
+import { RetireProductTypeCommand } from './retire-product-type.command';
+import { ProductTypeAlreadyRetiredError, ProductTypeNotFoundError } from '../../../domain/errors/catalog.errors';
+
+@Controller('product-types')
+export class RetireProductTypeHttpController {
+  constructor(private readonly commandBus: CommandBus) {}
+
+  @Patch(':id/retire')
+  async retire(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
+    const result = await this.commandBus.execute(new RetireProductTypeCommand(user.tenantId, id));
+
+    if (result.isErr()) {
+      const error = result.error;
+
+      if (error instanceof ProductTypeNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof ProductTypeAlreadyRetiredError) {
+        throw new ConflictException(error.message);
+      }
+
+      throw error;
+    }
+  }
+}

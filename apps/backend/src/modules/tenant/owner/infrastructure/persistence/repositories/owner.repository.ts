@@ -1,15 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { OwnerMapper } from '../mappers/owner.mapper';
-import { OwnerRepositoryPort } from 'src/modules/tenant/owner/domain/ports/owner.repository.port';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { Owner } from '../../../domain/entities/owner.entity';
 
 @Injectable()
-export class OwnerRepository implements OwnerRepositoryPort {
+export class OwnerRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async load(id: string): Promise<Owner | null> {
-    const raw = await this.prisma.client.owner.findUnique({ where: { id } });
+  async load(id: string, tenantId?: string): Promise<Owner | null> {
+    const raw = await this.prisma.client.owner.findFirst({
+      where: {
+        id,
+        ...(tenantId ? { tenantId } : {}),
+      },
+    });
 
     if (!raw) {
       return null;

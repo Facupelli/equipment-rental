@@ -1,48 +1,53 @@
 import { Module } from '@nestjs/common';
-import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaUnitOfWork } from 'src/core/database/prisma-unit-of-work';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { UsersModule } from '../users/users.module';
-import { TenantRepositoryPort } from './domain/ports/tenant.repository.port';
 import { TenantRepository } from './infrastructure/persistence/repositories/tenant.repository';
-import { TenantController } from './infrastructure/controllers/tenant.controller';
-import { AuthModule } from '../auth/auth.module';
 import { IsSlugTakenQueryHandler } from './application/queries/is-slug-taken/is-slug-taken.query-handler';
 import { GetTenantQueryHandler } from './application/queries/get-tenant/get-tenant.query-handler';
-import { GetLocationsQueryHandler } from './location/presentation/queries/get-locations/get-locations.query-handler';
-import { GetOwnersQueryHandler } from './owner/presentation/queries/get-owners/get-owners.query-handler';
-import { LocationController } from './location/infrastrcuture/controllers/location.controller';
+import { GetLocationsQueryHandler } from './location/application/queries/get-locations/get-locations.query-handler';
+import { GetOwnersQueryHandler } from './owner/application/queries/get-owners/get-owners.query-handler';
 import { CreateOwnerCommandHandler } from './owner/application/commands/create-owner/create-owner.command-handler';
 import { CreateLocationCommandHandler } from './location/application/commands/create-location/create-location.command-handler';
-import { LocationRepository } from './location/infrastrcuture/persistence/repositories/location.repository';
+import { LocationRepository } from './location/infrastructure/persistence/repositories/location.repository';
 import { OwnerRepository } from './owner/infrastructure/persistence/repositories/owner.repository';
-import { OwnerRepositoryPort } from './owner/domain/ports/owner.repository.port';
-import { LocationRepositoryPort } from './domain/ports/location.repository.port';
-import { TenantBillingUnitRepositoryPort } from './domain/ports/billing-unit.repository.port';
 import { TenantBillingUnitRepository } from './infrastructure/persistence/repositories/billing-unit.repository';
 import { GetTenantBillingUnitsQueryHandler } from './application/queries/get-billing-units/get-tenant-billing-units.query-handler';
-import { SyncTenantBillingUnitsCommandHandler } from './application/commands/create-billing-unit/sync-billing-units.command';
-import { TenantPublicApi } from './tenant.public-api';
-import { TenantApplicationService } from './application/tenant.application-service';
+import { SyncTenantBillingUnitsService } from './application/commands/sync-billing-units/sync-tenant-billing-units.service';
 import { UpdateTenantConfigCommandHandler } from './application/commands/update-config/update-config.command-handler';
 import { FindTenantByCustomDomainQueryHandler } from './application/queries/find-tenant-by-custom-domain/find-tenant-by-custom-domain.query-handler';
 import { FindTenantBySlugQueryHandler } from './application/queries/find-tenant-by-slug/find-tenant-by-slug.query-handler';
-import { GetLocationSchedulesQueryHandler } from './location/presentation/queries/get-location-schedules/get-location-schedules.query-handler';
+import { GetLocationSchedulesQueryHandler } from './location/application/queries/get-location-schedules/get-location-schedules.query-handler';
 import { AddScheduleToLocationCommandHandler } from './location/application/commands/add-schedule-to-location/add-schedule-to-location.command-handler';
 import { BulkAddSchedulesToLocationCommandHandler } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command-handler';
-import { OwnerController } from './owner/infrastructure/controllers/owner.controller';
-import { GetLocationScheduleSlotsQueryHandler } from './location/presentation/queries/get-location-schedule-slots/get-location-schedule-slots.query-handler';
-import { GetOwnerQueryHandler } from './owner/presentation/queries/get-owner/get-owner.query-handler';
+import { GetLocationScheduleSlotsQueryHandler } from './location/application/queries/get-location-schedule-slots/get-location-schedule-slots.query-handler';
+import { GetOwnerQueryHandler } from './owner/application/queries/get-owner/get-owner.query-handler';
 import { CreateOwnerContractCommandHandler } from './owner/application/commands/create-owner-contract/create-owner-contract.command-handler';
-import { OwnerContractRepositoryPort } from './owner/domain/ports/owner-contract.repository.port';
 import { OwnerContractRepository } from './owner/infrastructure/persistence/repositories/owner-contract.repository';
 import { FindActiveContractForScopeQueryHandler } from './owner/application/queries/find-active-owner-contract/find-active-owner-contract.query-handler';
 import { RegisterTenantService } from './application/commands/register-tenant/register-tenant.service';
+import { InventoryModule } from '../inventory/inventory.module';
+import { GetTenantConfigQueryHandler } from './application/queries/get-tenant-config/get-tenant-config.query-handler';
+import { RegisterTenantHttpController } from './infrastructure/controllers/register-tenant.http.controller';
+import { GetCurrentTenantHttpController } from './infrastructure/controllers/get-current-tenant.http.controller';
+import { UpdateTenantConfigHttpController } from './infrastructure/controllers/update-tenant-config.http.controller';
+import { GetTenantBillingUnitsHttpController } from './infrastructure/controllers/get-tenant-billing-units.http.controller';
+import { SyncTenantBillingUnitsHttpController } from './infrastructure/controllers/sync-tenant-billing-units.http.controller';
+import { CreateLocationHttpController } from './location/infrastructure/controllers/create-location.http.controller';
+import { GetLocationsHttpController } from './location/infrastructure/controllers/get-locations.http.controller';
+import { GetLocationScheduleSlotsHttpController } from './location/infrastructure/controllers/get-location-schedule-slots.http.controller';
+import { GetLocationSchedulesHttpController } from './location/infrastructure/controllers/get-location-schedules.http.controller';
+import { AddLocationScheduleHttpController } from './location/infrastructure/controllers/add-location-schedule.http.controller';
+import { BulkAddLocationSchedulesHttpController } from './location/infrastructure/controllers/bulk-add-location-schedules.http.controller';
+import { CreateOwnerHttpController } from './owner/infrastructure/controllers/create-owner.http.controller';
+import { CreateOwnerContractHttpController } from './owner/infrastructure/controllers/create-owner-contract.http.controller';
+import { GetOwnersHttpController } from './owner/infrastructure/controllers/get-owners.http.controller';
+import { GetOwnerHttpController } from './owner/infrastructure/controllers/get-owner.http.controller';
 
 const commandHandlers = [
   RegisterTenantService,
   UpdateTenantConfigCommandHandler,
-  SyncTenantBillingUnitsCommandHandler,
+  SyncTenantBillingUnitsService,
   // owner
   CreateOwnerCommandHandler,
   CreateOwnerContractCommandHandler,
@@ -53,6 +58,7 @@ const commandHandlers = [
 ];
 const queryHandlers = [
   IsSlugTakenQueryHandler,
+  GetTenantConfigQueryHandler,
   GetTenantQueryHandler,
   GetTenantBillingUnitsQueryHandler,
   // owner
@@ -74,24 +80,33 @@ const repositories = [
     useFactory: (prisma: PrismaService) => new TenantRepository(prisma.client),
     inject: [PrismaService],
   },
-  { provide: TenantRepositoryPort, useExisting: TenantRepository },
-  { provide: TenantBillingUnitRepositoryPort, useClass: TenantBillingUnitRepository },
-  { provide: LocationRepositoryPort, useClass: LocationRepository },
-  { provide: OwnerRepositoryPort, useClass: OwnerRepository },
-  { provide: OwnerContractRepositoryPort, useClass: OwnerContractRepository },
+  TenantBillingUnitRepository,
+  LocationRepository,
+  OwnerRepository,
+  OwnerContractRepository,
 ];
-const services = [
-  TenantApplicationService,
-  {
-    provide: TenantPublicApi,
-    useClass: TenantApplicationService,
-  },
+
+const controllers = [
+  RegisterTenantHttpController,
+  GetCurrentTenantHttpController,
+  UpdateTenantConfigHttpController,
+  GetTenantBillingUnitsHttpController,
+  SyncTenantBillingUnitsHttpController,
+  CreateLocationHttpController,
+  GetLocationsHttpController,
+  GetLocationScheduleSlotsHttpController,
+  GetLocationSchedulesHttpController,
+  AddLocationScheduleHttpController,
+  BulkAddLocationSchedulesHttpController,
+  CreateOwnerHttpController,
+  CreateOwnerContractHttpController,
+  GetOwnersHttpController,
+  GetOwnerHttpController,
 ];
 
 @Module({
-  imports: [UsersModule, AuthModule, CqrsModule],
-  controllers: [TenantController, OwnerController, LocationController],
-  providers: [PrismaUnitOfWork, ...repositories, ...services, ...commandHandlers, ...queryHandlers],
-  exports: [TenantPublicApi],
+  imports: [UsersModule, InventoryModule],
+  controllers: controllers,
+  providers: [PrismaUnitOfWork, ...repositories, ...commandHandlers, ...queryHandlers],
 })
 export class TenantModule {}

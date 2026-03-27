@@ -1,4 +1,4 @@
-import { TenantConfigPatch } from 'src/modules/tenant/domain/value-objects/tenant-config.vo';
+import { TenantConfigPatch } from 'src/modules/tenant/domain/value-objects/tenant-config.value-object';
 
 export class UpdateTenantConfigCommand {
   constructor(

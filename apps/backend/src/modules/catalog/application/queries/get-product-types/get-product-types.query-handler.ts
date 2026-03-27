@@ -1,23 +1,64 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetProductTypesQuery } from './get-product-types.query';
-import { PaginatedDto, ProductTypeResponse } from '@repo/schemas';
 import { TrackingMode } from '@repo/types';
-import { IncludedItem } from 'src/modules/catalog/domain/entities/product-type.entity';
+
+type ProductTypeIncludedItemReadModel = {
+  name: string;
+  quantity: number;
+  notes: string | null;
+};
+
+type ProductTypeListItemReadModel = {
+  id: string;
+  tenantId: string;
+  name: string;
+  imageUrl: string;
+  description: string | null;
+  trackingMode: TrackingMode;
+  attributes: Record<string, string>;
+  includedItems: ProductTypeIncludedItemReadModel[];
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+  publishedAt: Date | null;
+  retiredAt: Date | null;
+  assetCount: number;
+  category: { id: string; name: string; description: string | null } | null;
+  billingUnit: { id: string; label: string; durationMinutes: number };
+  pricingTiers: Array<{
+    id: string;
+    fromUnit: number;
+    toUnit: number | null;
+    pricePerUnit: number;
+    locationId: string | null;
+    location: { id: string; name: string } | null;
+  }>;
+};
+
+type PaginatedReadModel<T> = {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
 
 @QueryHandler(GetProductTypesQuery)
 export class GetProductTypesQueryHandler implements IQueryHandler<
   GetProductTypesQuery,
-  PaginatedDto<ProductTypeResponse>
+  PaginatedReadModel<ProductTypeListItemReadModel>
 > {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetProductTypesQuery): Promise<PaginatedDto<ProductTypeResponse>> {
+  async execute(query: GetProductTypesQuery): Promise<PaginatedReadModel<ProductTypeListItemReadModel>> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { tenantId: query.tenantId };
 
     if (query.categoryId !== undefined) {
       where.categoryId = query.categoryId;
@@ -89,7 +130,7 @@ export class GetProductTypesQueryHandler implements IQueryHandler<
         description: pt.description,
         trackingMode: pt.trackingMode as TrackingMode,
         attributes: pt.attributes as Record<string, string>,
-        includedItems: pt.includedItems as unknown as IncludedItem[],
+        includedItems: pt.includedItems as ProductTypeIncludedItemReadModel[],
         createdAt: pt.createdAt,
         updatedAt: pt.updatedAt,
         deletedAt: pt.deletedAt,

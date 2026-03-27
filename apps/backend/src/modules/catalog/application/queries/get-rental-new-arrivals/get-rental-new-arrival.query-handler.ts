@@ -1,28 +1,49 @@
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { Injectable } from '@nestjs/common';
 import { GetNewArrivalsQuery } from './get-rental-new-arrival.query';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { TenantPublicApi } from 'src/modules/tenant/tenant.public-api';
-import { NewArrivalListResponseDto } from '@repo/schemas';
+import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
+
+type TenantConfigReadModel = {
+  newArrivalsWindowDays: number;
+};
+
+type NewArrivalReadModel = Array<{
+  id: string;
+  name: string;
+  imageUrl: string;
+  category: { id: string; name: string } | null;
+  publishedAt: Date;
+  billingUnit: { label: string };
+  pricingPreview: { pricePerUnit: number; fromUnit: number } | null;
+}>;
 
 @Injectable()
 @QueryHandler(GetNewArrivalsQuery)
-export class GetNewArrivalsQueryHandler implements IQueryHandler<GetNewArrivalsQuery, NewArrivalListResponseDto> {
+export class GetNewArrivalsQueryHandler implements IQueryHandler<GetNewArrivalsQuery, NewArrivalReadModel> {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly tenantApi: TenantPublicApi,
+    private readonly queryBus: QueryBus,
   ) {}
 
-  async execute(query: GetNewArrivalsQuery): Promise<NewArrivalListResponseDto> {
+  async execute(query: GetNewArrivalsQuery): Promise<NewArrivalReadModel> {
     const { locationId, tenantId } = query;
 
-    const config = await this.tenantApi.getConfig(tenantId);
+    const config = await this.queryBus.execute<GetTenantConfigQuery, TenantConfigReadModel | null>(
+      new GetTenantConfigQuery(tenantId),
+    );
+
+    if (!config) {
+      return [];
+    }
+
     const windowDays = config.newArrivalsWindowDays;
     const since = new Date();
     since.setDate(since.getDate() - windowDays);
 
     const productTypes = await this.prisma.client.productType.findMany({
       where: {
+        tenantId,
         retiredAt: null,
         publishedAt: { not: null, gte: since },
       },

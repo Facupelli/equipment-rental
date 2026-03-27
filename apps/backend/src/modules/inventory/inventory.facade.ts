@@ -10,10 +10,12 @@ import { AssetAssignmentRepository } from './infrastructure/persistence/reposito
 import { AssetAvailabilityService } from './infrastructure/read-services/asset-availability.service';
 import { FindAvailableParams } from './inventory.contracts';
 import { InventoryPublicApi } from './inventory.public-api';
+import { PrismaService } from 'src/core/database/prisma.service';
 
 @Injectable()
 export class InventoryFacade implements InventoryPublicApi {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly assignmentRepo: AssetAssignmentRepository,
     private readonly availabilityService: AssetAvailabilityService,
   ) {}
@@ -24,6 +26,23 @@ export class InventoryFacade implements InventoryPublicApi {
 
   async findAvailableAssetIds(dto: FindAvailableParams): Promise<string[]> {
     return this.availabilityService.findAvailableAssetIds(dto);
+  }
+
+  async findAssetById(tenantId: string, assetId: string): Promise<{ id: string; ownerId: string | null } | null> {
+    const asset = await this.prisma.client.asset.findFirst({
+      where: {
+        id: assetId,
+        location: {
+          tenantId,
+        },
+      },
+      select: {
+        id: true,
+        ownerId: true,
+      },
+    });
+
+    return asset ?? null;
   }
 
   async saveAssignment(

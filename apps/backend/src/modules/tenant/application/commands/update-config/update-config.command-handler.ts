@@ -1,22 +1,29 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { err, ok, Result } from 'src/core/result';
 import { UpdateTenantConfigCommand } from './update-config.command';
-import { TenantRepositoryPort } from 'src/modules/tenant/domain/ports/tenant.repository.port';
+import { TenantRepository } from 'src/modules/tenant/infrastructure/persistence/repositories/tenant.repository';
+import { TenantNotFoundError } from '../../../domain/errors/tenant.errors';
 
 @Injectable()
 @CommandHandler(UpdateTenantConfigCommand)
-export class UpdateTenantConfigCommandHandler implements ICommandHandler<UpdateTenantConfigCommand, void> {
-  constructor(private readonly tenantRepo: TenantRepositoryPort) {}
+export class UpdateTenantConfigCommandHandler implements ICommandHandler<
+  UpdateTenantConfigCommand,
+  Result<void, TenantNotFoundError>
+> {
+  constructor(private readonly tenantRepo: TenantRepository) {}
 
-  async execute(command: UpdateTenantConfigCommand): Promise<void> {
+  async execute(command: UpdateTenantConfigCommand): Promise<Result<void, TenantNotFoundError>> {
     const tenant = await this.tenantRepo.load(command.tenantId);
 
     if (!tenant) {
-      throw new NotFoundException(`Tenant ${command.tenantId} not found`);
+      return err(new TenantNotFoundError(command.tenantId));
     }
 
     tenant.updateConfig(command.patch);
 
     await this.tenantRepo.save(tenant);
+
+    return ok(undefined);
   }
 }

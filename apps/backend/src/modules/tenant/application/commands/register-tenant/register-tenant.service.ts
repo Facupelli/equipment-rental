@@ -1,22 +1,18 @@
 import { CommandHandler, EventBus, ICommandHandler, QueryBus } from '@nestjs/cqrs';
+import * as bcrypt from 'bcrypt';
 
-import { BcryptService } from 'src/modules/auth/application/bcript.service';
 import { PrismaUnitOfWork } from 'src/core/database/prisma-unit-of-work';
 import { Result, err, ok } from 'src/core/result';
-import { RoleRepository } from 'src/modules/users/infrastructure/persistence/repositories/role.repository';
-import { UserRepository } from 'src/modules/users/infrastructure/persistence/repositories/user.repository';
 import { IsEmailTakenQuery } from 'src/modules/users/application/queries/is-email-taken/is-email-taken.query';
-import { Role } from 'src/modules/users/domain/entities/role.entity';
-import { TENANT_ADMIN_PERMISSIONS } from 'src/modules/users/domain/tenant-admin.permissions';
+import { UsersPublicApi } from 'src/modules/users/application/users-public-api';
 import { TENANT_ADMIN_ROLE_CODE, TENANT_ADMIN_ROLE_NAME } from 'src/modules/users/domain/role.constants';
-import { User } from 'src/modules/users/domain/entities/user.entity';
 import { TenantRepository } from 'src/modules/tenant/infrastructure/persistence/repositories/tenant.repository';
 
 import { Tenant } from '../../../domain/entities/tenant.entity';
+import { CompanyNameAlreadyInUseError, EmailAlreadyInUseError } from '../../../domain/errors/tenant.errors';
 import { TenantRegisteredEvent } from '../../../domain/events/tenant-registered.event';
 import { TenantSlugService } from '../../../domain/services/tenant-slug.service';
 import { IsSlugTakenQuery } from '../../queries/is-slug-taken/is-slug-taken.query';
-import { CompanyNameAlreadyInUseError, EmailAlreadyInUseError, RegisterTenantError } from './register-tenant.errors';
 import { RegisterTenantCommand } from './register-tenant.command';
 
 export interface RegisterTenantResponse {
@@ -24,12 +20,14 @@ export interface RegisterTenantResponse {
   tenantId: string;
 }
 
+type RegisterTenantError = EmailAlreadyInUseError | CompanyNameAlreadyInUseError;
+
 @CommandHandler(RegisterTenantCommand)
 export class RegisterTenantService implements ICommandHandler<RegisterTenantCommand> {
   constructor(
     private readonly unitOfWork: PrismaUnitOfWork,
     private readonly queryBus: QueryBus,
-    private readonly bcryptService: BcryptService,
+    private readonly usersApi: UsersPublicApi,
     private readonly eventBus: EventBus,
   ) {}
 
@@ -47,12 +45,10 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
       return err(new CompanyNameAlreadyInUseError());
     }
 
-    const passwordHash = await this.bcryptService.hashPassword(user.password);
+    const passwordHash = await bcrypt.hash(user.password, 10);
 
     const created = await this.unitOfWork.runInTransaction(async (tx) => {
       const tenantRepository = new TenantRepository(tx);
-      const roleRepository = new RoleRepository(tx);
-      const userRepository = new UserRepository(tx);
 
       const createdTenant = Tenant.create({
         name: tenant.name,
@@ -60,34 +56,25 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
       });
       await tenantRepository.save(createdTenant);
 
-      const adminRole = Role.create({
-        tenantId: createdTenant.id,
-        code: TENANT_ADMIN_ROLE_CODE,
-        name: TENANT_ADMIN_ROLE_NAME,
-        description: 'Tenant administrator role',
-      });
-
-      for (const permission of TENANT_ADMIN_PERMISSIONS) {
-        adminRole.addPermission(permission);
-      }
-
-      await roleRepository.save(adminRole);
-
-      const adminUser = User.create({
-        tenantId: createdTenant.id,
-        email: user.email,
-        passwordHash,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      });
-      adminUser.assignRole({ userId: adminUser.id, roleId: adminRole.id });
-      await userRepository.save(adminUser);
+      const admin = await this.usersApi.createTenantAdmin(
+        {
+          email: user.email,
+          passwordHash,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          tenantId: createdTenant.id,
+          roleCode: TENANT_ADMIN_ROLE_CODE,
+          roleName: TENANT_ADMIN_ROLE_NAME,
+          roleDescription: 'Tenant administrator role',
+        },
+        tx,
+      );
 
       return {
         tenantId: createdTenant.id,
-        userId: adminUser.id,
+        userId: admin.userId,
         slug: createdTenant.slug,
-        adminEmail: adminUser.email,
+        adminEmail: user.email,
       };
     });
 

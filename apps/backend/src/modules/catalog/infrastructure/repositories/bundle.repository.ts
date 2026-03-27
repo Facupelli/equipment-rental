@@ -1,16 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Bundle } from '../../domain/entities/bundle.entity';
-import { BundleRepositoryPort } from '../../domain/ports/bundle-repository.port';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { BundleComponentMapper, BundleMapper } from '../persistence/mappers/bundle.mapper';
 
 @Injectable()
-export class BundleRepository implements BundleRepositoryPort {
+export class BundleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async load(id: string): Promise<Bundle | null> {
-    const raw = await this.prisma.client.bundle.findUnique({
-      where: { id },
+  async load(id: string, tenantId: string): Promise<Bundle | null> {
+    const raw = await this.prisma.client.bundle.findFirst({
+      where: { id, tenantId },
       include: {
         components: true,
         pricingTiers: true,

@@ -14,7 +14,6 @@ import { OrderRepositoryPort } from 'src/modules/order/domain/ports/order.reposi
 import { toPriceSnapshot } from 'src/modules/order/infrastructure/persistence/mappers/price-snapshot.mapper';
 import { BundleWithComponents, OrderQueryService } from 'src/modules/order/infrastructure/services/order-query.service';
 import { PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
-import { TenantPublicApi } from 'src/modules/tenant/tenant.public-api';
 import { CreateOrderCommand } from './create-order.command';
 import {
   InvalidPickupSlotError,
@@ -29,6 +28,9 @@ import {
   FindActiveContractForScopeQuery,
 } from 'src/modules/tenant/owner/application/queries/find-active-owner-contract/find-active-owner-contract.query';
 import { CouponApplicationService } from 'src/modules/pricing/application/coupon.application-service';
+import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
+import { GetLocationScheduleSlotsQuery } from 'src/modules/tenant/public/queries/get-location-schedule-slots.query';
+import { TenantConfig } from '@repo/schemas';
 
 // ── Resolved item types ──────────────────────────────────────────────────────
 
@@ -81,7 +83,6 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   constructor(
     private readonly prisma: PrismaService,
     private readonly orderRepo: OrderRepositoryPort,
-    private readonly tenantApi: TenantPublicApi,
     private readonly inventoryApi: InventoryPublicApi,
     private readonly pricingApi: PricingPublicApi,
     private readonly orderQuery: OrderQueryService,
@@ -334,16 +335,22 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
     command: CreateOrderCommand,
   ): Promise<Result<void, InvalidPickupSlotError | InvalidReturnSlotError>> {
     const [pickupSlots, returnSlots] = await Promise.all([
-      this.tenantApi.getLocationScheduleSlots({
-        locationId: command.locationId,
-        date: command.period.start,
-        type: ScheduleSlotType.PICKUP,
-      }),
-      this.tenantApi.getLocationScheduleSlots({
-        locationId: command.locationId,
-        date: command.period.end,
-        type: ScheduleSlotType.RETURN,
-      }),
+      this.queryBus.execute<GetLocationScheduleSlotsQuery, number[]>(
+        new GetLocationScheduleSlotsQuery(
+          command.tenantId,
+          command.locationId,
+          command.period.start,
+          ScheduleSlotType.PICKUP,
+        ),
+      ),
+      this.queryBus.execute<GetLocationScheduleSlotsQuery, number[]>(
+        new GetLocationScheduleSlotsQuery(
+          command.tenantId,
+          command.locationId,
+          command.period.end,
+          ScheduleSlotType.RETURN,
+        ),
+      ),
     ]);
 
     if (!pickupSlots.includes(command.pickupTime)) {
@@ -360,7 +367,13 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, R
   // ── Private: period derivation ───────────────────────────────────────────
 
   private async derivePeriod(command: CreateOrderCommand): Promise<DateRange> {
-    const tenantConfig = await this.tenantApi.getConfig(command.tenantId);
+    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
+      new GetTenantConfigQuery(command.tenantId),
+    );
+
+    if (!tenantConfig) {
+      throw new NotFoundException(`Tenant ${command.tenantId} not found`);
+    }
 
     return DateRange.fromLocalSlots(
       command.period.start,

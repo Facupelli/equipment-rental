@@ -6,7 +6,7 @@ import {
 } from 'src/generated/prisma/client';
 import { TenantBillingUnit } from 'src/modules/tenant/domain/entities/tenant-billing-unit.entity';
 import { Tenant } from 'src/modules/tenant/domain/entities/tenant.entity';
-import { TenantConfig, TenantConfigProps } from 'src/modules/tenant/domain/value-objects/tenant-config.vo';
+import { TenantConfig, TenantConfigProps } from 'src/modules/tenant/domain/value-objects/tenant-config.value-object';
 
 type PrismaTenantWithRelations = PrismaTenant & {
   billingUnits: PrismaTenantBillingUnit[];

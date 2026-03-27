@@ -1,12 +1,12 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CreateOwnerCommand } from './create-owner.command';
 import { ok, Result } from 'src/core/result';
-import { OwnerRepositoryPort } from 'src/modules/tenant/owner/domain/ports/owner.repository.port';
 import { Owner } from '../../../domain/entities/owner.entity';
+import { OwnerRepository } from '../../../infrastructure/persistence/repositories/owner.repository';
 
 @CommandHandler(CreateOwnerCommand)
 export class CreateOwnerCommandHandler implements ICommandHandler<CreateOwnerCommand, Result<string>> {
-  constructor(private readonly ownerRepo: OwnerRepositoryPort) {}
+  constructor(private readonly ownerRepo: OwnerRepository) {}
 
   async execute(command: CreateOwnerCommand): Promise<Result<string>> {
     const owner = Owner.create({

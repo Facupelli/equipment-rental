@@ -2,19 +2,42 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Injectable } from '@nestjs/common';
 import { GetRentalBundlesQuery } from './get-rental-bundles.query';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { BundleListResponseDto } from '@repo/schemas';
-import { IncludedItem } from 'src/modules/catalog/domain/entities/product-type.entity';
+
+type RentalIncludedItemReadModel = {
+  name: string;
+  quantity: number;
+  notes: string | null;
+};
+
+type RentalBundleReadModel = Array<{
+  id: string;
+  name: string;
+  imageUrl: string;
+  description: string | null;
+  billingUnit: { label: string };
+  pricingPreview: { pricePerUnit: number; fromUnit: number } | null;
+  components: Array<{
+    quantity: number;
+    productType: {
+      name: string;
+      description: string | null;
+      id: string;
+      includedItems: RentalIncludedItemReadModel[];
+    };
+  }>;
+}>;
 
 @Injectable()
 @QueryHandler(GetRentalBundlesQuery)
-export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuery, BundleListResponseDto> {
+export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuery, RentalBundleReadModel> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetRentalBundlesQuery): Promise<BundleListResponseDto> {
-    const { locationId } = query;
+  async execute(query: GetRentalBundlesQuery): Promise<RentalBundleReadModel> {
+    const { tenantId, locationId } = query;
 
     const bundles = await this.prisma.client.bundle.findMany({
       where: {
+        tenantId,
         retiredAt: null,
         publishedAt: { not: null },
       },
@@ -65,7 +88,7 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
           name: component.productType.name,
           description: component.productType.description,
           id: component.productType.id,
-          includedItems: component.productType.includedItems as unknown as IncludedItem[],
+          includedItems: component.productType.includedItems as RentalIncludedItemReadModel[],
         },
       })),
     }));

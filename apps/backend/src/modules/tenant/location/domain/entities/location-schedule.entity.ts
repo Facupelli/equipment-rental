@@ -4,7 +4,7 @@ import {
   InvalidScheduleDayOfWeekException,
   InvalidScheduleDaySpecificationException,
 } from '../exceptions/location-schedule.exceptions';
-import { ScheduleWindow, ScheduleWindowProps } from '../value-objects/location-schedule-window.vo';
+import { ScheduleWindow, ScheduleWindowProps } from '../value-objects/location-schedule-window.value-object';
 
 export interface CreateLocationScheduleProps {
   locationId: string;

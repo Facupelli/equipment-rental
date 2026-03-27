@@ -1,3 +1,6 @@
 export class GetBundleByIdQuery {
-  constructor(public readonly bundleId: string) {}
+  constructor(
+    public readonly tenantId: string,
+    public readonly bundleId: string,
+  ) {}
 }

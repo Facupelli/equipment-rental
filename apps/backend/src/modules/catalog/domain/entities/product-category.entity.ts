@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
-import { InvalidProductCategoryNameException } from '../exceptions/product-category.exceptions';
+import { Result, err, ok } from 'neverthrow';
+import { InvalidProductCategoryNameError } from '../errors/catalog.errors';
 
 export interface CreateProductCategoryProps {
   tenantId: string;
@@ -22,11 +23,11 @@ export class ProductCategory {
     private description: string | null,
   ) {}
 
-  static create(props: CreateProductCategoryProps): ProductCategory {
+  static create(props: CreateProductCategoryProps): Result<ProductCategory, InvalidProductCategoryNameError> {
     if (!props.name || props.name.trim().length === 0) {
-      throw new InvalidProductCategoryNameException();
+      return err(new InvalidProductCategoryNameError());
     }
-    return new ProductCategory(randomUUID(), props.tenantId, props.name.trim(), props.description?.trim() ?? null);
+    return ok(new ProductCategory(randomUUID(), props.tenantId, props.name.trim(), props.description?.trim() ?? null));
   }
 
   static reconstitute(props: ReconstituteProductCategoryProps): ProductCategory {

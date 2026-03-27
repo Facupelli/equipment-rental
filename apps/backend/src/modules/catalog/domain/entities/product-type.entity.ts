@@ -1,10 +1,11 @@
 import { randomUUID } from 'crypto';
-import {
-  InvalidProductTypeNameException,
-  ProductTypeAlreadyRetiredException,
-  ProductTypeAlreadyPublishedException,
-} from '../exceptions/product-type.exceptions';
 import { TrackingMode } from '@repo/types';
+import { Result, err, ok } from 'neverthrow';
+import {
+  InvalidProductTypeNameError,
+  ProductTypeAlreadyPublishedError,
+  ProductTypeAlreadyRetiredError,
+} from '../errors/catalog.errors';
 
 export interface IncludedItem {
   name: string;
@@ -57,23 +58,25 @@ export class ProductType {
 
   // --- Factories ---
 
-  static create(props: CreateProductTypeProps): ProductType {
+  static create(props: CreateProductTypeProps): Result<ProductType, InvalidProductTypeNameError> {
     if (!props.name || props.name.trim().length === 0) {
-      throw new InvalidProductTypeNameException();
+      return err(new InvalidProductTypeNameError());
     }
-    return new ProductType(
-      randomUUID(),
-      props.tenantId,
-      props.categoryId ?? null,
-      props.billingUnitId,
-      props.name.trim(),
-      props.imageUrl,
-      props.description?.trim() ?? null,
-      props.trackingMode,
-      props.attributes ?? {},
-      props.includedItems ?? [],
-      null, // starts as draft
-      null,
+    return ok(
+      new ProductType(
+        randomUUID(),
+        props.tenantId,
+        props.categoryId ?? null,
+        props.billingUnitId,
+        props.name.trim(),
+        props.imageUrl,
+        props.description?.trim() ?? null,
+        props.trackingMode,
+        props.attributes ?? {},
+        props.includedItems ?? [],
+        null, // starts as draft
+        null,
+      ),
     );
   }
 
@@ -126,20 +129,22 @@ export class ProductType {
     this.description = description?.trim() ?? null;
   }
 
-  publish(): void {
+  publish(): Result<void, ProductTypeAlreadyRetiredError | ProductTypeAlreadyPublishedError> {
     if (this.isRetired()) {
-      throw new ProductTypeAlreadyRetiredException();
+      return err(new ProductTypeAlreadyRetiredError());
     }
     if (this.isPublished()) {
-      throw new ProductTypeAlreadyPublishedException();
+      return err(new ProductTypeAlreadyPublishedError());
     }
     this.publishedAt = new Date();
+    return ok(undefined);
   }
 
-  retire(): void {
+  retire(): Result<void, ProductTypeAlreadyRetiredError> {
     if (this.isRetired()) {
-      throw new ProductTypeAlreadyRetiredException();
+      return err(new ProductTypeAlreadyRetiredError());
     }
     this.retiredAt = new Date();
+    return ok(undefined);
   }
 }

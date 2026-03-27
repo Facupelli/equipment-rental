@@ -1,5 +1,8 @@
 import { IQuery } from '@nestjs/cqrs';
 
 export class GetProductTypeByIdQuery implements IQuery {
-  constructor(public readonly id: string) {}
+  constructor(
+    public readonly tenantId: string,
+    public readonly id: string,
+  ) {}
 }

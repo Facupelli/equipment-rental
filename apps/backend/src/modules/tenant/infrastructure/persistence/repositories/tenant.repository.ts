@@ -1,8 +1,7 @@
-import { TenantRepositoryPort } from 'src/modules/tenant/domain/ports/tenant.repository.port';
 import { TenantBillingUnitMapper, TenantMapper } from '../mappers/tenant.mapper';
 import { Tenant } from 'src/modules/tenant/domain/entities/tenant.entity';
 
-export class TenantRepository implements TenantRepositoryPort {
+export class TenantRepository {
   constructor(private readonly db: any) {}
 
   async load(id: string): Promise<Tenant | null> {

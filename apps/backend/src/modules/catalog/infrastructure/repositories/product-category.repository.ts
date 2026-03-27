@@ -1,15 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ProductCategory } from '../../domain/entities/product-category.entity';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { ProductCategoryRepositoryPort } from '../../domain/ports/product-catalog.repository.port';
 import { ProductCategoryMapper } from '../persistence/mappers/product-category.mapper';
 
 @Injectable()
-export class ProductCategoryRepository implements ProductCategoryRepositoryPort {
+export class ProductCategoryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async load(id: string): Promise<ProductCategory | null> {
-    const raw = await this.prisma.client.productCategory.findUnique({ where: { id } });
+  async load(id: string, tenantId: string): Promise<ProductCategory | null> {
+    const raw = await this.prisma.client.productCategory.findFirst({ where: { id, tenantId } });
     if (!raw) {
       return null;
     }

@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
-import { InvalidBundleComponentQuantityException } from '../exceptions/bundle.exceptions';
+import { Result, err, ok } from 'neverthrow';
+import { InvalidBundleComponentQuantityError } from '../errors/catalog.errors';
 
 export interface CreateBundleComponentProps {
   productTypeId: string;
@@ -21,11 +22,11 @@ export class BundleComponent {
     public readonly quantity: number,
   ) {}
 
-  static create(props: CreateBundleComponentProps): BundleComponent {
+  static create(props: CreateBundleComponentProps): Result<BundleComponent, InvalidBundleComponentQuantityError> {
     if (props.quantity <= 0) {
-      throw new InvalidBundleComponentQuantityException();
+      return err(new InvalidBundleComponentQuantityError());
     }
-    return new BundleComponent(randomUUID(), null, props.productTypeId, props.quantity);
+    return ok(new BundleComponent(randomUUID(), null, props.productTypeId, props.quantity));
   }
 
   static reconstitute(props: ReconstituteBundleComponentProps): BundleComponent {

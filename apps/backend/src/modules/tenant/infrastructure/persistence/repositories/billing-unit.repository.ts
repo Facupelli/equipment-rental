@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { TenantBillingUnitRepositoryPort } from 'src/modules/tenant/domain/ports/billing-unit.repository.port';
 import { TenantBillingUnit } from 'src/modules/tenant/domain/entities/tenant-billing-unit.entity';
 import { TenantBillingUnitMapper } from '../mappers/tenant.mapper';
 
 @Injectable()
-export class TenantBillingUnitRepository implements TenantBillingUnitRepositoryPort {
+export class TenantBillingUnitRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(id: string): Promise<TenantBillingUnit | null> {

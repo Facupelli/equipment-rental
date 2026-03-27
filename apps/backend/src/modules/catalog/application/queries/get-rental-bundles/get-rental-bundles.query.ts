@@ -1,3 +1,6 @@
 export class GetRentalBundlesQuery {
-  constructor(public readonly locationId?: string) {}
+  constructor(
+    public readonly tenantId: string,
+    public readonly locationId?: string,
+  ) {}
 }

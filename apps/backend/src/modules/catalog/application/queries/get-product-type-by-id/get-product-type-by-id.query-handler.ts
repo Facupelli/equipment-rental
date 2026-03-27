@@ -1,18 +1,51 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetProductTypeByIdQuery } from './get-product-type-by-id.query';
-import { ProductTypeResponse } from '@repo/schemas';
-import { NotFoundException } from '@nestjs/common';
 import { TrackingMode } from '@repo/types';
-import { IncludedItem } from 'src/modules/catalog/domain/entities/product-type.entity';
+
+type ProductTypeIncludedItemReadModel = {
+  name: string;
+  quantity: number;
+  notes: string | null;
+};
+
+type ProductTypeReadModel = {
+  id: string;
+  tenantId: string;
+  name: string;
+  imageUrl: string;
+  description: string | null;
+  trackingMode: TrackingMode;
+  attributes: Record<string, string>;
+  includedItems: ProductTypeIncludedItemReadModel[];
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+  publishedAt: Date | null;
+  retiredAt: Date | null;
+  assetCount: number;
+  category: { id: string; name: string; description: string | null } | null;
+  billingUnit: { id: string; label: string; durationMinutes: number };
+  pricingTiers: Array<{
+    id: string;
+    fromUnit: number;
+    toUnit: number | null;
+    pricePerUnit: number;
+    locationId: string | null;
+    location: { id: string; name: string } | null;
+  }>;
+};
 
 @QueryHandler(GetProductTypeByIdQuery)
-export class GetProductTypeByIdQueryHandler implements IQueryHandler<GetProductTypeByIdQuery, ProductTypeResponse> {
+export class GetProductTypeByIdQueryHandler implements IQueryHandler<
+  GetProductTypeByIdQuery,
+  ProductTypeReadModel | null
+> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetProductTypeByIdQuery): Promise<ProductTypeResponse> {
-    const productType = await this.prisma.client.productType.findUnique({
-      where: { id: query.id },
+  async execute(query: GetProductTypeByIdQuery): Promise<ProductTypeReadModel | null> {
+    const productType = await this.prisma.client.productType.findFirst({
+      where: { id: query.id, tenantId: query.tenantId },
       include: {
         category: true,
         billingUnit: {
@@ -47,7 +80,7 @@ export class GetProductTypeByIdQueryHandler implements IQueryHandler<GetProductT
     });
 
     if (!productType) {
-      throw new NotFoundException('Product type not found');
+      return null;
     }
 
     return {
@@ -58,7 +91,7 @@ export class GetProductTypeByIdQueryHandler implements IQueryHandler<GetProductT
       description: productType.description,
       trackingMode: productType.trackingMode as TrackingMode,
       attributes: productType.attributes as Record<string, string>,
-      includedItems: productType.includedItems as unknown as IncludedItem[],
+      includedItems: productType.includedItems as ProductTypeIncludedItemReadModel[],
       createdAt: productType.createdAt,
       updatedAt: productType.updatedAt,
       deletedAt: productType.deletedAt,

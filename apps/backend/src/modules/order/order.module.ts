@@ -9,10 +9,9 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { GetOrdersScheduleQueryHandler } from './application/queries/get-orders-schedule.query-handler';
 import { GetOrderByIdQueryHandler } from './application/queries/get-order-by-id/get-order-by-id.query-handler';
 import { GetCalendarDotsQueryHandler } from './application/queries/get-calendars-dots/get-calendar-dots.query-handler';
-import { TenantModule } from '../tenant/tenant.module';
 
 @Module({
-  imports: [TenantModule, PricingModule, InventoryModule],
+  imports: [PricingModule, InventoryModule],
   controllers: [OrdersController],
   providers: [
     {

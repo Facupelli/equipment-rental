@@ -1,17 +1,17 @@
 import { err, ok, Result } from 'src/core/result';
-import { LocationRepositoryPort } from 'src/modules/tenant/domain/ports/location.repository.port';
 import { AddScheduleToLocationCommand } from './add-schedule-to-location.command';
-import { LocationNotFoundError } from 'src/modules/tenant/location/domain/exceptions/location.exceptions';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { LocationRepository } from '../../../infrastructure/persistence/repositories/location.repository';
+import { LocationNotFoundError } from '../../../domain/errors/location.errors';
 
 export type AddScheduleToLocationResult = Result<void, LocationNotFoundError>;
 
 @CommandHandler(AddScheduleToLocationCommand)
 export class AddScheduleToLocationCommandHandler implements ICommandHandler<AddScheduleToLocationCommand> {
-  constructor(private readonly locationRepo: LocationRepositoryPort) {}
+  constructor(private readonly locationRepo: LocationRepository) {}
 
   async execute(command: AddScheduleToLocationCommand): Promise<AddScheduleToLocationResult> {
-    const location = await this.locationRepo.load(command.locationId);
+    const location = await this.locationRepo.load(command.locationId, command.tenantId);
 
     if (!location) {
       return err(new LocationNotFoundError(command.locationId));

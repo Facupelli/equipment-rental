@@ -1,21 +1,18 @@
-import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import Decimal from 'decimal.js';
 import { CreateOwnerContractCommand } from './create-owner-contract.command';
-import { OwnerRepositoryPort } from 'src/modules/tenant/owner/domain/ports/owner.repository.port';
-import { OwnerContractRepositoryPort } from '../../../domain/ports/owner-contract.repository.port';
 import { err, ok, Result } from 'src/core/result';
 import { OwnerContract } from '../../../domain/entities/owner-contract.entity';
-import { ShareSplit } from '../../../domain/value-objects/share-split.vo';
+import { ShareSplit } from '../../../domain/value-objects/share-split.value-object';
 import {
   AssetNotFoundError,
   AssetNotOwnedByOwnerError,
   OverlappingContractError,
   OwnerNotFoundError,
-} from '../../errors/owner-contract.errors';
-import {
-  AssetDto,
-  FindAssetByIdQuery,
-} from 'src/modules/inventory/application/queries/find-asset-by-id/find-asset-by-id.query';
+} from '../../../domain/errors/owner-contract.errors';
+import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
+import { OwnerRepository } from '../../../infrastructure/persistence/repositories/owner.repository';
+import { OwnerContractRepository } from '../../../infrastructure/persistence/repositories/owner-contract.repository';
 
 type CreateOwnerContractError =
   | OwnerNotFoundError
@@ -26,28 +23,26 @@ type CreateOwnerContractError =
 @CommandHandler(CreateOwnerContractCommand)
 export class CreateOwnerContractCommandHandler implements ICommandHandler<CreateOwnerContractCommand> {
   constructor(
-    private readonly ownerRepo: OwnerRepositoryPort,
-    private readonly contractRepo: OwnerContractRepositoryPort,
-    private readonly queryBus: QueryBus,
+    private readonly ownerRepo: OwnerRepository,
+    private readonly contractRepo: OwnerContractRepository,
+    private readonly inventoryApi: InventoryPublicApi,
   ) {}
 
   async execute(command: CreateOwnerContractCommand): Promise<Result<string, CreateOwnerContractError>> {
-    const owner = await this.ownerRepo.load(command.ownerId);
+    const owner = await this.ownerRepo.load(command.ownerId, command.tenantId);
     if (!owner || owner.tenantId !== command.tenantId) {
-      return err(new OwnerNotFoundError());
+      return err(new OwnerNotFoundError(command.ownerId));
     }
 
     if (command.assetId !== null) {
-      const asset = await this.queryBus.execute<FindAssetByIdQuery, AssetDto | null>(
-        new FindAssetByIdQuery(command.tenantId, command.assetId),
-      );
+      const asset = await this.inventoryApi.findAssetById(command.tenantId, command.assetId);
 
       if (!asset) {
-        return err(new AssetNotFoundError());
+        return err(new AssetNotFoundError(command.assetId));
       }
 
       if (asset.ownerId !== command.ownerId) {
-        return err(new AssetNotOwnedByOwnerError());
+        return err(new AssetNotOwnedByOwnerError(command.ownerId, command.assetId));
       }
     }
 
@@ -60,7 +55,7 @@ export class CreateOwnerContractCommandHandler implements ICommandHandler<Create
     );
 
     if (hasOverlap) {
-      return err(new OverlappingContractError());
+      return err(new OverlappingContractError(command.ownerId, command.assetId));
     }
 
     const contract = OwnerContract.create({

@@ -1,18 +1,7 @@
-import { RoundingRule } from '@repo/types';
-import { TenantConfig } from '../../domain/value-objects/tenant-config.vo';
+import { TenantConfig } from '../../domain/value-objects/tenant-config.value-object';
 import { CreateBillingUnitProps } from '../../domain/entities/billing-unit.entity';
 
-export const DEFAULT_CONFIG = TenantConfig.create({
-  pricing: {
-    overRentalEnabled: false,
-    maxOverRentThreshold: 0,
-    weekendCountsAsOne: false,
-    roundingRule: RoundingRule.ROUND_UP,
-    defaultCurrency: 'ARS',
-  },
-  timezone: 'UTC',
-  newArrivalsWindowDays: 30,
-});
+export const DEFAULT_CONFIG = TenantConfig.default();
 
 export const DEFAULT_BILLING_UNITS_PROPS: Omit<CreateBillingUnitProps, 'tenantId'>[] = [
   { label: 'Hour', durationMinutes: 60, sortOrder: 30 },

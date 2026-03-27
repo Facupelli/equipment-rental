@@ -1,16 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ProductType } from '../../domain/entities/product-type.entity';
-import { ProductTypeRepositoryPort } from '../../domain/ports/product-type.repository.port';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { ProductTypeMapper } from '../persistence/mappers/product-type.mapper';
 
 @Injectable()
-export class ProductTypeRepository implements ProductTypeRepositoryPort {
+export class ProductTypeRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async load(id: string): Promise<ProductType | null> {
-    const raw = await this.prisma.client.productType.findUnique({
-      where: { id },
+  async load(id: string, tenantId: string): Promise<ProductType | null> {
+    const raw = await this.prisma.client.productType.findFirst({
+      where: { id, tenantId },
       include: { pricingTiers: true },
     });
 

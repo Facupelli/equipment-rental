@@ -1,6 +1,7 @@
 import { ScheduleSlotType } from '@repo/types';
 
 export interface AddScheduleToLocationCommandProps {
+  tenantId: string;
   locationId: string;
   type: ScheduleSlotType;
   dayOfWeek: number | null;
@@ -11,6 +12,7 @@ export interface AddScheduleToLocationCommandProps {
 }
 
 export class AddScheduleToLocationCommand {
+  public readonly tenantId: string;
   public readonly locationId: string;
   public readonly type: ScheduleSlotType;
   public readonly dayOfWeek: number | null;
@@ -20,6 +22,7 @@ export class AddScheduleToLocationCommand {
   public readonly slotIntervalMinutes: number | null;
 
   constructor(props: AddScheduleToLocationCommandProps) {
+    this.tenantId = props.tenantId;
     this.locationId = props.locationId;
     this.type = props.type;
     this.dayOfWeek = props.dayOfWeek;

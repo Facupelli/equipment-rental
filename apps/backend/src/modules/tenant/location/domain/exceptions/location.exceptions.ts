@@ -4,10 +4,3 @@ export class InvalidLocationNameException extends Error {
     this.name = 'InvalidLocationNameException';
   }
 }
-
-export class LocationNotFoundError extends Error {
-  constructor(id: string) {
-    super(`Location not found: ${id}`);
-    this.name = 'LocationNotFoundError';
-  }
-}

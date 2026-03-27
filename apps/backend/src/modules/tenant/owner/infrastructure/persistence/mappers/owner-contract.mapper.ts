@@ -1,7 +1,7 @@
 import { OwnerContract as PrismaOwnerContract, Prisma } from 'src/generated/prisma/client';
 import Decimal from 'decimal.js';
 import { OwnerContract } from '../../../domain/entities/owner-contract.entity';
-import { ShareSplit } from '../../../domain/value-objects/share-split.vo';
+import { ShareSplit } from '../../../domain/value-objects/share-split.value-object';
 
 export class OwnerContractMapper {
   static toDomain(raw: PrismaOwnerContract): OwnerContract {

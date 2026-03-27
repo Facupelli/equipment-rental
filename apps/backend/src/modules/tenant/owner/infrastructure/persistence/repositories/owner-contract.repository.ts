@@ -2,10 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { OwnerContractMapper } from '../mappers/owner-contract.mapper';
 import { OwnerContract } from '../../../domain/entities/owner-contract.entity';
-import { OwnerContractRepositoryPort } from '../../../domain/ports/owner-contract.repository.port';
 
 @Injectable()
-export class OwnerContractRepository implements OwnerContractRepositoryPort {
+export class OwnerContractRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(id: string): Promise<OwnerContract | null> {

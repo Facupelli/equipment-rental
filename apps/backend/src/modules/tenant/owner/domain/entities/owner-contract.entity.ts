@@ -1,11 +1,11 @@
 import { randomUUID } from 'crypto';
 import Decimal from 'decimal.js';
 import { ContractBasis } from 'src/generated/prisma/client';
-import { ShareSplit } from '../value-objects/share-split.vo';
+import { ShareSplit } from '../value-objects/share-split.value-object';
 import {
   ContractAlreadyInactiveException,
   InvalidContractPeriodException,
-} from '../expcetions/owner-contract.exceptions';
+} from '../exceptions/owner-contract.exceptions';
 
 export interface CreateOwnerContractProps {
   tenantId: string;

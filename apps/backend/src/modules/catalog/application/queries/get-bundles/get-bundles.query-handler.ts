@@ -1,17 +1,43 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetBundlesQuery } from './get-bundles.query';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { BundleListItemResponseDto, PaginatedDto } from '@repo/schemas';
+
+type BundleListItemReadModel = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  billingUnitId: string;
+  billingUnit: { label: string };
+  basePrice: number | null;
+  componentCount: number;
+  createdAt: Date;
+  publishedAt: Date | null;
+  retiredAt: Date | null;
+};
+
+type PaginatedReadModel<T> = {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
 
 @QueryHandler(GetBundlesQuery)
-export class GetBundlesQueryHandler implements IQueryHandler<GetBundlesQuery> {
+export class GetBundlesQueryHandler implements IQueryHandler<
+  GetBundlesQuery,
+  PaginatedReadModel<BundleListItemReadModel>
+> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetBundlesQuery): Promise<PaginatedDto<BundleListItemResponseDto>> {
-    const { page, limit, name } = query;
+  async execute(query: GetBundlesQuery): Promise<PaginatedReadModel<BundleListItemReadModel>> {
+    const { tenantId, page, limit, name } = query;
     const skip = (page - 1) * limit;
 
     const where = {
+      tenantId,
       ...(name && {
         name: { contains: name, mode: 'insensitive' as const },
       }),

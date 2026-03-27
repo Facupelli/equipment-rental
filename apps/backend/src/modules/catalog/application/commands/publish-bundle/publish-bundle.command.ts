@@ -1,7 +1,6 @@
 export class PublishBundleCommand {
-  constructor(public readonly bundleId: string) {}
-}
-
-export class RetireBundleCommand {
-  constructor(public readonly bundleId: string) {}
+  constructor(
+    public readonly tenantId: string,
+    public readonly bundleId: string,
+  ) {}
 }

@@ -1,12 +1,14 @@
 import { randomUUID } from 'crypto';
 import { BundleComponent } from './bundle-component.entity';
+import { Result, err, ok } from 'neverthrow';
 import {
-  InvalidBundleNameException,
-  DuplicateBundleComponentException,
-  BundleComponentNotFoundException,
-  BundleAlreadyRetiredException,
-  BundleAlreadyPublishedException,
-} from '../exceptions/bundle.exceptions';
+  BundleAlreadyPublishedError,
+  BundleAlreadyRetiredError,
+  BundleComponentNotFoundError,
+  DuplicateBundleComponentError,
+  InvalidBundleComponentQuantityError,
+  InvalidBundleNameError,
+} from '../errors/catalog.errors';
 
 export interface CreateBundleProps {
   tenantId: string;
@@ -43,20 +45,22 @@ export class Bundle {
 
   // --- Factories ---
 
-  static create(props: CreateBundleProps): Bundle {
+  static create(props: CreateBundleProps): Result<Bundle, InvalidBundleNameError> {
     if (!props.name || props.name.trim().length === 0) {
-      throw new InvalidBundleNameException();
+      return err(new InvalidBundleNameError());
     }
-    return new Bundle(
-      randomUUID(),
-      props.tenantId,
-      props.billingUnitId,
-      props.name.trim(),
-      props.imageUrl,
-      props.description?.trim() ?? null,
-      [],
-      null,
-      null,
+    return ok(
+      new Bundle(
+        randomUUID(),
+        props.tenantId,
+        props.billingUnitId,
+        props.name.trim(),
+        props.imageUrl,
+        props.description?.trim() ?? null,
+        [],
+        null,
+        null,
+      ),
     );
   }
 
@@ -106,46 +110,58 @@ export class Bundle {
 
   // --- Commands ---
 
-  publish(): void {
+  publish(): Result<void, BundleAlreadyRetiredError | BundleAlreadyPublishedError> {
     if (this.isRetired()) {
-      throw new BundleAlreadyRetiredException();
+      return err(new BundleAlreadyRetiredError());
     }
     if (this.isPublished()) {
-      throw new BundleAlreadyPublishedException();
+      return err(new BundleAlreadyPublishedError());
     }
     this.publishedAt = new Date();
+    return ok(undefined);
   }
 
-  retire(): void {
+  retire(): Result<void, BundleAlreadyRetiredError> {
     if (this.isRetired()) {
-      throw new BundleAlreadyRetiredException();
+      return err(new BundleAlreadyRetiredError());
     }
     this.retiredAt = new Date();
+    return ok(undefined);
   }
 
   updateDescription(description: string | null): void {
     this.description = description?.trim() ?? null;
   }
 
-  addComponent(productTypeId: string, quantity: number): void {
+  addComponent(
+    productTypeId: string,
+    quantity: number,
+  ): Result<void, BundleAlreadyRetiredError | DuplicateBundleComponentError | InvalidBundleComponentQuantityError> {
     if (this.isRetired()) {
-      throw new BundleAlreadyRetiredException();
+      return err(new BundleAlreadyRetiredError());
     }
     const duplicate = this.components.some((c) => c.productTypeId === productTypeId);
     if (duplicate) {
-      throw new DuplicateBundleComponentException(productTypeId);
+      return err(new DuplicateBundleComponentError(productTypeId));
     }
-    this.components.push(BundleComponent.create({ productTypeId, quantity }));
+    const componentResult = BundleComponent.create({ productTypeId, quantity });
+    if (componentResult.isErr()) {
+      return err(componentResult.error);
+    }
+
+    this.components.push(componentResult.value);
+    return ok(undefined);
   }
 
-  removeComponent(productTypeId: string): void {
+  removeComponent(productTypeId: string): Result<void, BundleAlreadyRetiredError | BundleComponentNotFoundError> {
     if (this.isRetired()) {
-      throw new BundleAlreadyRetiredException();
+      return err(new BundleAlreadyRetiredError());
     }
     const idx = this.components.findIndex((c) => c.productTypeId === productTypeId);
     if (idx === -1) {
-      throw new BundleComponentNotFoundException(productTypeId);
+      return err(new BundleComponentNotFoundError(productTypeId));
     }
     this.components.splice(idx, 1);
+    return ok(undefined);
   }
 }
