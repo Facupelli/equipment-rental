@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { err, ok, Result } from 'src/core/result';
+import { err, ok, Result } from 'neverthrow';
 import { PricingRuleType } from '@repo/types';
 import { Coupon } from '../../../domain/entities/coupon.entity';
 import {

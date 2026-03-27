@@ -1,11 +1,14 @@
 import { randomUUID } from 'crypto';
+import { err, ok, Result } from 'neverthrow';
 import { CustomerProfile, CreateCustomerProfileProps } from './customer-profile.entity';
+import { CompanyNameRequiredException, InvalidCustomerNameException } from '../exceptions/customer.exceptions';
 import {
-  CompanyNameRequiredException,
-  CustomerProfileAlreadyExistsException,
-  CustomerProfileNotFoundException,
-  InvalidCustomerNameException,
-} from '../exceptions/customer.exceptions';
+  CannotReviewNonPendingProfileError,
+  CannotSubmitApprovedProfileError,
+  CustomerProfileAlreadyExistsError,
+  CustomerProfileNotFoundError,
+  RejectionReasonRequiredError,
+} from '../errors/customer.errors';
 import { OnboardingStatus } from '@repo/types';
 
 export interface CreateCustomerProps {
@@ -122,36 +125,68 @@ export class Customer {
 
   // --- Commands ---
 
-  submitProfile(props: CreateCustomerProfileProps): void {
+  submitProfile(props: CreateCustomerProfileProps): Result<void, CustomerProfileAlreadyExistsError> {
     if (this.profile !== null) {
-      throw new CustomerProfileAlreadyExistsException();
+      return err(new CustomerProfileAlreadyExistsError());
     }
+
     this.profile = CustomerProfile.create(props);
     this.onboardingStatus = OnboardingStatus.PENDING;
+
+    return ok(undefined);
   }
 
-  resubmitProfile(props: CreateCustomerProfileProps): void {
+  resubmitProfile(
+    props: CreateCustomerProfileProps,
+  ): Result<void, CustomerProfileNotFoundError | CannotSubmitApprovedProfileError> {
     if (this.profile === null) {
-      throw new CustomerProfileNotFoundException();
+      return err(new CustomerProfileNotFoundError());
     }
+
+    const profileResubmitResult = this.profile.resubmit();
+    if (profileResubmitResult.isErr()) {
+      return err(profileResubmitResult.error);
+    }
+
     this.profile = CustomerProfile.create(props);
     this.onboardingStatus = OnboardingStatus.PENDING;
+
+    return ok(undefined);
   }
 
-  approveProfile(reviewedById: string): void {
+  approveProfile(
+    reviewedById: string,
+  ): Result<void, CustomerProfileNotFoundError | CannotReviewNonPendingProfileError> {
     if (this.profile === null) {
-      throw new CustomerProfileNotFoundException();
+      return err(new CustomerProfileNotFoundError());
     }
-    this.profile.approve(reviewedById);
+
+    const approveResult = this.profile.approve(reviewedById);
+    if (approveResult.isErr()) {
+      return err(approveResult.error);
+    }
+
     this.onboardingStatus = OnboardingStatus.APPROVED;
+
+    return ok(undefined);
   }
 
-  rejectProfile(reviewedById: string, reason: string): void {
+  rejectProfile(
+    reviewedById: string,
+    reason: string,
+  ): Result<void, CustomerProfileNotFoundError | CannotReviewNonPendingProfileError | RejectionReasonRequiredError> {
     if (this.profile === null) {
-      throw new CustomerProfileNotFoundException();
+      return err(new CustomerProfileNotFoundError());
     }
-    this.profile.reject(reviewedById, reason);
+
+    const rejectResult = this.profile.reject(reviewedById, reason);
+    if (rejectResult.isErr()) {
+      return err(rejectResult.error);
+    }
+
     this.onboardingStatus = OnboardingStatus.REJECTED;
+
+    return ok(undefined);
   }
 
   deactivate(): void {

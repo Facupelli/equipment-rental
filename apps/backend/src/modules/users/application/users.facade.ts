@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { Result } from 'neverthrow';
 
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
-import { Result } from 'src/core/result';
 import { DuplicateRoleAssignmentError, UserInactiveError } from '../domain/errors/users.errors';
 import { IsEmailTakenQuery } from './queries/is-email-taken/is-email-taken.query';
 import { CreateRoleCommand } from './commands/create-role/create-role.command';

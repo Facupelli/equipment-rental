@@ -1,6 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { ok, err, Result } from 'neverthrow';
 import { DeactivateOwnerContractCommand } from './deactivate-owner-contract.command';
-import { ok, err, Result } from 'src/core/result';
 import { OwnerContractRepository } from '../../../infrastructure/persistence/repositories/owner-contract.repository';
 import { ContractNotFoundError } from '../../../domain/errors/owner-contract.errors';
 

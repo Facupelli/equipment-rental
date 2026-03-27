@@ -1,5 +1,5 @@
+import { Result } from 'neverthrow';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
-import { Result } from 'src/core/result';
 import { DuplicateRoleAssignmentError, UserInactiveError } from './domain/errors/users.errors';
 
 export abstract class UsersPublicApi {

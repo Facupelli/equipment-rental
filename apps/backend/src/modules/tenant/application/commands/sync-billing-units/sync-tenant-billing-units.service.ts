@@ -1,16 +1,12 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Result, ok } from 'src/core/result';
 import { SyncTenantBillingUnitsCommand } from './sync-tenant-billing-units.command';
 import { PrismaService } from 'src/core/database/prisma.service';
 
 @CommandHandler(SyncTenantBillingUnitsCommand)
-export class SyncTenantBillingUnitsService implements ICommandHandler<
-  SyncTenantBillingUnitsCommand,
-  Result<void, void>
-> {
+export class SyncTenantBillingUnitsService implements ICommandHandler<SyncTenantBillingUnitsCommand, void> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(command: SyncTenantBillingUnitsCommand): Promise<Result<void, void>> {
+  async execute(command: SyncTenantBillingUnitsCommand): Promise<void> {
     const existing = await this.prisma.client.tenantBillingUnit.findMany({
       where: { tenantId: command.tenantId },
       select: { id: true, billingUnitId: true },
@@ -40,7 +36,5 @@ export class SyncTenantBillingUnitsService implements ICommandHandler<
         }),
       ),
     ]);
-
-    return ok(undefined);
   }
 }

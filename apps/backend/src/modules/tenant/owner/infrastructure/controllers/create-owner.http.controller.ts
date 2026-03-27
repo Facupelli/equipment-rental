@@ -14,12 +14,6 @@ export class CreateOwnerHttpController {
   @Post()
   async createOwner(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateOwnerDto): Promise<string> {
     const command = new CreateOwnerCommand(user.tenantId, dto.name, dto.email, dto.phone, dto.notes);
-    const result = await this.commandBus.execute(command);
-
-    if (result.isErr()) {
-      throw result.error;
-    }
-
-    return result.value;
+    return this.commandBus.execute(command);
   }
 }

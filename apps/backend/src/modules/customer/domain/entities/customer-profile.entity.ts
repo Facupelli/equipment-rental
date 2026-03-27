@@ -1,9 +1,10 @@
 import { randomUUID } from 'crypto';
+import { err, ok, Result } from 'neverthrow';
 import {
-  CannotReviewNonPendingProfileException,
-  CannotSubmitApprovedProfileException,
-  RejectionReasonRequiredException,
-} from '../exceptions/customer.exceptions';
+  CannotReviewNonPendingProfileError,
+  CannotSubmitApprovedProfileError,
+  RejectionReasonRequiredError,
+} from '../errors/customer.errors';
 
 export enum ProfileSubmissionStatus {
   PENDING = 'PENDING',
@@ -165,35 +166,48 @@ export class CustomerProfile {
 
   // --- Commands ---
 
-  resubmit(): void {
+  resubmit(): Result<void, CannotSubmitApprovedProfileError> {
     if (this.isApproved()) {
-      throw new CannotSubmitApprovedProfileException();
+      return err(new CannotSubmitApprovedProfileError());
     }
+
     this.status = ProfileSubmissionStatus.PENDING;
     this.rejectionReason = null;
     this.reviewedAt = null;
     this.reviewedById = null;
+
+    return ok(undefined);
   }
 
-  approve(reviewedById: string): void {
+  approve(reviewedById: string): Result<void, CannotReviewNonPendingProfileError> {
     if (!this.isPending()) {
-      throw new CannotReviewNonPendingProfileException();
+      return err(new CannotReviewNonPendingProfileError());
     }
+
     this.status = ProfileSubmissionStatus.APPROVED;
     this.reviewedById = reviewedById;
     this.reviewedAt = new Date();
+
+    return ok(undefined);
   }
 
-  reject(reviewedById: string, reason: string): void {
+  reject(
+    reviewedById: string,
+    reason: string,
+  ): Result<void, CannotReviewNonPendingProfileError | RejectionReasonRequiredError> {
     if (!this.isPending()) {
-      throw new CannotReviewNonPendingProfileException();
+      return err(new CannotReviewNonPendingProfileError());
     }
+
     if (!reason || reason.trim().length === 0) {
-      throw new RejectionReasonRequiredException();
+      return err(new RejectionReasonRequiredError());
     }
+
     this.status = ProfileSubmissionStatus.REJECTED;
     this.rejectionReason = reason.trim();
     this.reviewedById = reviewedById;
     this.reviewedAt = new Date();
+
+    return ok(undefined);
   }
 }

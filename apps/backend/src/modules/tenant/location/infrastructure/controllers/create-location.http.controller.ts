@@ -14,12 +14,6 @@ export class CreateLocationHttpController {
   @Post()
   async createLocation(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateLocationDto): Promise<string> {
     const command = new CreateLocationCommand(user.tenantId, dto.name, dto.address);
-    const result = await this.commandBus.execute(command);
-
-    if (result.isErr()) {
-      throw result.error;
-    }
-
-    return result.value;
+    return this.commandBus.execute(command);
   }
 }

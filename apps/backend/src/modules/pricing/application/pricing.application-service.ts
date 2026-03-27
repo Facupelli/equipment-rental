@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Result, err, ok } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { RuleApplicationContext } from '../domain/types/pricing-rule.types';
 import {
@@ -19,7 +20,6 @@ import { PricingBundleNotFoundError, PricingProductTypeNotFoundError } from '../
 import { ResolveCouponForPricingService } from './services/resolve-coupon-for-pricing.service';
 import { RedeemCouponService } from './services/redeem-coupon.service';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
-import { Result } from 'src/core/result';
 
 @Injectable()
 export class PricingApplicationService implements PricingPublicApi {
@@ -134,13 +134,25 @@ export class PricingApplicationService implements PricingPublicApi {
   async resolveCouponForPricing(
     dto: ResolveCouponForPricingDto,
   ): Promise<Result<ResolvedCouponDto, ResolveCouponForPricingError>> {
-    return this.resolveCouponForPricingService.resolveCouponForPricing(dto);
+    const result = await this.resolveCouponForPricingService.resolveCouponForPricing(dto);
+
+    if (result.isErr()) {
+      return err(result.error);
+    }
+
+    return ok(result.value);
   }
 
   async redeemCouponWithinTransaction(
     dto: RedeemCouponDto,
     tx: PrismaTransactionClient,
   ): Promise<Result<void, RedeemCouponError>> {
-    return this.redeemCouponService.redeemWithinTransaction(dto, tx);
+    const result = await this.redeemCouponService.redeemWithinTransaction(dto, tx);
+
+    if (result.isErr()) {
+      return err(result.error);
+    }
+
+    return ok(undefined);
   }
 }

@@ -1,4 +1,4 @@
-import { err, ok, Result } from 'src/core/result';
+import { err, ok, Result } from 'neverthrow';
 import { AddScheduleToLocationCommand } from './add-schedule-to-location.command';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { LocationRepository } from '../../../infrastructure/persistence/repositories/location.repository';

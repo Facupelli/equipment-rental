@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { err, ok, Result } from 'src/core/result';
+import { err, ok, Result } from 'neverthrow';
 import { UpdateTenantConfigCommand } from './update-config.command';
 import { TenantRepository } from 'src/modules/tenant/infrastructure/persistence/repositories/tenant.repository';
 import { TenantNotFoundError } from '../../../domain/errors/tenant.errors';

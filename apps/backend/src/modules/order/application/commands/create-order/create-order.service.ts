@@ -1,10 +1,10 @@
 import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
 import { AssignmentSource, AssignmentType, OrderItemType, OrderStatus, ScheduleSlotType } from '@repo/types';
 import Decimal from 'decimal.js';
+import { err, ok, Result } from 'neverthrow';
 
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
-import { err, ok, Result } from 'src/core/result';
 import { GetLocationScheduleSlotsQuery } from 'src/modules/tenant/public/queries/get-location-schedule-slots.query';
 import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 import { PricingPublicApi, ResolvedCouponDto } from 'src/modules/pricing/pricing.public-api';
@@ -49,7 +49,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
 
     const slotValidation = await this.validateSlots(command);
     if (slotValidation.isErr()) {
-      return slotValidation;
+      return err(slotValidation.error);
     }
 
     const now = new Date();

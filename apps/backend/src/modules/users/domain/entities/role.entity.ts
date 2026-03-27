@@ -1,6 +1,6 @@
 import { Permission } from '@repo/types';
 import { randomUUID } from 'crypto';
-import { err, ok, Result } from 'src/core/result';
+import { err, ok, Result } from 'neverthrow';
 import { InvalidRoleCodeException, InvalidRoleNameException } from '../exceptions/users.exceptions';
 import { DuplicateRolePermissionError, RolePermissionNotFoundError } from '../errors/users.errors';
 

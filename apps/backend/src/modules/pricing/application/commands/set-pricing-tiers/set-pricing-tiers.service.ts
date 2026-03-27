@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { err, Result, ok } from 'src/core/result';
+import { err, Result, ok } from 'neverthrow';
 import { CatalogPublicApi } from 'src/modules/catalog/catalog.public-api';
 import { PricingConfiguration } from '../../../domain/entities/pricing-configuration.entity';
 import { PricingTier } from '../../../domain/entities/pricing-tier.entity';

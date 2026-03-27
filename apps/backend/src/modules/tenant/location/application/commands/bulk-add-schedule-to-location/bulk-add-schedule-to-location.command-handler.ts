@@ -1,6 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { err, ok, Result } from 'neverthrow';
 import { BulkAddSchedulesToLocationCommand } from './bulk-add-schedule-to-location.command';
-import { err, ok, Result } from 'src/core/result';
 import { LocationRepository } from '../../../infrastructure/persistence/repositories/location.repository';
 import { LocationNotFoundError } from '../../../domain/errors/location.errors';
 

@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { err, ok, Result } from 'src/core/result';
+import { err, ok, Result } from 'neverthrow';
 import { InvalidUserNameException } from '../exceptions/users.exceptions';
 import { CreateUserRoleProps, UserRole } from './user-role.entity';
 import { DuplicateRoleAssignmentError, RoleAssignmentNotFoundError, UserInactiveError } from '../errors/users.errors';

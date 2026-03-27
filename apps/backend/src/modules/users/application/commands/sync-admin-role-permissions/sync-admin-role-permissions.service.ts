@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Result, err, ok } from 'src/core/result';
+import { Result, err, ok } from 'neverthrow';
 
 import { TENANT_ADMIN_PERMISSIONS } from 'src/modules/users/domain/tenant-admin.permissions';
 import { TENANT_ADMIN_ROLE_CODE } from 'src/modules/users/domain/role.constants';

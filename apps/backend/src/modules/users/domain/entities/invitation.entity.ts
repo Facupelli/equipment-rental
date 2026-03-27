@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { err, ok, Result } from 'src/core/result';
+import { err, ok, Result } from 'neverthrow';
 import { InvitationAlreadyAcceptedError, InvitationExpiredError } from '../errors/users.errors';
 
 export interface CreateInvitationProps {

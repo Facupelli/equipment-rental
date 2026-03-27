@@ -2,7 +2,7 @@ import { CommandHandler, EventBus, ICommandHandler, QueryBus } from '@nestjs/cqr
 import * as bcrypt from 'bcrypt';
 
 import { PrismaUnitOfWork } from 'src/core/database/prisma-unit-of-work';
-import { Result, err, ok } from 'src/core/result';
+import { Result, err, ok } from 'neverthrow';
 import { UsersPublicApi } from 'src/modules/users/users.public-api';
 import { TenantRepository } from 'src/modules/tenant/infrastructure/persistence/repositories/tenant.repository';
 

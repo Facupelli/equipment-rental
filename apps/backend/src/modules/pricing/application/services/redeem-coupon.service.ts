@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { err, ok, Result } from 'neverthrow';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
-import { err, ok, Result } from 'src/core/result';
 import { CouponNotFoundError, CouponValidationError } from '../../domain/errors/pricing.errors';
 import { CouponValidationService } from '../../domain/services/coupon-validation.service';
 import { CouponRepository } from '../../infrastructure/repositories/coupon.repository';

@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Result, err, ok } from 'src/core/result';
+import { Result, err, ok } from 'neverthrow';
 import { DuplicateRoleAssignmentError, UserInactiveError } from '../../../domain/errors/users.errors';
 import { User } from '../../../domain/entities/user.entity';
 import { UserRepository } from '../../../infrastructure/persistence/repositories/user.repository';

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { err, ok, Result } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { Money } from 'src/core/domain/value-objects/money.value-object';
-import { err, ok, Result } from 'src/core/result';
 import { PricingPublicApi } from '../../../pricing.public-api';
 import { CalculateCartPricesQuery, CartQueryProductItem } from './calculate-cart-prices.query';
 import { PricingComputationReadService } from '../../../infrastructure/read-services/pricing-computation-read.service';

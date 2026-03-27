@@ -1,7 +1,7 @@
 import Decimal from 'decimal.js';
+import { Result } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
-import { Result } from 'src/core/result';
 import { PricingResult } from './domain/services/pricing-calculator.service';
 import { CouponNotFoundError, CouponValidationError } from './domain/errors/pricing.errors';
 

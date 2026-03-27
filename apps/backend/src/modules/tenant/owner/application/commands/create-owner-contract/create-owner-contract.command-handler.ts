@@ -1,7 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import Decimal from 'decimal.js';
+import { err, ok, Result } from 'neverthrow';
 import { CreateOwnerContractCommand } from './create-owner-contract.command';
-import { err, ok, Result } from 'src/core/result';
 import { OwnerContract } from '../../../domain/entities/owner-contract.entity';
 import { ShareSplit } from '../../../domain/value-objects/share-split.value-object';
 import {
