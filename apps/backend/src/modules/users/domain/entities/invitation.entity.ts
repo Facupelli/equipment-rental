@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
-import { InvitationAlreadyAcceptedException, InvitationExpiredException } from '../expcetions/invitation.exceptions';
+import { err, ok, Result } from 'src/core/result';
+import { InvitationAlreadyAcceptedError, InvitationExpiredError } from '../errors/users.errors';
 
 export interface CreateInvitationProps {
   tenantId: string;
@@ -75,13 +76,14 @@ export class Invitation {
     return new Date() > this.expiresAt;
   }
 
-  accept(): void {
+  accept(): Result<void, InvitationAlreadyAcceptedError | InvitationExpiredError> {
     if (this.isAccepted) {
-      throw new InvitationAlreadyAcceptedException(this.id);
+      return err(new InvitationAlreadyAcceptedError(this.id));
     }
     if (this.isExpired()) {
-      throw new InvitationExpiredException(this.id);
+      return err(new InvitationExpiredError(this.id));
     }
     this.acceptedAt = new Date();
+    return ok(undefined);
   }
 }

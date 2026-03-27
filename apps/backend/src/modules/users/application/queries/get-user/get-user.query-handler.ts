@@ -1,25 +1,35 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { MeResponseDto } from '../../dto/me-response.dto';
 import { GetUserQuery } from './get-user.query';
+import { GetUserReadModel } from './get-user.types';
 
 @QueryHandler(GetUserQuery)
-export class GetUserQueryHandler implements IQueryHandler<GetUserQuery, MeResponseDto | null> {
+export class GetUserQueryHandler implements IQueryHandler<GetUserQuery, GetUserReadModel | null> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetUserQuery): Promise<MeResponseDto | null> {
-    const user = await this.prisma.client.user.findUnique({
-      where: { id: query.userId },
-      include: {
-        tenant: true,
+  async execute(query: GetUserQuery): Promise<GetUserReadModel | null> {
+    const user = await this.prisma.client.user.findFirst({
+      where: {
+        id: query.userId,
+        tenantId: query.tenantId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        isActive: true,
+        tenantId: true,
         userRoles: {
-          include: {
+          select: {
+            locationId: true,
             role: {
-              include: {
-                permissions: true,
+              select: {
+                id: true,
+                name: true,
               },
             },
-            location: true,
           },
         },
       },

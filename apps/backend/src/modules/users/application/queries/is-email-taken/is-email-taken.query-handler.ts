@@ -7,7 +7,12 @@ export class IsEmailTakenQueryHandler implements IQueryHandler<IsEmailTakenQuery
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: IsEmailTakenQuery): Promise<boolean> {
-    const count = await this.prisma.client.user.count({ where: { email: query.email } });
+    const count = await this.prisma.client.user.count({
+      where: {
+        email: query.email,
+        deletedAt: null,
+      },
+    });
     return count > 0;
   }
 }

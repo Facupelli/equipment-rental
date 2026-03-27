@@ -1,8 +1,7 @@
 import { RoleMapper, RolePermissionMapper } from '../mappers/role.mapper';
-import { RoleRepositoryPort } from 'src/modules/users/domain/ports/role.repository.port';
 import { Role } from 'src/modules/users/domain/entities/role.entity';
 
-export class RoleRepository implements RoleRepositoryPort {
+export class RoleRepository {
   constructor(private readonly db: any) {}
 
   async load(id: string): Promise<Role | null> {
@@ -14,7 +13,7 @@ export class RoleRepository implements RoleRepositoryPort {
     return RoleMapper.toDomain(raw as unknown as Parameters<typeof RoleMapper.toDomain>[0]);
   }
 
-  async findByCode(code: string): Promise<Role[]> {
+  async findByCodeAcrossTenants(code: string): Promise<Role[]> {
     const rows = await this.db.role.findMany({
       where: { code },
       include: { permissions: true },

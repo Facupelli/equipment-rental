@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
-import { InvalidUserNameException } from '../expcetions/user.exceptions';
+import { err, ok, Result } from 'src/core/result';
+import { InvalidUserNameException } from '../exceptions/users.exceptions';
 import { CreateUserRoleProps, UserRole } from './user-role.entity';
-import { DuplicateRoleAssignmentException } from '../expcetions/role.exceptions';
+import { DuplicateRoleAssignmentError, RoleAssignmentNotFoundError, UserInactiveError } from '../errors/users.errors';
 
 export interface CreateUserProps {
   tenantId: string;
@@ -91,17 +92,16 @@ export class User {
     return this.passwordHash;
   }
 
-  assignRole(props: CreateUserRoleProps): void {
+  assignRole(props: CreateUserRoleProps): Result<void, UserInactiveError | DuplicateRoleAssignmentError> {
     if (!this.isActive) {
-      throw new Error('Cannot assign roles to an inactive user.');
+      return err(new UserInactiveError(this.id));
     }
 
-    const isDuplicate = this.userRoles.some(
-      (ur) => ur.roleId === props.roleId && ur.locationId === (props.locationId ?? null),
-    );
+    const locationId = props.locationId ?? null;
+    const isDuplicate = this.userRoles.some((ur) => ur.roleId === props.roleId && ur.locationId === locationId);
 
     if (isDuplicate) {
-      throw new DuplicateRoleAssignmentException();
+      return err(new DuplicateRoleAssignmentError(this.id, props.roleId, locationId));
     }
 
     const userRole = UserRole.create({
@@ -110,16 +110,19 @@ export class User {
     });
 
     this.userRoles.push(userRole);
+    return ok(undefined);
   }
 
-  removeRole(roleId: string, locationId?: string): void {
-    const index = this.userRoles.findIndex((ur) => ur.roleId === roleId && ur.locationId === (locationId ?? null));
+  removeRole(roleId: string, locationId?: string): Result<void, RoleAssignmentNotFoundError> {
+    const normalizedLocationId = locationId ?? null;
+    const index = this.userRoles.findIndex((ur) => ur.roleId === roleId && ur.locationId === normalizedLocationId);
 
     if (index === -1) {
-      throw new Error('Role assignment not found.');
+      return err(new RoleAssignmentNotFoundError(this.id, roleId, normalizedLocationId));
     }
 
     this.userRoles.splice(index, 1);
+    return ok(undefined);
   }
 
   deactivate(): void {

@@ -1,9 +1,8 @@
 import { User } from 'src/modules/users/domain/entities/user.entity';
 import { UserMapper } from '../mappers/user.mapper';
-import { UserRepositoryPort } from 'src/modules/users/domain/ports/user.repository.port';
 import { UserRoleMapper } from '../mappers/role.mapper';
 
-export class UserRepository implements UserRepositoryPort {
+export class UserRepository {
   constructor(private readonly db: any) {}
 
   async load(id: string): Promise<User | null> {

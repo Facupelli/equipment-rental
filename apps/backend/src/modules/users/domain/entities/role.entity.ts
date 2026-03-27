@@ -1,11 +1,8 @@
 import { Permission } from '@repo/types';
 import { randomUUID } from 'crypto';
-import {
-  DuplicateRolePermissionException,
-  InvalidRoleCodeException,
-  InvalidRoleNameException,
-  RolePermissionNotFoundException,
-} from '../expcetions/role.exceptions';
+import { err, ok, Result } from 'src/core/result';
+import { InvalidRoleCodeException, InvalidRoleNameException } from '../exceptions/users.exceptions';
+import { DuplicateRolePermissionError, RolePermissionNotFoundError } from '../errors/users.errors';
 
 // ---------------------------------------------------------------------------
 // RolePermission
@@ -125,21 +122,23 @@ export class Role {
     this.isDefault = false;
   }
 
-  addPermission(permission: Permission): void {
+  addPermission(permission: Permission): Result<void, DuplicateRolePermissionError> {
     const duplicate = this.permissions.some((p) => p.permission === permission);
     if (duplicate) {
-      throw new DuplicateRolePermissionException(permission);
+      return err(new DuplicateRolePermissionError(this.id, permission));
     }
     const rolePermission = RolePermission.create({ roleId: this.id, permission });
     this.permissions.push(rolePermission);
+    return ok(undefined);
   }
 
-  removePermission(permission: Permission): void {
+  removePermission(permission: Permission): Result<void, RolePermissionNotFoundError> {
     const idx = this.permissions.findIndex((p) => p.permission === permission);
     if (idx === -1) {
-      throw new RolePermissionNotFoundException(permission);
+      return err(new RolePermissionNotFoundError(this.id, permission));
     }
     this.permissions.splice(idx, 1);
+    return ok(undefined);
   }
 
   hasPermission(permission: Permission): boolean {
