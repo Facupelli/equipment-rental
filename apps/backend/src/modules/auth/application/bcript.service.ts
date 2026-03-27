@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { QueryBus } from '@nestjs/cqrs';
 import { FindCredentialsByEmailQuery } from 'src/modules/users/application/queries/find-credentials-by-email/find-credentials-by-email.query';
-import { UserCredentials } from 'src/modules/users/application/queries/find-credentials-by-email/find-credentials-by-email.query-handerl';
+import { UserCredentials } from 'src/modules/users/application/queries/find-credentials-by-email/find-credentials-by-email.types';
 import { CustomerCredentials } from 'src/modules/customer/application/queries/find-customer-credentials/find-customer-credentials.query-handler';
 import { FindCustomerCredentialsByEmailQuery } from 'src/modules/customer/application/queries/find-customer-credentials/find-customer-credentials.query';
 
@@ -10,9 +10,9 @@ import { FindCustomerCredentialsByEmailQuery } from 'src/modules/customer/applic
 export class BcryptService {
   constructor(private readonly queryBus: QueryBus) {}
 
-  async validateUser(email: string, password: string): Promise<UserCredentials> {
+  async validateUser(email: string, password: string, tenantId: string): Promise<UserCredentials> {
     const user = await this.queryBus.execute<FindCredentialsByEmailQuery, UserCredentials | null>(
-      new FindCredentialsByEmailQuery(email),
+      new FindCredentialsByEmailQuery(tenantId, email),
     );
 
     if (!user) {

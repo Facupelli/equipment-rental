@@ -1,18 +1,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
+import { UserCredentials } from './find-credentials-by-email.types';
 import { FindCredentialsByEmailQuery } from './find-credentials-by-email.query';
-
-export interface UserCredentials {
-  id: string;
-  tenantId: string;
-  email: string;
-  passwordHash: string;
-  isActive: boolean;
-  // Nested structure to handle Location-specific roles
-  roles: Array<{
-    id: string;
-  }>;
-}
 
 @QueryHandler(FindCredentialsByEmailQuery)
 export class FindCredentialsByEmailQueryHandler implements IQueryHandler<
@@ -23,7 +12,11 @@ export class FindCredentialsByEmailQueryHandler implements IQueryHandler<
 
   async execute(query: FindCredentialsByEmailQuery): Promise<UserCredentials | null> {
     const user = await this.prisma.client.user.findFirst({
-      where: { email: query.email, deletedAt: null },
+      where: {
+        tenantId: query.tenantId,
+        email: query.email,
+        deletedAt: null,
+      },
       select: {
         id: true,
         tenantId: true,

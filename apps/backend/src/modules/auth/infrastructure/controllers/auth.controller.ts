@@ -6,7 +6,7 @@ import { LocalCustomerAuthGuard } from '../guards/local-customer-auth.guard';
 import { RefreshTokenGuard } from '../guards/jwt-refresh.guard';
 import { RefreshTokenUser } from '../strategies/jwt-refresh.strategy';
 import { CustomerLocalUser } from '../strategies/local-customer.strategy';
-import { User } from 'src/modules/users/domain/entities/user.entity';
+import { UserLocalUser } from '../strategies/local.strategy';
 import { ActorType } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 import { RegisterCustomerCommand } from '../../application/commands/register-customer/regsiter-customer.command';
@@ -26,7 +26,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async loginUser(@Request() req: { user: User }) {
+  async loginUser(@Request() req: { user: UserLocalUser }) {
     const { accessToken, refreshToken } = await this.authService.login({
       id: req.user.id,
       email: req.user.email,

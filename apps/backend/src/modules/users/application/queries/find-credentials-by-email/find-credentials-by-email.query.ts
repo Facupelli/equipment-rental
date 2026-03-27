@@ -1,5 +1,8 @@
 import { IQuery } from '@nestjs/cqrs';
 
 export class FindCredentialsByEmailQuery implements IQuery {
-  constructor(public readonly email: string) {}
+  constructor(
+    public readonly tenantId: string,
+    public readonly email: string,
+  ) {}
 }
