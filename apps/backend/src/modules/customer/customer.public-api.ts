@@ -1,10 +1,13 @@
-import { RegisterCustomerDto } from '@repo/schemas';
-
-export type CustomerDto = Omit<RegisterCustomerDto, 'password'> & {
-  passwordHash: string;
+export interface RegisterCustomerPublicInput {
   tenantId: string;
-};
+  email: string;
+  passwordHash: string;
+  firstName: string;
+  lastName: string;
+  isCompany: boolean | null;
+  companyName: string | null;
+}
 
 export abstract class CustomerPublicApi {
-  abstract register(dto: CustomerDto): Promise<string>;
+  abstract register(input: RegisterCustomerPublicInput): Promise<string>;
 }

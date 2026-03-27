@@ -2,14 +2,14 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetCustomersQuery } from './get-customers.query';
 import { Prisma } from 'src/generated/prisma/client';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { CustomerResponseDto, PaginatedDto } from '@repo/schemas';
 import { OnboardingStatus } from '@repo/types';
+import { CustomerListItemReadModel, GetCustomersResult } from './get-customers.read-model';
 
 @QueryHandler(GetCustomersQuery)
 export class GetCustomersQueryHandler implements IQueryHandler<GetCustomersQuery> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetCustomersQuery): Promise<PaginatedDto<CustomerResponseDto>> {
+  async execute(query: GetCustomersQuery): Promise<GetCustomersResult> {
     const offset = (query.page - 1) * query.limit;
 
     const where: Prisma.CustomerWhereInput = {
@@ -49,7 +49,7 @@ export class GetCustomersQueryHandler implements IQueryHandler<GetCustomersQuery
       this.prisma.client.customer.count({ where }),
     ]);
 
-    const data: CustomerResponseDto[] = rows.map((row) => ({
+    const data: CustomerListItemReadModel[] = rows.map((row) => ({
       id: row.id,
       email: row.email,
       firstName: row.firstName,

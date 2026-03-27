@@ -1,9 +1,9 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
-import { NotFoundException } from '@nestjs/common';
 import { GetCustomerDetailQuery } from './get-customer-detail.query';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { CustomerDetailResponseDto } from '@repo/schemas';
 import { Prisma } from 'src/generated/prisma/client';
+import { OnboardingStatus } from '@repo/types';
+import { GetCustomerDetailResult } from './get-customer-detail.read-model';
 
 interface ActiveRentalRaw {
   order_id: string;
@@ -15,11 +15,15 @@ interface ActiveRentalRaw {
 export class GetCustomerDetailQueryHandler implements IQueryHandler<GetCustomerDetailQuery> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetCustomerDetailQuery): Promise<CustomerDetailResponseDto> {
+  async execute(query: GetCustomerDetailQuery): Promise<GetCustomerDetailResult | null> {
     const { customerId, tenantId } = query;
 
-    const customer = await this.prisma.client.customer.findUnique({
-      where: { id: customerId },
+    const customer = await this.prisma.client.customer.findFirst({
+      where: {
+        id: customerId,
+        tenantId,
+        deletedAt: null,
+      },
       include: {
         _count: {
           select: { orders: true },
@@ -28,7 +32,7 @@ export class GetCustomerDetailQueryHandler implements IQueryHandler<GetCustomerD
     });
 
     if (!customer) {
-      throw new NotFoundException(`Customer ${customerId} not found`);
+      return null;
     }
 
     const activeRentals = await this.prisma.client.$queryRaw<ActiveRentalRaw[]>`
@@ -59,7 +63,7 @@ export class GetCustomerDetailQueryHandler implements IQueryHandler<GetCustomerD
       isCompany: customer.isCompany,
       companyName: customer.companyName ?? null,
       isActive: customer.isActive,
-      onboardingStatus: customer.onboardingStatus,
+      onboardingStatus: customer.onboardingStatus as OnboardingStatus,
       createdAt: customer.createdAt,
       totalOrders: customer._count.orders,
       activeRentals: activeRentals.map((r) => ({

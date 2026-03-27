@@ -1,21 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { CustomerDto, CustomerPublicApi } from '../customer.public-api';
+import { CustomerPublicApi, RegisterCustomerPublicInput } from '../customer.public-api';
 import { Customer } from '../domain/entities/customer.entity';
-import { CustomerRepositoryPort } from './ports/customer.repository.port';
+import { CustomerRepository } from '../infrastructure/repositories/customer.repository';
 
 @Injectable()
 export class CustomerApplicationService implements CustomerPublicApi {
-  constructor(private readonly customerRepo: CustomerRepositoryPort) {}
+  constructor(private readonly customerRepo: CustomerRepository) {}
 
-  async register(dto: CustomerDto): Promise<string> {
+  async register(input: RegisterCustomerPublicInput): Promise<string> {
     const customer = Customer.create({
-      email: dto.email,
-      firstName: dto.firstName,
-      lastName: dto.lastName,
-      passwordHash: dto.passwordHash,
-      isCompany: dto.isCompany,
-      companyName: dto.companyName,
-      tenantId: dto.tenantId,
+      email: input.email,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      passwordHash: input.passwordHash,
+      isCompany: input.isCompany,
+      companyName: input.companyName,
+      tenantId: input.tenantId,
     });
 
     const customerId = await this.customerRepo.save(customer);

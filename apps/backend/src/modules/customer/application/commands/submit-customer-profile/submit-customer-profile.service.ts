@@ -1,15 +1,15 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { err, ok, Result } from 'neverthrow';
 import { SubmitCustomerProfileCommand } from './submit-customer-profile.command';
-import { CustomerRepositoryPort } from '../../ports/customer.repository.port';
+import { CustomerRepository } from '../../../infrastructure/repositories/customer.repository';
 import {
   CustomerNotFoundError,
   CustomerProfileAlreadyExistsError,
 } from 'src/modules/customer/domain/errors/customer.errors';
 
 @CommandHandler(SubmitCustomerProfileCommand)
-export class SubmitCustomerProfileCommandHandler implements ICommandHandler<SubmitCustomerProfileCommand> {
-  constructor(private readonly customerRepo: CustomerRepositoryPort) {}
+export class SubmitCustomerProfileService implements ICommandHandler<SubmitCustomerProfileCommand> {
+  constructor(private readonly customerRepo: CustomerRepository) {}
 
   async execute(
     command: SubmitCustomerProfileCommand,

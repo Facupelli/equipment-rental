@@ -1,7 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { err, ok, Result } from 'neverthrow';
 import { ResubmitCustomerProfileCommand } from './resubmit-customer-profile.command';
-import { CustomerRepositoryPort } from '../../ports/customer.repository.port';
+import { CustomerRepository } from '../../../infrastructure/repositories/customer.repository';
 import {
   CannotSubmitApprovedProfileError,
   CustomerNotFoundError,
@@ -9,8 +9,8 @@ import {
 } from 'src/modules/customer/domain/errors/customer.errors';
 
 @CommandHandler(ResubmitCustomerProfileCommand)
-export class ResubmitCustomerProfileCommandHandler implements ICommandHandler<ResubmitCustomerProfileCommand> {
-  constructor(private readonly customerRepo: CustomerRepositoryPort) {}
+export class ResubmitCustomerProfileService implements ICommandHandler<ResubmitCustomerProfileCommand> {
+  constructor(private readonly customerRepo: CustomerRepository) {}
 
   async execute(
     command: ResubmitCustomerProfileCommand,

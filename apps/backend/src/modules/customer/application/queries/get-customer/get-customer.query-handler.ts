@@ -1,14 +1,14 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetCustomerQuery } from './get-customer.query';
-import { MeCustomerResponseDto } from '@repo/schemas';
 import { OnboardingStatus } from '@repo/types';
+import { GetCustomerResult } from './get-customer.read-model';
 
 @QueryHandler(GetCustomerQuery)
-export class GetCustomerQueryHandler implements IQueryHandler<GetCustomerQuery, MeCustomerResponseDto | null> {
+export class GetCustomerQueryHandler implements IQueryHandler<GetCustomerQuery, GetCustomerResult | null> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetCustomerQuery): Promise<MeCustomerResponseDto | null> {
+  async execute(query: GetCustomerQuery): Promise<GetCustomerResult | null> {
     const customer = await this.prisma.client.customer.findUnique({
       where: { id: query.customerId },
       select: {

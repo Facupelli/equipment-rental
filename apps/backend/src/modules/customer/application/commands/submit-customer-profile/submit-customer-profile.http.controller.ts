@@ -1,0 +1,74 @@
+import {
+  Body,
+  ConflictException,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
+import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
+import {
+  CannotSubmitApprovedProfileError,
+  CustomerNotFoundError,
+  CustomerProfileAlreadyExistsError,
+  CustomerProfileNotFoundError,
+} from '../../../domain/errors/customer.errors';
+import { SubmitCustomerProfileCommand } from './submit-customer-profile.command';
+import { SubmitCustomerProfileRequestDto } from './submit-customer-profile.request.dto';
+
+@UseGuards(CustomerOnlyGuard)
+@Controller('customer-profile')
+export class SubmitCustomerProfileHttpController {
+  constructor(private readonly commandBus: CommandBus) {}
+
+  @Post()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async submit(
+    @CurrentUser() customer: AuthenticatedUser,
+    @Body() dto: SubmitCustomerProfileRequestDto,
+  ): Promise<void> {
+    const result = await this.commandBus.execute(
+      new SubmitCustomerProfileCommand(
+        customer.id,
+        dto.fullName,
+        dto.phone,
+        new Date(dto.birthDate),
+        dto.documentNumber,
+        dto.identityDocumentPath,
+        dto.address,
+        dto.city,
+        dto.stateRegion,
+        dto.country,
+        dto.occupation,
+        dto.company,
+        dto.taxId,
+        dto.businessName,
+        dto.bankName,
+        dto.accountNumber,
+        dto.contact1Name,
+        dto.contact1Relationship,
+        dto.contact2Name,
+        dto.contact2Relationship,
+      ),
+    );
+
+    if (result.isErr()) {
+      const error = result.error;
+
+      if (error instanceof CustomerNotFoundError || error instanceof CustomerProfileNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof CustomerProfileAlreadyExistsError || error instanceof CannotSubmitApprovedProfileError) {
+        throw new ConflictException(error.message);
+      }
+
+      throw error;
+    }
+  }
+}

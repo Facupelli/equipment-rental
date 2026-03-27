@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Customer } from '../../domain/entities/customer.entity';
 import { CustomerMapper } from '../mappers/customer.mapper';
-import { CustomerRepositoryPort } from '../../domain/ports/customer.repository.port';
 import { PrismaService } from 'src/core/database/prisma.service';
 
 @Injectable()
-export class CustomerRepository implements CustomerRepositoryPort {
+export class CustomerRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async load(id: string): Promise<Customer | null> {

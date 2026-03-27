@@ -1,14 +1,13 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
-import { NotFoundException } from '@nestjs/common';
 import { GetCustomerProfileQuery } from './get-customer-profile.query';
-import { CustomerProfileResponseDto } from '@repo/schemas';
 import { PrismaService } from 'src/core/database/prisma.service';
+import { GetCustomerProfileResult } from './get-customer-profile.read-model';
 
 @QueryHandler(GetCustomerProfileQuery)
 export class GetCustomerProfileQueryHandler implements IQueryHandler<GetCustomerProfileQuery> {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetCustomerProfileQuery): Promise<CustomerProfileResponseDto> {
+  async execute(query: GetCustomerProfileQuery): Promise<GetCustomerProfileResult | null> {
     const { customerId } = query;
 
     const profile = await this.prisma.client.customerProfile.findUnique({
@@ -16,7 +15,7 @@ export class GetCustomerProfileQueryHandler implements IQueryHandler<GetCustomer
     });
 
     if (!profile) {
-      throw new NotFoundException(`Profile for customer ${customerId} not found`);
+      return null;
     }
 
     return {
