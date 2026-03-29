@@ -50,7 +50,7 @@ Cross-module communication is allowed only through the callee module's explicit 
 
 - Public Facade/API for synchronous business capabilities and command-side collaboration
 - Public Query Contract for cross-module reads via `QueryBus`, but only when the query class is part of the callee's explicit public surface
-- Public Domain Event for decoupled side effects that should happen after a successful state change
+- Public Module Event for decoupled post-commit reactions that should happen after a successful state change
 
 #### Default rule
 
@@ -62,7 +62,7 @@ Use a Public Query Contract only when all of the following are true:
 - the caller needs data, not business behavior
 - the result is naturally a read model
 
-Use a Public Domain Event only for post-commit reactions that should not be orchestrated synchronously by the caller.
+Use a Public Module Event only for post-commit reactions that should not be orchestrated synchronously by the caller.
 
 Cross-module command dispatch through `CommandBus` is not a standard boundary pattern in this codebase. If one module needs another module to perform work synchronously, call that module's public facade instead.
 
@@ -95,7 +95,7 @@ Public contracts should not expose private module internals such as repositories
 
 - "Do something" -> Public Facade/API
 - "Tell me something" -> Public Query Contract
-- "React later" -> Public Domain Event
+- "React later" -> Public Module Event
 
 #### Examples
 
@@ -125,7 +125,7 @@ Every state-changing use case has exactly one Application Service. Application S
 
 We follow Command-Query Separation. Every use case is either a Command or a Query, never both. Commands are handled by Application Services through the NestJS `CommandBus`. Queries are handled by Query Handlers through the `QueryBus`.
 
-The chaining rule is Command -> Event -> Command. A command-side Application Service does not dispatch another command directly as part of a workflow chain. It persists state, the aggregate records a Domain Event, and an Event Handler may dispatch the next command.
+The chaining rule is Command -> Event -> Command. A command-side Application Service does not dispatch another command directly as part of a workflow chain. It persists state, the aggregate records a Domain Event, and surrounding infrastructure dispatches recorded events after successful persistence so an Event Handler may dispatch the next command.
 
 Component files: [`application-service.md`](application-service.md), [`command.md`](command.md), [`query.md`](query.md)
 
@@ -155,7 +155,7 @@ Component file: [`value-object.md`](value-object.md)
 
 ### Domain Events
 
-Domain Events express that something meaningful happened in the domain. Aggregate Roots record them during state changes. They are dispatched after persistence succeeds.
+Domain Events express that something meaningful happened in the domain. Aggregate Roots record them during state changes. They are dispatched after persistence succeeds. By default they are internal to the producing module, though some may be exposed as Public Module Events through an explicit public contract.
 
 Component file: [`domain-event.md`](domain-event.md)
 
@@ -325,6 +325,6 @@ Rationale: it provides a clean, well-typed API and keeps expected failures expli
 
 ### ADL-04: EventEmitter2 for Domain Events
 
-Decision: `@nestjs/event-emitter` is used for in-process Domain Event dispatching.
+Decision: `@nestjs/event-emitter` is used as the in-process transport for post-commit Domain Event dispatching.
 
 Rationale: Domain Events in this project are in-process only. EventEmitter2 integrates cleanly with NestJS modules and dependency injection without introducing additional infrastructure.

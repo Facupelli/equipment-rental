@@ -1,3 +1,5 @@
+export { TenantRegisteredEvent } from './public/events/tenant-registered.event';
+
 export type FindActiveOwnerContractDto = {
   tenantId: string;
   ownerId: string;

@@ -1,4 +1,4 @@
-import { CommandHandler, EventBus, ICommandHandler, QueryBus } from '@nestjs/cqrs';
+import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
 import * as bcrypt from 'bcrypt';
 
 import { PrismaUnitOfWork } from 'src/core/database/prisma-unit-of-work';
@@ -8,7 +8,6 @@ import { TenantRepository } from 'src/modules/tenant/infrastructure/persistence/
 
 import { Tenant } from '../../../domain/entities/tenant.entity';
 import { CompanyNameAlreadyInUseError, EmailAlreadyInUseError } from '../../../domain/errors/tenant.errors';
-import { TenantRegisteredEvent } from '../../../domain/events/tenant-registered.event';
 import { TenantSlugService } from '../../../domain/services/tenant-slug.service';
 import { IsSlugTakenQuery } from '../../queries/is-slug-taken/is-slug-taken.query';
 import { RegisterTenantCommand } from './register-tenant.command';
@@ -25,7 +24,6 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
   constructor(
     private readonly unitOfWork: PrismaUnitOfWork,
     private readonly queryBus: QueryBus,
-    private readonly eventBus: EventBus,
     private readonly usersApi: UsersPublicApi,
   ) {}
 
@@ -45,7 +43,7 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
 
     const passwordHash = await bcrypt.hash(user.password, 10);
 
-    const created = await this.unitOfWork.runInTransaction(async (tx) => {
+    const created = await this.unitOfWork.runInTransaction(async ({ tx, events }) => {
       const tenantRepository = new TenantRepository(tx);
 
       const createdTenant = Tenant.create({
@@ -53,6 +51,7 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
         slug,
       });
       await tenantRepository.save(createdTenant);
+      events.collectFrom(createdTenant);
 
       const admin = await this.usersApi.bootstrapTenantAdmin(tx, {
         email: user.email,
@@ -65,14 +64,8 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
       return {
         tenantId: createdTenant.id,
         userId: admin.userId,
-        slug: createdTenant.slug,
-        adminEmail: user.email,
       };
     });
-
-    this.eventBus.publish(
-      new TenantRegisteredEvent(created.tenantId, created.userId, created.adminEmail, created.slug),
-    );
 
     return ok({ userId: created.userId, tenantId: created.tenantId });
   }

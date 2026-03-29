@@ -1,4 +1,8 @@
 import { randomUUID } from 'crypto';
+import { AggregateRootBase } from 'src/core/domain/aggregate-root.base';
+
+import { TenantRegisteredEvent } from '../../public/events/tenant-registered.event';
+
 import {
   InvalidTenantNameException,
   InvalidTenantSlugException,
@@ -21,14 +25,16 @@ export interface ReconstituteTenantProps {
   billingUnits: TenantBillingUnit[];
 }
 
-export class Tenant {
+export class Tenant extends AggregateRootBase {
   private constructor(
     public readonly id: string,
     public readonly name: string,
     public readonly slug: string,
     private config: TenantConfig,
     private readonly billingUnits: TenantBillingUnit[],
-  ) {}
+  ) {
+    super();
+  }
 
   // --- Factories ---
 
@@ -39,7 +45,16 @@ export class Tenant {
     if (!props.slug || props.slug.trim().length === 0) {
       throw new InvalidTenantSlugException();
     }
-    return new Tenant(randomUUID(), props.name.trim(), props.slug.trim(), TenantConfig.default(), []);
+    const tenant = new Tenant(randomUUID(), props.name.trim(), props.slug.trim(), TenantConfig.default(), []);
+
+    tenant.recordDomainEvent(
+      new TenantRegisteredEvent({
+        tenantId: tenant.id,
+        slug: tenant.slug,
+      }),
+    );
+
+    return tenant;
   }
 
   static reconstitute(props: ReconstituteTenantProps): Tenant {

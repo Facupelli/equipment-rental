@@ -20,6 +20,10 @@ export interface CanonicalLog {
   dbDurationMs?: number;
   cacheHits?: number;
   cacheMisses?: number;
+  domainEventsPublished?: number;
+  domainEventNames?: string[];
+  domainEventPublishFailures?: number;
+  domainEventHandlerFailures?: number;
 
   // --- Outcome ---
   errorCode?: string;
