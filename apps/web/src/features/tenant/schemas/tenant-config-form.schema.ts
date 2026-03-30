@@ -1,9 +1,11 @@
-import { RoundingRule } from "@repo/types";
+import { BookingMode, RoundingRule } from "@repo/types";
 import {
   updateTenantConfigSchema,
   type UpdateTenantConfigDto,
 } from "@repo/schemas";
 import { z } from "zod";
+
+const bookingModeSchema = z.enum(BookingMode);
 
 export const tenantConfigFormSchema = z.object({
   overRentalEnabled: z.boolean(),
@@ -15,6 +17,7 @@ export const tenantConfigFormSchema = z.object({
     .regex(/^[A-Z]{3}$/, "Must be a 3-letter ISO 4217 code"),
   timezone: z.string().min(1, "Timezone is required"),
   newArrivalsWindowDays: z.number().int().positive(),
+  bookingMode: bookingModeSchema,
 });
 
 export type TenantConfigFormValues = z.infer<typeof tenantConfigFormSchema>;
@@ -27,6 +30,7 @@ export const tenantConfigFormDefaults: TenantConfigFormValues = {
   defaultCurrency: "ARS",
   timezone: "UTC",
   newArrivalsWindowDays: 30,
+  bookingMode: BookingMode.INSTANT_BOOK,
 };
 
 export function tenantConfigToFormValues(config: {
@@ -39,6 +43,7 @@ export function tenantConfigToFormValues(config: {
   };
   timezone: string;
   newArrivalsWindowDays: number;
+  bookingMode: BookingMode;
 }): TenantConfigFormValues {
   return {
     overRentalEnabled: config.pricing.overRentalEnabled,
@@ -48,6 +53,7 @@ export function tenantConfigToFormValues(config: {
     defaultCurrency: config.pricing.defaultCurrency,
     timezone: config.timezone,
     newArrivalsWindowDays: config.newArrivalsWindowDays,
+    bookingMode: config.bookingMode,
   };
 }
 
@@ -64,6 +70,7 @@ export function toUpdateTenantConfigDto(
     },
     timezone: values.timezone,
     newArrivalsWindowDays: values.newArrivalsWindowDays,
+    bookingMode: values.bookingMode,
   };
 
   return updateTenantConfigSchema.parse(dto);

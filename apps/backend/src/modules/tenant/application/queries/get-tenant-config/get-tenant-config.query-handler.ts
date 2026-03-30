@@ -1,5 +1,5 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { TenantConfig } from '@repo/schemas';
+import { tenantConfigSchema, type TenantConfig } from '@repo/schemas';
 
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
@@ -18,6 +18,6 @@ export class GetTenantConfigQueryHandler implements IQueryHandler<GetTenantConfi
       return null;
     }
 
-    return tenant.config as TenantConfig;
+    return tenantConfigSchema.parse(tenant.config);
   }
 }

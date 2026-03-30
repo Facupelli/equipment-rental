@@ -1,7 +1,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { tenantConfigSchema } from '@repo/schemas';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetTenantQuery } from './get-tenant.query';
-import { TenantConfig } from '../../../domain/value-objects/tenant-config.value-object';
 import { TenantResponse } from '@repo/schemas';
 
 @QueryHandler(GetTenantQuery)
@@ -34,7 +34,7 @@ export class GetTenantQueryHandler implements IQueryHandler<GetTenantQuery, Tena
       name: tenant.name,
       slug: tenant.slug,
       createdAt: tenant.createdAt,
-      config: tenant.config as unknown as TenantConfig,
+      config: tenantConfigSchema.parse(tenant.config),
       billingUnits: tenant.billingUnits.map((tbu) => ({
         id: tbu.billingUnit.id,
         billingUnitId: tbu.billingUnit.id,

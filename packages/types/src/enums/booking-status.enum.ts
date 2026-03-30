@@ -10,3 +10,8 @@ export const BLOCKING_STATUSES: BookingStatus[] = [
   BookingStatus.RESERVED,
   BookingStatus.ACTIVE,
 ];
+
+export enum BookingMode {
+  INSTANT_BOOK = "instant-book",
+  REQUEST_TO_BOOK = "request-to-book",
+}

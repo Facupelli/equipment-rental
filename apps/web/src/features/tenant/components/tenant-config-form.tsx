@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { RoundingRule } from "@repo/types";
+import { BookingMode, RoundingRule } from "@repo/types";
 import { getRouteApi } from "@tanstack/react-router";
 import {
   tenantConfigFormSchema,
@@ -226,6 +226,40 @@ export function TenantConfigForm() {
           </h3>
 
           <div className="rounded-xl border border-border bg-card divide-y divide-border">
+            <form.Field name="bookingMode">
+              {(field) => (
+                <div className="grid grid-cols-[1fr_auto] items-start gap-8 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      Booking mode
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Choose whether customer bookings confirm immediately or
+                      wait for operator review.
+                    </p>
+                  </div>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) =>
+                      value && field.handleChange(value)
+                    }
+                  >
+                    <SelectTrigger className="w-44">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={BookingMode.INSTANT_BOOK}>
+                        Instant book
+                      </SelectItem>
+                      <SelectItem value={BookingMode.REQUEST_TO_BOOK}>
+                        Request to book
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </form.Field>
+
             {/* Timezone */}
             <form.Field name="timezone">
               {(field) => {

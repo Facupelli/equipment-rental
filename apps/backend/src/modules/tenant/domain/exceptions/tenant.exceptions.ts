@@ -49,3 +49,9 @@ export class InvalidMaxOverRentThresholdException extends Error {
     super(`maxOverRentThreshold must be a non-negative number, got ${threshold}`);
   }
 }
+
+export class InvalidBookingModeException extends Error {
+  constructor(mode: string) {
+    super(`bookingMode must be 'instant-book' or 'request-to-book', got ${mode}`);
+  }
+}

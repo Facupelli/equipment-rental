@@ -1,5 +1,6 @@
 import { RoundingRule } from "@repo/types";
 import { z } from "zod";
+import { bookingModeSchema } from "./tenant-response.schema";
 
 const roundingRuleSchema = z.enum(RoundingRule);
 
@@ -18,6 +19,7 @@ export const updateTenantConfigSchema = z.object({
   pricing: pricingPatchSchema.optional(),
   timezone: z.string().optional(),
   newArrivalsWindowDays: z.number().int().positive().optional(),
+  bookingMode: bookingModeSchema.optional(),
 });
 
 export type UpdateTenantConfigDto = z.infer<typeof updateTenantConfigSchema>;
