@@ -99,14 +99,16 @@ const rentalProductItemSchema = z.object({
   description: z.string().nullable(),
   attributes: productTypeAttributesSchema,
   includedItems: z.array(productTypeIncludedItemSchema),
-  availableCount: z.number().int().min(1),
+  availableCount: z.number().int().nonnegative(),
   category: rentalProductCategorySchema.nullable(),
   billingUnit: rentalProductBillingUnitResponseSchema,
   pricingTiers: z.array(rentalProductPricingTierResponseSchema),
 });
 
 export const getRentalProductQuerySchema = z.object({
-  locationId: z.uuid().optional(),
+  locationId: z.uuid(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
   categoryId: z.uuid().optional(),
   search: z.string().optional(),
   page: z.coerce.number().optional(),

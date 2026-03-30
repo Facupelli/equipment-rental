@@ -34,7 +34,9 @@ export type BundleItemResponse = z.infer<typeof bundleItemResponseSchema>;
 export type BundleListResponseDto = z.infer<typeof bundleListResponseSchema>;
 
 export const getBundleParamsSchema = z.object({
-  locationId: z.uuid().optional(),
+  locationId: z.uuid(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
 });
 
 export type GetCombosParams = z.infer<typeof getBundleParamsSchema>;

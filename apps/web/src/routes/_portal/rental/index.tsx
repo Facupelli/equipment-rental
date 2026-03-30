@@ -34,6 +34,8 @@ export const Route = createFileRoute("/_portal/rental/")({
     categoryId: search.categoryId,
     searchQuery: search.search,
     locationId: search.locationId,
+    startDate: search.startDate,
+    endDate: search.endDate,
   }),
   loader: async ({ context: { queryClient }, deps }) => {
     const locations = await queryClient.ensureQueryData(locationQueries.list());
@@ -51,11 +53,29 @@ export const Route = createFileRoute("/_portal/rental/")({
 
     const locationId = deps.locationId;
 
-    queryClient.prefetchQuery(rentalQueries.bundles({ locationId }));
+    if (locationId && deps.startDate && deps.endDate) {
+      queryClient.prefetchQuery(
+        rentalQueries.bundles({
+          locationId,
+          startDate: deps.startDate,
+          endDate: deps.endDate,
+        }),
+      );
+    }
+
     queryClient.prefetchQuery(rentalQueries.newArrivals({ locationId }));
 
-    if (locationId) {
-      queryClient.prefetchQuery(rentalQueries.products(deps));
+    if (locationId && deps.startDate && deps.endDate) {
+      queryClient.prefetchQuery(
+        rentalQueries.products({
+          locationId,
+          startDate: deps.startDate,
+          endDate: deps.endDate,
+          categoryId: deps.categoryId,
+          search: deps.searchQuery,
+          page: deps.page,
+        }),
+      );
     }
   },
   component: RentalPage,
@@ -90,7 +110,11 @@ function RentalPage() {
           />
           <SectionErrorBoundary message="Los combos destacados no pudieron cargarse.">
             <Suspense fallback={<FeaturedBundlesSkeleton />}>
-              <FeaturedBundles locationId={search.locationId} />
+              <FeaturedBundles
+                locationId={search.locationId}
+                startDate={search.startDate}
+                endDate={search.endDate}
+              />
             </Suspense>
           </SectionErrorBoundary>
         </section>

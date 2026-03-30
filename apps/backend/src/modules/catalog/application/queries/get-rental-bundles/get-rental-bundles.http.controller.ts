@@ -15,6 +15,8 @@ export class GetRentalBundlesHttpController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() dto: GetRentalBundlesRequestDto,
   ): Promise<GetRentalBundlesResponseDto> {
-    return await this.queryBus.execute(new GetRentalBundlesQuery(user.tenantId, dto.locationId));
+    return await this.queryBus.execute(
+      new GetRentalBundlesQuery(user.tenantId, dto.locationId, dto.startDate, dto.endDate),
+    );
   }
 }

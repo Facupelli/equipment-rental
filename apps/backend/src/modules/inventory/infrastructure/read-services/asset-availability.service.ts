@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { formatPostgresRange } from 'src/core/utils/postgres-range.util';
 import { Prisma } from 'src/generated/prisma/client';
-import { FindAvailableParams } from '../../inventory.contracts';
+import { FindAvailableParams, GetAvailableAssetCountsParams } from '../../inventory.contracts';
 
 @Injectable()
 export class AssetAvailabilityService {
@@ -60,6 +60,32 @@ export class AssetAvailabilityService {
     `;
 
     return rows.map((r) => r.id);
+  }
+
+  async getAvailableAssetCountsByProductType(params: GetAvailableAssetCountsParams): Promise<Map<string, number>> {
+    if (params.productTypeIds.length === 0) {
+      return new Map();
+    }
+
+    const tstzrange = formatPostgresRange(params.period);
+
+    const rows = await this.prisma.client.$queryRaw<{ productTypeId: string; availableCount: bigint }[]>`
+      SELECT a.product_type_id AS "productTypeId", COUNT(*)::bigint AS "availableCount"
+      FROM assets a
+      WHERE a.product_type_id IN (${Prisma.join(params.productTypeIds)})
+        AND a.location_id     = ${params.locationId}
+        AND a.is_active       = true
+        AND a.deleted_at      IS NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM asset_assignments aa
+          WHERE aa.asset_id = a.id
+            AND aa.period && ${tstzrange}::tstzrange
+        )
+      GROUP BY a.product_type_id
+    `;
+
+    return new Map(rows.map((row) => [row.productTypeId, Number(row.availableCount)]));
   }
 
   // Keep the single-asset convenience method as a thin wrapper so existing

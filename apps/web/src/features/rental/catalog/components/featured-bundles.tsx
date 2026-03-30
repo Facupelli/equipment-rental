@@ -11,11 +11,35 @@ import clsx from "clsx";
 
 interface FeaturedBundlesProps {
   locationId?: string;
+  startDate?: Date;
+  endDate?: Date;
 }
 
-export function FeaturedBundles({ locationId }: FeaturedBundlesProps) {
+export function FeaturedBundles({
+  locationId,
+  startDate,
+  endDate,
+}: FeaturedBundlesProps) {
+  if (!locationId || !startDate || !endDate) {
+    return null;
+  }
+
+  return (
+    <FeaturedBundlesResults
+      locationId={locationId}
+      startDate={startDate}
+      endDate={endDate}
+    />
+  );
+}
+
+function FeaturedBundlesResults({
+  locationId,
+  startDate,
+  endDate,
+}: Required<FeaturedBundlesProps>) {
   const { data: bundles } = useSuspenseQuery(
-    rentalQueries.bundles({ locationId }),
+    rentalQueries.bundles({ locationId, startDate, endDate }),
   );
 
   if (!bundles.length) {

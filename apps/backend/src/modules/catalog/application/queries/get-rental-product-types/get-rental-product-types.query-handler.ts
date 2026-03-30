@@ -1,7 +1,11 @@
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetRentalProductTypesQuery } from './get-rental-product-types.query';
 import { Prisma } from 'src/generated/prisma/client';
+import {
+  AvailableAssetCountReadModel,
+  GetAvailableAssetCountsQuery,
+} from 'src/modules/inventory/public/queries/get-available-asset-counts.query';
 
 type RentalIncludedItemReadModel = {
   name: string;
@@ -42,10 +46,13 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
   GetRentalProductTypesQuery,
   PaginatedReadModel<RentalProductReadModel>
 > {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   async execute(query: GetRentalProductTypesQuery): Promise<PaginatedReadModel<RentalProductReadModel>> {
-    const { tenantId, locationId, categoryId, search } = query;
+    const { tenantId, locationId, startDate, endDate, categoryId, search } = query;
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const offset = (page - 1) * limit;
@@ -65,19 +72,6 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
           description: true,
           includedItems: true,
           attributes: true,
-
-          // Count only assets at the requested location that are active.
-          _count: {
-            select: {
-              assets: {
-                where: {
-                  locationId,
-                  isActive: true,
-                  deletedAt: null,
-                },
-              },
-            },
-          },
 
           category: {
             select: { id: true, name: true },
@@ -107,6 +101,17 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
       this.prisma.client.productType.count({ where }),
     ]);
 
+    const availabilityRows = await this.queryBus.execute<GetAvailableAssetCountsQuery, AvailableAssetCountReadModel[]>(
+      new GetAvailableAssetCountsQuery(
+        locationId,
+        startDate,
+        endDate,
+        rawProducts.map((product) => product.id),
+      ),
+    );
+
+    const availableCounts = new Map(availabilityRows.map((row) => [row.productTypeId, row.availableCount]));
+
     const items: RentalProductReadModel[] = rawProducts.map((product) => {
       const locationTiers = product.pricingTiers.filter((t) => t.locationId === locationId);
       const resolvedTiers =
@@ -118,7 +123,7 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
         // todo fix when image migration is not null
         imageUrl: product.imageUrl ?? '',
         description: product.description,
-        availableCount: product._count.assets,
+        availableCount: availableCounts.get(product.id) ?? 0,
         category: product.category ?? null,
         attributes: product.attributes as Record<string, string>,
         includedItems: product.includedItems as RentalIncludedItemReadModel[],
@@ -166,7 +171,8 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
       // Case-insensitive name search.
       ...(search ? { name: { contains: search, mode: Prisma.QueryMode.insensitive } } : {}),
 
-      // Only products that have at least one active asset at this location.
+      // Only products that have at least one active asset at the requested location. Availability
+      // is resolved separately so blocked inventory can still yield 0.
       assets: {
         some: {
           locationId,

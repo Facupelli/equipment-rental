@@ -8,3 +8,9 @@ export type FindAvailableParams = {
   assetId?: string;
   excludeAssetIds?: string[];
 };
+
+export type GetAvailableAssetCountsParams = {
+  productTypeIds: string[];
+  locationId: string;
+  period: DateRange;
+};

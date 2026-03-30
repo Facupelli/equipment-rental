@@ -46,17 +46,17 @@ export const rentalKeys = {
 };
 
 export const rentalQueries = {
-  products: (params: GetRentalProductTypesQuery = {}) =>
+  products: (params: GetRentalProductTypesQuery) =>
     queryOptions<PaginatedRentalProducts, ProblemDetailsError>({
       queryKey: rentalKeys.product(params),
       queryFn: () => getRentalProducts({ data: params }),
     }),
-  newArrivals: (params: GetNewArrivalsParams = {}) =>
+  newArrivals: (params: GetNewArrivalsParams) =>
     queryOptions<NewArrivalListResponseDto, ProblemDetailsError>({
       queryKey: rentalKeys.newArrival(params),
       queryFn: () => getNewArrivals({ data: params }),
     }),
-  bundles: (params: GetCombosParams = {}) =>
+  bundles: (params: GetCombosParams) =>
     queryOptions<BundleListResponseDto, ProblemDetailsError>({
       queryKey: rentalKeys.bundle(params),
       queryFn: () => getRentalBundles({ data: params }),
@@ -92,7 +92,7 @@ type CartPricePreviewQueryOptions<TData = CartPriceResult> = Omit<
 // -----------------------------------------------------
 
 export function useRentalProducts<TData = PaginatedRentalProducts>(
-  params: GetRentalProductTypesQuery = {},
+  params: GetRentalProductTypesQuery,
   options?: RentalProductsQueryOptions<TData>,
 ) {
   const { queryKey, queryFn } = rentalQueries.products(params);
@@ -106,7 +106,7 @@ export function useRentalProducts<TData = PaginatedRentalProducts>(
 }
 
 export function useNewArrivals<TData = NewArrivalListResponseDto>(
-  params: GetNewArrivalsParams = {},
+  params: GetNewArrivalsParams,
   options?: NewArrivalsQueryOptions<TData>,
 ) {
   const { queryKey, queryFn } = rentalQueries.newArrivals(params);
@@ -120,7 +120,7 @@ export function useNewArrivals<TData = NewArrivalListResponseDto>(
 }
 
 export function useRentalBundles<TData = BundleListResponseDto>(
-  params: GetCombosParams = {},
+  params: GetCombosParams,
   options?: RentalBundlesQueryOptions<TData>,
 ) {
   const { queryKey, queryFn } = rentalQueries.bundles(params);

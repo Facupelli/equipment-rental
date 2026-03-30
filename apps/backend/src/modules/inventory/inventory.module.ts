@@ -13,12 +13,18 @@ import { CatalogModule } from '../catalog/catalog.module';
 import { AssetSerialNumberService } from './infrastructure/read-services/asset-serial-number.service';
 import { GetAssetsHttpController } from './application/queries/get-assets/get-assets.http.controller';
 import { GetAssetByIdHttpController } from './application/queries/get-asset-by-id/get-asset-by-id.http.controller';
+import { GetAvailableAssetCountsQueryHandler } from './application/queries/get-available-asset-counts/get-available-asset-counts.query-handler';
 
 const repositories = [AssetRepository, AssetAssignmentRepository];
 
 const commandHandlers = [CreateAssetService];
 
-const queryHandlers = [FindAssetByIdQueryHandler, GetAssetByIdQueryHandler, GetAssetsQueryHandler];
+const queryHandlers = [
+  FindAssetByIdQueryHandler,
+  GetAssetByIdQueryHandler,
+  GetAssetsQueryHandler,
+  GetAvailableAssetCountsQueryHandler,
+];
 
 @Module({
   imports: [CatalogModule],

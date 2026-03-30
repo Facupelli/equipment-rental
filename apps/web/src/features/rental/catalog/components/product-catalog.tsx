@@ -24,6 +24,14 @@ interface ProductCatalogProps {
 }
 
 export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
+  if (!search.locationId || !search.startDate || !search.endDate) {
+    return null;
+  }
+
+  return <ProductCatalogResults search={search} onPageChange={onPageChange} />;
+}
+
+function ProductCatalogResults({ search, onPageChange }: ProductCatalogProps) {
   const { data: products } = useSuspenseQuery(rentalQueries.products(search));
 
   const currentPage = search.page ?? 1;
@@ -52,6 +60,7 @@ export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
 
 function ProductCard({ product }: { product: RentalProductResponse }) {
   const {
+    isAvailable,
     isInCart,
     quantity,
     maxQuantity,
@@ -135,8 +144,8 @@ function ProductCard({ product }: { product: RentalProductResponse }) {
             </Button>
           </div>
         ) : (
-          <Button size="sm" onClick={handleAdd}>
-            Agregar
+          <Button size="sm" onClick={handleAdd} disabled={!isAvailable}>
+            {isAvailable ? "Agregar" : "Sin disponibilidad"}
           </Button>
         )}
       </CardFooter>

@@ -1,13 +1,16 @@
 import useDebounce from "@/shared/hooks/use-debounce";
-import { getRentalProductQuerySchema } from "@repo/schemas";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import z from "zod";
 
-export const rentalPageSearchSchema = getRentalProductQuerySchema.extend({
+export const rentalPageSearchSchema = z.object({
+  locationId: z.string().optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
-  locationId: z.string().optional(),
+  categoryId: z.string().optional(),
+  search: z.string().optional(),
+  page: z.coerce.number().optional(),
+  limit: z.coerce.number().optional(),
 });
 
 export type RentalPageSearch = z.infer<typeof rentalPageSearchSchema>;

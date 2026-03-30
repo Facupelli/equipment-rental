@@ -18,7 +18,16 @@ export class GetRentalProductTypesHttpController {
     @Query() dto: GetRentalProductTypesRequestDto,
   ): Promise<GetRentalProductTypesResponseDto> {
     return await this.queryBus.execute(
-      new GetRentalProductTypesQuery(user.tenantId, dto.locationId, dto.categoryId, dto.search, dto.page, dto.limit),
+      new GetRentalProductTypesQuery(
+        user.tenantId,
+        dto.locationId,
+        dto.startDate,
+        dto.endDate,
+        dto.categoryId,
+        dto.search,
+        dto.page,
+        dto.limit,
+      ),
     );
   }
 }

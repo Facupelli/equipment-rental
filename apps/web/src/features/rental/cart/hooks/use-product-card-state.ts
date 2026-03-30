@@ -12,8 +12,13 @@ export function useProductCardState(product: RentalProductResponse) {
   const isInCart = cartItem !== undefined;
   const quantity = cartItem?.quantity ?? 0;
   const maxQuantity = product.availableCount;
+  const isAvailable = maxQuantity > 0;
 
   function handleAdd() {
+    if (!isAvailable) {
+      return;
+    }
+
     addProduct({
       productTypeId: product.id,
       name: product.name,
@@ -34,6 +39,7 @@ export function useProductCardState(product: RentalProductResponse) {
   }
 
   return {
+    isAvailable,
     isInCart,
     quantity,
     maxQuantity,
