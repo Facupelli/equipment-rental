@@ -1,5 +1,12 @@
 import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
-import { AssignmentSource, AssignmentType, OrderItemType, OrderStatus, ScheduleSlotType } from '@repo/types';
+import {
+  AssignmentSource,
+  AssignmentType,
+  BookingMode,
+  OrderItemType,
+  OrderStatus,
+  ScheduleSlotType,
+} from '@repo/types';
 import Decimal from 'decimal.js';
 import { err, ok, Result } from 'neverthrow';
 
@@ -58,7 +65,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
       return err(resolvedCoupon.error);
     }
 
-    const period = await this.derivePeriod(command);
+    const { period, bookingMode } = await this.deriveBookingContext(command);
     const resolvedItems = await this.itemResolver.resolve(command, period, resolvedCoupon.value);
 
     return this.prisma.client.$transaction(async (tx) => {
@@ -66,6 +73,8 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
         tenantId: command.tenantId,
         locationId: command.locationId,
         customerId: command.customerId,
+        period,
+        status: bookingMode === BookingMode.REQUEST_TO_BOOK ? OrderStatus.PENDING_REVIEW : OrderStatus.CONFIRMED,
       });
 
       const demandUnits = buildDemandUnits(resolvedItems);
@@ -81,7 +90,6 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
       );
       const pendingAssignments = this.attachResolvedItemsToOrder(order, resolvedItems, demandUnits, contractByAssetId);
 
-      order.transitionTo(OrderStatus.SOURCED);
       await this.orderRepository.save(order, tx);
 
       if (resolvedCoupon.value) {
@@ -175,7 +183,9 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
     return ok(resolvedCoupon.value);
   }
 
-  private async derivePeriod(command: CreateOrderCommand): Promise<DateRange> {
+  private async deriveBookingContext(
+    command: CreateOrderCommand,
+  ): Promise<{ period: DateRange; bookingMode: BookingMode }> {
     const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
       new GetTenantConfigQuery(command.tenantId),
     );
@@ -184,13 +194,16 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
       throw new TenantConfigNotFoundException(command.tenantId);
     }
 
-    return DateRange.fromLocalSlots(
-      command.period.start,
-      command.pickupTime,
-      command.period.end,
-      command.returnTime,
-      tenantConfig.timezone,
-    );
+    return {
+      period: DateRange.fromLocalSlots(
+        command.period.start,
+        command.pickupTime,
+        command.period.end,
+        command.returnTime,
+        tenantConfig.timezone,
+      ),
+      bookingMode: tenantConfig.bookingMode,
+    };
   }
 
   private attachResolvedItemsToOrder(

@@ -13,9 +13,10 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 enum OrderStatus {
-  PENDING_SOURCING
-  SOURCED
+  PENDING_REVIEW
   CONFIRMED
+  REJECTED
+  EXPIRED
   ACTIVE
   COMPLETED
   CANCELLED
@@ -495,9 +496,11 @@ model Order {
   locationId   String      @map("location_id")
   customerId   String?     @map("customer_id")
   couponId     String?  @map("coupon_id")
-  status       OrderStatus @default(PENDING_SOURCING)
+  status       OrderStatus @default(CONFIRMED)
   orderNumber  Int         @map("order_number") @default(0)
   notes        String?
+  periodStart  DateTime    @map("period_start")
+  periodEnd    DateTime    @map("period_end")
 
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
@@ -511,6 +514,7 @@ model Order {
   couponRedemption CouponRedemption?
 
   @@index([tenantId, locationId, status, createdAt(sort: Desc)])
+  @@index([tenantId, locationId, periodStart, periodEnd])
   @@index([tenantId, deletedAt])
   @@unique([tenantId, orderNumber])
   @@map("orders")

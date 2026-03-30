@@ -5,6 +5,8 @@ import { PrismaService } from 'src/core/database/prisma.service';
 import { OrderStatus } from '@repo/types';
 import { GetOrdersScheduleResponseDto } from './get-orders-schedule.response.dto';
 
+const OPERATIONAL_SCHEDULE_STATUSES = [OrderStatus.CONFIRMED, OrderStatus.ACTIVE] as const;
+
 type RawOrderRow = {
   id: string;
   order_number: number;
@@ -75,7 +77,7 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<
         AND
         o.location_id = ${locationId}
         AND o.deleted_at IS NULL
-        AND o.status != ${OrderStatus.CANCELLED}
+        AND o.status IN (${OPERATIONAL_SCHEDULE_STATUSES[0]}, ${OPERATIONAL_SCHEDULE_STATUSES[1]})
         AND lower(aa.period)::date BETWEEN ${from}::date AND ${to}::date
     `;
   }
@@ -103,7 +105,7 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<
         AND
         o.location_id = ${locationId}
         AND o.deleted_at IS NULL
-        AND o.status != ${OrderStatus.CANCELLED}
+        AND o.status IN (${OPERATIONAL_SCHEDULE_STATUSES[0]}, ${OPERATIONAL_SCHEDULE_STATUSES[1]})
         AND upper(aa.period)::date BETWEEN ${from}::date AND ${to}::date
     `;
   }

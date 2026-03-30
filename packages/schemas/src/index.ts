@@ -12,6 +12,7 @@ export * from "./inventory/asset-response.schema";
 export * from "./order/order.schema";
 export * from "./order/get-orders-schedule-response.schema";
 export * from "./order/get-order-by-id-response.schema";
+export * from "./order/get-pending-review-orders.schema";
 export * from "./pricing/pricing-tier.schema";
 export * from "./pricing/pricing-rule.schema";
 export * from "./pricing/coupon.schema";

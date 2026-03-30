@@ -6,6 +6,8 @@ import { GetCalendarDotsResponseDto } from './get-calendar-dots.response.dto';
 
 type RawDateRow = { date: string };
 
+const OPERATIONAL_CALENDAR_STATUSES = [OrderStatus.CONFIRMED, OrderStatus.ACTIVE] as const;
+
 @QueryHandler(GetCalendarDotsQuery)
 export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDotsQuery, GetCalendarDotsResponseDto> {
   constructor(private readonly prisma: PrismaService) {}
@@ -40,7 +42,7 @@ export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDot
         AND
         o.location_id = ${locationId}
         AND o.deleted_at IS NULL
-        AND o.status != ${OrderStatus.CANCELLED}
+        AND o.status IN (${OPERATIONAL_CALENDAR_STATUSES[0]}, ${OPERATIONAL_CALENDAR_STATUSES[1]})
         AND lower(aa.period)::date BETWEEN ${from}::date AND ${to}::date
     `;
   }
@@ -61,7 +63,7 @@ export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDot
         AND
         o.location_id = ${locationId}
         AND o.deleted_at IS NULL
-        AND o.status != ${OrderStatus.CANCELLED}
+        AND o.status IN (${OPERATIONAL_CALENDAR_STATUSES[0]}, ${OPERATIONAL_CALENDAR_STATUSES[1]})
         AND upper(aa.period)::date BETWEEN ${from}::date AND ${to}::date
     `;
   }

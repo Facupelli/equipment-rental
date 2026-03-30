@@ -30,17 +30,18 @@ export class OrderRepository {
     return OrderMapper.toDomain(raw);
   }
 
-  async save(order: Order, tx: PrismaTransactionClient): Promise<string> {
+  async save(order: Order, tx?: PrismaTransactionClient): Promise<string> {
+    const client = tx ?? this.prisma.client;
     const { orderRow, itemRows, snapshotRows, snapshotComponentRows, splitRows } = OrderMapper.toPersistence(order);
 
-    await tx.order.upsert({
+    await client.order.upsert({
       where: { id: orderRow.id },
       create: orderRow,
       update: orderRow,
     });
 
     for (const item of itemRows) {
-      await tx.orderItem.upsert({
+      await client.orderItem.upsert({
         where: { id: item.id },
         create: item,
         update: item,
@@ -48,7 +49,7 @@ export class OrderRepository {
     }
 
     for (const snapshot of snapshotRows) {
-      await tx.bundleSnapshot.upsert({
+      await client.bundleSnapshot.upsert({
         where: { id: snapshot.id },
         create: snapshot,
         update: snapshot,
@@ -56,7 +57,7 @@ export class OrderRepository {
     }
 
     for (const component of snapshotComponentRows) {
-      await tx.bundleSnapshotComponent.upsert({
+      await client.bundleSnapshotComponent.upsert({
         where: { id: component.id },
         create: component,
         update: component,
@@ -66,7 +67,7 @@ export class OrderRepository {
     // status is explicitly included in update — splits transition from PENDING to VOID
     // when an item is removed or an order is cancelled
     for (const split of splitRows) {
-      await tx.orderItemOwnerSplit.upsert({
+      await client.orderItemOwnerSplit.upsert({
         where: { id: split.id },
         create: split,
         update: { status: split.status },

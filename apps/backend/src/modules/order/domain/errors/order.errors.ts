@@ -1,4 +1,5 @@
 import { DomainError } from 'src/core/exceptions/domain.error';
+import { OrderStatus } from '@repo/types';
 
 export class OrderError extends DomainError {}
 
@@ -35,6 +36,18 @@ export class ProductTypeNotFoundError extends OrderError {
 export class BundleNotFoundError extends OrderError {
   constructor(bundleId: string) {
     super(`Bundle "${bundleId}" was not found for order creation.`);
+  }
+}
+
+export class OrderNotFoundError extends OrderError {
+  constructor(orderId: string) {
+    super(`Order "${orderId}" was not found.`);
+  }
+}
+
+export class OrderStatusTransitionNotAllowedError extends OrderError {
+  constructor(from: OrderStatus, to: OrderStatus) {
+    super(`Cannot transition order from '${from}' to '${to}'.`);
   }
 }
 

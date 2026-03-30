@@ -1,6 +1,7 @@
 import { JsonValue } from '@prisma/client/runtime/client';
 import { ContractBasis, OrderStatus, OrderItemType } from '@repo/types';
 import Decimal from 'decimal.js';
+import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
@@ -59,6 +60,8 @@ type OrderRow = {
   tenantId: string;
   locationId: string;
   customerId: string | null;
+  periodStart: Date;
+  periodEnd: Date;
   status: string;
   notes: string | null;
   items: OrderItemRow[];
@@ -123,6 +126,7 @@ export class OrderMapper {
       tenantId: row.tenantId,
       locationId: row.locationId,
       customerId: row.customerId,
+      period: DateRange.create(row.periodStart, row.periodEnd),
       status: row.status as OrderStatus,
       notes: row.notes,
       items,
@@ -135,6 +139,8 @@ export class OrderMapper {
       tenantId: order.tenantId,
       locationId: order.locationId,
       customerId: order.customerId,
+      periodStart: order.currentPeriod.start,
+      periodEnd: order.currentPeriod.end,
       status: order.currentStatus,
       notes: order.currentNotes,
     };
