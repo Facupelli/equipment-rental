@@ -1,9 +1,16 @@
 import Decimal from 'decimal.js';
 
-import { BundleOrderMetaDto } from 'src/modules/catalog/catalog.public-api';
+import {
+  BundleBookingEligibilityDto,
+  BundleInactiveForBookingError,
+  BundleNotBookableAtLocationError,
+  ProductTypeInactiveForBookingError,
+  ProductTypeNotBookableAtLocationError,
+} from 'src/modules/catalog/catalog.public-api';
 import { CouponNotFoundError, CouponValidationError, PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import {
+  InvalidBookingLocationError,
   BundleNotFoundError,
   ConflictGroup,
   InvalidPickupSlotError,
@@ -29,7 +36,7 @@ export type ResolvedProductItem = {
 export type ResolvedBundleItem = {
   type: 'BUNDLE';
   bundleId: string;
-  bundle: BundleOrderMetaDto;
+  bundle: BundleBookingEligibilityDto;
   locationId: string;
   period: DateRange;
   currency: string;
@@ -54,8 +61,13 @@ export type CreateOrderError =
   | InvalidPickupSlotError
   | InvalidReturnSlotError
   | NoActiveContractForAssetError
+  | InvalidBookingLocationError
   | ProductTypeNotFoundError
   | BundleNotFoundError
+  | ProductTypeInactiveForBookingError
+  | BundleInactiveForBookingError
+  | ProductTypeNotBookableAtLocationError
+  | BundleNotBookableAtLocationError
   | CouponNotFoundError
   | CouponValidationError;
 

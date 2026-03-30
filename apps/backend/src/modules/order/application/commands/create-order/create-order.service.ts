@@ -14,10 +14,20 @@ import { err, ok, Result } from 'neverthrow';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { GetLocationScheduleSlotsQuery } from 'src/modules/tenant/public/queries/get-location-schedule-slots.query';
+import {
+  GetLocationContextQuery,
+  LocationContextReadModel,
+} from 'src/modules/tenant/public/queries/get-location-context.query';
 import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 import { PricingPublicApi, ResolvedCouponDto } from 'src/modules/pricing/pricing.public-api';
 import { OrderRepository } from 'src/modules/order/infrastructure/persistence/repositories/order.repository';
 import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
+import {
+  BundleInactiveForBookingError,
+  BundleNotBookableAtLocationError,
+  ProductTypeInactiveForBookingError,
+  ProductTypeNotBookableAtLocationError,
+} from 'src/modules/catalog/catalog.public-api';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
@@ -31,9 +41,12 @@ import { CreateOrderOwnerContractResolver } from './create-order-owner-contract-
 import { toPriceSnapshot } from './create-order-pricing-snapshot.mapper';
 import {
   InvalidPickupSlotError,
+  InvalidBookingLocationError,
   InvalidReturnSlotError,
+  BundleNotFoundError,
   OrderItemUnavailableError,
   OrderMustContainItemsError,
+  ProductTypeNotFoundError,
 } from '../../../domain/errors/order.errors';
 import { TenantConfigNotFoundException } from '../../../domain/exceptions/order.exceptions';
 
@@ -55,6 +68,11 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
       return err(new OrderMustContainItemsError());
     }
 
+    const locationValidation = await this.validateLocation(command);
+    if (locationValidation.isErr()) {
+      return err(locationValidation.error);
+    }
+
     const slotValidation = await this.validateSlots(command);
     if (slotValidation.isErr()) {
       return err(slotValidation.error);
@@ -67,7 +85,24 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
     }
 
     const { period, bookingMode } = await this.deriveBookingContext(command);
-    const resolvedItems = await this.itemResolver.resolve(command, period, resolvedCoupon.value);
+
+    let resolvedItems: ResolvedItem[];
+    try {
+      resolvedItems = await this.itemResolver.resolve(command, period, resolvedCoupon.value);
+    } catch (error) {
+      if (
+        error instanceof ProductTypeNotFoundError ||
+        error instanceof BundleNotFoundError ||
+        error instanceof ProductTypeInactiveForBookingError ||
+        error instanceof BundleInactiveForBookingError ||
+        error instanceof ProductTypeNotBookableAtLocationError ||
+        error instanceof BundleNotBookableAtLocationError
+      ) {
+        return err(error as CreateOrderError);
+      }
+
+      throw error;
+    }
 
     return this.prisma.client.$transaction(async (tx) => {
       const order = Order.create({
@@ -135,6 +170,18 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
 
       return ok(order.id);
     });
+  }
+
+  private async validateLocation(command: CreateOrderCommand): Promise<Result<void, InvalidBookingLocationError>> {
+    const location = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+      new GetLocationContextQuery(command.tenantId, command.locationId),
+    );
+
+    if (!location) {
+      return err(new InvalidBookingLocationError(command.locationId));
+    }
+
+    return ok(undefined);
   }
 
   private async validateSlots(

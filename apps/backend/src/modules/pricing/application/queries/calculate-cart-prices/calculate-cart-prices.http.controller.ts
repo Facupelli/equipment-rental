@@ -1,10 +1,19 @@
-import { BadRequestException, Body, Controller, HttpCode, HttpStatus, NotFoundException, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Post, UseGuards } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { Result } from 'neverthrow';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { ProblemException } from 'src/core/exceptions/problem.exception';
+import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import {
+  BundleInactiveForBookingError,
+  BundleNotBookableAtLocationError,
+  ProductTypeInactiveForBookingError,
+  ProductTypeNotBookableAtLocationError,
+} from 'src/modules/catalog/catalog.public-api';
+import {
   PricingBundleNotFoundError,
+  PricingInvalidBookingLocationError,
   PricingPeriodInvalidError,
   PricingProductTypeNotFoundError,
 } from '../../../domain/errors/pricing.errors';
@@ -13,6 +22,7 @@ import { CalculateCartPricesError, CartPriceResult } from './calculate-cart-pric
 import { CalculateCartPricesRequestDto } from './calculate-cart-prices.request.dto';
 import { CalculateCartPricesResponseDto } from './calculate-cart-prices.response.dto';
 
+@UseGuards(CustomerOnlyGuard)
 @Controller('pricing')
 export class CalculateCartPricesHttpController {
   constructor(private readonly queryBus: QueryBus) {}
@@ -43,11 +53,43 @@ export class CalculateCartPricesHttpController {
       const error = result.error;
 
       if (error instanceof PricingPeriodInvalidError) {
-        throw new BadRequestException(error.message);
+        throw new ProblemException(
+          HttpStatus.BAD_REQUEST,
+          'Invalid Rental Period',
+          error.message,
+          'errors://invalid-rental-period',
+        );
+      }
+
+      if (error instanceof PricingInvalidBookingLocationError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Invalid Booking Context',
+          error.message,
+          'errors://invalid-booking-context',
+        );
       }
 
       if (error instanceof PricingProductTypeNotFoundError || error instanceof PricingBundleNotFoundError) {
         throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof ProductTypeInactiveForBookingError || error instanceof BundleInactiveForBookingError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Inactive Catalog Item',
+          error.message,
+          'errors://inactive-catalog-item',
+        );
+      }
+
+      if (error instanceof ProductTypeNotBookableAtLocationError || error instanceof BundleNotBookableAtLocationError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Invalid Booking Context',
+          error.message,
+          'errors://invalid-booking-context',
+        );
       }
 
       throw error;

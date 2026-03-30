@@ -1,9 +1,16 @@
-import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Post, UseGuards } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ProblemException } from 'src/core/exceptions/problem.exception';
+import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
+import {
+  BundleInactiveForBookingError,
+  BundleNotBookableAtLocationError,
+  ProductTypeInactiveForBookingError,
+  ProductTypeNotBookableAtLocationError,
+} from 'src/modules/catalog/catalog.public-api';
 import { CouponNotFoundError, CouponValidationError } from 'src/modules/pricing/pricing.public-api';
 
 import { CreateOrderCommand } from './create-order.command';
@@ -11,6 +18,7 @@ import { CreateOrderRequestDto } from './create-order.request.dto';
 import { CreateOrderResponseDto } from './create-order.response.dto';
 import {
   BundleNotFoundError,
+  InvalidBookingLocationError,
   InvalidPickupSlotError,
   InvalidReturnSlotError,
   OrderMustContainItemsError,
@@ -18,6 +26,7 @@ import {
   ProductTypeNotFoundError,
 } from '../../../domain/errors/order.errors';
 
+@UseGuards(CustomerOnlyGuard)
 @Controller('orders')
 export class CreateOrderHttpController {
   constructor(private readonly commandBus: CommandBus) {}
@@ -32,7 +41,7 @@ export class CreateOrderHttpController {
       new CreateOrderCommand(
         user.tenantId,
         dto.locationId,
-        dto.customerId,
+        user.id,
         { start: new Date(dto.periodStart), end: new Date(dto.periodEnd) },
         dto.pickupTime,
         dto.returnTime,
@@ -81,6 +90,15 @@ export class CreateOrderHttpController {
         );
       }
 
+      if (error instanceof InvalidBookingLocationError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Invalid Booking Context',
+          error.message,
+          'errors://invalid-booking-context',
+        );
+      }
+
       if (error instanceof CouponNotFoundError) {
         throw new ProblemException(
           HttpStatus.UNPROCESSABLE_ENTITY,
@@ -97,6 +115,24 @@ export class CreateOrderHttpController {
           error.message,
           'errors://coupon-validation-failed',
           { reason: error.reason },
+        );
+      }
+
+      if (error instanceof ProductTypeInactiveForBookingError || error instanceof BundleInactiveForBookingError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Inactive Catalog Item',
+          error.message,
+          'errors://inactive-catalog-item',
+        );
+      }
+
+      if (error instanceof ProductTypeNotBookableAtLocationError || error instanceof BundleNotBookableAtLocationError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Invalid Booking Context',
+          error.message,
+          'errors://invalid-booking-context',
         );
       }
 

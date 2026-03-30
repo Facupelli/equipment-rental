@@ -21,6 +21,7 @@ import { GetLocationSchedulesQueryHandler } from './location/application/queries
 import { AddScheduleToLocationCommandHandler } from './location/application/commands/add-schedule-to-location/add-schedule-to-location.command-handler';
 import { BulkAddSchedulesToLocationCommandHandler } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command-handler';
 import { GetLocationScheduleSlotsQueryHandler } from './location/application/queries/get-location-schedule-slots/get-location-schedule-slots.query-handler';
+import { GetLocationContextQueryHandler } from './location/application/queries/get-location-context/get-location-context.query-handler';
 import { GetOwnerQueryHandler } from './owner/application/queries/get-owner/get-owner.query-handler';
 import { CreateOwnerContractCommandHandler } from './owner/application/commands/create-owner-contract/create-owner-contract.command-handler';
 import { OwnerContractRepository } from './owner/infrastructure/persistence/repositories/owner-contract.repository';
@@ -69,6 +70,7 @@ const queryHandlers = [
   FindActiveContractForScopeQueryHandler,
   // location
   GetLocationsQueryHandler,
+  GetLocationContextQueryHandler,
   GetLocationScheduleSlotsQueryHandler,
   GetLocationSchedulesQueryHandler,
   // internal

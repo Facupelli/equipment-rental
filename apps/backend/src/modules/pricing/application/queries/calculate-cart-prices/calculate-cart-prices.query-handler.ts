@@ -1,14 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { err, ok, Result } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { Money } from 'src/core/domain/value-objects/money.value-object';
+import {
+  BundleInactiveForBookingError,
+  BundleNotBookableAtLocationError,
+  CatalogPublicApi,
+  ProductTypeInactiveForBookingError,
+  ProductTypeNotBookableAtLocationError,
+} from 'src/modules/catalog/catalog.public-api';
+import {
+  GetLocationContextQuery,
+  LocationContextReadModel,
+} from 'src/modules/tenant/public/queries/get-location-context.query';
 import { PricingPublicApi } from '../../../pricing.public-api';
 import { CalculateCartPricesQuery, CartQueryProductItem } from './calculate-cart-prices.query';
-import { PricingComputationReadService } from '../../../infrastructure/read-services/pricing-computation-read.service';
 import Decimal from 'decimal.js';
 import {
   PricingBundleNotFoundError,
+  PricingInvalidBookingLocationError,
   PricingPeriodInvalidError,
   PricingProductTypeNotFoundError,
 } from '../../../domain/errors/pricing.errors';
@@ -40,8 +51,13 @@ export type CartPriceResult = {
 
 export type CalculateCartPricesError =
   | PricingPeriodInvalidError
+  | PricingInvalidBookingLocationError
   | PricingProductTypeNotFoundError
-  | PricingBundleNotFoundError;
+  | PricingBundleNotFoundError
+  | ProductTypeInactiveForBookingError
+  | BundleInactiveForBookingError
+  | ProductTypeNotBookableAtLocationError
+  | BundleNotBookableAtLocationError;
 
 /**
  * Query handler for cart price preview.
@@ -59,7 +75,8 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
 > {
   constructor(
     private readonly pricingApp: PricingPublicApi,
-    private readonly pricingRead: PricingComputationReadService,
+    private readonly catalogApi: CatalogPublicApi,
+    private readonly queryBus: QueryBus,
   ) {}
 
   async execute(query: CalculateCartPricesQuery): Promise<Result<CartPriceResult, CalculateCartPricesError>> {
@@ -85,19 +102,68 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       return err(new PricingPeriodInvalidError());
     }
 
+    const location = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+      new GetLocationContextQuery(query.tenantId, query.locationId),
+    );
+
+    if (!location) {
+      return err(new PricingInvalidBookingLocationError(query.locationId));
+    }
+
     // ── Step 3: Batch load product type meta ───────────────────────────────
     const productItems = query.items.filter((item): item is CartQueryProductItem => item.type === 'PRODUCT');
+    const bundleItems = query.items.filter((item) => item.type === 'BUNDLE');
 
     const uniqueProductTypeIds = [...new Set(productItems.map((i) => i.productTypeId))];
+    const uniqueBundleIds = [...new Set(bundleItems.map((i) => i.bundleId))];
 
-    const metaMap =
-      uniqueProductTypeIds.length > 0
-        ? await this.pricingRead.loadProductTypeMetaBatch(uniqueProductTypeIds)
-        : new Map<string, { billingUnitDurationMinutes: number; categoryId: string | null }>();
+    let productEligibility = new Map<string, { categoryId: string | null }>();
+
+    try {
+      const [productMetaList, bundleMetaList] = await Promise.all([
+        Promise.all(
+          uniqueProductTypeIds.map((id) =>
+            this.catalogApi.getProductTypeBookingEligibility(query.tenantId, query.locationId, id),
+          ),
+        ),
+        Promise.all(
+          uniqueBundleIds.map((id) =>
+            this.catalogApi.getBundleBookingEligibility(query.tenantId, query.locationId, id),
+          ),
+        ),
+      ]);
+
+      productEligibility = new Map(
+        uniqueProductTypeIds.map((id, index) => [id, { categoryId: productMetaList[index]?.categoryId ?? null }]),
+      );
+
+      for (const [index, id] of uniqueProductTypeIds.entries()) {
+        if (!productMetaList[index]) {
+          return err(new PricingProductTypeNotFoundError(id));
+        }
+      }
+
+      for (const [index, id] of uniqueBundleIds.entries()) {
+        if (!bundleMetaList[index]) {
+          return err(new PricingBundleNotFoundError(id));
+        }
+      }
+    } catch (error) {
+      if (
+        error instanceof ProductTypeInactiveForBookingError ||
+        error instanceof BundleInactiveForBookingError ||
+        error instanceof ProductTypeNotBookableAtLocationError ||
+        error instanceof BundleNotBookableAtLocationError
+      ) {
+        return err(error);
+      }
+
+      throw error;
+    }
 
     // Verify all requested product types exist
     for (const id of uniqueProductTypeIds) {
-      if (!metaMap.has(id)) {
+      if (!productEligibility.has(id)) {
         return err(new PricingProductTypeNotFoundError(id));
       }
     }
@@ -109,7 +175,7 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
     const orderItemCountByCategory: Record<string, number> = {};
 
     for (const item of productItems) {
-      const meta = metaMap.get(item.productTypeId)!;
+      const meta = productEligibility.get(item.productTypeId)!;
       if (meta.categoryId) {
         orderItemCountByCategory[meta.categoryId] = (orderItemCountByCategory[meta.categoryId] ?? 0) + item.quantity;
       }

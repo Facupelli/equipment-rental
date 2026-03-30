@@ -16,6 +16,13 @@ export class ProductTypeOrderMetaDto {
   ) {}
 }
 
+export class ProductTypeBookingEligibilityDto {
+  constructor(
+    public readonly id: string,
+    public readonly categoryId: string | null,
+  ) {}
+}
+
 export class BundleDto {
   constructor(
     public readonly id: string,
@@ -40,9 +47,49 @@ export class BundleOrderMetaDto {
   ) {}
 }
 
+export class BundleBookingEligibilityDto {
+  constructor(
+    public readonly id: string,
+    public readonly name: string,
+    public readonly components: BundleOrderMetaComponentDto[],
+  ) {}
+}
+
+export class ProductTypeInactiveForBookingError extends Error {
+  constructor(productTypeId: string) {
+    super(`ProductType "${productTypeId}" is inactive and cannot be booked.`);
+  }
+}
+
+export class BundleInactiveForBookingError extends Error {
+  constructor(bundleId: string) {
+    super(`Bundle "${bundleId}" is inactive and cannot be booked.`);
+  }
+}
+
+export class ProductTypeNotBookableAtLocationError extends Error {
+  constructor(productTypeId: string, locationId: string) {
+    super(`ProductType "${productTypeId}" is not bookable at location "${locationId}".`);
+  }
+}
+
+export class BundleNotBookableAtLocationError extends Error {
+  constructor(bundleId: string, locationId: string) {
+    super(`Bundle "${bundleId}" is not bookable at location "${locationId}".`);
+  }
+}
+
 export abstract class CatalogPublicApi {
   abstract getProductType(id: string): Promise<ProductTypeDto | null>;
   abstract getBundle(id: string): Promise<BundleDto | null>;
-  abstract getProductTypeOrderMeta(id: string): Promise<ProductTypeOrderMetaDto | null>;
-  abstract getBundleOrderMeta(id: string): Promise<BundleOrderMetaDto | null>;
+  abstract getProductTypeBookingEligibility(
+    tenantId: string,
+    locationId: string,
+    id: string,
+  ): Promise<ProductTypeBookingEligibilityDto | null>;
+  abstract getBundleBookingEligibility(
+    tenantId: string,
+    locationId: string,
+    id: string,
+  ): Promise<BundleBookingEligibilityDto | null>;
 }

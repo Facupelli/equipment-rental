@@ -19,7 +19,6 @@ export const orderItemSchema = z.discriminatedUnion("type", [
 
 export const createOrderSchema = z.object({
   locationId: z.uuid(),
-  customerId: z.uuid(),
   periodStart: z.iso.datetime(),
   periodEnd: z.iso.datetime(),
   pickupTime: z.number().min(0).max(1439),

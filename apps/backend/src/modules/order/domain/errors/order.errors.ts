@@ -39,6 +39,12 @@ export class BundleNotFoundError extends OrderError {
   }
 }
 
+export class InvalidBookingLocationError extends OrderError {
+  constructor(locationId: string) {
+    super(`Location "${locationId}" is not valid for customer booking.`);
+  }
+}
+
 export class OrderNotFoundError extends OrderError {
   constructor(orderId: string) {
     super(`Order "${orderId}" was not found.`);

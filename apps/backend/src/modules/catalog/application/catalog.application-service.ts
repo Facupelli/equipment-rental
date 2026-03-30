@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import {
   BundleDto,
+  BundleBookingEligibilityDto,
+  BundleInactiveForBookingError,
+  BundleNotBookableAtLocationError,
   BundleOrderMetaComponentDto,
-  BundleOrderMetaDto,
   CatalogPublicApi,
   ProductTypeDto,
-  ProductTypeOrderMetaDto,
+  ProductTypeBookingEligibilityDto,
+  ProductTypeInactiveForBookingError,
+  ProductTypeNotBookableAtLocationError,
 } from '../catalog.public-api';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { TrackingMode } from '@repo/types';
@@ -40,25 +44,61 @@ export class CatalogApplicationService implements CatalogPublicApi {
     return new BundleDto(row.id, row.retiredAt, row.publishedAt);
   }
 
-  async getProductTypeOrderMeta(id: string): Promise<ProductTypeOrderMetaDto | null> {
+  async getProductTypeBookingEligibility(
+    tenantId: string,
+    locationId: string,
+    id: string,
+  ): Promise<ProductTypeBookingEligibilityDto | null> {
     const row = await this.prisma.client.productType.findUnique({
       where: { id },
-      select: { id: true, categoryId: true },
+      select: {
+        id: true,
+        tenantId: true,
+        categoryId: true,
+        deletedAt: true,
+        retiredAt: true,
+        publishedAt: true,
+        pricingTiers: {
+          where: { OR: [{ locationId }, { locationId: null }] },
+          select: { id: true },
+          take: 1,
+        },
+      },
     });
 
-    if (!row) {
+    if (!row || row.tenantId !== tenantId || row.deletedAt !== null) {
       return null;
     }
 
-    return new ProductTypeOrderMetaDto(row.id, row.categoryId);
+    if (row.retiredAt !== null || row.publishedAt === null) {
+      throw new ProductTypeInactiveForBookingError(id);
+    }
+
+    if (row.pricingTiers.length === 0) {
+      throw new ProductTypeNotBookableAtLocationError(id, locationId);
+    }
+
+    return new ProductTypeBookingEligibilityDto(row.id, row.categoryId);
   }
 
-  async getBundleOrderMeta(id: string): Promise<BundleOrderMetaDto | null> {
+  async getBundleBookingEligibility(
+    tenantId: string,
+    locationId: string,
+    id: string,
+  ): Promise<BundleBookingEligibilityDto | null> {
     const row = await this.prisma.client.bundle.findUnique({
       where: { id },
       select: {
         id: true,
+        tenantId: true,
         name: true,
+        retiredAt: true,
+        publishedAt: true,
+        pricingTiers: {
+          where: { OR: [{ locationId }, { locationId: null }] },
+          select: { id: true },
+          take: 1,
+        },
         components: {
           select: {
             quantity: true,
@@ -68,11 +108,19 @@ export class CatalogApplicationService implements CatalogPublicApi {
       },
     });
 
-    if (!row) {
+    if (!row || row.tenantId !== tenantId) {
       return null;
     }
 
-    return new BundleOrderMetaDto(
+    if (row.retiredAt !== null || row.publishedAt === null) {
+      throw new BundleInactiveForBookingError(id);
+    }
+
+    if (row.pricingTiers.length === 0) {
+      throw new BundleNotBookableAtLocationError(id, locationId);
+    }
+
+    return new BundleBookingEligibilityDto(
       row.id,
       row.name,
       row.components.map(

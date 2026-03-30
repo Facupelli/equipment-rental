@@ -1,4 +1,10 @@
 import { DomainError } from 'src/core/exceptions/domain.error';
+import {
+  BundleInactiveForBookingError,
+  BundleNotBookableAtLocationError,
+  ProductTypeInactiveForBookingError,
+  ProductTypeNotBookableAtLocationError,
+} from 'src/modules/catalog/catalog.public-api';
 import { CouponValidationFailureReason } from '../services/coupon-validation.service';
 
 export class PricingError extends DomainError {}
@@ -62,3 +68,16 @@ export class PricingBundleNotFoundError extends PricingError {
     super(`Bundle "${bundleId}" was not found.`);
   }
 }
+
+export class PricingInvalidBookingLocationError extends PricingError {
+  constructor(locationId: string) {
+    super(`Location "${locationId}" is not valid for customer booking.`);
+  }
+}
+
+export {
+  ProductTypeInactiveForBookingError,
+  BundleInactiveForBookingError,
+  ProductTypeNotBookableAtLocationError,
+  BundleNotBookableAtLocationError,
+};

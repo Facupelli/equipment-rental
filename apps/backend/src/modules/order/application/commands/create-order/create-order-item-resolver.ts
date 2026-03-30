@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
-import { CatalogPublicApi } from 'src/modules/catalog/catalog.public-api';
+import {
+  BundleBookingEligibilityDto,
+  CatalogPublicApi,
+  ProductTypeBookingEligibilityDto,
+} from 'src/modules/catalog/catalog.public-api';
 import { PricingPublicApi, ResolvedCouponDto } from 'src/modules/pricing/pricing.public-api';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 
@@ -93,8 +97,14 @@ export class CreateOrderItemResolver {
       .map((item) => (item as { type: 'BUNDLE'; bundleId: string }).bundleId);
 
     const [productMetas, bundleMetas] = await Promise.all([
-      Promise.all(productTypeIds.map((id) => this.catalogApi.getProductTypeOrderMeta(id))),
-      Promise.all(bundleIds.map((id) => this.catalogApi.getBundleOrderMeta(id))),
+      Promise.all(
+        productTypeIds.map((id) =>
+          this.catalogApi.getProductTypeBookingEligibility(command.tenantId, command.locationId, id),
+        ),
+      ),
+      Promise.all(
+        bundleIds.map((id) => this.catalogApi.getBundleBookingEligibility(command.tenantId, command.locationId, id)),
+      ),
     ]);
 
     productTypeIds.forEach((id, index) => {
@@ -110,8 +120,10 @@ export class CreateOrderItemResolver {
     });
 
     return {
-      products: new Map(productTypeIds.map((id, index) => [id, productMetas[index]!])),
-      bundles: new Map(bundleIds.map((id, index) => [id, bundleMetas[index]!])),
+      products: new Map<string, ProductTypeBookingEligibilityDto>(
+        productTypeIds.map((id, index) => [id, productMetas[index]!]),
+      ),
+      bundles: new Map<string, BundleBookingEligibilityDto>(bundleIds.map((id, index) => [id, bundleMetas[index]!])),
     };
   }
 

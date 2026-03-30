@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
 import { PricingApplicationService } from './application/pricing.application-service';
 import { PricingPublicApi } from './pricing.public-api';
 import { CalculateCartPricesQueryHandler } from './application/queries/calculate-cart-prices/calculate-cart-prices.query-handler';
 import { PricingConfigurationRepository } from './infrastructure/repositories/pricing-config.repository';
 import { CatalogModule } from '../catalog/catalog.module';
+import { TenantModule } from '../tenant/tenant.module';
 import { CouponRepository } from './infrastructure/repositories/coupon.repository';
 import { CouponRedemptionRepository } from './infrastructure/repositories/coupon-redemption.repository';
 import { PricingRuleRepository } from './infrastructure/repositories/pricing-rule.repository';
@@ -24,7 +26,7 @@ import { CalculateCartPricesHttpController } from './application/queries/calcula
 import { PricingComputationReadService } from './infrastructure/read-services/pricing-computation-read.service';
 
 @Module({
-  imports: [CatalogModule],
+  imports: [CatalogModule, TenantModule],
   controllers: [
     CreatePricingRuleHttpController,
     ListPricingRulesHttpController,
@@ -52,6 +54,7 @@ import { PricingComputationReadService } from './infrastructure/read-services/pr
     CalculateCartPricesQueryHandler,
     ListPricingRulesHandler,
     ListCouponsHandler,
+    CustomerOnlyGuard,
   ],
   exports: [PricingPublicApi, ResolveCouponForPricingService, RedeemCouponService, VoidCouponRedemptionService],
 })
