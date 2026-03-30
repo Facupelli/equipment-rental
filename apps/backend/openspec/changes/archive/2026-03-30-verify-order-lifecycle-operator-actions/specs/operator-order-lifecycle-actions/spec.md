@@ -1,8 +1,4 @@
-## Purpose
-
-Define which lifecycle actions operators can take on review-aware bookings and the valid state transitions for confirmation, rejection, cancellation, fulfillment, and expiry.
-
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Operator lifecycle actions SHALL be verified over HTTP
 
@@ -36,6 +32,8 @@ The system SHALL restrict confirm, reject, cancel, activate, and complete endpoi
 
 - **WHEN** an authenticated customer sends a lifecycle request
 - **THEN** the system responds with `403 Forbidden`
+
+## MODIFIED Requirements
 
 ### Requirement: Operators can confirm pending review bookings
 
@@ -102,18 +100,3 @@ The system SHALL allow only confirmed bookings to move into operational fulfillm
 
 - **WHEN** an operator attempts to complete an order that is not in `ACTIVE`
 - **THEN** the system rejects the action as an invalid state transition
-
-### Requirement: Expiry is a terminal pending review outcome
-
-The system SHALL allow orders in `PENDING_REVIEW` to transition to `EXPIRED` when the review window lapses without operator action. Expired orders MUST remain readable as expired review outcomes. Expiry SHALL release the order's related `HOLD` assignments.
-
-#### Scenario: Pending review booking expires without review
-
-- **WHEN** a pending review order passes its review deadline without confirmation or rejection
-- **THEN** the system transitions the order to `EXPIRED`
-- **AND** the system releases the order's related `HOLD` assignments
-
-#### Scenario: Expired booking remains readable
-
-- **WHEN** an operator reads an order in `EXPIRED`
-- **THEN** the system returns the order with status `EXPIRED`
