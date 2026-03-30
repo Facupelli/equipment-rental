@@ -4,6 +4,7 @@ import {
   AssignmentType,
   BookingMode,
   OrderItemType,
+  OrderAssignmentStage,
   OrderStatus,
   ScheduleSlotType,
 } from '@repo/types';
@@ -88,7 +89,15 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
         command.period.start,
         demandUnits,
       );
-      const pendingAssignments = this.attachResolvedItemsToOrder(order, resolvedItems, demandUnits, contractByAssetId);
+      const assignmentStage =
+        bookingMode === BookingMode.REQUEST_TO_BOOK ? OrderAssignmentStage.HOLD : OrderAssignmentStage.COMMITTED;
+      const pendingAssignments = this.attachResolvedItemsToOrder(
+        order,
+        resolvedItems,
+        demandUnits,
+        contractByAssetId,
+        assignmentStage,
+      );
 
       await this.orderRepository.save(order, tx);
 
@@ -211,6 +220,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
     resolvedItems: ResolvedItem[],
     demandUnits: ReturnType<typeof buildDemandUnits>,
     contractByAssetId: Awaited<ReturnType<CreateOrderOwnerContractResolver['resolve']>>,
+    assignmentStage: OrderAssignmentStage,
   ): Array<Parameters<InventoryPublicApi['saveOrderAssignment']>[0]> {
     let unitCursor = 0;
     const pendingAssignments: Array<Parameters<InventoryPublicApi['saveOrderAssignment']>[0]> = [];
@@ -246,6 +256,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
             assetId: unit.resolvedAssetId!,
             period: item.period,
             type: AssignmentType.ORDER,
+            stage: assignmentStage,
             source: contract ? AssignmentSource.EXTERNAL : AssignmentSource.OWNED,
             orderId: order.id,
             orderItemId: orderItem.id,
@@ -316,6 +327,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
           assetId: unit.resolvedAssetId!,
           period: item.period,
           type: AssignmentType.ORDER,
+          stage: assignmentStage,
           source: contractByAssetId.has(unit.resolvedAssetId!) ? AssignmentSource.EXTERNAL : AssignmentSource.OWNED,
           orderId: order.id,
           orderItemId: orderItemWithSnapshot.id,

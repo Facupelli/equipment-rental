@@ -22,8 +22,9 @@ export class AssetAvailabilityService {
    * earlier in the same allocation pass (e.g. pinned assets resolved first
    * within the same productTypeId group).
    *
-   * The NOT EXISTS subquery checks all assignment types (ORDER, BLACKOUT,
-   * MAINTENANCE) — any overlapping assignment blocks availability.
+   * The NOT EXISTS subquery checks all assignment types. For ORDER
+   * assignments, both HOLD and COMMITTED stages remain blocking while the row
+   * exists, so any overlapping assignment blocks availability.
    *
    * Filtering by locationId provides implicit tenant isolation:
    * a location belongs to exactly one tenant, making cross-tenant

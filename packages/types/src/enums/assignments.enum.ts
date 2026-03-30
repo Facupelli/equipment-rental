@@ -4,6 +4,11 @@ export enum AssignmentType {
   MAINTENANCE = "MAINTENANCE",
 }
 
+export enum OrderAssignmentStage {
+  HOLD = "HOLD",
+  COMMITTED = "COMMITTED",
+}
+
 export enum AssignmentSource {
   OWNED = "OWNED",
   EXTERNAL = "EXTERNAL",

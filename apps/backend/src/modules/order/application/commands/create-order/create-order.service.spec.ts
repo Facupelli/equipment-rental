@@ -1,5 +1,5 @@
 import { QueryBus } from '@nestjs/cqrs';
-import { BookingMode, OrderStatus, ScheduleSlotType } from '@repo/types';
+import { BookingMode, OrderAssignmentStage, OrderStatus, ScheduleSlotType } from '@repo/types';
 import Decimal from 'decimal.js';
 import { ok } from 'neverthrow';
 
@@ -31,6 +31,7 @@ describe('CreateOrderService', () => {
   function makeService(bookingMode: BookingMode) {
     let savedStatus: OrderStatus | null = null;
     let savedPeriod: DateRange | null = null;
+    const savedAssignments: Array<{ stage: OrderAssignmentStage }> = [];
 
     const prisma = {
       client: {
@@ -61,7 +62,10 @@ describe('CreateOrderService', () => {
     } as unknown as PricingPublicApi;
 
     const inventoryApi = {
-      saveOrderAssignment: jest.fn(async () => ok(undefined)),
+      saveOrderAssignment: jest.fn(async (assignment) => {
+        savedAssignments.push({ stage: assignment.stage });
+        return ok(undefined);
+      }),
     } as unknown as InventoryPublicApi;
 
     const itemResolver = {
@@ -106,7 +110,7 @@ describe('CreateOrderService', () => {
       ownerContractResolver,
     );
 
-    return { service, saved: () => ({ savedStatus, savedPeriod }) };
+    return { service, saved: () => ({ savedStatus, savedPeriod, savedAssignments }) };
   }
 
   function makeCommand() {
@@ -130,6 +134,7 @@ describe('CreateOrderService', () => {
     expect(result.isOk()).toBe(true);
     expect(saved().savedStatus).toBe(OrderStatus.CONFIRMED);
     expect(saved().savedPeriod?.equals(period)).toBe(true);
+    expect(saved().savedAssignments).toEqual([{ stage: OrderAssignmentStage.COMMITTED }]);
   });
 
   it('creates pending review orders for request-to-book tenants', async () => {
@@ -139,5 +144,6 @@ describe('CreateOrderService', () => {
 
     expect(result.isOk()).toBe(true);
     expect(saved().savedStatus).toBe(OrderStatus.PENDING_REVIEW);
+    expect(saved().savedAssignments).toEqual([{ stage: OrderAssignmentStage.HOLD }]);
   });
 });

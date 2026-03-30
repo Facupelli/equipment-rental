@@ -6,7 +6,7 @@ import { AssetAvailabilityService } from 'src/modules/inventory/infrastructure/r
 import { PrismaService } from 'src/core/database/prisma.service';
 import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
-import { TrackingMode } from '@repo/types';
+import { OrderAssignmentStage, OrderItemType, OrderStatus, TrackingMode } from '@repo/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stub
@@ -46,6 +46,8 @@ describe('AssetAvailabilityService (integration)', () => {
   let module: TestingModule;
   let service: AssetAvailabilityService;
   let prisma: PrismaService;
+  const createdOrderIds: string[] = [];
+  const createdOrderItemIds: string[] = [];
 
   // ── Seed IDs — stable across the whole suite ──────────────────────────────
   // Using fixed UUIDs (not randomUUID()) means failures are reproducible:
@@ -109,6 +111,14 @@ describe('AssetAvailabilityService (integration)', () => {
         },
       },
     });
+
+    if (createdOrderItemIds.length > 0) {
+      await prisma.client.orderItem.deleteMany({ where: { id: { in: createdOrderItemIds.splice(0) } } });
+    }
+
+    if (createdOrderIds.length > 0) {
+      await prisma.client.order.deleteMany({ where: { id: { in: createdOrderIds.splice(0) } } });
+    }
   });
 
   // ── Seed helpers ──────────────────────────────────────────────────────────
@@ -223,6 +233,7 @@ describe('AssetAvailabilityService (integration)', () => {
     await prisma.client.productType.deleteMany({ where: { id: { in: [productTypeId, otherProductTypeId] } } });
     await prisma.client.location.deleteMany({ where: { id: { in: [locationId, otherLocationId] } } });
     await prisma.client.billingUnit.deleteMany({ where: { id: billingUnitId } });
+    await prisma.client.tenantOrderSequence.deleteMany({ where: { tenantId } });
     await prisma.client.tenant.deleteMany({ where: { id: tenantId } });
   }
 
@@ -235,6 +246,61 @@ describe('AssetAvailabilityService (integration)', () => {
         ${randomUUID()},
         ${assetId},
         ${type}::"AssignmentType",
+        ${`[${period.start.toISOString()}, ${period.end.toISOString()})`}::tstzrange,
+        NOW(),
+        NOW()
+      )
+    `;
+  }
+
+  async function assignOrderAsset(assetId: string, period: DateRange, stage: OrderAssignmentStage) {
+    const orderId = randomUUID();
+    const orderItemId = randomUUID();
+    createdOrderIds.push(orderId);
+    createdOrderItemIds.push(orderItemId);
+
+    await prisma.client.order.create({
+      data: {
+        id: orderId,
+        tenantId,
+        locationId,
+        status: stage === OrderAssignmentStage.HOLD ? OrderStatus.PENDING_REVIEW : OrderStatus.CONFIRMED,
+        orderNumber: 900000 + createdOrderIds.length,
+        periodStart: period.start,
+        periodEnd: period.end,
+      },
+    });
+
+    await prisma.client.orderItem.create({
+      data: {
+        id: orderItemId,
+        orderId,
+        type: OrderItemType.PRODUCT,
+        productTypeId,
+        priceSnapshot: { currency: 'ARS', basePrice: '0', finalPrice: '0', discounts: [] },
+      },
+    });
+
+    await prisma.client.$executeRaw`
+      INSERT INTO asset_assignments (
+        id,
+        asset_id,
+        order_item_id,
+        order_id,
+        type,
+        stage,
+        source,
+        period,
+        created_at,
+        updated_at
+      ) VALUES (
+        ${randomUUID()},
+        ${assetId},
+        ${orderItemId},
+        ${orderId},
+        'ORDER'::"AssignmentType",
+        ${stage}::"OrderAssignmentStage",
+        'OWNED'::"AssignmentSource",
         ${`[${period.start.toISOString()}, ${period.end.toISOString()})`}::tstzrange,
         NOW(),
         NOW()
@@ -289,14 +355,20 @@ describe('AssetAvailabilityService (integration)', () => {
   // ─────────────────────────────────────────────────────────────────────────
 
   describe('conflict detection', () => {
-    it('does not return an asset with an overlapping ORDER assignment', async () => {
-      await assignAsset(assetA, TEST_PERIOD, 'BLACKOUT');
-      await assignAsset(assetB, TEST_PERIOD, 'BLACKOUT');
-      await assignAsset(assetC, TEST_PERIOD, 'BLACKOUT');
+    it('does not return an asset with an overlapping ORDER assignment in HOLD stage', async () => {
+      await assignOrderAsset(assetA, TEST_PERIOD, OrderAssignmentStage.HOLD);
 
-      const ids = await service.findAvailableAssetIds({ productTypeId, locationId, period: TEST_PERIOD });
+      const ids = await service.findAvailableAssetIds({ productTypeId, locationId, period: TEST_PERIOD, quantity: 3 });
 
-      expect(ids).toHaveLength(0);
+      expect(ids).not.toContain(assetA);
+    });
+
+    it('does not return an asset with an overlapping ORDER assignment in COMMITTED stage', async () => {
+      await assignOrderAsset(assetA, TEST_PERIOD, OrderAssignmentStage.COMMITTED);
+
+      const ids = await service.findAvailableAssetIds({ productTypeId, locationId, period: TEST_PERIOD, quantity: 3 });
+
+      expect(ids).not.toContain(assetA);
     });
 
     it('does not return an asset with an overlapping BLACKOUT assignment', async () => {
@@ -313,6 +385,24 @@ describe('AssetAvailabilityService (integration)', () => {
       const ids = await service.findAvailableAssetIds({ productTypeId, locationId, period: TEST_PERIOD, quantity: 3 });
 
       expect(ids).not.toContain(assetA);
+    });
+
+    it('returns an asset again after a HOLD assignment is released', async () => {
+      await assignOrderAsset(assetA, TEST_PERIOD, OrderAssignmentStage.HOLD);
+      await prisma.client.assetAssignment.deleteMany({ where: { assetId: assetA } });
+
+      const ids = await service.findAvailableAssetIds({ productTypeId, locationId, period: TEST_PERIOD, quantity: 3 });
+
+      expect(ids).toContain(assetA);
+    });
+
+    it('returns an asset again after a COMMITTED assignment is released', async () => {
+      await assignOrderAsset(assetA, TEST_PERIOD, OrderAssignmentStage.COMMITTED);
+      await prisma.client.assetAssignment.deleteMany({ where: { assetId: assetA } });
+
+      const ids = await service.findAvailableAssetIds({ productTypeId, locationId, period: TEST_PERIOD, quantity: 3 });
+
+      expect(ids).toContain(assetA);
     });
 
     it('returns an asset whose assignment ends exactly when the requested period starts', async () => {

@@ -1,12 +1,13 @@
 import { randomUUID } from 'crypto';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
-import { AssignmentSource, AssignmentType } from '@repo/types';
+import { AssignmentSource, AssignmentType, OrderAssignmentStage } from '@repo/types';
 import { InvalidAssetAssignmentException } from '../exceptions/asset.exception';
 
 export interface CreateAssetAssignmentProps {
   assetId: string;
   period: DateRange;
   type: AssignmentType;
+  stage?: OrderAssignmentStage;
   source?: AssignmentSource;
   orderItemId?: string;
   orderId?: string;
@@ -18,6 +19,7 @@ export interface ReconstituteAssetAssignmentProps {
   assetId: string;
   period: DateRange;
   type: AssignmentType;
+  stage: OrderAssignmentStage | null;
   source: AssignmentSource | null;
   orderItemId: string | null;
   orderId: string | null;
@@ -30,6 +32,7 @@ export class AssetAssignment {
     public readonly assetId: string,
     public readonly period: DateRange,
     public readonly type: AssignmentType,
+    public readonly stage: OrderAssignmentStage | null,
     public readonly source: AssignmentSource | null,
     public readonly orderItemId: string | null,
     public readonly orderId: string | null,
@@ -47,6 +50,11 @@ export class AssetAssignment {
       if (!props.source) {
         throw new InvalidAssetAssignmentException('ORDER assignment requires source (OWNED or EXTERNAL).');
       }
+      if (!props.stage) {
+        throw new InvalidAssetAssignmentException('ORDER assignment requires stage (HOLD or COMMITTED).');
+      }
+    } else if (props.stage) {
+      throw new InvalidAssetAssignmentException('Only ORDER assignments may have a stage.');
     }
 
     return new AssetAssignment(
@@ -54,6 +62,7 @@ export class AssetAssignment {
       props.assetId,
       props.period,
       props.type,
+      props.stage ?? null,
       props.source ?? null,
       props.orderItemId ?? null,
       props.orderId ?? null,
@@ -67,6 +76,7 @@ export class AssetAssignment {
       props.assetId,
       props.period,
       props.type,
+      props.stage,
       props.source,
       props.orderItemId,
       props.orderId,
@@ -76,6 +86,10 @@ export class AssetAssignment {
 
   isOrderAssignment(): boolean {
     return this.type === AssignmentType.ORDER;
+  }
+
+  hasStage(stage: OrderAssignmentStage): boolean {
+    return this.stage === stage;
   }
 
   isInternalBlock(): boolean {

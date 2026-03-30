@@ -33,6 +33,11 @@ enum AssignmentType {
   MAINTENANCE
 }
 
+enum OrderAssignmentStage {
+  HOLD
+  COMMITTED
+}
+
 enum AssignmentSource {
   OWNED
   EXTERNAL
@@ -470,6 +475,7 @@ model AssetAssignment {
   orderItemId String?           @map("order_item_id")
   orderId     String?           @map("order_id")
   type        AssignmentType
+  stage       OrderAssignmentStage?
   source      AssignmentSource?
   reason      String?
   period      Unsupported("tstzrange")

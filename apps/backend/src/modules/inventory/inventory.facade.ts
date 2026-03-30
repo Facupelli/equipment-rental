@@ -3,6 +3,7 @@ import { Result, err, ok } from 'neverthrow';
 
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { PostgresExclusionViolationError } from 'src/core/utils/postgres-error.mapper';
+import { OrderAssignmentStage } from '@repo/types';
 
 import { AssetAssignment } from './domain/entities/asset-assignment.entity';
 import { AssetNotAvailableError } from './domain/errors/inventory.errors';
@@ -61,5 +62,22 @@ export class InventoryFacade implements InventoryPublicApi {
 
       throw error;
     }
+  }
+
+  async transitionOrderAssignmentsStage(
+    orderId: string,
+    fromStage: OrderAssignmentStage,
+    toStage: OrderAssignmentStage,
+    tx: PrismaTransactionClient,
+  ): Promise<void> {
+    await this.assignmentRepo.transitionOrderAssignmentsStage(orderId, fromStage, toStage, tx);
+  }
+
+  async releaseOrderAssignments(
+    orderId: string,
+    stage: OrderAssignmentStage,
+    tx: PrismaTransactionClient,
+  ): Promise<void> {
+    await this.assignmentRepo.releaseOrderAssignments(orderId, stage, tx);
   }
 }

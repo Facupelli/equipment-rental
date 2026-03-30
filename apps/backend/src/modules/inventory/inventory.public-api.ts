@@ -1,7 +1,7 @@
 import { Result } from 'neverthrow';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
-import { AssignmentSource, AssignmentType } from '@repo/types';
+import { AssignmentSource, AssignmentType, OrderAssignmentStage } from '@repo/types';
 import { AssetNotAvailableError } from './domain/errors/inventory.errors';
 import { FindAvailableParams } from './inventory.contracts';
 
@@ -9,6 +9,7 @@ export type SaveOrderAssignmentDto = {
   assetId: string;
   period: DateRange;
   type: AssignmentType.ORDER;
+  stage: OrderAssignmentStage;
   source: AssignmentSource;
   orderId: string;
   orderItemId: string;
@@ -22,4 +23,15 @@ export abstract class InventoryPublicApi {
     dto: SaveOrderAssignmentDto,
     tx: PrismaTransactionClient,
   ): Promise<Result<void, AssetNotAvailableError>>;
+  abstract transitionOrderAssignmentsStage(
+    orderId: string,
+    fromStage: OrderAssignmentStage,
+    toStage: OrderAssignmentStage,
+    tx: PrismaTransactionClient,
+  ): Promise<void>;
+  abstract releaseOrderAssignments(
+    orderId: string,
+    stage: OrderAssignmentStage,
+    tx: PrismaTransactionClient,
+  ): Promise<void>;
 }

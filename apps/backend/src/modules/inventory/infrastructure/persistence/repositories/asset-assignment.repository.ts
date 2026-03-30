@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { AssignmentType, OrderAssignmentStage } from '@repo/types';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { mapPostgresError } from 'src/core/utils/postgres-error.mapper';
 import { formatPostgresRange } from 'src/core/utils/postgres-range.util';
@@ -24,6 +25,7 @@ export class AssetAssignmentRepository {
           order_item_id,
           order_id,
           type,
+          stage,
           source,
           reason,
           period,
@@ -35,6 +37,7 @@ export class AssetAssignmentRepository {
           ${assignment.orderItemId}::uuid,
           ${assignment.orderId}::uuid,
           ${assignment.type}::"AssignmentType",
+          ${assignment.stage}::"OrderAssignmentStage",
           ${assignment.source}::"AssignmentSource",
           ${assignment.reason},
           ${period}::tstzrange,
@@ -45,5 +48,37 @@ export class AssetAssignmentRepository {
     } catch (error) {
       mapPostgresError(error);
     }
+  }
+
+  async transitionOrderAssignmentsStage(
+    orderId: string,
+    fromStage: OrderAssignmentStage,
+    toStage: OrderAssignmentStage,
+    tx: PrismaTransactionClient,
+  ): Promise<void> {
+    await tx.assetAssignment.updateMany({
+      where: {
+        orderId,
+        type: AssignmentType.ORDER,
+        stage: fromStage,
+      },
+      data: {
+        stage: toStage,
+      },
+    });
+  }
+
+  async releaseOrderAssignments(
+    orderId: string,
+    stage: OrderAssignmentStage,
+    tx: PrismaTransactionClient,
+  ): Promise<void> {
+    await tx.assetAssignment.deleteMany({
+      where: {
+        orderId,
+        type: AssignmentType.ORDER,
+        stage,
+      },
+    });
   }
 }

@@ -1,8 +1,4 @@
-## Purpose
-
-Define which lifecycle actions operators can take on review-aware bookings and the valid state transitions for confirmation, rejection, cancellation, fulfillment, and expiry.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Operators can confirm pending review bookings
 
@@ -47,25 +43,6 @@ The system SHALL allow cancellation only when an order is in `CONFIRMED`. `PENDI
 #### Scenario: Operator cannot cancel a pending review booking
 
 - **WHEN** an operator attempts to cancel an order in `PENDING_REVIEW`
-- **THEN** the system rejects the action as an invalid state transition
-
-### Requirement: Confirmed bookings can progress through fulfillment states
-
-The system SHALL allow only confirmed bookings to move into operational fulfillment. A `CONFIRMED` order MAY transition to `ACTIVE`, and an `ACTIVE` order MAY transition to `COMPLETED`.
-
-#### Scenario: Operator activates a confirmed booking
-
-- **WHEN** an operator activates an order in `CONFIRMED`
-- **THEN** the system transitions the order to `ACTIVE`
-
-#### Scenario: Operator completes an active booking
-
-- **WHEN** an operator completes an order in `ACTIVE`
-- **THEN** the system transitions the order to `COMPLETED`
-
-#### Scenario: Operator cannot complete a non-active booking
-
-- **WHEN** an operator attempts to complete an order that is not in `ACTIVE`
 - **THEN** the system rejects the action as an invalid state transition
 
 ### Requirement: Expiry is a terminal pending review outcome

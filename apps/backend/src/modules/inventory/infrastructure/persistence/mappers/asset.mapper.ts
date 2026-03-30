@@ -1,4 +1,4 @@
-import { AssignmentSource, AssignmentType } from '@repo/types';
+import { AssignmentSource, AssignmentType, OrderAssignmentStage } from '@repo/types';
 import { formatPostgresRange, parsePostgresRange } from 'src/core/utils/postgres-range.util';
 import { Prisma, Asset as PrismaAsset } from 'src/generated/prisma/client';
 import { AssetAssignment } from 'src/modules/inventory/domain/entities/asset-assignment.entity';
@@ -13,6 +13,7 @@ export type RawAssetAssignment = {
   order_item_id: string | null;
   order_id: string | null;
   type: string;
+  stage: string | null;
   source: string | null;
   reason: string | null;
   period: string; // raw tstzrange string from Postgres — cast via period::text in queryRaw
@@ -30,6 +31,7 @@ export class AssetAssignmentMapper {
       assetId: raw.asset_id,
       period,
       type: raw.type as AssignmentType,
+      stage: raw.stage as OrderAssignmentStage | null,
       source: raw.source as AssignmentSource | null,
       orderItemId: raw.order_item_id,
       orderId: raw.order_id,
@@ -41,10 +43,11 @@ export class AssetAssignmentMapper {
     const period = formatPostgresRange(entity.period);
     return Prisma.sql`
       INSERT INTO asset_assignments
-        (id, asset_id, order_item_id, order_id, type, source, reason, period)
+        (id, asset_id, order_item_id, order_id, type, stage, source, reason, period)
       VALUES
         (${entity.id}, ${entity.assetId}, ${entity.orderItemId}, ${entity.orderId},
-         ${entity.type}, ${entity.source}, ${entity.reason}, ${period}::tstzrange)
+         ${entity.type}::"AssignmentType", ${entity.stage}::"OrderAssignmentStage", ${entity.source}::"AssignmentSource",
+         ${entity.reason}, ${period}::tstzrange)
     `;
   }
 }
