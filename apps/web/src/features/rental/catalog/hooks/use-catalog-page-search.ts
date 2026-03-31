@@ -23,7 +23,11 @@ export function useRentalPageSearch() {
   const debouncedSearch = useDebounce(localSearch, 300);
 
   function setUrlParam(patch: Partial<RentalPageSearch>) {
-    navigate({ search: (prev) => ({ ...prev, ...patch }) });
+    navigate({
+      search: (prev) => ({ ...prev, ...patch }),
+      resetScroll: false,
+      replace: true,
+    });
   }
 
   // Legitimate useEffect: syncing the URL (external system) with a debounced
