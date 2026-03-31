@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Body, Controller, NotFoundException, Param, Post } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -8,6 +10,7 @@ import { AddScheduleToLocationCommand } from '../../application/commands/add-sch
 import { AddScheduleToLocationDto } from '../../application/commands/add-schedule-to-location/add-schedule-to-location.request.dto';
 import { LocationNotFoundError } from '../../domain/errors/location.errors';
 
+@StaffRoute(Permission.MANAGE_LOCATIONS)
 @Controller('locations')
 export class AddLocationScheduleHttpController {
   constructor(private readonly commandBus: CommandBus) {}

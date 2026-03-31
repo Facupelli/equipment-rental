@@ -1,13 +1,13 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { CustomerOnly } from 'src/core/decorators/customer-only.decorator';
+import { Controller, Get } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { GetCustomerQuery } from './get-customer.query';
 import { GetCustomerResponseDto } from './get-customer.response.dto';
 import { GetCustomerResult } from './get-customer.read-model';
 
-@UseGuards(CustomerOnlyGuard)
+@CustomerOnly()
 @Controller('customers')
 export class GetCustomerHttpController {
   constructor(private readonly queryBus: QueryBus) {}

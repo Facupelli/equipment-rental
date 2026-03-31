@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -9,6 +11,7 @@ import { GetOrderByIdQuery } from './get-order-by-id.query';
 import { GetOrderByIdRequestDto } from './get-order-by-id.request.dto';
 import { GetOrderByIdResponseDto } from './get-order-by-id.response.dto';
 
+@StaffRoute(Permission.VIEW_ORDERS)
 @Controller('orders')
 export class GetOrderByIdHttpController {
   constructor(private readonly queryBus: QueryBus) {}

@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -7,6 +9,7 @@ import { ListCouponsQuery } from './list-coupons.query';
 import { ListCouponsRequestDto } from './list-coupons.request.dto';
 import { ListCouponsResponseDto } from './list-coupons.response.dto';
 
+@StaffRoute(Permission.VIEW_PRICING)
 @Controller('pricing/coupons')
 export class ListCouponsHttpController {
   constructor(private readonly queryBus: QueryBus) {}

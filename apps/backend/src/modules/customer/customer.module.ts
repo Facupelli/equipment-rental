@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
-import { UserOnlyGuard } from 'src/modules/auth/infrastructure/guards/user-only.guard';
 import { CustomerRepository } from './infrastructure/repositories/customer.repository';
 import { FindCustomerCredentialsByEmailQueryHandler } from './application/queries/find-customer-credentials/find-customer-credentials.query-handler';
 import { GetCustomersQueryHandler } from './application/queries/get-customers/get-customers.query-handler';
@@ -44,8 +42,6 @@ const queryHandlers = [
       provide: CustomerPublicApi,
       useClass: CustomerApplicationService,
     },
-    CustomerOnlyGuard,
-    UserOnlyGuard,
 
     ...queryHandlers,
     ...commandServices,

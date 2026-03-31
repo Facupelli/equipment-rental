@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Body, Controller, NotFoundException, Param, Post } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -8,6 +10,7 @@ import { BulkAddSchedulesToLocationCommand } from '../../application/commands/bu
 import { BulkAddScheduleToLocationDto } from '../../application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.request.dto';
 import { LocationNotFoundError } from '../../domain/errors/location.errors';
 
+@StaffRoute(Permission.MANAGE_LOCATIONS)
 @Controller('locations')
 export class BulkAddLocationSchedulesHttpController {
   constructor(private readonly commandBus: CommandBus) {}

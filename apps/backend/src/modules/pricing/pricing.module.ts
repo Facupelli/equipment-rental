@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
 import { PricingApplicationService } from './application/pricing.application-service';
 import { PricingPublicApi } from './pricing.public-api';
 import { CalculateCartPricesQueryHandler } from './application/queries/calculate-cart-prices/calculate-cart-prices.query-handler';
@@ -54,7 +53,6 @@ import { PricingComputationReadService } from './infrastructure/read-services/pr
     CalculateCartPricesQueryHandler,
     ListPricingRulesHandler,
     ListCouponsHandler,
-    CustomerOnlyGuard,
   ],
   exports: [PricingPublicApi, ResolveCouponForPricingService, RedeemCouponService, VoidCouponRedemptionService],
 })

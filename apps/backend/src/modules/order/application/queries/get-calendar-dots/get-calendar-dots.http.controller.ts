@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Controller, Get, Query } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -8,6 +10,7 @@ import { GetCalendarDotsQuery } from './get-calendar-dots.query';
 import { GetCalendarDotsRequestDto } from './get-calendar-dots.request.dto';
 import { GetCalendarDotsResponseDto } from './get-calendar-dots.response.dto';
 
+@StaffRoute(Permission.VIEW_ORDERS)
 @Controller('orders/calendar-dots')
 export class GetCalendarDotsHttpController {
   constructor(private readonly queryBus: QueryBus) {}

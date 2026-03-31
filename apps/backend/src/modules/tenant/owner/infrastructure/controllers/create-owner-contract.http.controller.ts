@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Body, ConflictException, Controller, NotFoundException, Param, Post } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -13,6 +15,7 @@ import {
   OwnerNotFoundError,
 } from '../../domain/errors/owner-contract.errors';
 
+@StaffRoute(Permission.MANAGE_OWNERS)
 @Controller('owners')
 export class CreateOwnerContractHttpController {
   constructor(private readonly commandBus: CommandBus) {}

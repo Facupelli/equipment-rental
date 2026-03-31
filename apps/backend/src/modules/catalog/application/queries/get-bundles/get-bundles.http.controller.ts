@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Controller, Get, Query } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
@@ -7,6 +9,7 @@ import { GetBundlesQuery } from './get-bundles.query';
 import { GetBundlesRequestDto } from './get-bundles.request.dto';
 import { GetBundlesResponseDto } from './get-bundles.response.dto';
 
+@StaffRoute(Permission.VIEW_BUNDLES)
 @Controller('bundles')
 export class GetBundlesHttpController {
   constructor(private readonly queryBus: QueryBus) {}

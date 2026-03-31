@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Body, Controller, NotFoundException, Patch } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -8,6 +10,7 @@ import { UpdateTenantConfigCommand } from '../../application/commands/update-con
 import { UpdateTenantConfigDto } from '../../application/commands/update-config/update-config.request.dto';
 import { TenantNotFoundError } from '../../domain/errors/tenant.errors';
 
+@StaffRoute(Permission.MANAGE_LOCATIONS)
 @Controller('tenants')
 export class UpdateTenantConfigHttpController {
   constructor(private readonly commandBus: CommandBus) {}

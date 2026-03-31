@@ -1,3 +1,4 @@
+import { StaffOnly } from 'src/core/decorators/staff-only.decorator';
 import { Controller, Get, NotFoundException } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -6,6 +7,7 @@ import { GetUserQuery } from './get-user.query';
 import { GetUserReadModel } from './get-user.types';
 import { GetUserResponseDto } from './get-user.response.dto';
 
+@StaffOnly()
 @Controller('users')
 export class GetUserHttpController {
   constructor(private readonly queryBus: QueryBus) {}

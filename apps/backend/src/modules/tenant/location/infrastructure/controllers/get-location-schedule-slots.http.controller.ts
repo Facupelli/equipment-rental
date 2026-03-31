@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { BadRequestException, Controller, Get, Param, Query } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 import { ScheduleSlotType } from '@repo/types';
 
@@ -8,6 +10,7 @@ import { GetLocationScheduleSlotsQuery } from 'src/modules/tenant/public/queries
 
 import { GetLocationScheduleSlotsQueryDto } from '../../application/queries/get-location-schedule-slots/get-location-schedule-slots.request.dto';
 
+@StaffRoute(Permission.VIEW_LOCATIONS)
 @Controller('locations')
 export class GetLocationScheduleSlotsHttpController {
   constructor(private readonly queryBus: QueryBus) {}

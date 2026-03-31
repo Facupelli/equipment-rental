@@ -5,7 +5,9 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DatabaseModule } from './core/database/database.module';
 import { AppConfigModule } from './config/config.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ActorTypeGuard } from './modules/auth/infrastructure/guards/actor-type.guard';
 import { JwtAuthGuard } from './modules/auth/infrastructure/guards/jwt-auth.guard';
+import { PermissionsGuard } from './modules/auth/infrastructure/guards/permissions.guard';
 import { TenantInterceptor } from './modules/shared/tenant/tenant.interceptor';
 import { LoggerModule } from './core/logger/logger.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -45,6 +47,14 @@ import { DomainEventsModule } from './core/domain/events/domain-events.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ActorTypeGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
     {
       provide: APP_INTERCEPTOR,

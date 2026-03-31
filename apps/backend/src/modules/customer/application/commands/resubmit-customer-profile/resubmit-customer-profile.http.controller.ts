@@ -1,16 +1,7 @@
-import {
-  Body,
-  ConflictException,
-  Controller,
-  HttpCode,
-  HttpStatus,
-  NotFoundException,
-  Put,
-  UseGuards,
-} from '@nestjs/common';
+import { CustomerOnly } from 'src/core/decorators/customer-only.decorator';
+import { Body, ConflictException, Controller, HttpCode, HttpStatus, NotFoundException, Put } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import {
   CannotSubmitApprovedProfileError,
@@ -20,7 +11,7 @@ import {
 import { ResubmitCustomerProfileCommand } from './resubmit-customer-profile.command';
 import { ResubmitCustomerProfileRequestDto } from './resubmit-customer-profile.request.dto';
 
-@UseGuards(CustomerOnlyGuard)
+@CustomerOnly()
 @Controller('customer-profile')
 export class ResubmitCustomerProfileHttpController {
   constructor(private readonly commandBus: CommandBus) {}

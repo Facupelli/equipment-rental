@@ -1,15 +1,16 @@
-import { Controller, Get, HttpCode, HttpStatus, Query, UseGuards } from '@nestjs/common';
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
+import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
-import { UserOnlyGuard } from 'src/modules/auth/infrastructure/guards/user-only.guard';
 import { GetCustomersQuery } from './get-customers.query';
 import { GetCustomersRequestDto } from './get-customers.request.dto';
 import { GetCustomersResponseDto } from './get-customers.response.dto';
 import { GetCustomersResult } from './get-customers.read-model';
 
-@UseGuards(UserOnlyGuard)
+@StaffRoute(Permission.VIEW_CUSTOMERS)
 @Controller('customers')
 export class GetCustomersHttpController {
   constructor(private readonly queryBus: QueryBus) {}

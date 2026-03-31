@@ -1,6 +1,6 @@
 ## Purpose
 
-Define how request-to-book submissions create review-aware bookings, reserve inventory immediately, and appear in operator-facing review surfaces.
+Define how request-to-book submissions create review-aware bookings, reserve inventory immediately, and appear in staff-facing review surfaces.
 
 ## Requirements
 
@@ -97,14 +97,24 @@ The system SHALL persist the booked rental period on the order so the commercial
 
 ### Requirement: Pending review orders SHALL be visible in a dedicated review-oriented view
 
-The system SHALL expose `PENDING_REVIEW` orders in a dedicated operator-facing review-oriented view. General schedule and calendar views for active operations MUST NOT include `PENDING_REVIEW` orders unless those views are explicitly defined as availability-sensitive review surfaces.
+The system SHALL expose `PENDING_REVIEW` orders in a dedicated staff-facing review-oriented view. Access to that review-oriented view SHALL require an authenticated staff user with the required tenant-wide order review permission. General schedule and calendar views for active operations MUST NOT include `PENDING_REVIEW` orders unless those views are explicitly defined as availability-sensitive review surfaces.
 
-#### Scenario: Pending review order appears in the review queue
+#### Scenario: Authorized staff user requests the pending review view
 
-- **WHEN** an operator requests the dedicated pending review view
+- **WHEN** an authenticated staff user with the required order review permission requests the dedicated pending review view
 - **THEN** the system includes orders in `PENDING_REVIEW`
+
+#### Scenario: Staff user without permission cannot access the pending review view
+
+- **WHEN** an authenticated staff user without the required order review permission requests the dedicated pending review view
+- **THEN** the system responds with `403 Forbidden`
+
+#### Scenario: Customer cannot access the pending review view
+
+- **WHEN** an authenticated customer requests the dedicated pending review view
+- **THEN** the system responds with `403 Forbidden`
 
 #### Scenario: Pending review order is excluded from general operational schedule views
 
-- **WHEN** an operator requests a general schedule or calendar view for active operations
+- **WHEN** a staff user requests a general schedule or calendar view for active operations
 - **THEN** the system excludes orders in `PENDING_REVIEW`

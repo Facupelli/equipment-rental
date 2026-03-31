@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Controller, Get, Query } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
@@ -9,6 +11,7 @@ import { GetAssetsQuery } from './get-assets.query';
 import { GetAssetsRequestDto } from './get-assets.request.dto';
 import { GetAssetsResponseDto } from './get-assets.response.dto';
 
+@StaffRoute(Permission.VIEW_ASSETS)
 @Controller('assets')
 export class GetAssetsHttpController {
   constructor(private readonly queryBus: QueryBus) {}

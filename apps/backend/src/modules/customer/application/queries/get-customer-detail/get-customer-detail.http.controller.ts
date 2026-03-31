@@ -1,13 +1,14 @@
-import { Controller, Get, NotFoundException, Param, UseGuards } from '@nestjs/common';
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
+import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
-import { UserOnlyGuard } from 'src/modules/auth/infrastructure/guards/user-only.guard';
 import { GetCustomerDetailQuery } from './get-customer-detail.query';
 import { GetCustomerDetailResponseDto } from './get-customer-detail.response.dto';
 import { GetCustomerDetailResult } from './get-customer-detail.read-model';
 
-@UseGuards(UserOnlyGuard)
+@StaffRoute(Permission.VIEW_CUSTOMERS)
 @Controller('customers')
 export class GetCustomerDetailHttpController {
   constructor(private readonly queryBus: QueryBus) {}

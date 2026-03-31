@@ -1,10 +1,13 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Body, ConflictException, Controller, NotFoundException, Post } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
+import { Permission } from '@repo/types';
 import { PricingTargetInactiveError, PricingTargetNotFoundError } from '../../../domain/errors/pricing.errors';
 import { SetPricingTiersCommand } from './set-pricing-tiers.command';
 import { SetPricingTiersRequestDto } from './set-pricing-tiers.request.dto';
 import { SetPricingTiersResponseDto } from './set-pricing-tiers.response.dto';
 
+@StaffRoute(Permission.MANAGE_PRICING)
 @Controller('pricing-tiers')
 export class SetPricingTiersHttpController {
   constructor(private readonly commandBus: CommandBus) {}

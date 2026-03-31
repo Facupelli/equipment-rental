@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
 import { OrderRepository } from './infrastructure/persistence/repositories/order.repository';
 import { PricingModule } from '../pricing/pricing.module';
 import { CreateOrderService } from './application/commands/create-order/create-order.service';
@@ -39,10 +38,10 @@ import { GetPendingReviewOrdersHttpController } from './application/queries/get-
     CancelOrderHttpController,
     ActivateOrderHttpController,
     CompleteOrderHttpController,
+    GetPendingReviewOrdersHttpController,
     GetOrdersScheduleHttpController,
     GetCalendarDotsHttpController,
     GetOrderByIdHttpController,
-    GetPendingReviewOrdersHttpController,
   ],
   providers: [
     OrderRepository,
@@ -60,7 +59,6 @@ import { GetPendingReviewOrdersHttpController } from './application/queries/get-
     GetCalendarDotsQueryHandler,
     GetOrderByIdQueryHandler,
     GetPendingReviewOrdersQueryHandler,
-    CustomerOnlyGuard,
   ],
 })
 export class OrderModule {}

@@ -1,3 +1,4 @@
+import { StaffOnly } from 'src/core/decorators/staff-only.decorator';
 import { Controller, Get, NotFoundException } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { TenantResponse } from '@repo/schemas';
@@ -7,6 +8,7 @@ import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { GetTenantQuery } from '../../application/queries/get-tenant/get-tenant.query';
 
+@StaffOnly()
 @Controller('tenants')
 export class GetCurrentTenantHttpController {
   constructor(private readonly queryBus: QueryBus) {}

@@ -1,13 +1,13 @@
-import { Controller, Get, NotFoundException, UseGuards } from '@nestjs/common';
+import { CustomerOnly } from 'src/core/decorators/customer-only.decorator';
+import { Controller, Get, NotFoundException } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { GetCustomerProfileQuery } from './get-customer-profile.query';
 import { GetCustomerProfileResponseDto } from './get-customer-profile.response.dto';
 import { GetCustomerProfileResult } from './get-customer-profile.read-model';
 
-@UseGuards(CustomerOnlyGuard)
+@CustomerOnly()
 @Controller('customer-profile')
 export class GetCustomerProfileHttpController {
   constructor(private readonly queryBus: QueryBus) {}

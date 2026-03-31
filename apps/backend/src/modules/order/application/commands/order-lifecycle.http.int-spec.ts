@@ -13,6 +13,7 @@ import {
   OrderAssignmentStage,
   OrderItemType,
   OrderStatus,
+  Permission,
   TrackingMode,
 } from '@repo/types';
 import request from 'supertest';
@@ -29,6 +30,10 @@ const locationId = '10000000-0000-0000-0000-000000000002';
 const productTypeId = '10000000-0000-0000-0000-000000000003';
 const billingUnitId = '10000000-0000-0000-0000-000000000004';
 const assetId = '10000000-0000-0000-0000-000000000005';
+const adminRoleId = '10000000-0000-0000-0000-000000000006';
+const limitedRoleId = '10000000-0000-0000-0000-000000000007';
+const operatorUserId = '10000000-0000-0000-0000-000000000008';
+const limitedOperatorUserId = '10000000-0000-0000-0000-000000000009';
 
 const TEST_PERIOD = {
   start: new Date('2026-04-02T10:00:00.000Z'),
@@ -81,6 +86,10 @@ describe('Order lifecycle HTTP integration', () => {
     await prisma.client.asset.deleteMany({ where: { id: assetId } });
     await prisma.client.productType.deleteMany({ where: { id: productTypeId } });
     await prisma.client.location.deleteMany({ where: { id: locationId } });
+    await prisma.client.userRole.deleteMany({ where: { userId: { in: [operatorUserId, limitedOperatorUserId] } } });
+    await prisma.client.rolePermission.deleteMany({ where: { roleId: { in: [adminRoleId, limitedRoleId] } } });
+    await prisma.client.user.deleteMany({ where: { id: { in: [operatorUserId, limitedOperatorUserId] } } });
+    await prisma.client.role.deleteMany({ where: { id: { in: [adminRoleId, limitedRoleId] } } });
     await prisma.client.billingUnit.deleteMany({ where: { id: billingUnitId } });
     await prisma.client.tenantOrderSequence.deleteMany({ where: { tenantId } });
     await prisma.client.tenant.deleteMany({ where: { id: tenantId } });
@@ -147,7 +156,22 @@ describe('Order lifecycle HTTP integration', () => {
       const response = await customerRequest(`/orders/${orderId}/${action}`).expect(403);
 
       expect(response.body.type).toBe('errors://http-error');
-      expect(response.body.detail).toBe('This endpoint is restricted to admin users.');
+      expect(response.body.detail).toBe('This endpoint is restricted to staff users.');
+    });
+
+    it.each([
+      ['confirm', OrderStatus.PENDING_REVIEW, OrderAssignmentStage.HOLD],
+      ['reject', OrderStatus.PENDING_REVIEW, OrderAssignmentStage.HOLD],
+      ['cancel', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
+      ['activate', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
+      ['complete', OrderStatus.ACTIVE, OrderAssignmentStage.COMMITTED],
+    ])('forbids operators without permission from %s endpoint', async (action, status, stage) => {
+      const { orderId } = await createOrderFixture(status, stage);
+
+      const response = await unauthorizedOperatorRequest(`/orders/${orderId}/${action}`).expect(403);
+
+      expect(response.body.type).toBe('errors://http-error');
+      expect(response.body.detail).toBe('You do not have permission to access this resource.');
     });
   });
 
@@ -186,6 +210,65 @@ describe('Order lifecycle HTTP integration', () => {
       where: { id: tenantId },
       update: {},
       create: { id: tenantId, name: 'Lifecycle Tenant', slug: `lifecycle-${tenantId}`, config: {} },
+    });
+
+    await prisma.client.role.upsert({
+      where: { id: adminRoleId },
+      update: { tenantId, code: 'TENANT_ADMIN', name: 'Admin' },
+      create: { id: adminRoleId, tenantId, code: 'TENANT_ADMIN', name: 'Admin' },
+    });
+
+    await prisma.client.role.upsert({
+      where: { id: limitedRoleId },
+      update: { tenantId, code: 'ORDER_VIEWER', name: 'Order Viewer' },
+      create: { id: limitedRoleId, tenantId, code: 'ORDER_VIEWER', name: 'Order Viewer' },
+    });
+
+    await prisma.client.rolePermission.createMany({
+      data: Object.values(Permission).map((permission) => ({
+        roleId: adminRoleId,
+        permission,
+      })),
+      skipDuplicates: true,
+    });
+
+    await prisma.client.rolePermission.createMany({
+      data: [{ roleId: limitedRoleId, permission: Permission.VIEW_ORDERS }],
+      skipDuplicates: true,
+    });
+
+    await prisma.client.user.upsert({
+      where: { id: operatorUserId },
+      update: {},
+      create: {
+        id: operatorUserId,
+        tenantId,
+        email: 'operator@example.com',
+        passwordHash: 'hashed',
+        firstName: 'Operator',
+        lastName: 'Admin',
+      },
+    });
+
+    await prisma.client.user.upsert({
+      where: { id: limitedOperatorUserId },
+      update: {},
+      create: {
+        id: limitedOperatorUserId,
+        tenantId,
+        email: 'viewer@example.com',
+        passwordHash: 'hashed',
+        firstName: 'Limited',
+        lastName: 'Operator',
+      },
+    });
+
+    await prisma.client.userRole.createMany({
+      data: [
+        { userId: operatorUserId, roleId: adminRoleId },
+        { userId: limitedOperatorUserId, roleId: limitedRoleId },
+      ],
+      skipDuplicates: true,
     });
 
     await prisma.client.billingUnit.upsert({
@@ -306,18 +389,24 @@ describe('Order lifecycle HTTP integration', () => {
   function operatorRequest(url: string) {
     return request(app.getHttpServer())
       .post(url)
-      .set('Authorization', `Bearer ${createToken(ActorType.USER)}`);
+      .set('Authorization', `Bearer ${createToken(ActorType.USER, operatorUserId)}`);
+  }
+
+  function unauthorizedOperatorRequest(url: string) {
+    return request(app.getHttpServer())
+      .post(url)
+      .set('Authorization', `Bearer ${createToken(ActorType.USER, limitedOperatorUserId)}`);
   }
 
   function customerRequest(url: string) {
     return request(app.getHttpServer())
       .post(url)
-      .set('Authorization', `Bearer ${createToken(ActorType.CUSTOMER)}`);
+      .set('Authorization', `Bearer ${createToken(ActorType.CUSTOMER, randomUUID())}`);
   }
 
-  function createToken(actorType: ActorType): string {
+  function createToken(actorType: ActorType, subject: string): string {
     return jwtService.sign({
-      sub: randomUUID(),
+      sub: subject,
       email: actorType === ActorType.USER ? 'operator@example.com' : 'customer@example.com',
       tenantId,
       actorType,

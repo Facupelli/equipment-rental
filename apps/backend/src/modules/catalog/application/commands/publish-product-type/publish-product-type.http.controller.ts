@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { ConflictException, Controller, NotFoundException, Param, Patch } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
@@ -9,6 +11,7 @@ import {
   ProductTypeNotFoundError,
 } from '../../../domain/errors/catalog.errors';
 
+@StaffRoute(Permission.UPDATE_PRODUCTS)
 @Controller('product-types')
 export class PublishProductTypeHttpController {
   constructor(private readonly commandBus: CommandBus) {}

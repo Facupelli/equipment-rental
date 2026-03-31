@@ -1,9 +1,9 @@
-import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Post, UseGuards } from '@nestjs/common';
+import { CustomerOnly } from 'src/core/decorators/customer-only.decorator';
+import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Post } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { Result } from 'neverthrow';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ProblemException } from 'src/core/exceptions/problem.exception';
-import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import {
   BundleInactiveForBookingError,
@@ -22,7 +22,7 @@ import { CalculateCartPricesError, CartPriceResult } from './calculate-cart-pric
 import { CalculateCartPricesRequestDto } from './calculate-cart-prices.request.dto';
 import { CalculateCartPricesResponseDto } from './calculate-cart-prices.response.dto';
 
-@UseGuards(CustomerOnlyGuard)
+@CustomerOnly()
 @Controller('pricing')
 export class CalculateCartPricesHttpController {
   constructor(private readonly queryBus: QueryBus) {}

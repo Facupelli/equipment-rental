@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Controller, Get } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 import { TenantBillingUnitListResponse } from '@repo/schemas';
 
@@ -7,6 +9,7 @@ import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { GetTenantBillingUnitsQuery } from '../../application/queries/get-billing-units/get-tenant-billing-units.query';
 
+@StaffRoute(Permission.VIEW_LOCATIONS)
 @Controller('tenants')
 export class GetTenantBillingUnitsHttpController {
   constructor(private readonly queryBus: QueryBus) {}

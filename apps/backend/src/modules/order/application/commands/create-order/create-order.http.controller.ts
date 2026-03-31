@@ -1,9 +1,9 @@
-import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Post, UseGuards } from '@nestjs/common';
+import { CustomerOnly } from 'src/core/decorators/customer-only.decorator';
+import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Post } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ProblemException } from 'src/core/exceptions/problem.exception';
-import { CustomerOnlyGuard } from 'src/modules/auth/infrastructure/guards/customer-only.guard';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import {
   BundleInactiveForBookingError,
@@ -26,7 +26,7 @@ import {
   ProductTypeNotFoundError,
 } from '../../../domain/errors/order.errors';
 
-@UseGuards(CustomerOnlyGuard)
+@CustomerOnly()
 @Controller('orders')
 export class CreateOrderHttpController {
   constructor(private readonly commandBus: CommandBus) {}

@@ -1,10 +1,13 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Controller, Get } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { GetProductCategoriesQuery } from './get-product-categories.query';
 import { GetProductCategoriesResponseDto } from './get-product-categories.response.dto';
 
+@StaffRoute(Permission.VIEW_PRODUCTS)
 @Controller('product-categories')
 export class GetProductCategoriesHttpController {
   constructor(private readonly queryBus: QueryBus) {}

@@ -13,7 +13,9 @@ export class GetPendingReviewOrdersQueryHandler implements IQueryHandler<
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetPendingReviewOrdersQuery): Promise<GetPendingReviewOrdersResponseDto> {
-    const offset = (query.page - 1) * query.limit;
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const offset = (page - 1) * limit;
     const where = {
       tenantId: query.tenantId,
       deletedAt: null,
@@ -49,7 +51,7 @@ export class GetPendingReviewOrdersQueryHandler implements IQueryHandler<
         },
         orderBy: { createdAt: 'desc' },
         skip: offset,
-        take: query.limit,
+        take: limit,
       }),
       this.prisma.client.order.count({ where }),
     ]);
@@ -76,9 +78,9 @@ export class GetPendingReviewOrdersQueryHandler implements IQueryHandler<
       })),
       meta: {
         total,
-        page: query.page,
-        limit: query.limit,
-        totalPages: Math.max(1, Math.ceil(total / query.limit)),
+        page,
+        limit,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
       },
     };
   }

@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
@@ -7,6 +9,7 @@ import { GetAssetByIdQuery } from './get-asset-by-id.query';
 import { GetAssetByIdRequestDto } from './get-asset-by-id.request.dto';
 import { AssetResponseDto } from '@repo/schemas';
 
+@StaffRoute(Permission.VIEW_ASSETS)
 @Controller('assets')
 export class GetAssetByIdHttpController {
   constructor(private readonly queryBus: QueryBus) {}

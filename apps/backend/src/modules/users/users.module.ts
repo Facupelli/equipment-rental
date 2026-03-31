@@ -8,6 +8,7 @@ import { UsersFacade } from './application/users.facade';
 import { GetUserHttpController } from './application/queries/get-user/get-user.http.controller';
 import { FindCredentialsByEmailQueryHandler } from './application/queries/find-credentials-by-email/find-credentials-by-email.query-handler';
 import { GetUserQueryHandler } from './application/queries/get-user/get-user.query-handler';
+import { GetUserPermissionsQueryHandler } from './application/queries/get-user-permissions/get-user-permissions.query-handler';
 import { IsEmailTakenQueryHandler } from './application/queries/is-email-taken/is-email-taken.query-handler';
 import { CreateUserService } from './application/commands/create-user/create-user.service';
 import { CreateRoleService } from './application/commands/create-role/create-role.service';
@@ -29,9 +30,18 @@ const repositories = [
 ];
 
 const commandHandlers = [CreateUserService, CreateRoleService, SyncAdminRolePermissionsService];
-const queryHandlers = [FindCredentialsByEmailQueryHandler, IsEmailTakenQueryHandler, GetUserQueryHandler];
+const queryHandlers = [
+  FindCredentialsByEmailQueryHandler,
+  IsEmailTakenQueryHandler,
+  GetUserQueryHandler,
+  GetUserPermissionsQueryHandler,
+];
 
-const services = [BootstrapTenantAdminService, UsersFacade, { provide: UsersPublicApi, useExisting: UsersFacade }];
+const services = [
+  BootstrapTenantAdminService,
+  UsersFacade,
+  { provide: UsersPublicApi, useExisting: UsersFacade },
+];
 
 @Module({
   controllers: [GetUserHttpController],

@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { BadRequestException, Body, ConflictException, Controller, NotFoundException, Post } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
@@ -13,6 +15,7 @@ import {
   ReferencedProductTypeNotFoundError,
 } from '../../../domain/errors/catalog.errors';
 
+@StaffRoute(Permission.MANAGE_BUNDLES)
 @Controller('bundles')
 export class CreateBundleHttpController {
   constructor(private readonly commandBus: CommandBus) {}

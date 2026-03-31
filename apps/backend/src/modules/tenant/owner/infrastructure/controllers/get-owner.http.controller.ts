@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { QueryBus } from '@nestjs/cqrs';
 import { GetOwnerResponseDto } from '@repo/schemas';
 
@@ -7,6 +9,7 @@ import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { GetOwnerQuery } from '../../application/queries/get-owner/get-owner.query';
 
+@StaffRoute(Permission.VIEW_OWNERS)
 @Controller('owners')
 export class GetOwnerHttpController {
   constructor(private readonly queryBus: QueryBus) {}

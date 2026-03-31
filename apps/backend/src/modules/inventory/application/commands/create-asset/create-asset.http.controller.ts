@@ -1,4 +1,6 @@
+import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { Body, ConflictException, Controller, NotFoundException, Post } from '@nestjs/common';
+import { Permission } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 
 import {
@@ -10,6 +12,7 @@ import { CreateAssetCommand } from './create-asset.command';
 import { CreateAssetRequestDto } from './create-asset.request.dto';
 import { CreateAssetResponseDto } from './create-asset.response.dto';
 
+@StaffRoute(Permission.CREATE_ASSETS)
 @Controller('assets')
 export class CreateAssetHttpController {
   constructor(private readonly commandBus: CommandBus) {}
