@@ -7,7 +7,7 @@ import { TenantBillingUnitListResponse } from '@repo/schemas';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { GetTenantBillingUnitsQuery } from '../../application/queries/get-billing-units/get-tenant-billing-units.query';
+import { GetTenantBillingUnitsQuery } from './get-tenant-billing-units.query';
 
 @StaffRoute(Permission.VIEW_LOCATIONS)
 @Controller('tenants')

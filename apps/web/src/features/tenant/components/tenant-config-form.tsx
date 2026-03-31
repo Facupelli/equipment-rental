@@ -11,18 +11,16 @@ import {
 } from "@/components/ui/select";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { BookingMode, RoundingRule } from "@repo/types";
-import { getRouteApi } from "@tanstack/react-router";
 import {
   tenantConfigFormSchema,
   tenantConfigToFormValues,
   toUpdateTenantConfigDto,
 } from "../schemas/tenant-config-form.schema";
-import { useUpdateTenantConfig } from "../tenant.queries";
-
-const authedRoute = getRouteApi("/_admin/dashboard");
+import { tenantQueries, useUpdateTenantConfig } from "../tenant.queries";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 export function TenantConfigForm() {
-  const { tenant } = authedRoute.useLoaderData();
+  const { data: tenant } = useSuspenseQuery(tenantQueries.me());
 
   const { mutateAsync: updateConfig } = useUpdateTenantConfig();
 
@@ -179,7 +177,7 @@ export function TenantConfigForm() {
             </form.Field>
 
             {/* Default currency */}
-            <form.Field name="defaultCurrency">
+            <form.Field name="currency">
               {(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
@@ -215,6 +213,42 @@ export function TenantConfigForm() {
                   </div>
                 );
               }}
+            </form.Field>
+
+            {/* locale */}
+            <form.Field name="locale">
+              {(field) => (
+                <div className="grid grid-cols-[1fr_auto] items-start gap-8 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      Locale
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Como se muestra el precio en la aplicación.
+                    </p>
+                  </div>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) =>
+                      value && field.handleChange(value)
+                    }
+                    items={[
+                      { value: "es-AR", label: "Español (AR)" },
+                      { value: "es-ES", label: "Español (ES)" },
+                      { value: "en-US", label: "Inglés (US)" },
+                    ]}
+                  >
+                    <SelectTrigger className="w-36">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="es-AR">Español (AR)</SelectItem>
+                      <SelectItem value="es-ES">Español (ES)</SelectItem>
+                      <SelectItem value="en-US">Inglés (US)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </form.Field>
           </div>
         </div>

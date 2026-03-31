@@ -9,7 +9,7 @@ const orderConfirmationSearchSchema = z.object({
   pickupTime: z.string().catch("—"),
 });
 
-export const Route = createFileRoute("/_portal/order-confirmation/")({
+export const Route = createFileRoute("/_portal/_tenant/order-confirmation/")({
   validateSearch: orderConfirmationSearchSchema,
   component: OrderConfirmationPage,
 });

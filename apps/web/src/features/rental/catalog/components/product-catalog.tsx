@@ -12,11 +12,17 @@ import {
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { rentalQueries } from "@/features/rental/rental.queries";
-import type { RentalProductResponse } from "@repo/schemas";
+import type {
+  GetRentalProductTypesQuery,
+  RentalProductResponse,
+  TenantPricingConfig,
+} from "@repo/schemas";
 import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
 import { useProductCardState } from "../../cart/hooks/use-product-card-state";
 import { Minus, Plus } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { formatCurrency } from "@/shared/utils/price.utils";
+import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 
 interface ProductCatalogProps {
   search: RentalPageSearch;
@@ -24,7 +30,7 @@ interface ProductCatalogProps {
 }
 
 export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
-  if (!search.locationId || !search.startDate || !search.endDate) {
+  if (!search.locationId) {
     return null;
   }
 
@@ -33,6 +39,7 @@ export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
 
 function ProductCatalogResults({ search, onPageChange }: ProductCatalogProps) {
   const { data: products } = useSuspenseQuery(rentalQueries.products(search));
+  const { data: tenantPriceConfig } = useTenantPricingConfig();
 
   const currentPage = search.page ?? 1;
   const totalPages = products?.meta.totalPages ?? 1;
@@ -41,7 +48,11 @@ function ProductCatalogResults({ search, onPageChange }: ProductCatalogProps) {
     <>
       <div className="grid gap-6 py-10 grid-cols-[repeat(auto-fit,minmax(250px,350px))]">
         {products?.data.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard
+            key={product.id}
+            product={product}
+            priceConfig={tenantPriceConfig}
+          />
         ))}
       </div>
 
@@ -58,7 +69,13 @@ function ProductCatalogResults({ search, onPageChange }: ProductCatalogProps) {
   );
 }
 
-function ProductCard({ product }: { product: RentalProductResponse }) {
+function ProductCard({
+  product,
+  priceConfig,
+}: {
+  product: RentalProductResponse;
+  priceConfig: TenantPricingConfig;
+}) {
   const {
     isAvailable,
     isInCart,
@@ -107,7 +124,13 @@ function ProductCard({ product }: { product: RentalProductResponse }) {
         <div>
           {unitPrice != null ? (
             <>
-              <span className="text-lg font-bold">${unitPrice.toFixed(0)}</span>
+              <span className="text-lg font-bold">
+                {formatCurrency(
+                  unitPrice,
+                  priceConfig.currency,
+                  priceConfig.locale,
+                )}
+              </span>
               <span className="text-xs text-muted-foreground">
                 {" "}
                 / {product.billingUnit.label}

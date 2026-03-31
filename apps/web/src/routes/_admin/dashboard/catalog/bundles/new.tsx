@@ -1,8 +1,4 @@
-import {
-  createFileRoute,
-  getRouteApi,
-  useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useForm, useStore } from "@tanstack/react-form";
 import type { ProductTypeResponse } from "@repo/schemas";
 import { useState } from "react";
@@ -28,18 +24,18 @@ import { Loader2, Minus, Plus, Search, Trash2 } from "lucide-react";
 import { useCreateBundle } from "@/features/catalog/bundles/bundles.queries";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { CatalogImageUploader } from "@/features/catalog/components/catalog-image-uploader";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { tenantQueries } from "@/features/tenant/tenant.queries";
 
 export const Route = createFileRoute("/_admin/dashboard/catalog/bundles/new")({
   component: NewBundlePage,
 });
 
-const authedRoute = getRouteApi("/_admin/dashboard");
-
 function NewBundlePage() {
   const navigate = useNavigate();
   const {
-    tenant: { billingUnits },
-  } = authedRoute.useLoaderData();
+    data: { billingUnits },
+  } = useSuspenseQuery(tenantQueries.me());
 
   const { mutateAsync: createBundle } = useCreateBundle();
 

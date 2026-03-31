@@ -12,7 +12,8 @@ export interface TenantPricingConfigProps {
   maxOverRentThreshold: number;
   weekendCountsAsOne: boolean;
   roundingRule: RoundingRule;
-  defaultCurrency: string;
+  currency: string;
+  locale: string;
 }
 
 export interface TenantConfigProps {
@@ -50,7 +51,7 @@ export class TenantConfig {
 
     TenantConfig.validateTimezone(normalizedProps.timezone);
     TenantConfig.validateNewArrivalsWindowDays(normalizedProps.newArrivalsWindowDays);
-    TenantConfig.validateDefaultCurrency(normalizedProps.pricing.defaultCurrency);
+    TenantConfig.validateDefaultCurrency(normalizedProps.pricing.currency);
     TenantConfig.validateMaxOverRentThreshold(normalizedProps.pricing.maxOverRentThreshold);
     TenantConfig.validateBookingMode(normalizedProps.bookingMode);
 
@@ -70,7 +71,8 @@ export class TenantConfig {
         maxOverRentThreshold: 0,
         weekendCountsAsOne: false,
         roundingRule: RoundingRule.ROUND_UP,
-        defaultCurrency: 'ARS',
+        currency: 'ARS',
+        locale: 'es-AR',
       },
       timezone: 'UTC',
       newArrivalsWindowDays: 30,

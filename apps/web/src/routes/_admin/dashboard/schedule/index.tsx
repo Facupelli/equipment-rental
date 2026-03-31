@@ -1,4 +1,4 @@
-import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { type Dayjs } from "dayjs";
 import { Calendar } from "@/components/ui/calendar";
@@ -37,6 +37,7 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useCallback } from "react";
 import dayjs from "@/lib/dates/dayjs";
 import { useScheduleParams } from "@/features/orders/hooks/use-schedule-params";
+import { tenantQueries } from "@/features/tenant/tenant.queries";
 
 const searchSchema = z.object({
   date: z.iso.date().optional(),
@@ -50,8 +51,6 @@ export const Route = createFileRoute("/_admin/dashboard/schedule/")({
 
 export type ScheduleRoute = typeof Route;
 
-const authedRoute = getRouteApi("/_admin/dashboard");
-
 function labelToDate(label: string): Date {
   const [y, m, d] = label.split("-").map(Number);
   return new Date(y, m - 1, d);
@@ -64,8 +63,8 @@ function dateToLabel(d: Date): string {
 // TODO: make a context for timezone prop
 function TodaySchedulePage() {
   const {
-    tenant: { config },
-  } = authedRoute.useLoaderData();
+    data: { config },
+  } = useSuspenseQuery(tenantQueries.me());
 
   const {
     selectedDate,

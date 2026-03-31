@@ -9,10 +9,11 @@ const pricingPatchSchema = z.object({
   maxOverRentThreshold: z.number().nonnegative().optional(),
   weekendCountsAsOne: z.boolean().optional(),
   roundingRule: roundingRuleSchema.optional(),
-  defaultCurrency: z
+  currency: z
     .string()
     .regex(/^[A-Z]{3}$/, "Must be a 3-letter ISO 4217 code")
     .optional(),
+  locale: z.string(),
 });
 
 export const updateTenantConfigSchema = z.object({

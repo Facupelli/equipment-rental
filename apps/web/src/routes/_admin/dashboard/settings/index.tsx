@@ -1,5 +1,5 @@
 import { useBillingUnits } from "@/features/billing-unit/billing-unit.queries";
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,12 @@ import { Clock, Sun, CalendarDays, Grid2x2, CalendarClock } from "lucide-react";
 import type { BillingUnitListResponse } from "@repo/schemas";
 import { useSyncTenantBillingUnits } from "@/features/tenant/billing-unit/tenant-billing.queries";
 import { TenantConfigForm } from "@/features/tenant/components/tenant-config-form";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { tenantQueries } from "@/features/tenant/tenant.queries";
 
 export const Route = createFileRoute("/_admin/dashboard/settings/")({
   component: RouteComponent,
 });
-
-const authedRoute = getRouteApi("/_admin/dashboard");
 
 function RouteComponent() {
   const { data: billingUnits = [], isPending, isError } = useBillingUnits();
@@ -78,7 +78,7 @@ interface ActiveBillingUnitsFormProps {
 export function ActiveBillingUnitsForm({
   billingUnits,
 }: ActiveBillingUnitsFormProps) {
-  const { tenant } = authedRoute.useLoaderData();
+  const { data: tenant } = useSuspenseQuery(tenantQueries.me());
 
   const { mutate: syncBillingUnits } = useSyncTenantBillingUnits({
     onSuccess: () => {

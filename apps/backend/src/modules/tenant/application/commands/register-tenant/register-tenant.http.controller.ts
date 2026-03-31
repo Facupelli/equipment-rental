@@ -3,10 +3,10 @@ import { CommandBus } from '@nestjs/cqrs';
 
 import { Public } from 'src/core/decorators/public.decorator';
 
-import { RegisterTenantCommand } from '../../application/commands/register-tenant/register-tenant.command';
-import { CompanyNameAlreadyInUseError, EmailAlreadyInUseError } from '../../domain/errors/tenant.errors';
-import { RegisterTenantRequestDto } from '../../application/commands/register-tenant/register-tenant.request.dto';
-import { RegisterTenantResponseDto } from '../../application/commands/register-tenant/register-tenant.response.dto';
+import { RegisterTenantCommand } from './register-tenant.command';
+import { CompanyNameAlreadyInUseError, EmailAlreadyInUseError } from '../../../domain/errors/tenant.errors';
+import { RegisterTenantRequestDto } from './register-tenant.request.dto';
+import { RegisterTenantResponseDto } from './register-tenant.response.dto';
 
 @Controller('tenants')
 export class RegisterTenantHttpController {

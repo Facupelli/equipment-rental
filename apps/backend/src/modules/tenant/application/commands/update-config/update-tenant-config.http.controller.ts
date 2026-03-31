@@ -6,9 +6,9 @@ import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { UpdateTenantConfigCommand } from '../../application/commands/update-config/update-config.command';
-import { UpdateTenantConfigDto } from '../../application/commands/update-config/update-config.request.dto';
-import { TenantNotFoundError } from '../../domain/errors/tenant.errors';
+import { UpdateTenantConfigDto } from './update-config.request.dto';
+import { UpdateTenantConfigCommand } from './update-config.command';
+import { TenantNotFoundError } from 'src/modules/tenant/domain/errors/tenant.errors';
 
 @StaffRoute(Permission.MANAGE_LOCATIONS)
 @Controller('tenants')

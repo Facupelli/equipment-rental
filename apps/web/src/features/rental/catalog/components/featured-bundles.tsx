@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { rentalQueries } from "@/features/rental/rental.queries";
-import type { BundleItemResponse } from "@repo/schemas";
+import type { BundleItemResponse, TenantPricingConfig } from "@repo/schemas";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useBundleCardState } from "../../cart/hooks/use-bundle-card-state";
 import { CheckCircle, Trash2, Zap } from "lucide-react";
 import clsx from "clsx";
+import { useTenantPricingConfig } from "../../tenant/tenant.queries";
+import { formatCurrency } from "@/shared/utils/price.utils";
 
 interface FeaturedBundlesProps {
   locationId?: string;
@@ -41,6 +43,7 @@ function FeaturedBundlesResults({
   const { data: bundles } = useSuspenseQuery(
     rentalQueries.bundles({ locationId, startDate, endDate }),
   );
+  const { data: tenantPriceConfig } = useTenantPricingConfig();
 
   if (!bundles.length) {
     return null;
@@ -49,13 +52,23 @@ function FeaturedBundlesResults({
   return (
     <div className="grid  gap-6 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
       {bundles.map((bundle) => (
-        <BundleCard key={bundle.id} bundle={bundle} />
+        <BundleCard
+          key={bundle.id}
+          bundle={bundle}
+          priceConfig={tenantPriceConfig}
+        />
       ))}
     </div>
   );
 }
 
-function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
+function BundleCard({
+  bundle,
+  priceConfig,
+}: {
+  bundle: BundleItemResponse;
+  priceConfig: TenantPricingConfig;
+}) {
   const { isInCart, handleAdd, handleRemove } = useBundleCardState(bundle);
   const price = bundle.pricingPreview;
 
@@ -100,7 +113,11 @@ function BundleCard({ bundle }: { bundle: BundleItemResponse }) {
           {price ? (
             <div className="text-right shrink-0">
               <span className="text-xl font-bold">
-                ${price.pricePerUnit.toFixed(0)}{" "}
+                {formatCurrency(
+                  price.pricePerUnit,
+                  priceConfig.currency,
+                  priceConfig.locale,
+                )}{" "}
               </span>
               <span className="text-xs text-muted-foreground">
                 / {bundle.billingUnit.label}

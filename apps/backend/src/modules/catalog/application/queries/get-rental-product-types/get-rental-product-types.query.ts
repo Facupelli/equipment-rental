@@ -4,8 +4,8 @@ export class GetRentalProductTypesQuery implements IQuery {
   constructor(
     public readonly tenantId: string,
     public readonly locationId: string,
-    public readonly startDate: Date,
-    public readonly endDate: Date,
+    public readonly startDate: Date | undefined,
+    public readonly endDate: Date | undefined,
     public readonly categoryId?: string,
     public readonly search?: string,
     public readonly page?: number,

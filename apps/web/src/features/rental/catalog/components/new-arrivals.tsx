@@ -1,9 +1,14 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { rentalQueries } from "@/features/rental/rental.queries";
-import type { NewArrivalItemResponseDto } from "@repo/schemas";
+import { formatCurrency } from "@/shared/utils/price.utils";
+import type {
+  NewArrivalItemResponseDto,
+  TenantPricingConfig,
+} from "@repo/schemas";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef } from "react";
+import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 
 interface NewArrivalsProps {
   locationId?: string;
@@ -13,6 +18,7 @@ export function NewArrivals({ locationId }: NewArrivalsProps) {
   const { data: items, isError } = useSuspenseQuery(
     rentalQueries.newArrivals({ locationId }),
   );
+  const { data: tenantPriceConfig } = useTenantPricingConfig();
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -61,14 +67,24 @@ export function NewArrivals({ locationId }: NewArrivalsProps) {
         className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
       >
         {items.map((item) => (
-          <NewArrivalCard key={item.id} item={item} />
+          <NewArrivalCard
+            key={item.id}
+            item={item}
+            priceConfig={tenantPriceConfig}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function NewArrivalCard({ item }: { item: NewArrivalItemResponseDto }) {
+function NewArrivalCard({
+  item,
+  priceConfig,
+}: {
+  item: NewArrivalItemResponseDto;
+  priceConfig: TenantPricingConfig;
+}) {
   const price = item.pricingPreview;
 
   return (
@@ -96,7 +112,11 @@ function NewArrivalCard({ item }: { item: NewArrivalItemResponseDto }) {
       </p>
       {price ? (
         <p className="text-sm font-semibold mt-1">
-          ${price.pricePerUnit.toFixed(0)}{" "}
+          {formatCurrency(
+            price.pricePerUnit,
+            priceConfig.currency,
+            priceConfig.locale,
+          )}
           <span className="text-xs font-normal text-muted-foreground">
             / {item.billingUnit.label}
           </span>

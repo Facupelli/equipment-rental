@@ -21,9 +21,9 @@ import {
   useLocationId,
 } from "@/shared/contexts/location/location.hooks";
 import type { LocationListResponse } from "@repo/schemas";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
-  getRouteApi,
   Link,
   Outlet,
   redirect,
@@ -41,16 +41,14 @@ export const Route = createFileRoute("/_admin/dashboard")({
     });
   },
   loader: async ({ context: { queryClient } }) => {
-    const locations = await queryClient.ensureQueryData(locationQueries.list());
-    const user = await queryClient.ensureQueryData(userQueries.me());
-    const tenant = await queryClient.ensureQueryData(tenantQueries.me());
-
-    return { user, tenant, locations };
+    await Promise.all([
+      queryClient.ensureQueryData(locationQueries.list()),
+      queryClient.ensureQueryData(userQueries.me()),
+      queryClient.ensureQueryData(tenantQueries.me()),
+    ]);
   },
   component: DashboardLayout,
 });
-
-const dashboardRoute = getRouteApi("/_admin/dashboard");
 
 const sidebarItems = [
   { name: "Dashboard", href: "/dashboard" },
@@ -68,7 +66,9 @@ const sidebarItems = [
 ];
 
 function DashboardLayout() {
-  const { user, tenant, locations } = dashboardRoute.useLoaderData();
+  const { data: user } = useSuspenseQuery(userQueries.me());
+  const { data: tenant } = useSuspenseQuery(tenantQueries.me());
+  const { data: locations } = useSuspenseQuery(locationQueries.list());
 
   return (
     <LocationStoreProvider locations={locations}>

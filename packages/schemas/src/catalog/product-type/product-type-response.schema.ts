@@ -107,8 +107,8 @@ const rentalProductItemSchema = z.object({
 
 export const getRentalProductQuerySchema = z.object({
   locationId: z.uuid(),
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
   categoryId: z.uuid().optional(),
   search: z.string().optional(),
   page: z.coerce.number().optional(),

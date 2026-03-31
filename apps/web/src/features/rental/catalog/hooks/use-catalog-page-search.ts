@@ -16,7 +16,7 @@ export const rentalPageSearchSchema = z.object({
 export type RentalPageSearch = z.infer<typeof rentalPageSearchSchema>;
 
 export function useRentalPageSearch() {
-  const search = useSearch({ from: "/_portal/rental/" });
+  const search = useSearch({ from: "/_portal/_tenant/rental/" });
   const navigate = useNavigate({ from: "/rental/" });
 
   const [localSearch, setLocalSearch] = useState(search.search ?? "");

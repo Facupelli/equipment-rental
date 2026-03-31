@@ -13,7 +13,7 @@ const cartPageSearchSchema = z.object({
   locationId: z.string(),
 });
 
-export const Route = createFileRoute("/_portal/cart/")({
+export const Route = createFileRoute("/_portal/_tenant/cart/")({
   validateSearch: cartPageSearchSchema,
   component: CartPage,
   loader: async ({ context: { queryClient } }) => {
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_portal/cart/")({
 
 function CartPage() {
   const { startDate, endDate, locationId } = useSearch({
-    from: "/_portal/cart/",
+    from: "/_portal/_tenant/cart/",
   });
 
   return (

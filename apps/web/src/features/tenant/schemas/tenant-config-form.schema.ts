@@ -12,9 +12,8 @@ export const tenantConfigFormSchema = z.object({
   maxOverRentThreshold: z.number().nonnegative(),
   weekendCountsAsOne: z.boolean(),
   roundingRule: z.enum(RoundingRule),
-  defaultCurrency: z
-    .string()
-    .regex(/^[A-Z]{3}$/, "Must be a 3-letter ISO 4217 code"),
+  currency: z.string().regex(/^[A-Z]{3}$/, "Must be a 3-letter ISO 4217 code"),
+  locale: z.string(),
   timezone: z.string().min(1, "Timezone is required"),
   newArrivalsWindowDays: z.number().int().positive(),
   bookingMode: bookingModeSchema,
@@ -27,7 +26,8 @@ export const tenantConfigFormDefaults: TenantConfigFormValues = {
   maxOverRentThreshold: 0,
   weekendCountsAsOne: false,
   roundingRule: RoundingRule.ROUND_UP,
-  defaultCurrency: "ARS",
+  currency: "ARS",
+  locale: "es-AR",
   timezone: "UTC",
   newArrivalsWindowDays: 30,
   bookingMode: BookingMode.INSTANT_BOOK,
@@ -39,7 +39,8 @@ export function tenantConfigToFormValues(config: {
     maxOverRentThreshold: number;
     weekendCountsAsOne: boolean;
     roundingRule: RoundingRule;
-    defaultCurrency: string;
+    currency: string;
+    locale: string;
   };
   timezone: string;
   newArrivalsWindowDays: number;
@@ -50,7 +51,8 @@ export function tenantConfigToFormValues(config: {
     maxOverRentThreshold: config.pricing.maxOverRentThreshold,
     weekendCountsAsOne: config.pricing.weekendCountsAsOne,
     roundingRule: config.pricing.roundingRule,
-    defaultCurrency: config.pricing.defaultCurrency,
+    currency: config.pricing.currency,
+    locale: config.pricing.locale,
     timezone: config.timezone,
     newArrivalsWindowDays: config.newArrivalsWindowDays,
     bookingMode: config.bookingMode,
@@ -66,7 +68,8 @@ export function toUpdateTenantConfigDto(
       maxOverRentThreshold: values.maxOverRentThreshold,
       weekendCountsAsOne: values.weekendCountsAsOne,
       roundingRule: values.roundingRule,
-      defaultCurrency: values.defaultCurrency,
+      currency: values.currency,
+      locale: values.locale,
     },
     timezone: values.timezone,
     newArrivalsWindowDays: values.newArrivalsWindowDays,

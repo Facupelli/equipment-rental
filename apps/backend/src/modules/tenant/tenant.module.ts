@@ -29,11 +29,9 @@ import { FindActiveContractForScopeQueryHandler } from './owner/application/quer
 import { RegisterTenantService } from './application/commands/register-tenant/register-tenant.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { GetTenantConfigQueryHandler } from './application/queries/get-tenant-config/get-tenant-config.query-handler';
-import { RegisterTenantHttpController } from './infrastructure/controllers/register-tenant.http.controller';
-import { GetCurrentTenantHttpController } from './infrastructure/controllers/get-current-tenant.http.controller';
-import { UpdateTenantConfigHttpController } from './infrastructure/controllers/update-tenant-config.http.controller';
-import { GetTenantBillingUnitsHttpController } from './infrastructure/controllers/get-tenant-billing-units.http.controller';
-import { SyncTenantBillingUnitsHttpController } from './infrastructure/controllers/sync-tenant-billing-units.http.controller';
+import { RegisterTenantHttpController } from './application/commands/register-tenant/register-tenant.http.controller';
+import { GetCurrentTenantHttpController } from './application/queries/get-tenant/get-current-tenant.http.controller';
+import { GetTenantBillingUnitsHttpController } from './application/queries/get-billing-units/get-tenant-billing-units.http.controller';
 import { CreateLocationHttpController } from './location/infrastructure/controllers/create-location.http.controller';
 import { GetLocationsHttpController } from './location/infrastructure/controllers/get-locations.http.controller';
 import { GetLocationScheduleSlotsHttpController } from './location/infrastructure/controllers/get-location-schedule-slots.http.controller';
@@ -46,6 +44,9 @@ import { GetOwnersHttpController } from './owner/infrastructure/controllers/get-
 import { GetOwnerHttpController } from './owner/infrastructure/controllers/get-owner.http.controller';
 import { TenantPublicApi } from './tenant.public-api';
 import { TenantFacade } from './tenant.facade';
+import { UpdateTenantConfigHttpController } from './application/commands/update-config/update-tenant-config.http.controller';
+import { SyncTenantBillingUnitsHttpController } from './application/commands/sync-billing-units/sync-tenant-billing-units.http.controller';
+import { GetTenantPricingConfigHttpController } from './application/queries/get-tenant-config/get-tenant-pricing-config.http.controller';
 
 const commandHandlers = [
   RegisterTenantService,
@@ -93,6 +94,7 @@ const repositories = [
 const controllers = [
   RegisterTenantHttpController,
   GetCurrentTenantHttpController,
+  GetTenantPricingConfigHttpController,
   UpdateTenantConfigHttpController,
   GetTenantBillingUnitsHttpController,
   SyncTenantBillingUnitsHttpController,

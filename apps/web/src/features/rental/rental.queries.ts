@@ -1,6 +1,7 @@
 import {
   keepPreviousData,
   queryOptions,
+  skipToken,
   useQuery,
   type UseQueryOptions,
 } from "@tanstack/react-query";
@@ -32,8 +33,17 @@ type PaginatedRentalProducts = PaginatedDto<RentalProductResponse>;
 export const rentalKeys = {
   all: () => ["rental"] as const,
   products: () => [...rentalKeys.all(), "products"] as const,
-  product: (params: GetRentalProductTypesQuery) =>
-    [...rentalKeys.products(), params] as const,
+  product: (params: GetRentalProductTypesQuery) => {
+    const hasDateRange = !!params.startDate && !!params.endDate;
+    return [
+      ...rentalKeys.products(),
+      {
+        ...params,
+        startDate: hasDateRange ? params.startDate : undefined,
+        endDate: hasDateRange ? params.endDate : undefined,
+      },
+    ] as const;
+  },
   newArrivals: () => [...rentalKeys.all(), "new-arrivals"] as const,
   newArrival: (params: GetNewArrivalsParams) =>
     [...rentalKeys.newArrivals(), params] as const,
@@ -46,11 +56,17 @@ export const rentalKeys = {
 };
 
 export const rentalQueries = {
-  products: (params: GetRentalProductTypesQuery) =>
-    queryOptions<PaginatedRentalProducts, ProblemDetailsError>({
+  products: (params: GetRentalProductTypesQuery) => {
+    const hasDateRange = !!params.startDate && !!params.endDate;
+
+    return queryOptions<PaginatedRentalProducts, ProblemDetailsError>({
       queryKey: rentalKeys.product(params),
-      queryFn: () => getRentalProducts({ data: params }),
-    }),
+      queryFn:
+        hasDateRange || (!params.startDate && !params.endDate)
+          ? () => getRentalProducts({ data: params })
+          : skipToken,
+    });
+  },
   newArrivals: (params: GetNewArrivalsParams) =>
     queryOptions<NewArrivalListResponseDto, ProblemDetailsError>({
       queryKey: rentalKeys.newArrival(params),
@@ -60,6 +76,7 @@ export const rentalQueries = {
     queryOptions<BundleListResponseDto, ProblemDetailsError>({
       queryKey: rentalKeys.bundle(params),
       queryFn: () => getRentalBundles({ data: params }),
+      enabled: !!params.startDate && !!params.endDate,
     }),
 };
 

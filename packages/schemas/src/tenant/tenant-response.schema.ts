@@ -9,7 +9,8 @@ export const tenantPricingConfigSchema = z.object({
   maxOverRentThreshold: z.number(),
   weekendCountsAsOne: z.boolean(),
   roundingRule: roundingRuleSchema,
-  defaultCurrency: z.string(),
+  currency: z.string(),
+  locale: z.string(),
 });
 
 export const tenantConfigSchema = z.object({

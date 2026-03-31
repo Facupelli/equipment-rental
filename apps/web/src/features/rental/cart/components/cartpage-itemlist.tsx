@@ -5,14 +5,17 @@ import type {
   CartIncludedItem,
   CartBundleComponent,
 } from "@/features/rental/cart/cart.types";
-import type { CartPriceLineItem } from "@repo/schemas";
+import type { CartPriceLineItem, TenantPricingConfig } from "@repo/schemas";
 import { Link } from "@tanstack/react-router";
 import clsx from "clsx";
 import { CheckCircle2, Package, ShoppingBag, XCircle } from "lucide-react";
-import { formatCurrency } from "../cart.utils";
 import { useCartPageContext } from "../cart-page.context";
+import { formatCurrency } from "@/shared/utils/price.utils";
+import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 
 export function CartPageItemList() {
+  const { data: tenantPriceConfig } = useTenantPricingConfig();
+
   const { cartItems, breakdown, isPriceLoading, unavailableIds } =
     useCartPageContext();
 
@@ -69,6 +72,7 @@ export function CartPageItemList() {
                 line={line}
                 isLoading={isLoading}
                 isUnavailable={unavailableIds.includes(item.productTypeId)}
+                priceConfig={tenantPriceConfig}
               />
             );
           }
@@ -80,6 +84,7 @@ export function CartPageItemList() {
               line={line}
               isLoading={isLoading}
               isUnavailable={unavailableIds.includes(item.bundleId)}
+              priceConfig={tenantPriceConfig}
             />
           );
         })}
@@ -93,6 +98,7 @@ type CartPageStandaloneItemProps = {
   line: CartPriceLineItem | undefined;
   isLoading: boolean;
   isUnavailable: boolean;
+  priceConfig: TenantPricingConfig;
 };
 
 export function CartPageStandaloneItem({
@@ -100,6 +106,7 @@ export function CartPageStandaloneItem({
   line,
   isLoading,
   isUnavailable,
+  priceConfig,
 }: CartPageStandaloneItemProps) {
   return (
     <div
@@ -122,7 +129,11 @@ export function CartPageStandaloneItem({
             <Skeleton className="mb-1 ml-auto h-5 w-20" />
           ) : line ? (
             <p className="text-base font-black text-black">
-              {formatCurrency(line.pricePerBillingUnit)}{" "}
+              {formatCurrency(
+                line.pricePerBillingUnit,
+                priceConfig.currency,
+                priceConfig.locale,
+              )}{" "}
               <span className="uppercase text-xs tracking-wider font-semibold text-neutral-400">
                 / {item.billingUnitLabel}
               </span>
@@ -156,6 +167,7 @@ type CartPageBundleItemProps = {
   line: CartPriceLineItem | undefined;
   isLoading: boolean;
   isUnavailable: boolean;
+  priceConfig: TenantPricingConfig;
 };
 
 function CartPageBundleItem({
@@ -163,6 +175,7 @@ function CartPageBundleItem({
   line,
   isLoading,
   isUnavailable,
+  priceConfig,
 }: CartPageBundleItemProps) {
   return (
     <div
@@ -183,7 +196,11 @@ function CartPageBundleItem({
             <Skeleton className="ml-auto h-6 w-24" />
           ) : line ? (
             <p className="text-lg font-black text-black">
-              {formatCurrency(line.subtotal)}
+              {formatCurrency(
+                line.subtotal,
+                priceConfig.currency,
+                priceConfig.locale,
+              )}
             </p>
           ) : null}
           {item.quantity > 1 && (

@@ -6,8 +6,8 @@ import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { SyncTenantBillingUnitsCommand } from '../../application/commands/sync-billing-units/sync-tenant-billing-units.command';
-import { SyncTenantBillingUnitsDto } from '../../application/commands/sync-billing-units/sync-tenant-billing-units.request.dto';
+import { SyncTenantBillingUnitsCommand } from './sync-tenant-billing-units.command';
+import { SyncTenantBillingUnitsDto } from './sync-tenant-billing-units.request.dto';
 
 @StaffRoute(Permission.MANAGE_LOCATIONS)
 @Controller('tenants')

@@ -18,7 +18,7 @@ type RentalProductReadModel = {
   name: string;
   imageUrl: string;
   description: string | null;
-  availableCount: number;
+  availableCount: number | null; // null when no period is selected
   category: { id: string; name: string } | null;
   attributes: Record<string, string>;
   includedItems: RentalIncludedItemReadModel[];
@@ -101,16 +101,12 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
       this.prisma.client.productType.count({ where }),
     ]);
 
-    const availabilityRows = await this.queryBus.execute<GetAvailableAssetCountsQuery, AvailableAssetCountReadModel[]>(
-      new GetAvailableAssetCountsQuery(
-        locationId,
-        startDate,
-        endDate,
-        rawProducts.map((product) => product.id),
-      ),
+    const availableCounts = await this.resolveAvailability(
+      locationId,
+      startDate,
+      endDate,
+      rawProducts.map((p) => p.id),
     );
-
-    const availableCounts = new Map(availabilityRows.map((row) => [row.productTypeId, row.availableCount]));
 
     const items: RentalProductReadModel[] = rawProducts.map((product) => {
       const locationTiers = product.pricingTiers.filter((t) => t.locationId === locationId);
@@ -123,7 +119,7 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
         // todo fix when image migration is not null
         imageUrl: product.imageUrl ?? '',
         description: product.description,
-        availableCount: availableCounts.get(product.id) ?? 0,
+        availableCount: availableCounts?.get(product.id) ?? null,
         category: product.category ?? null,
         attributes: product.attributes as Record<string, string>,
         includedItems: product.includedItems as RentalIncludedItemReadModel[],
@@ -189,5 +185,20 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
         },
       },
     };
+  }
+
+  private async resolveAvailability(
+    locationId: string,
+    startDate: Date | undefined,
+    endDate: Date | undefined,
+    productTypeIds: string[],
+  ): Promise<Map<string, number> | null> {
+    if (!startDate || !endDate) return null;
+
+    const rows = await this.queryBus.execute<GetAvailableAssetCountsQuery, AvailableAssetCountReadModel[]>(
+      new GetAvailableAssetCountsQuery(locationId, startDate, endDate, productTypeIds),
+    );
+
+    return new Map(rows.map((row) => [row.productTypeId, row.availableCount]));
   }
 }

@@ -93,7 +93,7 @@ export function CartPopoverHeader({ onClose }: CartPopoverHeaderProps) {
 
 function CartPopoverContext() {
   const { locationId, startDate, endDate } = useSearch({
-    from: "/_portal/rental/",
+    from: "/_portal/_tenant/rental/",
   });
   const { data: locations } = useLocations();
   const location = locations?.find((l) => l.id === locationId);
@@ -259,7 +259,7 @@ type CartPopoverFooterProps = {
 
 export function CartPopoverFooter({ onClose }: CartPopoverFooterProps) {
   const { locationId, startDate, endDate } = useSearch({
-    from: "/_portal/rental/",
+    from: "/_portal/_tenant/rental/",
   });
   const router = useRouter();
   const isEmpty = useCartIsEmpty();

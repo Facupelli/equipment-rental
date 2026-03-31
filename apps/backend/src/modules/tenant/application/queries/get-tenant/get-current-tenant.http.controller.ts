@@ -6,7 +6,7 @@ import { TenantResponse } from '@repo/schemas';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { GetTenantQuery } from '../../application/queries/get-tenant/get-tenant.query';
+import { GetTenantQuery } from './get-tenant.query';
 
 @StaffOnly()
 @Controller('tenants')

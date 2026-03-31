@@ -9,20 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PortalRouteRouteImport } from './routes/_portal/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiCustomerUploadRouteImport } from './routes/api/customer-upload'
 import { Route as PortalRegisterRouteImport } from './routes/_portal/register'
 import { Route as PortalLoginRouteImport } from './routes/_portal/login'
+import { Route as PortalTenantRouteRouteImport } from './routes/_portal/_tenant/route'
 import { Route as AdminDashboardRouteRouteImport } from './routes/_admin/dashboard/route'
-import { Route as PortalRentalIndexRouteImport } from './routes/_portal/rental/index'
-import { Route as PortalOrderConfirmationIndexRouteImport } from './routes/_portal/order-confirmation/index'
-import { Route as PortalOnboardIndexRouteImport } from './routes/_portal/onboard/index'
-import { Route as PortalCartIndexRouteImport } from './routes/_portal/cart/index'
 import { Route as AdminDashboardIndexRouteImport } from './routes/_admin/dashboard/index'
 import { Route as AdminAdminRegisterRouteImport } from './routes/_admin/admin/register'
 import { Route as AdminAdminLoginRouteImport } from './routes/_admin/admin/login'
+import { Route as PortalTenantRentalIndexRouteImport } from './routes/_portal/_tenant/rental/index'
+import { Route as PortalTenantOrderConfirmationIndexRouteImport } from './routes/_portal/_tenant/order-confirmation/index'
+import { Route as PortalTenantOnboardIndexRouteImport } from './routes/_portal/_tenant/onboard/index'
+import { Route as PortalTenantCartIndexRouteImport } from './routes/_portal/_tenant/cart/index'
 import { Route as AdminDashboardSettingsIndexRouteImport } from './routes/_admin/dashboard/settings/index'
 import { Route as AdminDashboardScheduleIndexRouteImport } from './routes/_admin/dashboard/schedule/index'
 import { Route as AdminDashboardPricingIndexRouteImport } from './routes/_admin/dashboard/pricing/index'
@@ -42,10 +42,6 @@ import { Route as AdminDashboardCatalogProductsProductIdRouteImport } from './ro
 import { Route as AdminDashboardCatalogBundlesNewRouteImport } from './routes/_admin/dashboard/catalog/bundles/new'
 import { Route as AdminDashboardCatalogBundlesBundleIdRouteImport } from './routes/_admin/dashboard/catalog/bundles/$bundleId'
 
-const PortalRouteRoute = PortalRouteRouteImport.update({
-  id: '/_portal',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -62,40 +58,23 @@ const ApiCustomerUploadRoute = ApiCustomerUploadRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortalRegisterRoute = PortalRegisterRouteImport.update({
-  id: '/register',
+  id: '/_portal/register',
   path: '/register',
-  getParentRoute: () => PortalRouteRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PortalLoginRoute = PortalLoginRouteImport.update({
-  id: '/login',
+  id: '/_portal/login',
   path: '/login',
-  getParentRoute: () => PortalRouteRoute,
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalTenantRouteRoute = PortalTenantRouteRouteImport.update({
+  id: '/_portal/_tenant',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminDashboardRouteRoute = AdminDashboardRouteRouteImport.update({
   id: '/_admin/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
-} as any)
-const PortalRentalIndexRoute = PortalRentalIndexRouteImport.update({
-  id: '/rental/',
-  path: '/rental/',
-  getParentRoute: () => PortalRouteRoute,
-} as any)
-const PortalOrderConfirmationIndexRoute =
-  PortalOrderConfirmationIndexRouteImport.update({
-    id: '/order-confirmation/',
-    path: '/order-confirmation/',
-    getParentRoute: () => PortalRouteRoute,
-  } as any)
-const PortalOnboardIndexRoute = PortalOnboardIndexRouteImport.update({
-  id: '/onboard/',
-  path: '/onboard/',
-  getParentRoute: () => PortalRouteRoute,
-} as any)
-const PortalCartIndexRoute = PortalCartIndexRouteImport.update({
-  id: '/cart/',
-  path: '/cart/',
-  getParentRoute: () => PortalRouteRoute,
 } as any)
 const AdminDashboardIndexRoute = AdminDashboardIndexRouteImport.update({
   id: '/',
@@ -111,6 +90,28 @@ const AdminAdminLoginRoute = AdminAdminLoginRouteImport.update({
   id: '/_admin/admin/login',
   path: '/admin/login',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PortalTenantRentalIndexRoute = PortalTenantRentalIndexRouteImport.update({
+  id: '/rental/',
+  path: '/rental/',
+  getParentRoute: () => PortalTenantRouteRoute,
+} as any)
+const PortalTenantOrderConfirmationIndexRoute =
+  PortalTenantOrderConfirmationIndexRouteImport.update({
+    id: '/order-confirmation/',
+    path: '/order-confirmation/',
+    getParentRoute: () => PortalTenantRouteRoute,
+  } as any)
+const PortalTenantOnboardIndexRoute =
+  PortalTenantOnboardIndexRouteImport.update({
+    id: '/onboard/',
+    path: '/onboard/',
+    getParentRoute: () => PortalTenantRouteRoute,
+  } as any)
+const PortalTenantCartIndexRoute = PortalTenantCartIndexRouteImport.update({
+  id: '/cart/',
+  path: '/cart/',
+  getParentRoute: () => PortalTenantRouteRoute,
 } as any)
 const AdminDashboardSettingsIndexRoute =
   AdminDashboardSettingsIndexRouteImport.update({
@@ -231,10 +232,6 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminAdminLoginRoute
   '/admin/register': typeof AdminAdminRegisterRoute
   '/dashboard/': typeof AdminDashboardIndexRoute
-  '/cart/': typeof PortalCartIndexRoute
-  '/onboard/': typeof PortalOnboardIndexRoute
-  '/order-confirmation/': typeof PortalOrderConfirmationIndexRoute
-  '/rental/': typeof PortalRentalIndexRoute
   '/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
@@ -245,6 +242,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/pricing/': typeof AdminDashboardPricingIndexRoute
   '/dashboard/schedule/': typeof AdminDashboardScheduleIndexRoute
   '/dashboard/settings/': typeof AdminDashboardSettingsIndexRoute
+  '/cart/': typeof PortalTenantCartIndexRoute
+  '/onboard/': typeof PortalTenantOnboardIndexRoute
+  '/order-confirmation/': typeof PortalTenantOrderConfirmationIndexRoute
+  '/rental/': typeof PortalTenantRentalIndexRoute
   '/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdRoute
   '/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/dashboard/catalog/products/$productId': typeof AdminDashboardCatalogProductsProductIdRoute
@@ -263,10 +264,6 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminAdminLoginRoute
   '/admin/register': typeof AdminAdminRegisterRoute
   '/dashboard': typeof AdminDashboardIndexRoute
-  '/cart': typeof PortalCartIndexRoute
-  '/onboard': typeof PortalOnboardIndexRoute
-  '/order-confirmation': typeof PortalOrderConfirmationIndexRoute
-  '/rental': typeof PortalRentalIndexRoute
   '/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
@@ -277,6 +274,10 @@ export interface FileRoutesByTo {
   '/dashboard/pricing': typeof AdminDashboardPricingIndexRoute
   '/dashboard/schedule': typeof AdminDashboardScheduleIndexRoute
   '/dashboard/settings': typeof AdminDashboardSettingsIndexRoute
+  '/cart': typeof PortalTenantCartIndexRoute
+  '/onboard': typeof PortalTenantOnboardIndexRoute
+  '/order-confirmation': typeof PortalTenantOrderConfirmationIndexRoute
+  '/rental': typeof PortalTenantRentalIndexRoute
   '/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdRoute
   '/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/dashboard/catalog/products/$productId': typeof AdminDashboardCatalogProductsProductIdRoute
@@ -289,8 +290,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_portal': typeof PortalRouteRouteWithChildren
   '/_admin/dashboard': typeof AdminDashboardRouteRouteWithChildren
+  '/_portal/_tenant': typeof PortalTenantRouteRouteWithChildren
   '/_portal/login': typeof PortalLoginRoute
   '/_portal/register': typeof PortalRegisterRoute
   '/api/customer-upload': typeof ApiCustomerUploadRoute
@@ -298,10 +299,6 @@ export interface FileRoutesById {
   '/_admin/admin/login': typeof AdminAdminLoginRoute
   '/_admin/admin/register': typeof AdminAdminRegisterRoute
   '/_admin/dashboard/': typeof AdminDashboardIndexRoute
-  '/_portal/cart/': typeof PortalCartIndexRoute
-  '/_portal/onboard/': typeof PortalOnboardIndexRoute
-  '/_portal/order-confirmation/': typeof PortalOrderConfirmationIndexRoute
-  '/_portal/rental/': typeof PortalRentalIndexRoute
   '/_admin/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/_admin/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/_admin/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
@@ -312,6 +309,10 @@ export interface FileRoutesById {
   '/_admin/dashboard/pricing/': typeof AdminDashboardPricingIndexRoute
   '/_admin/dashboard/schedule/': typeof AdminDashboardScheduleIndexRoute
   '/_admin/dashboard/settings/': typeof AdminDashboardSettingsIndexRoute
+  '/_portal/_tenant/cart/': typeof PortalTenantCartIndexRoute
+  '/_portal/_tenant/onboard/': typeof PortalTenantOnboardIndexRoute
+  '/_portal/_tenant/order-confirmation/': typeof PortalTenantOrderConfirmationIndexRoute
+  '/_portal/_tenant/rental/': typeof PortalTenantRentalIndexRoute
   '/_admin/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdRoute
   '/_admin/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/_admin/dashboard/catalog/products/$productId': typeof AdminDashboardCatalogProductsProductIdRoute
@@ -333,10 +334,6 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/register'
     | '/dashboard/'
-    | '/cart/'
-    | '/onboard/'
-    | '/order-confirmation/'
-    | '/rental/'
     | '/dashboard/customers/$customerId'
     | '/dashboard/locations/$locationId'
     | '/dashboard/orders/$orderId'
@@ -347,6 +344,10 @@ export interface FileRouteTypes {
     | '/dashboard/pricing/'
     | '/dashboard/schedule/'
     | '/dashboard/settings/'
+    | '/cart/'
+    | '/onboard/'
+    | '/order-confirmation/'
+    | '/rental/'
     | '/dashboard/catalog/bundles/$bundleId'
     | '/dashboard/catalog/bundles/new'
     | '/dashboard/catalog/products/$productId'
@@ -365,10 +366,6 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/register'
     | '/dashboard'
-    | '/cart'
-    | '/onboard'
-    | '/order-confirmation'
-    | '/rental'
     | '/dashboard/customers/$customerId'
     | '/dashboard/locations/$locationId'
     | '/dashboard/orders/$orderId'
@@ -379,6 +376,10 @@ export interface FileRouteTypes {
     | '/dashboard/pricing'
     | '/dashboard/schedule'
     | '/dashboard/settings'
+    | '/cart'
+    | '/onboard'
+    | '/order-confirmation'
+    | '/rental'
     | '/dashboard/catalog/bundles/$bundleId'
     | '/dashboard/catalog/bundles/new'
     | '/dashboard/catalog/products/$productId'
@@ -390,8 +391,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/_portal'
     | '/_admin/dashboard'
+    | '/_portal/_tenant'
     | '/_portal/login'
     | '/_portal/register'
     | '/api/customer-upload'
@@ -399,10 +400,6 @@ export interface FileRouteTypes {
     | '/_admin/admin/login'
     | '/_admin/admin/register'
     | '/_admin/dashboard/'
-    | '/_portal/cart/'
-    | '/_portal/onboard/'
-    | '/_portal/order-confirmation/'
-    | '/_portal/rental/'
     | '/_admin/dashboard/customers/$customerId'
     | '/_admin/dashboard/locations/$locationId'
     | '/_admin/dashboard/orders/$orderId'
@@ -413,6 +410,10 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/pricing/'
     | '/_admin/dashboard/schedule/'
     | '/_admin/dashboard/settings/'
+    | '/_portal/_tenant/cart/'
+    | '/_portal/_tenant/onboard/'
+    | '/_portal/_tenant/order-confirmation/'
+    | '/_portal/_tenant/rental/'
     | '/_admin/dashboard/catalog/bundles/$bundleId'
     | '/_admin/dashboard/catalog/bundles/new'
     | '/_admin/dashboard/catalog/products/$productId'
@@ -425,8 +426,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  PortalRouteRoute: typeof PortalRouteRouteWithChildren
   AdminDashboardRouteRoute: typeof AdminDashboardRouteRouteWithChildren
+  PortalTenantRouteRoute: typeof PortalTenantRouteRouteWithChildren
+  PortalLoginRoute: typeof PortalLoginRoute
+  PortalRegisterRoute: typeof PortalRegisterRoute
   ApiCustomerUploadRoute: typeof ApiCustomerUploadRoute
   ApiUploadRoute: typeof ApiUploadRoute
   AdminAdminLoginRoute: typeof AdminAdminLoginRoute
@@ -435,13 +438,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_portal': {
-      id: '/_portal'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof PortalRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -468,14 +464,21 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof PortalRegisterRouteImport
-      parentRoute: typeof PortalRouteRoute
+      parentRoute: typeof rootRouteImport
     }
     '/_portal/login': {
       id: '/_portal/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof PortalLoginRouteImport
-      parentRoute: typeof PortalRouteRoute
+      parentRoute: typeof rootRouteImport
+    }
+    '/_portal/_tenant': {
+      id: '/_portal/_tenant'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PortalTenantRouteRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_admin/dashboard': {
       id: '/_admin/dashboard'
@@ -483,34 +486,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof AdminDashboardRouteRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_portal/rental/': {
-      id: '/_portal/rental/'
-      path: '/rental'
-      fullPath: '/rental/'
-      preLoaderRoute: typeof PortalRentalIndexRouteImport
-      parentRoute: typeof PortalRouteRoute
-    }
-    '/_portal/order-confirmation/': {
-      id: '/_portal/order-confirmation/'
-      path: '/order-confirmation'
-      fullPath: '/order-confirmation/'
-      preLoaderRoute: typeof PortalOrderConfirmationIndexRouteImport
-      parentRoute: typeof PortalRouteRoute
-    }
-    '/_portal/onboard/': {
-      id: '/_portal/onboard/'
-      path: '/onboard'
-      fullPath: '/onboard/'
-      preLoaderRoute: typeof PortalOnboardIndexRouteImport
-      parentRoute: typeof PortalRouteRoute
-    }
-    '/_portal/cart/': {
-      id: '/_portal/cart/'
-      path: '/cart'
-      fullPath: '/cart/'
-      preLoaderRoute: typeof PortalCartIndexRouteImport
-      parentRoute: typeof PortalRouteRoute
     }
     '/_admin/dashboard/': {
       id: '/_admin/dashboard/'
@@ -532,6 +507,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/login'
       preLoaderRoute: typeof AdminAdminLoginRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_portal/_tenant/rental/': {
+      id: '/_portal/_tenant/rental/'
+      path: '/rental'
+      fullPath: '/rental/'
+      preLoaderRoute: typeof PortalTenantRentalIndexRouteImport
+      parentRoute: typeof PortalTenantRouteRoute
+    }
+    '/_portal/_tenant/order-confirmation/': {
+      id: '/_portal/_tenant/order-confirmation/'
+      path: '/order-confirmation'
+      fullPath: '/order-confirmation/'
+      preLoaderRoute: typeof PortalTenantOrderConfirmationIndexRouteImport
+      parentRoute: typeof PortalTenantRouteRoute
+    }
+    '/_portal/_tenant/onboard/': {
+      id: '/_portal/_tenant/onboard/'
+      path: '/onboard'
+      fullPath: '/onboard/'
+      preLoaderRoute: typeof PortalTenantOnboardIndexRouteImport
+      parentRoute: typeof PortalTenantRouteRoute
+    }
+    '/_portal/_tenant/cart/': {
+      id: '/_portal/_tenant/cart/'
+      path: '/cart'
+      fullPath: '/cart/'
+      preLoaderRoute: typeof PortalTenantCartIndexRouteImport
+      parentRoute: typeof PortalTenantRouteRoute
     }
     '/_admin/dashboard/settings/': {
       id: '/_admin/dashboard/settings/'
@@ -662,28 +665,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface PortalRouteRouteChildren {
-  PortalLoginRoute: typeof PortalLoginRoute
-  PortalRegisterRoute: typeof PortalRegisterRoute
-  PortalCartIndexRoute: typeof PortalCartIndexRoute
-  PortalOnboardIndexRoute: typeof PortalOnboardIndexRoute
-  PortalOrderConfirmationIndexRoute: typeof PortalOrderConfirmationIndexRoute
-  PortalRentalIndexRoute: typeof PortalRentalIndexRoute
-}
-
-const PortalRouteRouteChildren: PortalRouteRouteChildren = {
-  PortalLoginRoute: PortalLoginRoute,
-  PortalRegisterRoute: PortalRegisterRoute,
-  PortalCartIndexRoute: PortalCartIndexRoute,
-  PortalOnboardIndexRoute: PortalOnboardIndexRoute,
-  PortalOrderConfirmationIndexRoute: PortalOrderConfirmationIndexRoute,
-  PortalRentalIndexRoute: PortalRentalIndexRoute,
-}
-
-const PortalRouteRouteWithChildren = PortalRouteRoute._addFileChildren(
-  PortalRouteRouteChildren,
-)
-
 interface AdminDashboardRouteRouteChildren {
   AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
   AdminDashboardCustomersCustomerIdRoute: typeof AdminDashboardCustomersCustomerIdRoute
@@ -739,10 +720,30 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
 const AdminDashboardRouteRouteWithChildren =
   AdminDashboardRouteRoute._addFileChildren(AdminDashboardRouteRouteChildren)
 
+interface PortalTenantRouteRouteChildren {
+  PortalTenantCartIndexRoute: typeof PortalTenantCartIndexRoute
+  PortalTenantOnboardIndexRoute: typeof PortalTenantOnboardIndexRoute
+  PortalTenantOrderConfirmationIndexRoute: typeof PortalTenantOrderConfirmationIndexRoute
+  PortalTenantRentalIndexRoute: typeof PortalTenantRentalIndexRoute
+}
+
+const PortalTenantRouteRouteChildren: PortalTenantRouteRouteChildren = {
+  PortalTenantCartIndexRoute: PortalTenantCartIndexRoute,
+  PortalTenantOnboardIndexRoute: PortalTenantOnboardIndexRoute,
+  PortalTenantOrderConfirmationIndexRoute:
+    PortalTenantOrderConfirmationIndexRoute,
+  PortalTenantRentalIndexRoute: PortalTenantRentalIndexRoute,
+}
+
+const PortalTenantRouteRouteWithChildren =
+  PortalTenantRouteRoute._addFileChildren(PortalTenantRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  PortalRouteRoute: PortalRouteRouteWithChildren,
   AdminDashboardRouteRoute: AdminDashboardRouteRouteWithChildren,
+  PortalTenantRouteRoute: PortalTenantRouteRouteWithChildren,
+  PortalLoginRoute: PortalLoginRoute,
+  PortalRegisterRoute: PortalRegisterRoute,
   ApiCustomerUploadRoute: ApiCustomerUploadRoute,
   ApiUploadRoute: ApiUploadRoute,
   AdminAdminLoginRoute: AdminAdminLoginRoute,

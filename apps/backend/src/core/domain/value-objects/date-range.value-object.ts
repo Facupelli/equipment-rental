@@ -10,7 +10,7 @@ export class DateRange {
   }
 
   static create(start: Date, end: Date): DateRange {
-    if (start >= end) {
+    if (start > end) {
       throw new InvalidDateRangeException(start, end);
     }
     return new DateRange(start, end);

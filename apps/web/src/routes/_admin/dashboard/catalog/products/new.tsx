@@ -29,9 +29,11 @@ import {
   productTypeFormSchema,
   toCreateProductTypeDto,
 } from "@/features/catalog/product-types/schemas/product-type-form.schema";
+import { tenantQueries } from "@/features/tenant/tenant.queries";
 import { TrackingMode } from "@repo/types";
 import { useForm } from "@tanstack/react-form";
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -39,16 +41,14 @@ export const Route = createFileRoute("/_admin/dashboard/catalog/products/new")({
   component: CreateProductPage,
 });
 
-const authedRoute = getRouteApi("/_admin/dashboard");
-
 const formId = "create-product";
 
 function CreateProductPage() {
   const navigate = useNavigate();
 
   const {
-    tenant: { billingUnits },
-  } = authedRoute.useLoaderData();
+    data: { billingUnits },
+  } = useSuspenseQuery(tenantQueries.me());
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories();
   const { mutateAsync: createProduct, isPending } = useCreateProduct();

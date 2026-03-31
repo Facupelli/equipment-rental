@@ -1,7 +1,7 @@
 import { CustomerForm } from "@/features/customer/components/onboard-form/onboard-form";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_portal/onboard/")({
+export const Route = createFileRoute("/_portal/_tenant/onboard/")({
   component: RouteComponent,
 });
 
