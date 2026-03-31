@@ -2,7 +2,11 @@ import { useLocationScheduleSlots } from "@/features/tenant/locations/location-s
 import { ScheduleSlotType } from "@repo/types";
 import { AlertTriangle, Calendar, Clock } from "lucide-react";
 import { formatSlot } from "../cart.utils";
-import { formatDateShort, formatRentalDuration } from "@/lib/dates/format";
+import {
+  formatDailyRange,
+  formatDateShort,
+  formatRentalDuration,
+} from "@/lib/dates/format";
 import { useCartPageContext } from "../cart-page.context";
 
 export function CartPagePeriod() {
@@ -54,7 +58,7 @@ export function CartPagePeriod() {
             icon={<Calendar className="h-4 w-4 shrink-0 text-neutral-400" />}
           >
             <p className="text-sm font-semibold text-black">
-              {formatDateShort(startDate)} — {formatDateShort(endDate)}
+              {formatDailyRange(startDate, endDate)}
             </p>
           </PeriodCell>
 
