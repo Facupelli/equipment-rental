@@ -13,7 +13,6 @@ export class FindCredentialsByEmailQueryHandler implements IQueryHandler<
   async execute(query: FindUserCredentialsByEmailQuery): Promise<UserCredentialsReadModel | null> {
     const user = await this.prisma.client.user.findFirst({
       where: {
-        tenantId: query.tenantId,
         email: query.email,
         deletedAt: null,
       },

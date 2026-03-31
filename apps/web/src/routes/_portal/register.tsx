@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { Mail, Lock, Building2, Clock, Watch, File } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,13 +27,17 @@ import {
 } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_portal/register")({
+  beforeLoad: ({ context }) => {
+    if (context.tenantContext.face !== "portal") {
+      throw redirect({ to: "/admin/login" });
+    }
+  },
   component: RegisterPage,
 });
 
 const formId = "register-customer";
 
 function RegisterPage() {
-  const { tenantContext } = Route.useRouteContext();
   const { mutateAsync: register, isPending } = useCustomerRegister();
 
   const form = useForm({
@@ -42,17 +46,10 @@ function RegisterPage() {
       onSubmit: customerRegisterSchema,
     },
     onSubmit: async ({ value }) => {
-      if (tenantContext.face !== "portal") {
-        return;
-      }
-
       const dto = toRegisterCustomerDto(value);
 
       try {
-        await register({
-          ...dto,
-          tenantId: tenantContext.tenant.id,
-        });
+        await register(dto);
         form.reset();
       } catch (error) {
         console.log({ error });

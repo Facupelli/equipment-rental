@@ -1,10 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-local';
-import { Request } from 'express';
 import { ActorType } from '@repo/types';
 import { BcryptService } from '../../application/bcript.service';
 import { UserCredentialsReadModel } from 'src/modules/users/public/read-models/user-credentials.read-model';
+import { Request } from 'express';
 
 export interface UserLocalUser {
   id: string;
@@ -23,14 +23,8 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(req: Request, email: string, password: string): Promise<UserLocalUser> {
-    const tenantId = req.body.tenantId as string | undefined;
-
-    if (!tenantId) {
-      throw new UnauthorizedException('tenantId is required.');
-    }
-
-    const user: UserCredentialsReadModel = await this.bcryptService.validateUser(email, password, tenantId);
+  async validate(_: Request, email: string, password: string): Promise<UserLocalUser> {
+    const user: UserCredentialsReadModel = await this.bcryptService.validateUser(email, password);
 
     return {
       id: user.id,

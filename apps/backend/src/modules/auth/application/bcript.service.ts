@@ -10,9 +10,9 @@ import { UserCredentialsReadModel } from 'src/modules/users/public/read-models/u
 export class BcryptService {
   constructor(private readonly queryBus: QueryBus) {}
 
-  async validateUser(email: string, password: string, tenantId: string): Promise<UserCredentialsReadModel> {
+  async validateUser(email: string, password: string): Promise<UserCredentialsReadModel> {
     const user = await this.queryBus.execute<FindUserCredentialsByEmailQuery, UserCredentialsReadModel | null>(
-      new FindUserCredentialsByEmailQuery(tenantId, email),
+      new FindUserCredentialsByEmailQuery(email),
     );
 
     if (!user) {

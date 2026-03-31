@@ -40,7 +40,6 @@ function LoginPage() {
       onSubmit: loginSchema,
     },
     onSubmit: async ({ value }) => {
-      console.log("CLICKED");
       try {
         await login(value);
         router.navigate({ to: "/dashboard" });

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,13 +25,17 @@ import {
 } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_portal/login")({
+  beforeLoad: ({ context }) => {
+    if (context.tenantContext.face !== "portal") {
+      throw redirect({ to: "/admin/login" });
+    }
+  },
   component: LoginPage,
 });
 
 const formId = "login-customer";
 
 function LoginPage() {
-  const { tenantContext } = Route.useRouteContext();
   const navigate = useNavigate();
   const { mutateAsync: customerLogin, isPending } = useCustomerLogin();
 
@@ -41,15 +45,8 @@ function LoginPage() {
       onSubmit: customerLoginSchema,
     },
     onSubmit: async ({ value }) => {
-      if (tenantContext.face !== "portal") {
-        return;
-      }
-
       try {
-        await customerLogin({
-          ...value,
-          tenantId: tenantContext.tenant.id,
-        });
+        await customerLogin(value);
         navigate({ to: "/rental" });
       } catch (error) {
         console.log({ error });

@@ -30,8 +30,8 @@ const queryHandlers = [
 @Module({
   controllers: [
     GetCustomersHttpController,
-    GetCustomerDetailHttpController,
     GetCustomerHttpController,
+    GetCustomerDetailHttpController,
     SubmitCustomerProfileHttpController,
     ResubmitCustomerProfileHttpController,
     GetCustomerProfileHttpController,

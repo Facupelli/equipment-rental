@@ -7,6 +7,18 @@ function getHostname(): string {
   return url.hostname; // strips port automatically — handles localhost:3000 in dev
 }
 
+function getRequiredEnv(
+  name: "BACKEND_URL" | "INTERNAL_API_TOKEN" | "ROOT_DOMAIN",
+): string {
+  const value = process.env[name];
+
+  if (!value) {
+    throw new Error(`${name} is not set`);
+  }
+
+  return value;
+}
+
 function buildCacheKey(hostname: string, rootDomain: string): string {
   // Use the real Worker hostname per Cloudflare's recommendation —
   // avoid fake hostnames like https://cache/... to prevent DNS lookup issues
@@ -36,7 +48,9 @@ async function writeToCache(
   cacheKey: string,
   context: ResolvedTenantContext,
 ): Promise<void> {
-  if (typeof caches === "undefined") return;
+  if (typeof caches === "undefined") {
+    return;
+  }
 
   const cache = await caches.open("tenant-context");
 
@@ -52,19 +66,9 @@ async function writeToCache(
 
 export const resolveTenantContext = createServerFn({ method: "GET" }).handler(
   async (): Promise<ResolvedTenantContext> => {
-    const nestApiUrl = process.env.BACKEND_URL as string | undefined;
-    const internalToken = process.env.INTERNAL_API_TOKEN as string | undefined;
-    const rootDomain = process.env.ROOT_DOMAIN as string | undefined;
-
-    if (!nestApiUrl) {
-      throw new Error("NEST_API_URL is not set");
-    }
-    if (!internalToken) {
-      throw new Error("INTERNAL_API_TOKEN is not set");
-    }
-    if (!rootDomain) {
-      throw new Error("ROOT_DOMAIN is not set");
-    }
+    const nestApiUrl = getRequiredEnv("BACKEND_URL");
+    const internalToken = getRequiredEnv("INTERNAL_API_TOKEN");
+    const rootDomain = getRequiredEnv("ROOT_DOMAIN");
 
     const hostname = getHostname();
     const cacheKey = buildCacheKey(hostname, rootDomain);
@@ -95,7 +99,8 @@ export const resolveTenantContext = createServerFn({ method: "GET" }).handler(
         );
       }
 
-      const context = (await response.json()).data as ResolvedTenantContext;
+      const body = (await response.json()) as { data: ResolvedTenantContext };
+      const context = body.data;
 
       await writeToCache(cacheKey, context);
 
@@ -106,3 +111,7 @@ export const resolveTenantContext = createServerFn({ method: "GET" }).handler(
     }
   },
 );
+
+export async function getCurrentTenantContext(): Promise<ResolvedTenantContext> {
+  return resolveTenantContext();
+}
