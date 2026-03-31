@@ -9,8 +9,6 @@ export function PricingRulesTab() {
   const { inputValue, setInputValue, query, page, handlePageChange } =
     usePricingRulesTab();
 
-  console.log({ error: query.error });
-
   return (
     <div className="space-y-4">
       {/* Search */}

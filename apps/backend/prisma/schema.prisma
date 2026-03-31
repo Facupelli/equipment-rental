@@ -53,6 +53,7 @@ enum PricingRuleType {
   VOLUME
   COUPON
   CUSTOMER_SPECIFIC
+  DURATION
 }
 
 enum PricingRuleScope {

@@ -30,27 +30,52 @@ const customerSpecificConditionFormSchema = z.object({
   customerId: z.uuid("ID de cliente inválido"),
 });
 
+const durationTierFormSchema = z.object({
+  fromDays: z.number().int().min(1, "Desde debe ser al menos 1"),
+  toDays: z.number().int().min(1, "Hasta debe ser al menos 1").nullable(),
+  discountPct: z
+    .number()
+    .min(0, "El descuento debe ser mayor o igual a 0")
+    .max(100, "El descuento no puede superar 100%"),
+});
+
+const durationConditionFormSchema = z.object({
+  type: z.literal(PricingRuleType.DURATION),
+  tiers: z.array(durationTierFormSchema).min(1, "Agrega al menos un tramo"),
+});
+
 const conditionFormSchema = z.discriminatedUnion("type", [
   seasonalConditionFormSchema,
   volumeConditionFormSchema,
   couponConditionFormSchema,
   customerSpecificConditionFormSchema,
+  durationConditionFormSchema,
 ]);
 
 // ── Root form schema ──────────────────────────────────────────────────────────
 
-export const pricingRuleFormSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido"),
-  type: z.enum(PricingRuleType),
-  scope: z.enum(PricingRuleScope),
-  priority: z.number().int().min(0, "La prioridad debe ser 0 o mayor"),
-  stackable: z.boolean(),
-  condition: conditionFormSchema,
-  effect: z.object({
-    type: z.enum(PricingRuleEffectType),
-    value: z.number().positive("El valor debe ser mayor a 0"),
-  }),
-});
+export const pricingRuleFormSchema = z
+  .object({
+    name: z.string().min(1, "El nombre es requerido"),
+    type: z.enum(PricingRuleType),
+    scope: z.enum(PricingRuleScope),
+    priority: z.number().int().min(0, "La prioridad debe ser 0 o mayor"),
+    stackable: z.boolean(),
+    condition: conditionFormSchema,
+    effect: z.object({
+      type: z.enum(PricingRuleEffectType),
+      value: z.number().min(0),
+    }),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type !== PricingRuleType.DURATION && data.effect.value <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["effect", "value"],
+        message: "El valor debe ser mayor a 0",
+      });
+    }
+  });
 
 export type PricingRuleFormValues = z.infer<typeof pricingRuleFormSchema>;
 
@@ -66,6 +91,11 @@ export function defaultConditionFor(
       return { type: PricingRuleType.COUPON };
     case PricingRuleType.CUSTOMER_SPECIFIC:
       return { type: PricingRuleType.CUSTOMER_SPECIFIC, customerId: "" };
+    case PricingRuleType.DURATION:
+      return {
+        type: PricingRuleType.DURATION,
+        tiers: [{ fromDays: 1, toDays: null, discountPct: 0 }],
+      };
   }
 }
 
@@ -92,6 +122,17 @@ export function toCreatePricingRuleDto(
       type: PricingRuleType.SEASONAL,
       dateFrom: new Date(condition.dateFrom).toISOString(),
       dateTo: new Date(condition.dateTo).toISOString(),
+    };
+  }
+
+  if (condition.type === PricingRuleType.DURATION) {
+    condition = {
+      type: PricingRuleType.DURATION,
+      tiers: condition.tiers.map((t) => ({
+        fromDays: t.fromDays,
+        toDays: t.toDays,
+        discountPct: t.discountPct,
+      })),
     };
   }
 

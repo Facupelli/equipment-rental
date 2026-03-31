@@ -2,10 +2,10 @@ import Decimal from 'decimal.js';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { Money } from 'src/core/domain/value-objects/money.value-object';
 import { PricingRule } from '../entities/pricing-rule.entity';
-import { RuleApplicationContext } from '../types/pricing-rule.types';
+import { DurationDiscountTier, RuleApplicationContext } from '../types/pricing-rule.types';
 import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exceptions';
 import { PricingTier } from '../entities/pricing-tier.entity';
-import { PricingRuleEffectType } from '@repo/types';
+import { PricingRuleEffectType, PricingRuleType } from '@repo/types';
 
 export type AppliedDiscount = {
   ruleId: string;
@@ -50,7 +50,7 @@ export class PricingCalculator {
     const tier = this.resolveTier(input.tiers, units, input.entityId);
     const basePrice = this.computeBasePrice(tier, units, input.currency);
     const applicableRules = this.filterRules(input.rules, input.context);
-    const { finalPrice, appliedDiscounts } = this.applyDiscounts(basePrice, applicableRules, input.currency);
+    const { finalPrice, appliedDiscounts } = this.applyDiscounts(basePrice, applicableRules, units, input.currency);
 
     return {
       basePrice,
@@ -129,24 +129,42 @@ export class PricingCalculator {
   private applyDiscounts(
     base: Money,
     rules: PricingRule[],
+    units: number,
     currency: string,
   ): { finalPrice: Money; appliedDiscounts: AppliedDiscount[] } {
     let result = base;
     const appliedDiscounts: AppliedDiscount[] = [];
 
-    const percentageRules = rules.filter((r) => r.effect.type === 'PERCENTAGE');
-    const flatRules = rules.filter((r) => r.effect.type === 'FLAT');
+    const durationRules = rules.filter((r) => r.type === PricingRuleType.DURATION);
+    const nonDurationRules = rules.filter((r) => r.type !== PricingRuleType.DURATION);
 
-    // ── Percentage discounts: additive, applied as a single combined pass ──
-    const totalPercentage = percentageRules.reduce(
+    const resolvedPercentageRules = nonDurationRules.filter((r) => r.effect.type === 'PERCENTAGE');
+    const flatRules = nonDurationRules.filter((r) => r.effect.type === 'FLAT');
+
+    for (const rule of durationRules) {
+      const condition = rule.condition as { type: PricingRuleType.DURATION; tiers: DurationDiscountTier[] };
+      const matchingTier = condition.tiers.find((t) => units >= t.fromDays && (t.toDays === null || units <= t.toDays));
+
+      if (matchingTier && matchingTier.discountPct > 0) {
+        const discountAmount = base.multiply(new Decimal(matchingTier.discountPct).div(100));
+        appliedDiscounts.push({
+          ruleId: rule.id,
+          ruleLabel: rule.name,
+          type: PricingRuleEffectType.PERCENTAGE,
+          value: matchingTier.discountPct,
+          discountAmount,
+        });
+        result = result.subtract(discountAmount);
+      }
+    }
+
+    const totalPercentage = resolvedPercentageRules.reduce(
       (sum, r) => sum + (r.effect as { type: 'PERCENTAGE'; value: number }).value,
       0,
     );
 
     if (totalPercentage > 0) {
-      // Distribute the combined discount proportionally back to each rule
-      // so each rule records its individual contribution.
-      for (const rule of percentageRules) {
+      for (const rule of resolvedPercentageRules) {
         const effect = rule.effect as { type: PricingRuleEffectType.PERCENTAGE; value: number };
         const discountAmount = base.multiply(new Decimal(effect.value).div(100));
         appliedDiscounts.push({
@@ -162,7 +180,6 @@ export class PricingCalculator {
       result = result.subtract(totalDiscountAmount);
     }
 
-    // ── Flat discounts: applied sequentially ──────────────────────────────
     for (const rule of flatRules) {
       const effect = rule.effect as { type: PricingRuleEffectType.FLAT; value: number };
       const discountAmount = Money.of(effect.value, currency);

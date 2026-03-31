@@ -10,75 +10,75 @@ import type { LoginCustomerInput } from "./login/customer-login-form.schema";
 import type { RegisterCustomerInput } from "./register/customer-register-form.schema";
 
 async function getPortalTenantId(): Promise<string> {
-	const tenantContext = await getCurrentTenantContext();
+  const tenantContext = await getCurrentTenantContext();
 
-	if (tenantContext.face !== "portal") {
-		throw new Error(
-			"Portal customer auth is only available on tenant portal domains.",
-		);
-	}
+  if (tenantContext.face !== "portal") {
+    throw new Error(
+      "Portal customer auth is only available on tenant portal domains.",
+    );
+  }
 
-	return tenantContext.tenant.id;
+  return tenantContext.tenant.id;
 }
 
 export const registerCustomerFn = createServerFn({ method: "POST" })
-	.inputValidator((data: RegisterCustomerInput) => data)
-	.handler(async ({ data }): Promise<string> => {
-		const tenantId = await getPortalTenantId();
-		const dto = registerCustomerSchema.parse({
-			...data,
-			tenantId,
-		});
+  .inputValidator((data: RegisterCustomerInput) => data)
+  .handler(async ({ data }): Promise<string> => {
+    const tenantId = await getPortalTenantId();
+    const dto = registerCustomerSchema.parse({
+      ...data,
+      tenantId,
+    });
 
-		const result = await apiFetch<string>("/auth/customer/register", {
-			method: "POST",
-			body: dto,
-			authenticated: false,
-		});
+    const result = await apiFetch<string>("/auth/customer/register", {
+      method: "POST",
+      body: dto,
+      authenticated: false,
+    });
 
-		return result;
-	});
+    return result;
+  });
 
 export const loginCustomerFn = createServerFn({ method: "POST" })
-	.inputValidator((data: LoginCustomerInput) => data)
-	.handler(async ({ data }): Promise<SessionUser> => {
-		const tenantId = await getPortalTenantId();
-		const dto = loginCustomerSchema.parse({
-			...data,
-			tenantId,
-		});
+  .inputValidator((data: LoginCustomerInput) => data)
+  .handler(async ({ data }): Promise<SessionUser> => {
+    const tenantId = await getPortalTenantId();
+    const dto = loginCustomerSchema.parse({
+      ...data,
+      tenantId,
+    });
 
-		const response = await apiFetch<LoginResponseDto>("/auth/customer/login", {
-			method: "POST",
-			body: dto,
-			authenticated: false,
-		});
+    const response = await apiFetch<LoginResponseDto>("/auth/customer/login", {
+      method: "POST",
+      body: dto,
+      authenticated: false,
+    });
 
-		const jwtPayload = JSON.parse(
-			Buffer.from(response.access_token.split(".")[1], "base64url").toString(
-				"utf-8",
-			),
-		) as {
-			sub: string;
-			email: string;
-			tenantId: string;
-			actorType: ActorType;
-		};
+    const jwtPayload = JSON.parse(
+      Buffer.from(response.access_token.split(".")[1], "base64url").toString(
+        "utf-8",
+      ),
+    ) as {
+      sub: string;
+      email: string;
+      tenantId: string;
+      actorType: ActorType;
+    };
 
-		const session = await getAppSession();
-		await writeSession(
-			session,
-			{
-				userId: jwtPayload.sub,
-				email: jwtPayload.email,
-				tenantId: jwtPayload.tenantId,
-				actorType: jwtPayload.actorType,
-			},
-			{
-				accessToken: response.access_token,
-				refreshToken: response.refresh_token,
-			},
-		);
+    const session = await getAppSession();
+    await writeSession(
+      session,
+      {
+        userId: jwtPayload.sub,
+        email: jwtPayload.email,
+        tenantId: jwtPayload.tenantId,
+        actorType: jwtPayload.actorType,
+      },
+      {
+        accessToken: response.access_token,
+        refreshToken: response.refresh_token,
+      },
+    );
 
-		return toSessionUser(session.data);
-	});
+    return toSessionUser(session.data);
+  });

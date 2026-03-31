@@ -24,7 +24,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { CalendarDays, Plus } from "lucide-react";
+import { Clock, Minus, Plus, Trash2 } from "lucide-react";
 import {
   PricingRuleEffectType,
   PricingRuleScope,
@@ -44,6 +44,20 @@ const TYPE_LABELS: Record<PricingRuleType, string> = {
   [PricingRuleType.VOLUME]: "Volumen",
   [PricingRuleType.COUPON]: "Cupón",
   [PricingRuleType.CUSTOMER_SPECIFIC]: "Cliente Específico",
+  [PricingRuleType.DURATION]: "Por Duración",
+};
+
+const TYPE_DESCRIPTIONS: Record<PricingRuleType, string> = {
+  [PricingRuleType.SEASONAL]:
+    "Descuento activo durante un rango de fechas. Se aplica cuando el alquiler comienza dentro del período.",
+  [PricingRuleType.VOLUME]:
+    "Descuento por cantidad de productos de una misma categoría en el pedido.",
+  [PricingRuleType.COUPON]:
+    "Descuento que se activa con un código promocional ingresado por el cliente.",
+  [PricingRuleType.CUSTOMER_SPECIFIC]:
+    "Descuento exclusivo para un cliente en particular.",
+  [PricingRuleType.DURATION]:
+    "Descuento que aumenta según los días de alquiler. Aplica a todos los productos.",
 };
 
 const SCOPE_LABELS: Record<PricingRuleScope, string> = {
@@ -97,11 +111,12 @@ export function CreatePricingRuleDialogForm() {
         }
       />
 
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl overflow-y-auto max-h-svh">
         <DialogHeader>
           <DialogTitle>Nueva Regla de Precio</DialogTitle>
           <DialogDescription>
-            Define las condiciones y efectos de la promoción.
+            Crea una regla de descuento. Las reglas se evalúan automáticamente
+            al calcular el precio de cada alquiler.
           </DialogDescription>
         </DialogHeader>
 
@@ -114,51 +129,56 @@ export function CreatePricingRuleDialogForm() {
           }}
           className="space-y-6"
         >
-          {/* Type + Scope */}
-          <div className="grid grid-cols-2 gap-4">
-            <form.Field
-              name="type"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel>Tipo de Regla</FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(value) => {
-                        const next = value as PricingRuleType;
-                        field.handleChange(next);
-                        // Reset condition to match the new type
-                        form.setFieldValue(
-                          "condition",
-                          defaultConditionFor(next),
-                        );
-                      }}
-                      items={Object.values(PricingRuleType).map((t) => ({
-                        value: t,
-                        label: TYPE_LABELS[t],
-                      }))}
-                    >
-                      <SelectTrigger aria-invalid={isInvalid}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(PricingRuleType).map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {TYPE_LABELS[t]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            />
+          {/* Type */}
+          <form.Field
+            name="type"
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel>Tipo de Regla</FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) => {
+                      const next = value as PricingRuleType;
+                      field.handleChange(next);
+                      form.setFieldValue(
+                        "condition",
+                        defaultConditionFor(next),
+                      );
+                    }}
+                    items={Object.values(PricingRuleType).map((t) => ({
+                      value: t,
+                      label: TYPE_LABELS[t],
+                    }))}
+                  >
+                    <SelectTrigger aria-invalid={isInvalid}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(PricingRuleType).map((t) => (
+                        <SelectItem
+                          key={t}
+                          value={t}
+                          disabled={t === PricingRuleType.VOLUME}
+                        >
+                          {TYPE_LABELS[t]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {TYPE_DESCRIPTIONS[field.state.value]}
+                  </p>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
+          />
 
+          {/* Scope + Priority */}
+          <div className="grid grid-cols-2 gap-4">
             <form.Field
               name="scope"
               children={(field) => {
@@ -188,6 +208,9 @@ export function CreatePricingRuleDialogForm() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Para reglas de duración, usa "Todo el pedido".
+                    </p>
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}
@@ -195,10 +218,7 @@ export function CreatePricingRuleDialogForm() {
                 );
               }}
             />
-          </div>
 
-          {/* Priority + Stackable */}
-          <div className="grid grid-cols-2 gap-4">
             <form.Field
               name="priority"
               children={(field) => {
@@ -218,6 +238,9 @@ export function CreatePricingRuleDialogForm() {
                       }
                       aria-invalid={isInvalid}
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Menor número = mayor prioridad.
+                    </p>
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}
@@ -225,33 +248,35 @@ export function CreatePricingRuleDialogForm() {
                 );
               }}
             />
-
-            <form.Field
-              name="stackable"
-              children={(field) => (
-                <Field>
-                  <div className="rounded-lg border px-4 py-3 flex items-center justify-between h-full">
-                    <div>
-                      <FieldLabel
-                        htmlFor={field.name}
-                        className="text-sm font-medium"
-                      >
-                        ¿Acumulable?
-                      </FieldLabel>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                        Permitir con otros descuentos
-                      </p>
-                    </div>
-                    <Switch
-                      id={field.name}
-                      checked={field.state.value}
-                      onCheckedChange={field.handleChange}
-                    />
-                  </div>
-                </Field>
-              )}
-            />
           </div>
+
+          {/* Stackable */}
+          <form.Field
+            name="stackable"
+            children={(field) => (
+              <Field>
+                <div className="rounded-lg border px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <FieldLabel
+                      htmlFor={field.name}
+                      className="text-sm font-medium"
+                    >
+                      ¿Acumulable con otras reglas?
+                    </FieldLabel>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Si está activado, este descuento se suma a otros
+                      aplicables.
+                    </p>
+                  </div>
+                  <Switch
+                    id={field.name}
+                    checked={field.state.value}
+                    onCheckedChange={field.handleChange}
+                  />
+                </div>
+              </Field>
+            )}
+          />
 
           {/* Dynamic condition section */}
           <form.Subscribe
@@ -259,76 +284,85 @@ export function CreatePricingRuleDialogForm() {
             children={(type) => <ConditionSection type={type} form={form} />}
           />
 
-          {/* Effect + Value */}
-          <div className="grid grid-cols-2 gap-4">
-            <form.Field
-              name="effect.type"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel>Efecto</FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(value) =>
-                        field.handleChange(value as PricingRuleEffectType)
-                      }
-                      items={Object.values(PricingRuleEffectType).map((e) => ({
-                        value: e,
-                        label: EFFECT_LABELS[e],
-                      }))}
-                    >
-                      <SelectTrigger aria-invalid={isInvalid}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(PricingRuleEffectType).map((e) => (
-                          <SelectItem key={e} value={e}>
-                            {EFFECT_LABELS[e]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            />
+          {/* Effect + Value — hidden for DURATION since discount is defined in tiers */}
+          <form.Subscribe
+            selector={(state) => state.values.type}
+            children={(type) =>
+              type !== PricingRuleType.DURATION && (
+                <div className="grid grid-cols-2 gap-4">
+                  <form.Field
+                    name="effect.type"
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel>Tipo de Descuento</FieldLabel>
+                          <Select
+                            value={field.state.value}
+                            onValueChange={(value) =>
+                              field.handleChange(value as PricingRuleEffectType)
+                            }
+                            items={Object.values(PricingRuleEffectType).map(
+                              (e) => ({
+                                value: e,
+                                label: EFFECT_LABELS[e],
+                              }),
+                            )}
+                          >
+                            <SelectTrigger aria-invalid={isInvalid}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.values(PricingRuleEffectType).map((e) => (
+                                <SelectItem key={e} value={e}>
+                                  {EFFECT_LABELS[e]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {isInvalid && (
+                            <FieldError errors={field.state.meta.errors} />
+                          )}
+                        </Field>
+                      );
+                    }}
+                  />
 
-            <form.Field
-              name="effect.value"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
-                    <Input
-                      id={field.name}
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      placeholder="0.00"
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      aria-invalid={isInvalid}
-                    />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            />
-          </div>
+                  <form.Field
+                    name="effect.value"
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
+                          <Input
+                            id={field.name}
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            placeholder="0.00"
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(e) =>
+                              field.handleChange(Number(e.target.value))
+                            }
+                            aria-invalid={isInvalid}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Porcentaje: 0-100. Monto fijo: cantidad a descontar.
+                          </p>
+                        </Field>
+                      );
+                    }}
+                  />
+                </div>
+              )
+            }
+          />
 
-          {/* Name — internal reference label */}
+          {/* Name */}
           <FieldGroup>
             <form.Field
               name="name"
@@ -337,15 +371,20 @@ export function CreatePricingRuleDialogForm() {
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Nombre interno</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      Nombre de referencia
+                    </FieldLabel>
                     <Input
                       id={field.name}
-                      placeholder="Ej: black-friday-tier-2"
+                      placeholder="Ej: descuento-verano-2025"
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
                       aria-invalid={isInvalid}
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Nombre interno. No es visible para los clientes.
+                    </p>
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}
@@ -391,21 +430,34 @@ interface ConditionSectionProps {
 }
 
 function ConditionSection({ type, form }: ConditionSectionProps) {
-  const icon = <CalendarDays className="h-4 w-4 text-muted-foreground" />;
-
   const titles: Record<PricingRuleType, string> = {
-    [PricingRuleType.SEASONAL]: "Condición Temporal (Estacional)",
-    [PricingRuleType.VOLUME]: "Condición de Volumen",
-    [PricingRuleType.COUPON]: "Condición de Cupón",
-    [PricingRuleType.CUSTOMER_SPECIFIC]: "Condición de Cliente",
+    [PricingRuleType.SEASONAL]: "Período de Vigencia",
+    [PricingRuleType.VOLUME]: "Condición de Cantidad",
+    [PricingRuleType.COUPON]: "Código Promocional",
+    [PricingRuleType.CUSTOMER_SPECIFIC]: "Cliente Objetivo",
+    [PricingRuleType.DURATION]: "Tramos de Duración",
+  };
+
+  const descriptions: Record<PricingRuleType, string> = {
+    [PricingRuleType.SEASONAL]:
+      "Rango de fechas en el que esta regla está activa.",
+    [PricingRuleType.VOLUME]:
+      "Categoría y cantidad mínima de items para activar el descuento.",
+    [PricingRuleType.COUPON]:
+      "Código que el cliente debe ingresar para activar el descuento.",
+    [PricingRuleType.CUSTOMER_SPECIFIC]:
+      "Identificador del cliente que recibe este descuento.",
+    [PricingRuleType.DURATION]:
+      "Tramos de duración y descuento para cada uno. El último tramo debe tener 'Hasta' vacío.",
   };
 
   return (
     <div className="rounded-lg bg-muted/50 border p-4 space-y-4">
       <div className="flex items-center gap-2">
-        {icon}
+        <Clock className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-medium">{titles[type]}</span>
       </div>
+      <p className="text-xs text-muted-foreground">{descriptions[type]}</p>
 
       {type === PricingRuleType.SEASONAL && (
         <div className="grid grid-cols-2 gap-4">
@@ -463,10 +515,10 @@ function ConditionSection({ type, form }: ConditionSectionProps) {
                 field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>ID de Categoría</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Categoría</FieldLabel>
                   <Input
                     id={field.name}
-                    placeholder="UUID de categoría"
+                    placeholder="UUID de la categoría"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -484,15 +536,17 @@ function ConditionSection({ type, form }: ConditionSectionProps) {
                 field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Umbral (días)</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>
+                    Cantidad mínima de items
+                  </FieldLabel>
                   <Input
                     id={field.name}
                     type="number"
                     min={1}
-                    placeholder="7"
+                    placeholder="5"
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
                     aria-invalid={isInvalid}
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -511,7 +565,7 @@ function ConditionSection({ type, form }: ConditionSectionProps) {
               field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Código</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Código del cupón</FieldLabel>
                 <Input
                   id={field.name}
                   placeholder="Ej: BLACKFRIDAY24"
@@ -537,7 +591,9 @@ function ConditionSection({ type, form }: ConditionSectionProps) {
               field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>ID de Cliente</FieldLabel>
+                <FieldLabel htmlFor={field.name}>
+                  Identificador del cliente
+                </FieldLabel>
                 <Input
                   id={field.name}
                   placeholder="UUID del cliente"
@@ -548,6 +604,235 @@ function ConditionSection({ type, form }: ConditionSectionProps) {
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
+            );
+          }}
+        />
+      )}
+
+      {type === PricingRuleType.DURATION && (
+        <form.Field
+          name="condition.tiers"
+          mode="array"
+          children={(field: any) => {
+            const tiers = field.state.value || [];
+
+            function handleAddTier() {
+              const lastTier = tiers[tiers.length - 1];
+              const nextFrom = lastTier
+                ? lastTier.toDays !== null
+                  ? lastTier.toDays + 1
+                  : lastTier.fromDays + 1
+                : 1;
+              field.pushValue({
+                fromDays: nextFrom,
+                toDays: null,
+                discountPct: 0,
+              });
+            }
+
+            return (
+              <div className="space-y-3">
+                <form.Subscribe
+                  selector={(state: any) => state.errorMap.onSubmit}
+                  children={(onSubmitError: any) => {
+                    console.log("onSubmitError received:", onSubmitError);
+
+                    // Handle case where onSubmitError is a ZodError
+                    if (
+                      !onSubmitError ||
+                      !Array.isArray(onSubmitError.issues)
+                    ) {
+                      return null;
+                    }
+
+                    // Filter issues related to condition.tiers
+                    const tierIssues = onSubmitError.issues.filter(
+                      (issue: any) =>
+                        Array.isArray(issue.path) &&
+                        issue.path.length >= 4 &&
+                        issue.path[0] === "condition" &&
+                        issue.path[1] === "tiers",
+                    );
+
+                    if (tierIssues.length === 0) return null;
+
+                    const messages: string[] = [];
+                    tierIssues.forEach((issue: any) => {
+                      const tierIndex = issue.path[2];
+                      const fieldName = issue.path[3];
+                      let fieldLabel = fieldName;
+
+                      // Map field names to labels
+                      switch (fieldName) {
+                        case "fromDays":
+                          fieldLabel = "Desde (días)";
+                          break;
+                        case "toDays":
+                          fieldLabel = "Hasta (días)";
+                          break;
+                        case "discountPct":
+                          fieldLabel = "Descuento (%)";
+                          break;
+                      }
+
+                      messages.push(
+                        `Tramo ${tierIndex + 1} - ${fieldLabel}: ${issue.message}`,
+                      );
+                    });
+
+                    return (
+                      <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive space-y-1">
+                        {messages.map((msg, i) => (
+                          <p key={i}>{msg}</p>
+                        ))}
+                      </div>
+                    );
+                  }}
+                />
+
+                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground px-1">
+                  <div className="col-span-3">Desde (días)</div>
+                  <div className="col-span-3">Hasta (días)</div>
+                  <div className="col-span-3">Descuento (%)</div>
+                  <div className="col-span-3" />
+                </div>
+
+                {tiers.map((_: unknown, index: number) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-12 gap-2 items-start"
+                  >
+                    <div className="col-span-3">
+                      <form.Field
+                        name={`condition.tiers[${index}].fromDays`}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        children={(subField: any) => {
+                          const isInvalid =
+                            subField.state.meta.isTouched &&
+                            !subField.state.meta.isValid;
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <Input
+                                type="number"
+                                min={1}
+                                value={subField.state.value}
+                                onBlur={subField.handleBlur}
+                                onChange={(e) =>
+                                  subField.handleChange(Number(e.target.value))
+                                }
+                                aria-invalid={isInvalid}
+                                placeholder="1"
+                              />
+                              {isInvalid && (
+                                <FieldError
+                                  errors={subField.state.meta.errors}
+                                />
+                              )}
+                            </Field>
+                          );
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <form.Field
+                        name={`condition.tiers[${index}].toDays`}
+                        children={(subField: any) => {
+                          const isInvalid =
+                            subField.state.meta.isTouched &&
+                            !subField.state.meta.isValid;
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <Input
+                                type="number"
+                                min={1}
+                                value={subField.state.value ?? ""}
+                                onBlur={subField.handleBlur}
+                                onChange={(e) =>
+                                  subField.handleChange(
+                                    e.target.value
+                                      ? Number(e.target.value)
+                                      : null,
+                                  )
+                                }
+                                aria-invalid={isInvalid}
+                                placeholder="∞"
+                              />
+                              {isInvalid && (
+                                <FieldError
+                                  errors={subField.state.meta.errors}
+                                />
+                              )}
+                            </Field>
+                          );
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <form.Field
+                        name={`condition.tiers[${index}].discountPct`}
+                        children={(subField: any) => {
+                          const isInvalid =
+                            subField.state.meta.isTouched &&
+                            !subField.state.meta.isValid;
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={1}
+                                value={subField.state.value}
+                                onBlur={subField.handleBlur}
+                                onChange={(e) =>
+                                  subField.handleChange(Number(e.target.value))
+                                }
+                                aria-invalid={isInvalid}
+                                placeholder="0"
+                              />
+                              {isInvalid && (
+                                <FieldError
+                                  errors={subField.state.meta.errors}
+                                />
+                              )}
+                            </Field>
+                          );
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-3 flex items-center justify-end">
+                      {tiers.length > 1 ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => field.removeValue(index)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      ) : (
+                        <Minus className="h-4 w-4 text-muted-foreground/30" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddTier}
+                  className="gap-1"
+                >
+                  <Plus className="h-3 w-3" />
+                  Agregar tramo
+                </Button>
+
+                <p className="text-xs text-muted-foreground">
+                  Cada tramo define un rango de días y el descuento que se
+                  aplica. Deja "Hasta" vacío en el último tramo para cubrir
+                  alquileres de cualquier duración mayor.
+                </p>
+              </div>
             );
           }}
         />

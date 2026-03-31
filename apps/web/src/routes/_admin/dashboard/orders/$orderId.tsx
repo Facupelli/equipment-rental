@@ -480,8 +480,6 @@ function OrderFinancialsCard() {
   const { financial } = order;
   const hasOwnerObligations = financial.ownerObligations !== "0";
 
-  console.log({ financial });
-
   return (
     <section className="bg-white border border-neutral-200 rounded-lg p-5">
       <SidebarSectionLabel label="Financial Summary" />

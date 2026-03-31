@@ -37,11 +37,7 @@ const queryHandlers = [
   GetUserPermissionsQueryHandler,
 ];
 
-const services = [
-  BootstrapTenantAdminService,
-  UsersFacade,
-  { provide: UsersPublicApi, useExisting: UsersFacade },
-];
+const services = [BootstrapTenantAdminService, UsersFacade, { provide: UsersPublicApi, useExisting: UsersFacade }];
 
 @Module({
   controllers: [GetUserHttpController],

@@ -7,14 +7,14 @@ import { DateRange } from 'src/core/domain/value-objects/date-range.value-object
 
 export type SeasonalCondition = {
   type: PricingRuleType.SEASONAL;
-  dateFrom: string; // ISO date string — compared against period.start
+  dateFrom: string;
   dateTo: string;
 };
 
 export type VolumeCondition = {
   type: PricingRuleType.VOLUME;
   categoryId: string;
-  threshold: number; // minimum OrderItem count in that category to trigger
+  threshold: number;
 };
 
 export type CouponCondition = {
@@ -26,7 +26,23 @@ export type CustomerSpecificCondition = {
   customerId: string;
 };
 
-export type PricingRuleCondition = SeasonalCondition | VolumeCondition | CouponCondition | CustomerSpecificCondition;
+export type DurationDiscountTier = {
+  fromDays: number;
+  toDays: number | null;
+  discountPct: number;
+};
+
+export type DurationCondition = {
+  type: PricingRuleType.DURATION;
+  tiers: DurationDiscountTier[];
+};
+
+export type PricingRuleCondition =
+  | SeasonalCondition
+  | VolumeCondition
+  | CouponCondition
+  | CustomerSpecificCondition
+  | DurationCondition;
 
 // ── Effects ───────────────────────────────────────────────────────────────────
 

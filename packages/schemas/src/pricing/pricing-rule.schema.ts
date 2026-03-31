@@ -30,11 +30,58 @@ export const CustomerSpecificConditionSchema = z.object({
   customerId: z.uuid(),
 });
 
+export const DurationDiscountTierSchema = z.object({
+  fromDays: z.number().int().min(1),
+  toDays: z.number().int().min(1).nullable(),
+  discountPct: z.number().min(0).max(100),
+});
+
+export const DurationConditionSchema = z
+  .object({
+    type: z.literal(PricingRuleType.DURATION),
+    tiers: z.array(DurationDiscountTierSchema).min(1),
+  })
+  .superRefine((data, ctx) => {
+    const tiers = data.tiers;
+
+    for (let i = 0; i < tiers.length; i++) {
+      const tier = tiers[i];
+      if (tier.toDays !== null && tier.toDays < tier.fromDays) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["tiers", i, "toDays"],
+          message: `toDays must be greater than or equal to fromDays`,
+        });
+      }
+      if (i > 0) {
+        const prev = tiers[i - 1];
+        const prevEnd = prev.toDays ?? Infinity;
+        if (tier.fromDays <= prevEnd) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["tiers", i, "fromDays"],
+            message: `Tiers must not overlap`,
+          });
+        }
+      }
+    }
+
+    const lastTier = tiers[tiers.length - 1];
+    if (lastTier.toDays !== null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["tiers", tiers.length - 1, "toDays"],
+        message: `The last tier must have toDays as null (open-ended)`,
+      });
+    }
+  });
+
 export const PricingRuleConditionSchema = z.discriminatedUnion("type", [
   SeasonalConditionSchema,
   VolumeConditionSchema,
   CouponConditionSchema,
   CustomerSpecificConditionSchema,
+  DurationConditionSchema,
 ]);
 
 export type PricingRuleCondition = z.infer<typeof PricingRuleConditionSchema>;

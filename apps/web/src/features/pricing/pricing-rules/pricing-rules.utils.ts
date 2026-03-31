@@ -16,9 +16,21 @@ export function formatCondition(condition: PricingRuleCondition): string {
     case "VOLUME":
       return `Si Alquiler > ${condition.threshold} días`;
     case "COUPON":
-      return `Código: ${condition.code}`;
+      return "Cupón activo";
     case "CUSTOMER_SPECIFIC":
       return "Cliente específico";
+    case "DURATION": {
+      const tiers = condition.tiers;
+      return tiers
+        .map((t) => {
+          const range =
+            t.toDays !== null
+              ? `${t.fromDays}–${t.toDays} días`
+              : `${t.fromDays}+ días`;
+          return `${range}: -${t.discountPct}%`;
+        })
+        .join(" · ");
+    }
     default:
       return "Desconocido";
   }

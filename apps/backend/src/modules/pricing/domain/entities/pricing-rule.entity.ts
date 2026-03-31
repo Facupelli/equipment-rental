@@ -7,6 +7,7 @@ export enum PricingRuleType {
   VOLUME = 'VOLUME',
   COUPON = 'COUPON',
   CUSTOMER_SPECIFIC = 'CUSTOMER_SPECIFIC',
+  DURATION = 'DURATION',
 }
 
 export enum PricingRuleScope {
@@ -137,8 +138,11 @@ export class PricingRule {
       }
 
       case PricingRuleType.CUSTOMER_SPECIFIC: {
-        // Guest orders (undefined customerId) never match customer-specific rules.
         return context.customerId === condition.customerId;
+      }
+
+      case PricingRuleType.DURATION: {
+        return true;
       }
     }
 

@@ -3,6 +3,7 @@ export enum PricingRuleType {
   VOLUME = "VOLUME",
   COUPON = "COUPON",
   CUSTOMER_SPECIFIC = "CUSTOMER_SPECIFIC",
+  DURATION = "DURATION",
 }
 
 export enum PricingRuleScope {

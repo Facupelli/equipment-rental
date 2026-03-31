@@ -1,0 +1,6 @@
+-- AlterEnum
+ALTER TYPE "PricingRuleType" ADD VALUE 'DURATION';
+
+-- AlterTable
+ALTER TABLE "orders" ALTER COLUMN "period_start" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "period_end" SET DATA TYPE TIMESTAMP(3);

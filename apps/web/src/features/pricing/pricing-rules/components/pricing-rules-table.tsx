@@ -93,6 +93,9 @@ function ScopeCell({ scope }: { scope: string }) {
 }
 
 function EffectCell({ rule }: { rule: PricingRuleView }) {
+  if (rule.condition.type === "DURATION") {
+    return <span className="text-sm text-muted-foreground">—</span>;
+  }
   return (
     <span className="font-semibold text-sm">{formatEffect(rule.effect)}</span>
   );
