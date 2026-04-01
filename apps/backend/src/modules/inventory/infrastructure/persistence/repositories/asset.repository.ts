@@ -18,8 +18,20 @@ export class CannotDeleteOrderAssignmentException extends Error {
 export class AssetRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async load(id: string): Promise<Asset | null> {
-    const raw = await this.prisma.client.asset.findUnique({ where: { id } });
+  async load(id: string, tenantId?: string): Promise<Asset | null> {
+    const raw = await this.prisma.client.asset.findFirst({
+      where: {
+        id,
+        ...(tenantId
+          ? {
+              location: {
+                tenantId,
+              },
+            }
+          : {}),
+      },
+    });
+
     if (!raw) {
       return null;
     }

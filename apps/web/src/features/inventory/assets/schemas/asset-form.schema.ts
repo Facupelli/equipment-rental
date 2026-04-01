@@ -77,9 +77,6 @@ export function toUpdateAssetDto(
   if (dirtyValues.notes !== undefined) {
     dto.notes = emptyToNullOrUndefined(dirtyValues.notes);
   }
-  if (dirtyValues.isActive !== undefined) {
-    dto.isActive = dirtyValues.isActive;
-  }
 
   return updateAssetSchema.parse(dto);
 }

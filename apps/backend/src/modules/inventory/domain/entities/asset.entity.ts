@@ -23,14 +23,21 @@ export interface ReconstituteAssetProps {
   assignments: AssetAssignment[];
 }
 
+export interface UpdateAssetProps {
+  locationId?: string;
+  ownerId?: string | null;
+  serialNumber?: string | null;
+  notes?: string | null;
+}
+
 export class Asset {
   private constructor(
     public readonly id: string,
-    public readonly locationId: string,
+    public locationId: string,
     public readonly productTypeId: string,
-    public readonly ownerId: string | null,
-    public readonly serialNumber: string | null,
-    public readonly notes: string | null,
+    public ownerId: string | null,
+    public serialNumber: string | null,
+    public notes: string | null,
     private isActive: boolean,
     private deletedAt: Date | null,
     private readonly assignments: AssetAssignment[],
@@ -92,6 +99,24 @@ export class Asset {
     return this.assignments.every((a) => !a.period.overlaps(period));
   }
 
+  update(props: UpdateAssetProps): void {
+    if (props.locationId !== undefined) {
+      this.locationId = props.locationId;
+    }
+
+    if (props.ownerId !== undefined) {
+      this.ownerId = props.ownerId;
+    }
+
+    if (props.serialNumber !== undefined) {
+      this.serialNumber = props.serialNumber;
+    }
+
+    if (props.notes !== undefined) {
+      this.notes = props.notes;
+    }
+  }
+
   deactivate(): void {
     this.isActive = false;
   }
@@ -103,6 +128,10 @@ export class Asset {
 
   addAssignment(assignment: AssetAssignment): void {
     this.assignments.push(assignment);
+  }
+
+  hasActiveOrFutureOrderAssignments(now: Date): boolean {
+    return this.assignments.some((assignment) => assignment.isOrderAssignment() && assignment.period.end > now);
   }
 
   removeAssignment(assignmentId: string): void {

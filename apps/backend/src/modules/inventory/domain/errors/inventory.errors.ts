@@ -29,3 +29,15 @@ export class DuplicateSerialNumberError extends InventoryError {
     super(`An asset with serial number '${serialNumber}' already exists.`);
   }
 }
+
+export class AssetNotFoundError extends InventoryError {
+  constructor(assetId: string) {
+    super(`Asset '${assetId}' was not found.`);
+  }
+}
+
+export class AssetHasActiveOrFutureBookingsError extends InventoryError {
+  constructor(assetId: string) {
+    super(`Asset '${assetId}' cannot be deleted because it has active or future bookings.`);
+  }
+}

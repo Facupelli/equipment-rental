@@ -2,6 +2,12 @@ import { Module } from '@nestjs/common';
 import { AssetRepository } from './infrastructure/persistence/repositories/asset.repository';
 import { CreateAssetService } from './application/commands/create-asset/create-asset.service';
 import { CreateAssetHttpController } from './application/commands/create-asset/create-asset.http.controller';
+import { UpdateAssetService } from './application/commands/update-asset/update-asset.service';
+import { UpdateAssetHttpController } from './application/commands/update-asset/update-asset.http.controller';
+import { DeactivateAssetService } from './application/commands/deactivate-asset/deactivate-asset.service';
+import { DeactivateAssetHttpController } from './application/commands/deactivate-asset/deactivate-asset.http.controller';
+import { SoftDeleteAssetService } from './application/commands/soft-delete-asset/soft-delete-asset.service';
+import { SoftDeleteAssetHttpController } from './application/commands/soft-delete-asset/soft-delete-asset.http.controller';
 import { GetAssetByIdQueryHandler } from './application/queries/get-asset-by-id/get-asset-by-id.query-handler';
 import { GetAssetsQueryHandler } from './application/queries/get-assets/get-assets.query-handler';
 import { FindAssetByIdQueryHandler } from './application/queries/find-asset-by-id/find-asset-by-id.query-handler';
@@ -17,7 +23,7 @@ import { GetAvailableAssetCountsQueryHandler } from './application/queries/get-a
 
 const repositories = [AssetRepository, AssetAssignmentRepository];
 
-const commandHandlers = [CreateAssetService];
+const commandHandlers = [CreateAssetService, UpdateAssetService, DeactivateAssetService, SoftDeleteAssetService];
 
 const queryHandlers = [
   FindAssetByIdQueryHandler,
@@ -28,7 +34,14 @@ const queryHandlers = [
 
 @Module({
   imports: [CatalogModule],
-  controllers: [CreateAssetHttpController, GetAssetsHttpController, GetAssetByIdHttpController],
+  controllers: [
+    CreateAssetHttpController,
+    UpdateAssetHttpController,
+    DeactivateAssetHttpController,
+    SoftDeleteAssetHttpController,
+    GetAssetsHttpController,
+    GetAssetByIdHttpController,
+  ],
   providers: [
     ...repositories,
     ...commandHandlers,
