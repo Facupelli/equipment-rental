@@ -158,7 +158,6 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
       tenantId,
       retiredAt: null,
       publishedAt: { not: null },
-      deletedAt: null,
 
       // Category filter — omitted entirely when not provided so Prisma doesn't
       // add an unnecessary WHERE clause.

@@ -32,10 +32,10 @@ export class BundleMapper {
     return {
       id: entity.id,
       tenantId: entity.tenantId,
-      name: entity.name,
-      imageUrl: entity.imageUrl,
+      name: entity.currentName,
+      imageUrl: entity.currentImageUrl,
       description: entity.currentDescription,
-      billingUnitId: entity.billingUnitId,
+      billingUnitId: entity.currentBillingUnitId,
       publishedAt: entity.getPublishedAt(),
       retiredAt: entity.getRetiredAt(),
     };

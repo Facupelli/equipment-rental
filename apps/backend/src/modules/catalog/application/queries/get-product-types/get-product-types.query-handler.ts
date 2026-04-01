@@ -20,7 +20,6 @@ type ProductTypeListItemReadModel = {
   includedItems: ProductTypeIncludedItemReadModel[];
   createdAt: Date;
   updatedAt: Date;
-  deletedAt: Date | null;
   publishedAt: Date | null;
   retiredAt: Date | null;
   assetCount: number;
@@ -133,7 +132,6 @@ export class GetProductTypesQueryHandler implements IQueryHandler<
         includedItems: pt.includedItems as ProductTypeIncludedItemReadModel[],
         createdAt: pt.createdAt,
         updatedAt: pt.updatedAt,
-        deletedAt: pt.deletedAt,
         publishedAt: pt.publishedAt,
         retiredAt: pt.retiredAt,
         assetCount: pt._count.assets,

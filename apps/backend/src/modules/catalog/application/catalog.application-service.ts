@@ -55,7 +55,6 @@ export class CatalogApplicationService implements CatalogPublicApi {
         id: true,
         tenantId: true,
         categoryId: true,
-        deletedAt: true,
         retiredAt: true,
         publishedAt: true,
         pricingTiers: {
@@ -66,7 +65,7 @@ export class CatalogApplicationService implements CatalogPublicApi {
       },
     });
 
-    if (!row || row.tenantId !== tenantId || row.deletedAt !== null) {
+    if (!row || row.tenantId !== tenantId) {
       return null;
     }
 

@@ -15,8 +15,8 @@ Execution unit: agent-ready task.
 
 - `booking mode` = the tenant-configurable policy that determines how customer-submitted bookings are accepted.
 - `instant-book` = a customer booking is automatically accepted at submission time; the order becomes confirmed immediately and inventory is committed immediately.
-- `request-to-book` = a customer booking is submitted for operator review; the order enters a pending review state immediately and inventory is held immediately; an operator later confirms or rejects the request.
-- `temporary hold` = an inventory-blocking reservation created for a `request-to-book` order before operator review is completed.
+- `request-to-book` = a customer booking is submitted for staff review; the order enters a pending review state immediately and inventory is held immediately; an operator later confirms or rejects the request.
+- `temporary hold` = an inventory-blocking reservation created for a `request-to-book` order before staff review is completed.
 - `committed assignment` = an inventory-blocking reservation attached to a confirmed booking.
 - `hold expiry window` = the tenant-configurable amount of time a `request-to-book` temporary hold may remain pending review before the system expires it automatically.
 
@@ -25,7 +25,7 @@ Execution unit: agent-ready task.
 ## Launch Assumptions
 
 - Product is a multi-tenant equipment rental SaaS.
-- MVP includes both internal operator workflows and a light customer-facing booking experience.
+- MVP includes both internal staff workflows and a light customer-facing booking experience.
 - Customers can book immediately after signup.
 - Customer profile data is collected through an existing follow-up form.
 - Payments are not handled in-app for MVP; payment is handled by the rental business at pickup time.
@@ -63,7 +63,7 @@ Execution unit: agent-ready task.
 - Add tenant-configurable hold-expiry setting used only for `request-to-book`.
 - Default booking mode to `instant-book`.
 - Default hold expiry to `24h`.
-- Expose authenticated operator read/update API for rental settings.
+- Expose authenticated staff read/update API for rental settings.
 - Validate allowed values, defaults, and tenant scoping.
 
 #### Agent-ready tasks
@@ -72,7 +72,7 @@ Execution unit: agent-ready task.
 - Add hold-expiry-hours field with `24h` defaulting rules.
 - Define validation rules for invalid booking mode values and invalid expiry windows.
 - Add request DTO and response DTO for reading/updating rental settings.
-- Add command/query and controller flows for operator access.
+- Add command/query and controller flows for staff access.
 - Add tests for defaults, validation, and tenant isolation.
 
 ### Epic 2 - Orders And Assignment Lifecycle
@@ -82,7 +82,7 @@ Execution unit: agent-ready task.
 - Define order states for `pending_review`, `confirmed`, `rejected`, and `expired`.
 - `pending_review` is used only for `request-to-book` submissions awaiting operator decision.
 - `confirmed` is used for accepted bookings, including `instant-book` submissions.
-- `rejected` is used when an operator declines a pending booking request.
+- `rejected` is used when an staff declines a pending booking request.
 - `expired` is used when a pending booking request passes its review window without operator action.
 - Keep existing operational states aligned with pickup/return lifecycle.
 - Add transition rules for admin review outcomes.
@@ -109,11 +109,11 @@ Execution unit: agent-ready task.
 - Update availability checks to treat both as blocking.
 - Add tests for overlap behavior and release behavior.
 
-#### Slice 2.3 - Complete operator lifecycle actions
+#### Slice 2.3 - Complete staff lifecycle actions
 
-- Allow operators to confirm or reject pending booking requests.
-- Allow operators to cancel confirmed bookings and release inventory.
-- Allow operators to move confirmed orders into active/completed lifecycle states.
+- Allow staff to confirm or reject pending booking requests.
+- Allow staff to cancel confirmed bookings and release inventory.
+- Allow staff to move confirmed orders into active/completed lifecycle states.
 
 #### Agent-ready tasks
 
@@ -140,7 +140,7 @@ Execution unit: agent-ready task.
 - Add idempotency protections for repeated expiry runs.
 - Add tests for expiry and release behavior.
 
-#### Slice 3.2 - Operator visibility for expiring requests
+#### Slice 3.2 - Staff visibility for expiring requests
 
 - Show pending-review requests with expiry metadata.
 - Support filtering by pending, expired, confirmed, and rejected review state.
@@ -149,7 +149,7 @@ Execution unit: agent-ready task.
 
 - Extend order list queries with review-state filters.
 - Include `expiresAt` and review-related metadata in read models.
-- Add operator-facing pending review query coverage.
+- Add staff-facing pending review query coverage.
 
 ### Epic 4 - Availability And Storefront Integrity
 
@@ -186,33 +186,33 @@ Execution unit: agent-ready task.
 - Add validation coverage for invalid location/catalog combinations.
 - Add tests for rejected booking attempts on inactive catalog items.
 
-### Epic 5 - Operator Access Control And Staff Management
+### Epic 5 - Staff Access Control And Staff Management
 
-#### Slice 5.1 - Harden operator-only route protection
+#### Slice 5.1 - Harden staff-only route protection
 
-- Operator endpoints must be inaccessible to customer actors.
-- Role/permission enforcement must exist on launch-critical operator flows.
+- Staff endpoints must be inaccessible to customer actors.
+- Role/permission enforcement must exist on launch-critical staff flows.
 
 #### Agent-ready tasks
 
-- Apply user-only access enforcement to operator routes.
+- Apply user-only access enforcement to staff routes.
 - Add role/permission checks for launch-critical admin flows.
-- Add tests ensuring customer actors cannot call operator endpoints.
+- Add tests ensuring customer actors cannot call staff endpoints.
 
 #### Slice 5.2 - Expose staff user management
 
-- Operators need to invite staff, list staff, and deactivate/reactivate staff users.
+- Admins need to invite staff, list staff, and deactivate/reactivate staff users.
 
 #### Agent-ready tasks
 
-- Add invite operator user flow.
+- Add invite staff user flow.
 - Add accept invitation flow.
 - Add list users flow.
 - Add deactivate/reactivate user flow.
 
 #### Slice 5.3 - Expose role management
 
-- Operators need enough role control to manage launch usage safely.
+- Admin need enough role control to manage launch usage safely.
 
 #### Agent-ready tasks
 
@@ -301,7 +301,7 @@ Execution unit: agent-ready task.
 #### Agent-ready tasks
 
 - Add customer order history/status read flow.
-- Ensure customer profile follow-up data is operator-visible where needed.
+- Ensure customer profile follow-up data is staff-visible where needed.
 
 ### Epic 9 - Tenant And Platform Hardening
 
@@ -371,6 +371,6 @@ Specs should reference the slice they implement. Specs should cover a selected s
 2. Epic 2 - Orders and assignment lifecycle
 3. Epic 3 - Hold expiry automation
 4. Epic 4 - Availability and storefront integrity
-5. Epic 5 - Operator access control and staff management
+5. Epic 5 - Staff access control and admin staff management
 6. Epic 6 - Rental-critical CRUD completion
 7. Epic 7+ - hardening and follow-up

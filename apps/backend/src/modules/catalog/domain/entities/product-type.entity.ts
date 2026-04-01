@@ -44,14 +44,14 @@ export class ProductType {
   private constructor(
     public readonly id: string,
     public readonly tenantId: string,
-    public readonly categoryId: string | null,
-    public readonly billingUnitId: string,
-    public readonly name: string,
-    public readonly imageUrl: string,
+    private categoryId: string | null,
+    private billingUnitId: string,
+    private name: string,
+    private imageUrl: string,
     private description: string | null,
-    public readonly trackingMode: TrackingMode,
-    public readonly attributes: Record<string, unknown>,
-    public readonly includedItems: unknown[],
+    private trackingMode: TrackingMode,
+    private attributes: Record<string, unknown>,
+    private includedItems: unknown[],
     private publishedAt: Date | null,
     private retiredAt: Date | null,
   ) {}
@@ -103,6 +103,34 @@ export class ProductType {
     return this.description;
   }
 
+  get currentCategoryId(): string | null {
+    return this.categoryId;
+  }
+
+  get currentBillingUnitId(): string {
+    return this.billingUnitId;
+  }
+
+  get currentName(): string {
+    return this.name;
+  }
+
+  get currentImageUrl(): string {
+    return this.imageUrl;
+  }
+
+  get currentTrackingMode(): TrackingMode {
+    return this.trackingMode;
+  }
+
+  get currentAttributes(): Record<string, unknown> {
+    return this.attributes;
+  }
+
+  get currentIncludedItems(): unknown[] {
+    return this.includedItems;
+  }
+
   getPublishedAt(): Date | null {
     return this.publishedAt;
   }
@@ -127,6 +155,52 @@ export class ProductType {
 
   updateDescription(description: string | null): void {
     this.description = description?.trim() ?? null;
+  }
+
+  update(
+    props: Partial<Omit<CreateProductTypeProps, 'tenantId'>>,
+  ): Result<void, InvalidProductTypeNameError | ProductTypeAlreadyRetiredError> {
+    if (this.isRetired()) {
+      return err(new ProductTypeAlreadyRetiredError());
+    }
+
+    if (props.name !== undefined) {
+      if (props.name.trim().length === 0) {
+        return err(new InvalidProductTypeNameError());
+      }
+
+      this.name = props.name.trim();
+    }
+
+    if (props.categoryId !== undefined) {
+      this.categoryId = props.categoryId ?? null;
+    }
+
+    if (props.billingUnitId !== undefined) {
+      this.billingUnitId = props.billingUnitId;
+    }
+
+    if (props.imageUrl !== undefined) {
+      this.imageUrl = props.imageUrl;
+    }
+
+    if (props.description !== undefined) {
+      this.description = props.description?.trim() ?? null;
+    }
+
+    if (props.trackingMode !== undefined) {
+      this.trackingMode = props.trackingMode;
+    }
+
+    if (props.attributes !== undefined) {
+      this.attributes = props.attributes ?? {};
+    }
+
+    if (props.includedItems !== undefined) {
+      this.includedItems = props.includedItems ?? [];
+    }
+
+    return ok(undefined);
   }
 
   publish(): Result<void, ProductTypeAlreadyRetiredError | ProductTypeAlreadyPublishedError> {

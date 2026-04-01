@@ -10,6 +10,7 @@ import { GetRentalProductTypesQueryHandler } from './application/queries/get-ren
 import { CatalogPublicApi } from './catalog.public-api';
 import { CatalogApplicationService } from './application/catalog.application-service';
 import { CreateBundleService } from './application/commands/create-bundle/create-bundle.service';
+import { UpdateBundleService } from './application/commands/update-bundle/update-bundle.service';
 import { GetBundlesQueryHandler } from './application/queries/get-bundles/get-bundles.query-handler';
 import { BundleRepository } from './infrastructure/repositories/bundle.repository';
 import { GetBundleByIdQueryHandler } from './application/queries/get-bundle-by-id/get-bundle-by-id.query-handler';
@@ -19,14 +20,21 @@ import { PublishProductTypeService } from './application/commands/publish-produc
 import { RetireProductTypeService } from './application/commands/retire-product-type/retire-product-type.service';
 import { PublishBundleService } from './application/commands/publish-bundle/publish-bundle.service';
 import { RetireBundleService } from './application/commands/retire-bundle/retire-bundle.service';
+import { UpdateProductCategoryService } from './application/commands/update-product-category/update-product-category.service';
+import { DeleteProductCategoryService } from './application/commands/delete-product-category/delete-product-category.service';
+import { UpdateProductTypeService } from './application/commands/update-product-type/update-product-type.service';
 import { CreateProductCategoryHttpController } from './application/commands/create-product-category/create-product-category.http.controller';
+import { UpdateProductCategoryHttpController } from './application/commands/update-product-category/update-product-category.http.controller';
+import { DeleteProductCategoryHttpController } from './application/commands/delete-product-category/delete-product-category.http.controller';
 import { GetProductCategoriesHttpController } from './application/queries/get-product-categories/get-product-categories.http.controller';
 import { CreateProductTypeHttpController } from './application/commands/create-product-type/create-product-type.http.controller';
+import { UpdateProductTypeHttpController } from './application/commands/update-product-type/update-product-type.http.controller';
 import { GetProductTypesHttpController } from './application/queries/get-product-types/get-product-types.http.controller';
 import { GetProductTypeByIdHttpController } from './application/queries/get-product-type-by-id/get-product-type-by-id.http.controller';
 import { PublishProductTypeHttpController } from './application/commands/publish-product-type/publish-product-type.http.controller';
 import { RetireProductTypeHttpController } from './application/commands/retire-product-type/retire-product-type.http.controller';
 import { CreateBundleHttpController } from './application/commands/create-bundle/create-bundle.http.controller';
+import { UpdateBundleHttpController } from './application/commands/update-bundle/update-bundle.http.controller';
 import { GetBundlesHttpController } from './application/queries/get-bundles/get-bundles.http.controller';
 import { GetBundleByIdHttpController } from './application/queries/get-bundle-by-id/get-bundle-by-id.http.controller';
 import { PublishBundleHttpController } from './application/commands/publish-bundle/publish-bundle.http.controller';
@@ -41,6 +49,10 @@ const commandhandlers = [
   CreateProductTypeService,
   CreateProductCategoryService,
   CreateBundleService,
+  UpdateProductCategoryService,
+  DeleteProductCategoryService,
+  UpdateProductTypeService,
+  UpdateBundleService,
   PublishProductTypeService,
   RetireProductTypeService,
   PublishBundleService,
@@ -60,13 +72,17 @@ const rentalQueryHandlers = [GetRentalProductTypesQueryHandler, GetNewArrivalsQu
 @Module({
   controllers: [
     CreateProductCategoryHttpController,
+    UpdateProductCategoryHttpController,
+    DeleteProductCategoryHttpController,
     GetProductCategoriesHttpController,
     CreateProductTypeHttpController,
+    UpdateProductTypeHttpController,
     GetProductTypesHttpController,
     GetProductTypeByIdHttpController,
     PublishProductTypeHttpController,
     RetireProductTypeHttpController,
     CreateBundleHttpController,
+    UpdateBundleHttpController,
     GetBundlesHttpController,
     GetBundleByIdHttpController,
     PublishBundleHttpController,

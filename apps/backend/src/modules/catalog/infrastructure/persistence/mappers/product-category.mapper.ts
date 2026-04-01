@@ -15,7 +15,7 @@ export class ProductCategoryMapper {
     return {
       id: entity.id,
       tenantId: entity.tenantId,
-      name: entity.name,
+      name: entity.currentName,
       description: entity.currentDescription,
     };
   }

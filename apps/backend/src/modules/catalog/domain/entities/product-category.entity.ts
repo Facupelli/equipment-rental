@@ -19,7 +19,7 @@ export class ProductCategory {
   private constructor(
     public readonly id: string,
     public readonly tenantId: string,
-    public readonly name: string,
+    private name: string,
     private description: string | null,
   ) {}
 
@@ -36,6 +36,26 @@ export class ProductCategory {
 
   get currentDescription(): string | null {
     return this.description;
+  }
+
+  get currentName(): string {
+    return this.name;
+  }
+
+  update(props: { name?: string; description?: string | null }): Result<void, InvalidProductCategoryNameError> {
+    if (props.name !== undefined) {
+      if (props.name.trim().length === 0) {
+        return err(new InvalidProductCategoryNameError());
+      }
+
+      this.name = props.name.trim();
+    }
+
+    if (props.description !== undefined) {
+      this.description = props.description?.trim() ?? null;
+    }
+
+    return ok(undefined);
   }
 
   updateDescription(description: string | null): void {

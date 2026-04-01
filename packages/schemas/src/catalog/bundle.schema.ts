@@ -10,11 +10,20 @@ export const CreateBundleSchema = z.object({
   billingUnitId: z.uuid(),
   imageUrl: z.string().nullable(),
   description: z.string().nullable(),
-  isActive: z.boolean().default(true),
   components: z.array(BundleComponentSchema).min(1),
 });
 
 export type CreateBundleDto = z.infer<typeof CreateBundleSchema>;
+
+export const UpdateBundleSchema = z.object({
+  name: z.string().min(1).optional(),
+  billingUnitId: z.uuid().optional(),
+  imageUrl: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  components: z.array(BundleComponentSchema).min(1).optional(),
+});
+
+export type UpdateBundleDto = z.infer<typeof UpdateBundleSchema>;
 
 // RESPONSE
 

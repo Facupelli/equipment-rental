@@ -8,6 +8,18 @@ export class ProductTypeNotFoundError extends CatalogError {
   }
 }
 
+export class ProductCategoryNotFoundError extends CatalogError {
+  constructor(productCategoryId: string) {
+    super(`Product category '${productCategoryId}' was not found.`);
+  }
+}
+
+export class ProductCategoryHasAssignedProductTypesError extends CatalogError {
+  constructor(productCategoryId: string) {
+    super(`Product category '${productCategoryId}' cannot be deleted because it still has assigned product types.`);
+  }
+}
+
 export class ReferencedProductTypeNotFoundError extends CatalogError {
   constructor(productTypeId: string) {
     super(`Referenced product type '${productTypeId}' was not found.`);

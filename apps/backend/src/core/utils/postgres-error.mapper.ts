@@ -1,5 +1,6 @@
 // Postgres error code for exclusion constraint violation (gist overlap)
 const PG_EXCLUSION_VIOLATION = '23P01';
+const PG_FOREIGN_KEY_VIOLATION = 'P2003';
 
 /**
  * Typed error thrown when a Postgres EXCLUDE constraint fires.
@@ -10,6 +11,10 @@ export class PostgresExclusionViolationError extends Error {
     super('A database exclusion constraint was violated.');
     this.name = 'PostgresExclusionViolationError';
   }
+}
+
+export function isForeignKeyConstraintError(error: unknown): boolean {
+  return isPostgresError(error) && error.code === PG_FOREIGN_KEY_VIOLATION;
 }
 
 type PostgresError = {

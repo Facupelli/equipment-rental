@@ -34,9 +34,9 @@ export class Bundle {
   private constructor(
     public readonly id: string,
     public readonly tenantId: string,
-    public readonly billingUnitId: string,
-    public readonly name: string,
-    public readonly imageUrl: string | null,
+    private billingUnitId: string,
+    private name: string,
+    private imageUrl: string | null,
     private description: string | null,
     private readonly components: BundleComponent[],
     private publishedAt: Date | null,
@@ -82,6 +82,18 @@ export class Bundle {
 
   get currentDescription(): string | null {
     return this.description;
+  }
+
+  get currentBillingUnitId(): string {
+    return this.billingUnitId;
+  }
+
+  get currentName(): string {
+    return this.name;
+  }
+
+  get currentImageUrl(): string | null {
+    return this.imageUrl;
   }
 
   getPublishedAt(): Date | null {
@@ -131,6 +143,34 @@ export class Bundle {
 
   updateDescription(description: string | null): void {
     this.description = description?.trim() ?? null;
+  }
+
+  update(props: Partial<CreateBundleProps>): Result<void, InvalidBundleNameError | BundleAlreadyRetiredError> {
+    if (this.isRetired()) {
+      return err(new BundleAlreadyRetiredError());
+    }
+
+    if (props.name !== undefined) {
+      if (props.name.trim().length === 0) {
+        return err(new InvalidBundleNameError());
+      }
+
+      this.name = props.name.trim();
+    }
+
+    if (props.billingUnitId !== undefined) {
+      this.billingUnitId = props.billingUnitId;
+    }
+
+    if (props.imageUrl !== undefined) {
+      this.imageUrl = props.imageUrl;
+    }
+
+    if (props.description !== undefined) {
+      this.description = props.description?.trim() ?? null;
+    }
+
+    return ok(undefined);
   }
 
   addComponent(
