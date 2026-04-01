@@ -30,10 +30,20 @@ import {
   productCategoryFormDefaults,
   productCategoryFormSchema,
 } from "@/features/catalog/product-categories/schemas/product-categories-form.schema";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 export const Route = createFileRoute("/_admin/dashboard/catalog/categories/")({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(categoryQueries.list()),
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar el catalogo de categorías."
+        forbiddenMessage="No tienes permisos para ver las categorías."
+      />
+    );
+  },
   component: CategoriesPage,
 });
 

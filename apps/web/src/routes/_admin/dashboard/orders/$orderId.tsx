@@ -39,10 +39,20 @@ import {
   getCustomerDisplayName,
   getCustomerInitials,
 } from "@/features/customer/customer.utils";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
   loader: ({ context: { queryClient }, params: { orderId } }) => {
     queryClient.ensureQueryData(createOrderDetailQueryOptions({ orderId }));
+  },
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar el contenido del pedido."
+        forbiddenMessage="No tienes permisos para ver el pedido."
+      />
+    );
   },
   component: RouteComponent,
 });

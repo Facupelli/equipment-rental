@@ -6,6 +6,7 @@ import { PricingRulesTab } from "@/features/pricing/pricing-rules/components/pri
 import { CouponsTab } from "@/features/pricing/coupons/components/coupons-tab";
 import { CreatePricingRuleDialogForm } from "@/features/pricing/pricing-rules/components/create-pricing-rule-dialog-form";
 import { CreateCouponDialogForm } from "@/features/pricing/coupons/components/create-coupon-dialog-form";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 const promotionsSearchSchema = z.object({
   tab: z.enum(["rules", "coupons"]).default("rules"),
@@ -17,6 +18,15 @@ type Tab = "rules" | "coupons";
 
 export const Route = createFileRoute("/_admin/dashboard/pricing/")({
   validateSearch: promotionsSearchSchema,
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar la página de promociones."
+        forbiddenMessage="No tienes permisos para ver las promociones."
+      />
+    );
+  },
   component: RouteComponent,
 });
 

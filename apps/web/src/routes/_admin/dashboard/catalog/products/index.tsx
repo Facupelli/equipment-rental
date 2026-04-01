@@ -1,3 +1,6 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import type { PaginationState } from "@tanstack/react-table";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductsTable } from "@/features/catalog/product-types/components/products-table";
@@ -5,15 +8,20 @@ import {
   productQueries,
   useProducts,
 } from "@/features/catalog/product-types/products.queries";
-
-import { Link } from "@tanstack/react-router";
-import { createFileRoute } from "@tanstack/react-router";
-import type { PaginationState } from "@tanstack/react-table";
-import { useState } from "react";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 export const Route = createFileRoute("/_admin/dashboard/catalog/products/")({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(productQueries.list()),
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar el catalogo de productos."
+        forbiddenMessage="No tienes permisos para ver los productos."
+      />
+    );
+  },
   component: ProductsPage,
 });
 

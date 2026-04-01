@@ -9,8 +9,18 @@ import { useSyncTenantBillingUnits } from "@/features/tenant/billing-unit/tenant
 import { TenantConfigForm } from "@/features/tenant/components/tenant-config-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { tenantQueries } from "@/features/tenant/tenant.queries";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 export const Route = createFileRoute("/_admin/dashboard/settings/")({
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar la configuración."
+        forbiddenMessage="No tienes permisos para ver la configuración."
+      />
+    );
+  },
   component: RouteComponent,
 });
 

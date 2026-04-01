@@ -1,13 +1,23 @@
 import { useAssets } from "@/features/inventory/assets/assets.queries";
 import { AssetsTable } from "@/features/inventory/assets/components/assets-table";
-import type { AssetResponse, GetAssetsQuery } from "@repo/schemas";
+import type { AssetResponseDto, GetAssetsQuery } from "@repo/schemas";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { PaginationState } from "@tanstack/react-table";
 import { useState } from "react";
 import { getAssetColumns } from "@/features/inventory/assets/components/aseets-columns";
 import { useLocationId } from "@/shared/contexts/location/location.hooks";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 export const Route = createFileRoute("/_admin/dashboard/inventory/assets/")({
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar el catalogo de assets."
+        forbiddenMessage="No tienes permisos para ver los assets."
+      />
+    );
+  },
   component: AssetsPage,
 });
 
@@ -34,7 +44,7 @@ function AssetsPage() {
     limit: pagination.pageSize,
   });
 
-  function handleEdit(item: AssetResponse) {
+  function handleEdit(item: AssetResponseDto) {
     // navigate({
     //   to: '/dashboard/inventory/items/$itemId/edit',
     //   params: { itemId: item.id },

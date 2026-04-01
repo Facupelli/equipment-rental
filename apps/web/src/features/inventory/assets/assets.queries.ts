@@ -7,14 +7,14 @@ import {
 } from "@tanstack/react-query";
 import { createAsset, getAssets } from "./assets.api";
 import type {
-  AssetResponse,
+  AssetResponseDto,
   CreateAssetDto,
   GetAssetsQuery,
   PaginatedDto,
 } from "@repo/schemas";
 import { ProblemDetailsError } from "@/shared/errors";
 
-type PaginatedAssets = PaginatedDto<AssetResponse>;
+type PaginatedAssets = PaginatedDto<AssetResponseDto>;
 
 // -----------------------------------------------------
 // Key Factory

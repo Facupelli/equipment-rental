@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { useBundles } from "@/features/catalog/bundles/bundles.queries";
 import { bundleColumns } from "@/features/catalog/bundles/components/bundle-columns";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 import useDebounce from "@/shared/hooks/use-debounce";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -32,6 +33,15 @@ export const Route = createFileRoute("/_admin/dashboard/catalog/bundles/")({
     page: search.page,
     name: search.name,
   }),
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar el catalogo de combos."
+        forbiddenMessage="No tienes permisos para ver los combos."
+      />
+    );
+  },
   component: BundlesPage,
 });
 

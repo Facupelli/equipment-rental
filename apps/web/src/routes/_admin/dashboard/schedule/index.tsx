@@ -38,6 +38,7 @@ import { useEffect, useCallback } from "react";
 import dayjs from "@/lib/dates/dayjs";
 import { useScheduleParams } from "@/features/orders/hooks/use-schedule-params";
 import { tenantQueries } from "@/features/tenant/tenant.queries";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 const searchSchema = z.object({
   date: z.iso.date().optional(),
@@ -46,6 +47,15 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_admin/dashboard/schedule/")({
   validateSearch: searchSchema,
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar la lista de horarios."
+        forbiddenMessage="No tienes permisos para ver los horarios."
+      />
+    );
+  },
   component: TodaySchedulePage,
 });
 

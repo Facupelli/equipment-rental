@@ -3,12 +3,22 @@ import { CreateOwnerDialog } from "@/features/tenant/owners/components/create-ow
 import { ownerColumns } from "@/features/tenant/owners/components/owners-columns";
 import { OwnersDataTable } from "@/features/tenant/owners/components/owners-table";
 import { useOwners } from "@/features/tenant/owners/owners.queries";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 import type { OwnerListItemResponse } from "@repo/schemas";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_admin/dashboard/owners/")({
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar los propietarios."
+        forbiddenMessage="No tienes permisos para ver los propietarios."
+      />
+    );
+  },
   component: OwnersPage,
 });
 

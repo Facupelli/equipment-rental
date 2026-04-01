@@ -21,8 +21,18 @@ import { useCustomers } from "@/features/customer/customer.queries";
 import { customersColumns } from "@/features/customer/components/customers-table/customers-columns";
 import { CustomersToolbar } from "@/features/customer/components/customers-table/customers-toolbar";
 import type { CustomerResponseDto } from "@repo/schemas";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 export const Route = createFileRoute("/_admin/dashboard/customers/")({
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar los clientes."
+        forbiddenMessage="No tienes permisos para ver los clientes."
+      />
+    );
+  },
   component: CustomersPage,
 });
 

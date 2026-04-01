@@ -3,12 +3,22 @@ import { CreateLocationDialog } from "@/features/tenant/locations/components/cre
 import { locationColumns } from "@/features/tenant/locations/components/locations-column";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
 import { OwnersDataTable } from "@/features/tenant/owners/components/owners-table";
+import { AdminRouteError } from "@/shared/components/admin-route-error";
 import type { LocationListItemResponse } from "@repo/schemas";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_admin/dashboard/locations/")({
+  errorComponent: ({ error }) => {
+    return (
+      <AdminRouteError
+        error={error}
+        genericMessage="No pudimos cargar el catalogo de ubicaciones."
+        forbiddenMessage="No tienes permisos para ver las ubicaciones."
+      />
+    );
+  },
   component: LocationsPage,
 });
 

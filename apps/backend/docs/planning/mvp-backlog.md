@@ -245,7 +245,7 @@ Execution unit: agent-ready task.
 - Add reassign/unassign asset flow for existing bookings.
 - Add tests for assignment safety and availability side effects.
 
-#### Slice 6.3 - Complete pricing lifecycle APIs
+#### Slice 6.3 - Complete pricing lifecycle APIs ✅
 
 - Finish pricing rule and coupon update/delete/activation coverage.
 
