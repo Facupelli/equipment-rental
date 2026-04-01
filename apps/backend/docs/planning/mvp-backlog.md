@@ -55,9 +55,9 @@ Execution unit: agent-ready task.
 
 ## P0 Epics
 
-### Epic 1 - Rental Settings And Booking Policy
+### Epic 1 - Rental Settings And Booking Policy ✅
 
-#### Slice 1.1 - Define tenant rental settings model
+#### Slice 1.1 - Define tenant rental settings model ✅
 
 - Add tenant-configurable booking mode setting with allowed values `instant-book` and `request-to-book`.
 - Add tenant-configurable hold-expiry setting used only for `request-to-book`.
@@ -77,7 +77,7 @@ Execution unit: agent-ready task.
 
 ### Epic 2 - Orders And Assignment Lifecycle
 
-#### Slice 2.1 - Support pending-review bookings
+#### Slice 2.1 - Support pending-review bookings ✅
 
 - Define order states for `pending_review`, `confirmed`, `rejected`, and `expired`.
 - `pending_review` is used only for `request-to-book` submissions awaiting operator decision.
@@ -94,7 +94,7 @@ Execution unit: agent-ready task.
 - Add response/query updates so order reads expose the new lifecycle states.
 - Add tests for valid and invalid transitions.
 
-#### Slice 2.2 - Distinguish temporary holds from committed fulfillment
+#### Slice 2.2 - Distinguish temporary holds from committed fulfillment ✅
 
 - Represent temporary customer-request holds separately from committed confirmed bookings.
 - A temporary hold blocks availability while an order is in `pending_review`.
@@ -151,9 +151,9 @@ Execution unit: agent-ready task.
 - Include `expiresAt` and review-related metadata in read models.
 - Add staff-facing pending review query coverage.
 
-### Epic 4 - Availability And Storefront Integrity
+### Epic 4 - Availability And Storefront Integrity ✅
 
-#### Slice 4.1 - Align availability with actual booking policy
+#### Slice 4.1 - Align availability with actual booking policy ✅
 
 - Availability must consider both temporary holds and committed assignments.
 - Bundle availability must respect component availability under the same rules.
@@ -164,7 +164,7 @@ Execution unit: agent-ready task.
 - Update bundle/component availability logic to consider temporary holds.
 - Add tests for overlapping holds, confirmed bookings, and mixed bundle/product cases.
 
-#### Slice 4.2 - Make storefront availability period-aware
+#### Slice 4.2 - Make storefront availability period-aware ✅
 
 - Customer-facing browse and booking flows should reflect requested period availability, not raw stock count.
 
@@ -174,7 +174,7 @@ Execution unit: agent-ready task.
 - Update storefront-facing query contracts/read models as needed.
 - Add tests for date/location-sensitive availability results.
 
-#### Slice 4.3 - Add booking guardrails
+#### Slice 4.3 - Add booking guardrails ✅
 
 - Prevent booking unpublished or retired catalog items in both booking modes.
 - Prevent customer booking flows from bypassing booking policy rules.
@@ -188,7 +188,7 @@ Execution unit: agent-ready task.
 
 ### Epic 5 - Staff Access Control And Staff Management
 
-#### Slice 5.1 - Harden staff-only route protection
+#### Slice 5.1 - Harden staff-only route protection ✅
 
 - Staff endpoints must be inaccessible to customer actors.
 - Role/permission enforcement must exist on launch-critical staff flows.
@@ -223,7 +223,7 @@ Execution unit: agent-ready task.
 
 ### Epic 6 - Rental-Critical CRUD Completion
 
-#### Slice 6.1 - Complete catalog lifecycle APIs
+#### Slice 6.1 - Complete catalog lifecycle APIs ✅
 
 - Finish update/delete coverage for product categories, product types, and bundles.
 
@@ -234,14 +234,14 @@ Execution unit: agent-ready task.
 - Add update/delete bundle flows.
 - Add tests for lifecycle constraints and tenant scoping.
 
-#### Slice 6.2 - Complete inventory lifecycle APIs
+#### Slice 6.2 - Complete inventory lifecycle APIs (missing reassign/unassign asset flow for existing bookings)
 
 - Finish asset update/deactivate/delete behaviors and post-booking assignment changes.
 
 #### Agent-ready tasks
 
-- Add update asset flow.
-- Add deactivate/soft-delete asset flow.
+- Add update asset flow. ✅
+- Add deactivate/soft-delete asset flow. ✅
 - Add reassign/unassign asset flow for existing bookings.
 - Add tests for assignment safety and availability side effects.
 
