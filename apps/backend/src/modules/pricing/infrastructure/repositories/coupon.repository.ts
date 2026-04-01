@@ -16,20 +16,6 @@ export class CouponRepository {
     return raw ? CouponMapper.toDomain(raw) : null;
   }
 
-  async loadByCode(tenantId: string, code: string): Promise<Coupon | null> {
-    const row = await this.prisma.client.coupon.findFirst({
-      where: {
-        tenantId,
-        code,
-      },
-    });
-
-    if (!row) {
-      return null;
-    }
-    return CouponMapper.toDomain(row);
-  }
-
   async save(coupon: Coupon, tx?: PrismaTransactionClient): Promise<string> {
     const client = tx ?? this.prisma.client;
     const row = CouponMapper.toPersistence(coupon);

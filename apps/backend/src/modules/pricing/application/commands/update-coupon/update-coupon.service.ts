@@ -1,36 +1,48 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { err, ok, Result } from 'neverthrow';
 import { PricingRuleType } from '@repo/types';
+import { Result, err, ok } from 'neverthrow';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { Coupon } from '../../../domain/entities/coupon.entity';
+
 import {
   CouponCodeAlreadyExistsError,
   PricingRuleNotCouponTypeError,
   PricingRuleNotFoundError,
+  CouponNotFoundError,
 } from '../../../domain/errors/pricing.errors';
 import { CouponRepository } from '../../../infrastructure/repositories/coupon.repository';
 import { PricingRuleRepository } from '../../../infrastructure/repositories/pricing-rule.repository';
-import { CreateCouponCommand } from './create-coupon.command';
 
-type CreateCouponError = CouponCodeAlreadyExistsError | PricingRuleNotFoundError | PricingRuleNotCouponTypeError;
+import { UpdateCouponCommand } from './update-coupon.command';
 
-@CommandHandler(CreateCouponCommand)
-export class CreateCouponService implements ICommandHandler<CreateCouponCommand, Result<string, CreateCouponError>> {
+type UpdateCouponError =
+  | CouponCodeAlreadyExistsError
+  | CouponNotFoundError
+  | PricingRuleNotFoundError
+  | PricingRuleNotCouponTypeError;
+
+@CommandHandler(UpdateCouponCommand)
+export class UpdateCouponService implements ICommandHandler<UpdateCouponCommand, Result<void, UpdateCouponError>> {
   constructor(
     private readonly prisma: PrismaService,
     private readonly couponRepository: CouponRepository,
     private readonly pricingRuleRepository: PricingRuleRepository,
   ) {}
 
-  async execute(command: CreateCouponCommand): Promise<Result<string, CreateCouponError>> {
-    const [existing, rule] = await Promise.all([
+  async execute(command: UpdateCouponCommand): Promise<Result<void, UpdateCouponError>> {
+    const [coupon, existing, rule] = await Promise.all([
+      this.couponRepository.load(command.couponId),
       this.prisma.client.coupon.findFirst({
         where: {
           code: command.code.trim().toUpperCase(),
+          id: { not: command.couponId },
         },
       }),
       this.pricingRuleRepository.load(command.pricingRuleId),
     ]);
+
+    if (!coupon) {
+      return err(new CouponNotFoundError(command.couponId));
+    }
 
     if (existing) {
       return err(new CouponCodeAlreadyExistsError(command.code));
@@ -44,8 +56,7 @@ export class CreateCouponService implements ICommandHandler<CreateCouponCommand,
       return err(new PricingRuleNotCouponTypeError(command.pricingRuleId));
     }
 
-    const coupon = Coupon.create({
-      tenantId: command.tenantId,
+    coupon.update({
       pricingRuleId: command.pricingRuleId,
       code: command.code,
       maxUses: command.maxUses,
@@ -55,7 +66,8 @@ export class CreateCouponService implements ICommandHandler<CreateCouponCommand,
       validUntil: command.validUntil,
     });
 
-    const id = await this.couponRepository.save(coupon);
-    return ok(id);
+    await this.couponRepository.save(coupon);
+
+    return ok(undefined);
   }
 }

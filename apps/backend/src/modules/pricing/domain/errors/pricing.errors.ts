@@ -33,9 +33,21 @@ export class PricingRuleNotFoundError extends PricingError {
   }
 }
 
+export class PricingRuleHasCouponsError extends PricingError {
+  constructor(id: string) {
+    super(`Pricing rule "${id}" cannot be deleted because it has coupons.`);
+  }
+}
+
 export class PricingRuleNotCouponTypeError extends PricingError {
   constructor(id: string) {
     super(`Pricing rule "${id}" is not of type COUPON.`);
+  }
+}
+
+export class CouponInUseError extends PricingError {
+  constructor(id: string) {
+    super(`Coupon "${id}" cannot be deleted because it is already in use.`);
   }
 }
 

@@ -30,17 +30,27 @@ export interface ReconstituteCouponProps {
   isActive: boolean;
 }
 
+export interface UpdateCouponProps {
+  pricingRuleId: string;
+  code: string;
+  maxUses?: number;
+  maxUsesPerCustomer?: number;
+  restrictedToCustomerId?: string;
+  validFrom?: Date;
+  validUntil?: Date;
+}
+
 export class Coupon {
   private constructor(
     public readonly id: string,
     public readonly tenantId: string,
-    public readonly pricingRuleId: string,
-    public readonly code: string,
-    public readonly maxUses: number | null,
-    public readonly maxUsesPerCustomer: number | null,
-    public readonly restrictedToCustomerId: string | null,
-    public readonly validFrom: Date | null,
-    public readonly validUntil: Date | null,
+    private _pricingRuleId: string,
+    private _code: string,
+    private _maxUses: number | null,
+    private _maxUsesPerCustomer: number | null,
+    private _restrictedToCustomerId: string | null,
+    private _validFrom: Date | null,
+    private _validUntil: Date | null,
     private _isActive: boolean,
   ) {}
 
@@ -90,6 +100,56 @@ export class Coupon {
     return this._isActive;
   }
 
+  get pricingRuleId(): string {
+    return this._pricingRuleId;
+  }
+
+  get code(): string {
+    return this._code;
+  }
+
+  get maxUses(): number | null {
+    return this._maxUses;
+  }
+
+  get maxUsesPerCustomer(): number | null {
+    return this._maxUsesPerCustomer;
+  }
+
+  get restrictedToCustomerId(): string | null {
+    return this._restrictedToCustomerId;
+  }
+
+  get validFrom(): Date | null {
+    return this._validFrom;
+  }
+
+  get validUntil(): Date | null {
+    return this._validUntil;
+  }
+
+  update(props: UpdateCouponProps): void {
+    if (props.validFrom && props.validUntil && props.validFrom >= props.validUntil) {
+      throw new InvalidCouponDateRangeException();
+    }
+
+    if (props.maxUses && props.maxUsesPerCustomer && props.maxUsesPerCustomer > props.maxUses) {
+      throw new CouponUsageLimitException();
+    }
+
+    if (props.restrictedToCustomerId && !props.maxUsesPerCustomer) {
+      throw new RestrictedCouponMissingPerCustomerLimitException();
+    }
+
+    this._pricingRuleId = props.pricingRuleId;
+    this._code = props.code.trim().toUpperCase();
+    this._maxUses = props.maxUses ?? null;
+    this._maxUsesPerCustomer = props.maxUsesPerCustomer ?? null;
+    this._restrictedToCustomerId = props.restrictedToCustomerId ?? null;
+    this._validFrom = props.validFrom ?? null;
+    this._validUntil = props.validUntil ?? null;
+  }
+
   activate(): void {
     this._isActive = true;
   }
@@ -106,8 +166,8 @@ export class Coupon {
    */
   isValidAt(now: Date): boolean {
     if (!this._isActive) return false;
-    if (this.validFrom && now < this.validFrom) return false;
-    if (this.validUntil && now > this.validUntil) return false;
+    if (this._validFrom && now < this._validFrom) return false;
+    if (this._validUntil && now > this._validUntil) return false;
     return true;
   }
 
@@ -118,8 +178,8 @@ export class Coupon {
    *   A guest (undefined) never matches a restricted coupon.
    */
   canBeUsedBy(customerId: string | undefined): boolean {
-    if (!this.restrictedToCustomerId) return true;
-    return this.restrictedToCustomerId === customerId;
+    if (!this._restrictedToCustomerId) return true;
+    return this._restrictedToCustomerId === customerId;
   }
 
   /**
@@ -127,8 +187,8 @@ export class Coupon {
    * Receives the count of active (non-voided) redemptions from the caller.
    */
   isWithinGlobalLimit(totalActiveRedemptions: number): boolean {
-    if (this.maxUses === null) return true;
-    return totalActiveRedemptions < this.maxUses;
+    if (this._maxUses === null) return true;
+    return totalActiveRedemptions < this._maxUses;
   }
 
   /**
@@ -138,7 +198,7 @@ export class Coupon {
    */
   isWithinPerCustomerLimit(customerActiveRedemptions: number, customerId: string | undefined): boolean {
     if (customerId === undefined) return true;
-    if (this.maxUsesPerCustomer === null) return true;
-    return customerActiveRedemptions < this.maxUsesPerCustomer;
+    if (this._maxUsesPerCustomer === null) return true;
+    return customerActiveRedemptions < this._maxUsesPerCustomer;
   }
 }

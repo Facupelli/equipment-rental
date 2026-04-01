@@ -41,18 +41,28 @@ export interface ReconstitutePricingRuleProps {
   effect: PricingRuleEffect;
 }
 
+export interface UpdatePricingRuleProps {
+  name: string;
+  type: PricingRuleType;
+  scope: PricingRuleScope;
+  priority: number;
+  stackable: boolean;
+  condition: PricingRuleCondition;
+  effect: PricingRuleEffect;
+}
+
 export class PricingRule {
   private constructor(
     public readonly id: string,
     public readonly tenantId: string,
-    public readonly name: string,
-    public readonly type: PricingRuleType,
-    public readonly scope: PricingRuleScope,
-    public readonly priority: number,
-    public readonly stackable: boolean,
+    private _name: string,
+    private _type: PricingRuleType,
+    private _scope: PricingRuleScope,
+    private _priority: number,
+    private _stackable: boolean,
     private isActive: boolean,
-    public readonly condition: PricingRuleCondition,
-    public readonly effect: PricingRuleEffect,
+    private _condition: PricingRuleCondition,
+    private _effect: PricingRuleEffect,
   ) {}
 
   static create(props: CreatePricingRuleProps): PricingRule {
@@ -90,6 +100,48 @@ export class PricingRule {
 
   get active(): boolean {
     return this.isActive;
+  }
+
+  get name(): string {
+    return this._name;
+  }
+
+  get type(): PricingRuleType {
+    return this._type;
+  }
+
+  get scope(): PricingRuleScope {
+    return this._scope;
+  }
+
+  get priority(): number {
+    return this._priority;
+  }
+
+  get stackable(): boolean {
+    return this._stackable;
+  }
+
+  get condition(): PricingRuleCondition {
+    return this._condition;
+  }
+
+  get effect(): PricingRuleEffect {
+    return this._effect;
+  }
+
+  update(props: UpdatePricingRuleProps): void {
+    if (props.priority < 0) {
+      throw new InvalidPricingRulePriorityException();
+    }
+
+    this._name = props.name;
+    this._type = props.type;
+    this._scope = props.scope;
+    this._priority = props.priority;
+    this._stackable = props.stackable;
+    this._condition = props.condition;
+    this._effect = props.effect;
   }
 
   activate(): void {

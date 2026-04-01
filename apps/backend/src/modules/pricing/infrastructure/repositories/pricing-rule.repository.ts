@@ -9,9 +9,11 @@ export class PricingRuleRepository {
 
   async load(id: string): Promise<PricingRule | null> {
     const raw = await this.prisma.client.pricingRule.findUnique({ where: { id } });
+
     if (!raw) {
       return null;
     }
+
     return PricingRuleMapper.toDomain(raw);
   }
 

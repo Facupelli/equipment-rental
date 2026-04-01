@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { err, ok, Result } from 'neverthrow';
+import { PrismaService } from 'src/core/database/prisma.service';
 import { CouponNotFoundError, CouponValidationError } from '../../domain/errors/pricing.errors';
 import { CouponValidationService } from '../../domain/services/coupon-validation.service';
 import { CouponRepository } from '../../infrastructure/repositories/coupon.repository';
@@ -24,6 +25,7 @@ export class ResolveCouponForPricingService {
   private readonly validationService = new CouponValidationService();
 
   constructor(
+    private readonly prisma: PrismaService,
     private readonly couponRepo: CouponRepository,
     private readonly redemptionRepo: CouponRedemptionRepository,
   ) {}
@@ -31,7 +33,20 @@ export class ResolveCouponForPricingService {
   async resolveCouponForPricing(
     input: ResolveCouponInput,
   ): Promise<Result<ResolveCouponResult, ResolveCouponForPricingError>> {
-    const coupon = await this.couponRepo.loadByCode(input.tenantId, input.code);
+    const couponRecord = await this.prisma.client.coupon.findFirst({
+      where: {
+        code: input.code.trim().toUpperCase(),
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!couponRecord) {
+      return err(new CouponNotFoundError(input.code));
+    }
+
+    const coupon = await this.couponRepo.load(couponRecord.id);
 
     if (!coupon) {
       return err(new CouponNotFoundError(input.code));

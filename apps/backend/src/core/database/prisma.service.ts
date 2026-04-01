@@ -21,6 +21,7 @@ const TENANT_EXCLUDED_MODELS = new Set([
   'RolePermission', // scoped through Role
   'UserRole', // scoped through User
   'LocationSchedule', // scoped through Location
+  'CouponRedemption', // scoped through Coupon / Order
 ]);
 
 // Operations that only need WHERE injection
