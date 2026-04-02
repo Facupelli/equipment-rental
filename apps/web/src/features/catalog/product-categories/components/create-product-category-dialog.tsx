@@ -28,15 +28,15 @@ export function CreateProductCategoryDialog() {
 				render={
 					<Button>
 						<Plus className="mr-2 h-4 w-4" />
-						Add Category
+						Agregar categoria
 					</Button>
 				}
 			/>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Create Category</DialogTitle>
+					<DialogTitle>Crear categoria</DialogTitle>
 					<DialogDescription>
-						Add a new category to organize your inventory.
+						Agrega una nueva categoria para organizar tus productos.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -46,8 +46,8 @@ export function CreateProductCategoryDialog() {
 						defaultValues={productCategoryFormDefaults}
 						onCancel={() => setOpen(false)}
 						isPending={isPending}
-						submitLabel="Create"
-						pendingLabel="Creating..."
+						submitLabel="Crear"
+						pendingLabel="Creando..."
 						onSubmit={async ({ values }) => {
 							await createCategory(toCreateProductCategoryDto(values));
 							setOpen(false);

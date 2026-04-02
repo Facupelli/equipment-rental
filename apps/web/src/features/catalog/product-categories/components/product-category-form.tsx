@@ -88,7 +88,7 @@ export function ProductCategoryForm({
 								field.state.meta.isTouched && !field.state.meta.isValid;
 							return (
 								<Field data-invalid={isInvalid}>
-									<FieldLabel htmlFor={field.name}>Name</FieldLabel>
+									<FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
 									<Input
 										id={field.name}
 										name={field.name}
@@ -111,9 +111,9 @@ export function ProductCategoryForm({
 							return (
 								<Field data-invalid={isInvalid}>
 									<FieldLabel htmlFor={field.name}>
-										Description{" "}
+										Descripcion{" "}
 										<span className="text-muted-foreground text-xs">
-											(optional)
+											(opcional)
 										</span>
 									</FieldLabel>
 									<Textarea
@@ -134,7 +134,7 @@ export function ProductCategoryForm({
 
 			<div className="flex justify-end gap-2">
 				<Button type="button" variant="outline" onClick={onCancel}>
-					Cancel
+					Cancelar
 				</Button>
 				<form.Subscribe
 					selector={(state) => [state.canSubmit, state.isSubmitting]}

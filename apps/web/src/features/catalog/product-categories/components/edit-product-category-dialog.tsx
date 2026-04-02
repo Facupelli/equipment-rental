@@ -36,9 +36,9 @@ export function EditProductCategoryDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Edit Category</DialogTitle>
+					<DialogTitle>Editar categoria</DialogTitle>
 					<DialogDescription>
-						Update the category details used to organize your inventory.
+						Actualiza los datos de la categoria para organizar tu inventario.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -49,8 +49,8 @@ export function EditProductCategoryDialog({
 						defaultValues={productCategoryToFormValues(category)}
 						onCancel={() => onOpenChange(false)}
 						isPending={isPending}
-						submitLabel="Save Changes"
-						pendingLabel="Saving..."
+						submitLabel="Guardar cambios"
+						pendingLabel="Guardando..."
 						onSubmit={async ({ dirtyValues }) => {
 							await updateCategory({
 								categoryId: category.id,

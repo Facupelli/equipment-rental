@@ -1,12 +1,13 @@
 import type { ProductCategoryResponse } from "@repo/schemas";
 import { createFileRoute } from "@tanstack/react-router";
-import { MoreHorizontal, Pencil } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -14,6 +15,7 @@ import {
 	useCategories,
 } from "@/features/catalog/product-categories/categories.queries";
 import { CreateProductCategoryDialog } from "@/features/catalog/product-categories/components/create-product-category-dialog";
+import { DeleteProductCategoryAlertDialog } from "@/features/catalog/product-categories/components/delete-product-category-alert-dialog";
 import { EditProductCategoryDialog } from "@/features/catalog/product-categories/components/edit-product-category-dialog";
 import { cn } from "@/lib/utils";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
@@ -38,9 +40,9 @@ function CategoriesPage() {
 		<div className="space-y-6 p-8">
 			<div className="flex items-start justify-between">
 				<div>
-					<h1 className="text-2xl font-semibold tracking-tight">Categories</h1>
+					<h1 className="text-2xl font-semibold tracking-tight">Categorías</h1>
 					<p className="text-sm text-muted-foreground">
-						Manage categories for organizing your products.
+						Maneja las categorías para organizar tus productos.
 					</p>
 				</div>
 
@@ -56,32 +58,32 @@ function CategoriesTable() {
 	const { data: categories = [], isPending, isError } = useCategories();
 	const [editingCategory, setEditingCategory] =
 		useState<ProductCategoryResponse | null>(null);
+	const [deletingCategory, setDeletingCategory] =
+		useState<ProductCategoryResponse | null>(null);
 
 	if (isError) {
 		return (
 			<p className="text-sm text-destructive">
-				Failed to load categories. Please try again.
+				No se pudieron cargar las categorias. Intentalo de nuevo.
 			</p>
 		);
 	}
 
 	if (isPending) {
-		return <p className="text-sm text-muted-foreground">Loading...</p>;
+		return <p className="text-sm text-muted-foreground">Cargando...</p>;
 	}
 
 	if (categories.length === 0) {
-		return (
-			<p className="text-sm text-muted-foreground">No categories found.</p>
-		);
+		return <p className="text-sm text-muted-foreground">No hay categorias.</p>;
 	}
 
 	return (
 		<>
 			<div className="rounded-md border">
 				<div className="grid grid-cols-[1fr_2fr_auto] items-center px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground border-b">
-					<span>Category Name</span>
-					<span>Description</span>
-					<span>Actions</span>
+					<span>Nombre</span>
+					<span>Descripcion</span>
+					<span>Acciones</span>
 				</div>
 
 				{categories.map((category, index) => (
@@ -96,7 +98,10 @@ function CategoriesTable() {
 						<p className="text-sm text-muted-foreground">
 							{category.description ?? "-"}
 						</p>
-						<CategoryRowActions onEdit={() => setEditingCategory(category)} />
+						<CategoryRowActions
+							onEdit={() => setEditingCategory(category)}
+							onDelete={() => setDeletingCategory(category)}
+						/>
 					</div>
 				))}
 			</div>
@@ -110,11 +115,27 @@ function CategoriesTable() {
 				}}
 				category={editingCategory}
 			/>
+
+			<DeleteProductCategoryAlertDialog
+				open={deletingCategory !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeletingCategory(null);
+					}
+				}}
+				category={deletingCategory}
+			/>
 		</>
 	);
 }
 
-function CategoryRowActions({ onEdit }: { onEdit: () => void }) {
+function CategoryRowActions({
+	onEdit,
+	onDelete,
+}: {
+	onEdit: () => void;
+	onDelete: () => void;
+}) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger
@@ -122,7 +143,7 @@ function CategoryRowActions({ onEdit }: { onEdit: () => void }) {
 					<Button
 						variant="ghost"
 						size="icon"
-						aria-label="Open category actions"
+						aria-label="Abrir acciones de categoria"
 					>
 						<MoreHorizontal className="h-4 w-4" />
 					</Button>
@@ -131,7 +152,12 @@ function CategoryRowActions({ onEdit }: { onEdit: () => void }) {
 			<DropdownMenuContent align="end" className="w-40">
 				<DropdownMenuItem onClick={onEdit}>
 					<Pencil className="h-4 w-4" />
-					Edit
+					Editar
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem variant="destructive" onClick={onDelete}>
+					<Trash2 className="h-4 w-4" />
+					Eliminar
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

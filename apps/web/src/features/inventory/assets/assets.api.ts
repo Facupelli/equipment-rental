@@ -4,7 +4,7 @@ import { type ProblemDetails } from "@repo/schemas";
 import {
   createAssetSchema,
   getAssetsQuerySchema,
-  type AssetResponse,
+  type AssetResponseDto,
   type CreateAssetDto,
   type GetAssetsQuery,
   type PaginatedDto,
@@ -32,8 +32,8 @@ export const createAsset = createServerFn({ method: "POST" })
 
 export const getAssets = createServerFn({ method: "GET" })
   .inputValidator((data: GetAssetsQuery) => getAssetsQuerySchema.parse(data))
-  .handler(async ({ data }): Promise<PaginatedDto<AssetResponse>> => {
-    const result = await apiFetchPaginated<AssetResponse>(apiUrl, {
+  .handler(async ({ data }): Promise<PaginatedDto<AssetResponseDto>> => {
+    const result = await apiFetchPaginated<AssetResponseDto>(apiUrl, {
       method: "GET",
       params: data,
     });
