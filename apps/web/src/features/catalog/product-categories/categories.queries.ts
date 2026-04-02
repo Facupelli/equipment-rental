@@ -1,32 +1,37 @@
-import {
-  queryOptions,
-  useMutation,
-  useQuery,
-  type UseMutationOptions,
-  type UseQueryOptions,
-} from "@tanstack/react-query";
-import { createCategory, getCategories } from "./categories.api";
-import type { ProblemDetailsError } from "@/shared/errors";
 import type {
-  CreateProductCategoryDto,
-  ProductCategoryListResponse,
+	CreateProductCategoryDto,
+	ProductCategoryListResponse,
+	UpdateProductCategoryDto,
 } from "@repo/schemas";
+import {
+	queryOptions,
+	type UseMutationOptions,
+	type UseQueryOptions,
+	useMutation,
+	useQuery,
+} from "@tanstack/react-query";
+import type { ProblemDetailsError } from "@/shared/errors";
+import {
+	createCategory,
+	getCategories,
+	updateCategory,
+} from "./categories.api";
 
 // -----------------------------------------------------
 // Query Key Factory
 // -----------------------------------------------------
 
 export const categoryKeys = {
-  all: () => ["categories"] as const,
-  lists: () => [...categoryKeys.all(), "list"] as const,
+	all: () => ["categories"] as const,
+	lists: () => [...categoryKeys.all(), "list"] as const,
 };
 
 export const categoryQueries = {
-  list: () =>
-    queryOptions<ProductCategoryListResponse, ProblemDetailsError>({
-      queryKey: categoryKeys.lists(),
-      queryFn: () => getCategories(),
-    }),
+	list: () =>
+		queryOptions<ProductCategoryListResponse, ProblemDetailsError>({
+			queryKey: categoryKeys.lists(),
+			queryFn: () => getCategories(),
+		}),
 };
 
 // -----------------------------------------------------
@@ -34,13 +39,22 @@ export const categoryQueries = {
 // -----------------------------------------------------
 
 type CategoryQueryOptions<TData = ProductCategoryListResponse> = Omit<
-  UseQueryOptions<ProductCategoryListResponse, ProblemDetailsError, TData>,
-  "queryKey" | "queryFn"
+	UseQueryOptions<ProductCategoryListResponse, ProblemDetailsError, TData>,
+	"queryKey" | "queryFn"
 >;
 
 type CategoryMutationOptions = Omit<
-  UseMutationOptions<string, ProblemDetailsError, CreateProductCategoryDto>,
-  "mutationFn"
+	UseMutationOptions<string, ProblemDetailsError, CreateProductCategoryDto>,
+	"mutationFn"
+>;
+
+type UpdateCategoryMutationOptions = Omit<
+	UseMutationOptions<
+		void,
+		ProblemDetailsError,
+		{ categoryId: string; dto: UpdateProductCategoryDto }
+	>,
+	"mutationFn"
 >;
 
 // -----------------------------------------------------
@@ -48,23 +62,38 @@ type CategoryMutationOptions = Omit<
 // -----------------------------------------------------
 
 export function useCategories<TData = ProductCategoryListResponse>(
-  options?: CategoryQueryOptions<TData>,
+	options?: CategoryQueryOptions<TData>,
 ) {
-  const { queryKey, queryFn } = categoryQueries.list();
+	const { queryKey, queryFn } = categoryQueries.list();
 
-  return useQuery({
-    ...options,
-    queryKey,
-    queryFn,
-  });
+	return useQuery({
+		...options,
+		queryKey,
+		queryFn,
+	});
 }
 
 export function useCreateCategory(options?: CategoryMutationOptions) {
-  return useMutation<string, ProblemDetailsError, CreateProductCategoryDto>({
-    ...options,
-    mutationFn: (data) => createCategory({ data }),
-    meta: {
-      invalidates: categoryKeys.lists(),
-    },
-  });
+	return useMutation<string, ProblemDetailsError, CreateProductCategoryDto>({
+		...options,
+		mutationFn: (data) => createCategory({ data }),
+		meta: {
+			invalidates: categoryKeys.lists(),
+		},
+	});
+}
+
+export function useUpdateCategory(options?: UpdateCategoryMutationOptions) {
+	return useMutation<
+		void,
+		ProblemDetailsError,
+		{ categoryId: string; dto: UpdateProductCategoryDto }
+	>({
+		...options,
+		mutationFn: ({ categoryId, dto }) =>
+			updateCategory({ data: { categoryId, dto } }),
+		meta: {
+			invalidates: categoryKeys.lists(),
+		},
+	});
 }
