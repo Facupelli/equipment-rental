@@ -34,14 +34,7 @@ import { GetTenantConfigQueryHandler } from './application/queries/get-tenant-co
 import { RegisterTenantHttpController } from './application/commands/register-tenant/register-tenant.http.controller';
 import { GetCurrentTenantHttpController } from './application/queries/get-tenant/get-current-tenant.http.controller';
 import { GetTenantBillingUnitsHttpController } from './application/queries/get-billing-units/get-tenant-billing-units.http.controller';
-import { CreateLocationHttpController } from './location/infrastructure/controllers/create-location.http.controller';
-import { UpdateLocationHttpController } from './location/infrastructure/controllers/update-location.http.controller';
-import { DeactivateLocationHttpController } from './location/infrastructure/controllers/deactivate-location.http.controller';
-import { GetLocationsHttpController } from './location/infrastructure/controllers/get-locations.http.controller';
-import { GetLocationScheduleSlotsHttpController } from './location/infrastructure/controllers/get-location-schedule-slots.http.controller';
-import { GetLocationSchedulesHttpController } from './location/infrastructure/controllers/get-location-schedules.http.controller';
-import { AddLocationScheduleHttpController } from './location/infrastructure/controllers/add-location-schedule.http.controller';
-import { BulkAddLocationSchedulesHttpController } from './location/infrastructure/controllers/bulk-add-location-schedules.http.controller';
+import { GetLocationsHttpController } from './location/application/queries/get-locations/get-locations.http.controller';
 import { CreateOwnerHttpController } from './owner/infrastructure/controllers/create-owner.http.controller';
 import { CreateOwnerContractHttpController } from './owner/infrastructure/controllers/create-owner-contract.http.controller';
 import { GetOwnersHttpController } from './owner/infrastructure/controllers/get-owners.http.controller';
@@ -51,6 +44,13 @@ import { TenantFacade } from './tenant.facade';
 import { UpdateTenantConfigHttpController } from './application/commands/update-config/update-tenant-config.http.controller';
 import { SyncTenantBillingUnitsHttpController } from './application/commands/sync-billing-units/sync-tenant-billing-units.http.controller';
 import { GetTenantPricingConfigHttpController } from './application/queries/get-tenant-config/get-tenant-pricing-config.http.controller';
+import { CreateLocationHttpController } from './location/application/commands/create-location/create-location.http.controller';
+import { UpdateLocationHttpController } from './location/application/commands/update-location/update-location.http.controller';
+import { DeactivateLocationHttpController } from './location/application/commands/deactivate-location/deactivate-location.http.controller';
+import { GetLocationScheduleSlotsHttpController } from './location/application/queries/get-location-schedule-slots/get-location-schedule-slots.http.controller';
+import { GetLocationSchedulesHttpController } from './location/application/queries/get-location-schedules/get-location-schedules.http.controller';
+import { AddLocationScheduleHttpController } from './location/application/commands/add-schedule-to-location/add-location-schedule.http.controller';
+import { BulkAddLocationSchedulesHttpController } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-location-schedules.http.controller';
 
 const commandHandlers = [
   RegisterTenantService,

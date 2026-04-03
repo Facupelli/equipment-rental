@@ -1,29 +1,38 @@
+import type {
+	CreateLocationDto,
+	LocationListResponse,
+	UpdateLocationDto,
+} from "@repo/schemas";
 import {
-  queryOptions,
-  useMutation,
-  useQuery,
-  type UseMutationOptions,
-  type UseQueryOptions,
+	queryOptions,
+	type UseMutationOptions,
+	type UseQueryOptions,
+	useMutation,
+	useQuery,
 } from "@tanstack/react-query";
-import { createLocation, getLocations } from "./locations.api";
 import type { ProblemDetailsError } from "@/shared/errors";
-import type { CreateLocationDto, LocationListResponse } from "@repo/schemas";
+import {
+	createLocation,
+	deactivateLocation,
+	getLocations,
+	updateLocation,
+} from "./locations.api";
 
 // -----------------------------------------------------
 // Key Factory
 // -----------------------------------------------------
 
 export const locationKeys = {
-  all: () => ["locations"] as const,
-  lists: () => [...locationKeys.all(), "list"] as const,
+	all: () => ["locations"] as const,
+	lists: () => [...locationKeys.all(), "list"] as const,
 };
 
 export const locationQueries = {
-  list: () =>
-    queryOptions<LocationListResponse, ProblemDetailsError>({
-      queryKey: locationKeys.lists(),
-      queryFn: () => getLocations(),
-    }),
+	list: () =>
+		queryOptions<LocationListResponse, ProblemDetailsError>({
+			queryKey: locationKeys.lists(),
+			queryFn: () => getLocations(),
+		}),
 };
 
 // -----------------------------------------------------
@@ -31,13 +40,27 @@ export const locationQueries = {
 // -----------------------------------------------------
 
 type LocationQueryOptions<TData = LocationListResponse> = Omit<
-  UseQueryOptions<LocationListResponse, ProblemDetailsError, TData>,
-  "queryKey" | "queryFn"
+	UseQueryOptions<LocationListResponse, ProblemDetailsError, TData>,
+	"queryKey" | "queryFn"
 >;
 
 type LocationMutationOptions = Omit<
-  UseMutationOptions<string, ProblemDetailsError, CreateLocationDto>,
-  "mutationFn"
+	UseMutationOptions<string, ProblemDetailsError, CreateLocationDto>,
+	"mutationFn"
+>;
+
+type UpdateLocationMutationOptions = Omit<
+	UseMutationOptions<
+		void,
+		ProblemDetailsError,
+		{ locationId: string; dto: UpdateLocationDto }
+	>,
+	"mutationFn"
+>;
+
+type DeactivateLocationMutationOptions = Omit<
+	UseMutationOptions<void, ProblemDetailsError, { locationId: string }>,
+	"mutationFn"
 >;
 
 // -----------------------------------------------------
@@ -45,23 +68,49 @@ type LocationMutationOptions = Omit<
 // -----------------------------------------------------
 
 export function useLocations<TData = LocationListResponse>(
-  options?: LocationQueryOptions<TData>,
+	options?: LocationQueryOptions<TData>,
 ) {
-  const { queryKey, queryFn } = locationQueries.list();
+	const { queryKey, queryFn } = locationQueries.list();
 
-  return useQuery({
-    ...options,
-    queryKey,
-    queryFn,
-  });
+	return useQuery({
+		...options,
+		queryKey,
+		queryFn,
+	});
 }
 
 export function useCreateLocation(options?: LocationMutationOptions) {
-  return useMutation<string, ProblemDetailsError, CreateLocationDto>({
-    ...options,
-    mutationFn: (data) => createLocation({ data }),
-    meta: {
-      invalidates: locationKeys.lists(),
-    },
-  });
+	return useMutation<string, ProblemDetailsError, CreateLocationDto>({
+		...options,
+		mutationFn: (data) => createLocation({ data }),
+		meta: {
+			invalidates: locationKeys.lists(),
+		},
+	});
+}
+
+export function useUpdateLocation(options?: UpdateLocationMutationOptions) {
+	return useMutation<
+		void,
+		ProblemDetailsError,
+		{ locationId: string; dto: UpdateLocationDto }
+	>({
+		...options,
+		mutationFn: (data) => updateLocation({ data }),
+		meta: {
+			invalidates: locationKeys.lists(),
+		},
+	});
+}
+
+export function useDeactivateLocation(
+	options?: DeactivateLocationMutationOptions,
+) {
+	return useMutation<void, ProblemDetailsError, { locationId: string }>({
+		...options,
+		mutationFn: (data) => deactivateLocation({ data }),
+		meta: {
+			invalidates: locationKeys.lists(),
+		},
+	});
 }

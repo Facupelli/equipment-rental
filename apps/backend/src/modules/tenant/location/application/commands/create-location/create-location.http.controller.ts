@@ -6,8 +6,8 @@ import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { CreateLocationCommand } from '../../application/commands/create-location/create-location.command';
-import { CreateLocationDto } from '../../application/commands/create-location/create-location.request.dto';
+import { CreateLocationCommand } from './create-location.command';
+import { CreateLocationDto } from './create-location.request.dto';
 
 @StaffRoute(Permission.MANAGE_LOCATIONS)
 @Controller('locations')

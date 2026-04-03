@@ -4,7 +4,7 @@ import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { GetLocationSchedulesQuery } from '../../application/queries/get-location-schedules/get-location-schedules.query';
+import { GetLocationSchedulesQuery } from './get-location-schedules.query';
 
 @Controller('locations')
 export class GetLocationSchedulesHttpController {

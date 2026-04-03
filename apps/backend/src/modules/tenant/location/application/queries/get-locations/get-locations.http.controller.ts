@@ -4,7 +4,7 @@ import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { GetLocationsQuery } from '../../application/queries/get-locations/get-locations.query';
+import { GetLocationsQuery } from './get-locations.query';
 
 @Controller('locations')
 export class GetLocationsHttpController {

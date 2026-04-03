@@ -6,9 +6,9 @@ import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { AddScheduleToLocationCommand } from '../../application/commands/add-schedule-to-location/add-schedule-to-location.command';
-import { AddScheduleToLocationDto } from '../../application/commands/add-schedule-to-location/add-schedule-to-location.request.dto';
-import { LocationNotFoundError } from '../../domain/errors/location.errors';
+import { AddScheduleToLocationCommand } from './add-schedule-to-location.command';
+import { AddScheduleToLocationDto } from './add-schedule-to-location.request.dto';
+import { LocationNotFoundError } from '../../../domain/errors/location.errors';
 
 @StaffRoute(Permission.MANAGE_LOCATIONS)
 @Controller('locations')

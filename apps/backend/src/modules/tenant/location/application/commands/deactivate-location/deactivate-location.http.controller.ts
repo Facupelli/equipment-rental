@@ -6,8 +6,8 @@ import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { DeactivateLocationCommand } from '../../application/commands/deactivate-location/deactivate-location.command';
-import { LocationNotFoundError } from '../../domain/errors/location.errors';
+import { DeactivateLocationCommand } from './deactivate-location.command';
+import { LocationNotFoundError } from '../../../domain/errors/location.errors';
 
 @StaffRoute(Permission.MANAGE_LOCATIONS)
 @Controller('locations')

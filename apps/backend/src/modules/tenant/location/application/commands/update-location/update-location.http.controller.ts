@@ -6,9 +6,9 @@ import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { UpdateLocationCommand } from '../../application/commands/update-location/update-location.command';
-import { UpdateLocationRequestDto } from '../../application/commands/update-location/update-location.request.dto';
-import { LocationNotFoundError } from '../../domain/errors/location.errors';
+import { UpdateLocationCommand } from './update-location.command';
+import { UpdateLocationRequestDto } from './update-location.request.dto';
+import { LocationNotFoundError } from '../../../domain/errors/location.errors';
 
 @StaffRoute(Permission.MANAGE_LOCATIONS)
 @Controller('locations')

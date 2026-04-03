@@ -6,7 +6,7 @@ import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { GetLocationScheduleSlotsQuery } from 'src/modules/tenant/public/queries/get-location-schedule-slots.query';
 
-import { GetLocationScheduleSlotsQueryDto } from '../../application/queries/get-location-schedule-slots/get-location-schedule-slots.request.dto';
+import { GetLocationScheduleSlotsQueryDto } from './get-location-schedule-slots.request.dto';
 
 @Controller('locations')
 export class GetLocationScheduleSlotsHttpController {
