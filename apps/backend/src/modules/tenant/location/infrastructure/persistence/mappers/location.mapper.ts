@@ -25,8 +25,8 @@ export class LocationMapper {
     return {
       id: entity.id,
       tenantId: entity.tenantId,
-      name: entity.name,
-      address: entity.address,
+      name: entity.getName(),
+      address: entity.getAddress(),
       isActive: entity.active,
       schedules: {
         create: entity.getSchedules().map(LocationScheduleMapper.toNestedPersistence),
@@ -36,8 +36,8 @@ export class LocationMapper {
 
   static toUpdatePersistence(entity: Location): Prisma.LocationUncheckedUpdateInput {
     return {
-      name: entity.name,
-      address: entity.address,
+      name: entity.getName(),
+      address: entity.getAddress(),
       isActive: entity.active,
     };
   }

@@ -9,7 +9,6 @@ export const createLocationSchema = z.object({
 export const updateLocationSchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
   address: z.string().nullable().optional(),
-  isActive: z.boolean().optional(),
 });
 
 export type CreateLocationDto = z.infer<typeof createLocationSchema>;

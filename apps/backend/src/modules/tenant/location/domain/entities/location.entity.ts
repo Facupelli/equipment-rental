@@ -22,8 +22,8 @@ export class Location {
   private constructor(
     public readonly id: string,
     public readonly tenantId: string,
-    public readonly name: string,
-    public readonly address: string | null,
+    private name: string,
+    private address: string | null,
     private isActive: boolean,
     private schedules: LocationSchedule[],
   ) {}
@@ -45,6 +45,14 @@ export class Location {
     return this.isActive;
   }
 
+  getName(): string {
+    return this.name;
+  }
+
+  getAddress(): string | null {
+    return this.address;
+  }
+
   getSchedules(): readonly LocationSchedule[] {
     return this.schedules;
   }
@@ -53,6 +61,22 @@ export class Location {
 
   deactivate(): void {
     this.isActive = false;
+  }
+
+  update(props: { name?: string; address?: string | null }): void {
+    if (props.name !== undefined) {
+      const normalizedName = props.name.trim();
+
+      if (normalizedName.length === 0) {
+        throw new InvalidLocationNameException();
+      }
+
+      this.name = normalizedName;
+    }
+
+    if (props.address !== undefined) {
+      this.address = props.address?.trim() ?? null;
+    }
   }
 
   addSchedules(items: CreateLocationScheduleProps[]): void {

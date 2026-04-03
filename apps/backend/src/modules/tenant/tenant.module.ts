@@ -9,6 +9,8 @@ import { GetLocationsQueryHandler } from './location/application/queries/get-loc
 import { GetOwnersQueryHandler } from './owner/application/queries/get-owners/get-owners.query-handler';
 import { CreateOwnerCommandHandler } from './owner/application/commands/create-owner/create-owner.command-handler';
 import { CreateLocationCommandHandler } from './location/application/commands/create-location/create-location.command-handler';
+import { UpdateLocationCommandHandler } from './location/application/commands/update-location/update-location.command-handler';
+import { DeactivateLocationCommandHandler } from './location/application/commands/deactivate-location/deactivate-location.command-handler';
 import { LocationRepository } from './location/infrastructure/persistence/repositories/location.repository';
 import { OwnerRepository } from './owner/infrastructure/persistence/repositories/owner.repository';
 import { TenantBillingUnitRepository } from './infrastructure/persistence/repositories/billing-unit.repository';
@@ -33,6 +35,8 @@ import { RegisterTenantHttpController } from './application/commands/register-te
 import { GetCurrentTenantHttpController } from './application/queries/get-tenant/get-current-tenant.http.controller';
 import { GetTenantBillingUnitsHttpController } from './application/queries/get-billing-units/get-tenant-billing-units.http.controller';
 import { CreateLocationHttpController } from './location/infrastructure/controllers/create-location.http.controller';
+import { UpdateLocationHttpController } from './location/infrastructure/controllers/update-location.http.controller';
+import { DeactivateLocationHttpController } from './location/infrastructure/controllers/deactivate-location.http.controller';
 import { GetLocationsHttpController } from './location/infrastructure/controllers/get-locations.http.controller';
 import { GetLocationScheduleSlotsHttpController } from './location/infrastructure/controllers/get-location-schedule-slots.http.controller';
 import { GetLocationSchedulesHttpController } from './location/infrastructure/controllers/get-location-schedules.http.controller';
@@ -57,6 +61,8 @@ const commandHandlers = [
   CreateOwnerContractCommandHandler,
   // location
   CreateLocationCommandHandler,
+  UpdateLocationCommandHandler,
+  DeactivateLocationCommandHandler,
   AddScheduleToLocationCommandHandler,
   BulkAddSchedulesToLocationCommandHandler,
 ];
@@ -99,6 +105,8 @@ const controllers = [
   GetTenantBillingUnitsHttpController,
   SyncTenantBillingUnitsHttpController,
   CreateLocationHttpController,
+  UpdateLocationHttpController,
+  DeactivateLocationHttpController,
   GetLocationsHttpController,
   GetLocationScheduleSlotsHttpController,
   GetLocationSchedulesHttpController,
