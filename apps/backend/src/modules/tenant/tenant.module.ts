@@ -32,8 +32,14 @@ import { FindActiveContractForScopeQueryHandler } from './owner/application/quer
 import { RegisterTenantService } from './application/commands/register-tenant/register-tenant.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { GetTenantConfigQueryHandler } from './application/queries/get-tenant-config/get-tenant-config.query-handler';
+import { RegisterCustomDomainService } from './application/commands/register-custom-domain/register-custom-domain.service';
+import { RefreshCustomDomainStatusService } from './application/commands/refresh-custom-domain-status/refresh-custom-domain-status.service';
+import { GetCustomDomainQueryHandler } from './application/queries/get-custom-domain/get-custom-domain.query-handler';
 import { RegisterTenantHttpController } from './application/commands/register-tenant/register-tenant.http.controller';
+import { RegisterCustomDomainHttpController } from './application/commands/register-custom-domain/register-custom-domain.http.controller';
+import { RefreshCustomDomainStatusHttpController } from './application/commands/refresh-custom-domain-status/refresh-custom-domain-status.http.controller';
 import { GetCurrentTenantHttpController } from './application/queries/get-tenant/get-current-tenant.http.controller';
+import { GetCustomDomainHttpController } from './application/queries/get-custom-domain/get-custom-domain.http.controller';
 import { GetTenantBillingUnitsHttpController } from './application/queries/get-billing-units/get-tenant-billing-units.http.controller';
 import { GetLocationsHttpController } from './location/application/queries/get-locations/get-locations.http.controller';
 import { CreateOwnerHttpController } from './owner/infrastructure/controllers/create-owner.http.controller';
@@ -53,9 +59,12 @@ import { GetLocationSchedulesHttpController } from './location/application/queri
 import { GetRentalLocationsHttpController } from './location/application/queries/get-rental-locations/get-rental-locations.http.controller';
 import { AddLocationScheduleHttpController } from './location/application/commands/add-schedule-to-location/add-location-schedule.http.controller';
 import { BulkAddLocationSchedulesHttpController } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-location-schedules.http.controller';
+import { CloudflareCustomHostnameService } from './infrastructure/services/cloudflare-custom-hostname.service';
 
 const commandHandlers = [
   RegisterTenantService,
+  RegisterCustomDomainService,
+  RefreshCustomDomainStatusService,
   UpdateTenantConfigCommandHandler,
   SyncTenantBillingUnitsService,
   // owner
@@ -70,6 +79,7 @@ const commandHandlers = [
 ];
 const queryHandlers = [
   IsSlugTakenQueryHandler,
+  GetCustomDomainQueryHandler,
   GetTenantConfigQueryHandler,
   GetTenantQueryHandler,
   GetTenantBillingUnitsQueryHandler,
@@ -102,7 +112,10 @@ const repositories = [
 
 const controllers = [
   RegisterTenantHttpController,
+  RegisterCustomDomainHttpController,
+  RefreshCustomDomainStatusHttpController,
   GetCurrentTenantHttpController,
+  GetCustomDomainHttpController,
   GetTenantPricingConfigHttpController,
   UpdateTenantConfigHttpController,
   GetTenantBillingUnitsHttpController,
@@ -130,6 +143,7 @@ const controllers = [
     ...repositories,
     ...commandHandlers,
     ...queryHandlers,
+    CloudflareCustomHostnameService,
     TenantFacade,
     { provide: TenantPublicApi, useExisting: TenantFacade },
   ],

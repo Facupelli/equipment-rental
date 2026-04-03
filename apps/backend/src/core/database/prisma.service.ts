@@ -8,6 +8,7 @@ import { LogContext } from '../logger/log-context';
 
 const TENANT_EXCLUDED_MODELS = new Set([
   'Tenant',
+  'CustomDomain',
   'BillingUnit', // global lookup table, no tenant scope
   'TenantBillingUnit', // join table — tenantId is the FK, not a scope guard
   'RefreshToken',

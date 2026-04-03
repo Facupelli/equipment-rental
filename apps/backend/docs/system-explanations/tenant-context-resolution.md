@@ -17,17 +17,26 @@ Both faces are served from a single TanStack Start application deployed to Cloud
 
 ### URL Scheme
 
-| URL                 | Face   | Tenant Resolution                |
-| ------------------- | ------ | -------------------------------- |
-| `slug.mydomain.com` | Portal | Extracted from subdomain         |
-| `their-domain.com`  | Portal | Looked up by custom domain in DB |
-| `app.mydomain.com`  | Admin  | Fixed — no tenant in URL         |
+| URL                    | Face   | Tenant Resolution                       |
+| ---------------------- | ------ | --------------------------------------- |
+| `slug.mydomain.com`    | Portal | Extracted from subdomain                |
+| `www.their-domain.com` | Portal | Looked up by active custom domain in DB |
+| `app.mydomain.com`     | Admin  | Fixed — no tenant in URL                |
 
 The admin face lives at `app.mydomain.com` rather than `admin.slug.mydomain.com` for two reasons. First, Cloudflare's wildcard SSL certificate only covers one level deep (`*.mydomain.com`) — a two-level subdomain would require an Advanced Certificate. Second, tenants' staff are logging into the platform's infrastructure, not their own brand — `app.mydomain.com` is correct semantically.
 
 ### Custom Domains
 
-Tenants can bring their own domain (e.g. `rentals.their-company.com`). This is handled via Cloudflare's Custom Hostnames (SSL for SaaS) feature — Cloudflare provisions the certificate automatically when the tenant points their DNS to the platform. The `customDomain` field on the `Tenant` model stores the registered domain and is looked up on every portal request from an unknown hostname.
+Tenants can bring their own custom subdomain (for example `www.customer.com`). Phase 1 supports subdomains only — apex domains like `customer.com` are rejected.
+
+Provisioning is backed by Cloudflare Custom Hostnames (SSL for SaaS). The backend now stores lifecycle state in a dedicated `CustomDomain` table, while `Tenant.customDomain` remains the live routing field used at request time.
+
+This split is intentional:
+
+- `CustomDomain` stores provisioning metadata such as provider id, status, verification time, and the latest provider error.
+- `Tenant.customDomain` is only populated after a manual refresh confirms the hostname is active.
+
+There is no webhook or cron-based activation in this phase. Staff manually trigger a refresh endpoint, and only that activation path promotes the hostname into `Tenant.customDomain`.
 
 ### Local Development
 
@@ -65,7 +74,7 @@ The resolution logic runs in this order:
      → { face: 'portal', tenant }
 
 3. anything else (custom domain)
-     → look up tenant by customDomain field
+     → look up tenant by Tenant.customDomain field
      → if not found or soft-deleted → 404
      → { face: 'portal', tenant }
 
@@ -86,6 +95,10 @@ app, www, api, admin, internal, mail, static
 ```
 
 This list lives in `src/modules/tenant/domain/tenant.constants.ts` — a single source of truth imported by both the resolver and the tenant creation handler to prevent drift.
+
+### Active Routing Invariant
+
+Unknown hostnames are resolved only through `Tenant.customDomain`. A `CustomDomain` row in `PENDING`, `ACTION_REQUIRED`, or `FAILED` does not affect runtime routing until a refresh marks it active and copies the domain into `Tenant.customDomain`.
 
 ### Soft Deletes
 

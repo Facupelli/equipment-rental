@@ -63,6 +63,13 @@ enum PricingRuleScope {
   BUNDLE
 }
 
+enum CustomDomainStatus {
+  PENDING
+  ACTIVE
+  ACTION_REQUIRED
+  FAILED
+}
+
 // ---------------------------------------------------------------------------
 // USER (tenant back-office accounts)
 // ---------------------------------------------------------------------------
@@ -228,6 +235,7 @@ model Tenant {
   bundles             Bundle[]
   pricingRules        PricingRule[]
   billingUnits        TenantBillingUnit[]
+  managedCustomDomain CustomDomain?
   owners              Owner[]
   users               User[]
   customers           Customer[]
@@ -239,6 +247,22 @@ model Tenant {
   coupons             Coupon[]
 
   @@map("tenants")
+}
+
+model CustomDomain {
+  id           String             @id @default(uuid())
+  tenantId     String             @unique @map("tenant_id")
+  domain       String             @unique
+  cfHostnameId String?            @map("cf_hostname_id")
+  status       CustomDomainStatus
+  verifiedAt   DateTime?          @map("verified_at")
+  lastError    String?            @map("last_error")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("custom_domains")
 }
 
 // ---------------------------------------------------------------------------

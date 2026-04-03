@@ -13,6 +13,9 @@ export const EnvSchema = z.object({
   JWT_REFRESH_SECRET: z.string(),
   JWT_REFRESH_EXPIRATION_TIME_SECONDS: z.coerce.number().default(604800), // 7 days
 
+  CLOUDFLARE_API_TOKEN: z.string(),
+  CLOUDFLARE_ZONE_ID: z.string(),
+
   INTERNAL_API_TOKEN: z.string(),
   ROOT_DOMAIN: z.string(),
 });
