@@ -1,11 +1,17 @@
+import type { PricingRuleView } from "@repo/schemas";
 import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PricingRulesTable } from "./pricing-rules-table";
 import { usePricingRulesTab } from "../hooks/use-pricing-rules-tab";
+import { DeletePricingRuleAlertDialog } from "./delete-pricing-rule-alert-dialog";
+import { PricingRulesTable } from "./pricing-rules-table";
 
 export function PricingRulesTab() {
+  const [deletingRule, setDeletingRule] = useState<PricingRuleView | null>(
+    null,
+  );
   const { inputValue, setInputValue, query, page, handlePageChange } =
     usePricingRulesTab();
 
@@ -40,7 +46,10 @@ export function PricingRulesTab() {
               No se encontraron reglas.
             </p>
           ) : (
-            <PricingRulesTable rules={query.data?.data ?? []} />
+            <PricingRulesTable
+              rules={query.data?.data ?? []}
+              onDelete={setDeletingRule}
+            />
           )}
         </div>
 
@@ -54,16 +63,34 @@ export function PricingRulesTab() {
             />
           </div>
         )}
+
+        <DeletePricingRuleAlertDialog
+          open={deletingRule !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeletingRule(null);
+            }
+          }}
+          pricingRule={deletingRule}
+        />
       </div>
     </div>
   );
 }
 
+const TABLE_SKELETON_KEYS = [
+  "pricing-rule-skeleton-1",
+  "pricing-rule-skeleton-2",
+  "pricing-rule-skeleton-3",
+  "pricing-rule-skeleton-4",
+  "pricing-rule-skeleton-5",
+] as const;
+
 function TableSkeleton() {
   return (
     <div className="space-y-3 px-1 pt-2">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Skeleton key={i} className="h-12 w-full rounded-md" />
+      {TABLE_SKELETON_KEYS.map((key) => (
+        <Skeleton key={key} className="h-12 w-full rounded-md" />
       ))}
     </div>
   );

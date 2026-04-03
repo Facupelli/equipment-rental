@@ -1,19 +1,19 @@
+import type {
+  CouponView,
+  CreateCouponDto,
+  ListCouponsQueryDto,
+  PaginatedDto,
+} from "@repo/schemas";
 import {
   keepPreviousData,
   queryOptions,
-  useQuery,
-  useMutation,
-  type UseQueryOptions,
   type UseMutationOptions,
+  type UseQueryOptions,
+  useMutation,
+  useQuery,
 } from "@tanstack/react-query";
-import { getCoupons, createCoupon } from "./coupons.api";
-import type {
-  CouponView,
-  ListCouponsQueryDto,
-  CreateCouponDto,
-  PaginatedDto,
-} from "@repo/schemas";
-import type { ProblemDetailsError } from "@/shared/errors";
+import { ProblemDetailsError } from "@/shared/errors";
+import { createCoupon, deleteCoupon, getCoupons } from "./coupons.api";
 
 type PaginatedCoupons = PaginatedDto<CouponView>;
 
@@ -58,6 +58,11 @@ type CreateCouponOptions = Omit<
   "mutationFn" | "mutationKey"
 >;
 
+type DeleteCouponOptions = Omit<
+  UseMutationOptions<void, ProblemDetailsError, { couponId: string }>,
+  "mutationFn" | "mutationKey"
+>;
+
 export function useCoupons<TData = PaginatedCoupons>(
   params: ListCouponsQueryDto,
   overrides?: CouponsQueryOverrides<TData>,
@@ -72,6 +77,22 @@ export function useCreateCoupon(options?: CreateCouponOptions) {
   return useMutation<string, ProblemDetailsError, CreateCouponDto>({
     ...options,
     mutationFn: (data) => createCoupon({ data }),
+    meta: {
+      invalidates: couponKeys.lists(),
+    },
+  });
+}
+
+export function useDeleteCoupon(options?: DeleteCouponOptions) {
+  return useMutation<void, ProblemDetailsError, { couponId: string }>({
+    ...options,
+    mutationFn: async ({ couponId }) => {
+      const result = await deleteCoupon({ data: { couponId } });
+
+      if (typeof result === "object" && result !== null && "error" in result) {
+        throw new ProblemDetailsError(result.error);
+      }
+    },
     meta: {
       invalidates: couponKeys.lists(),
     },

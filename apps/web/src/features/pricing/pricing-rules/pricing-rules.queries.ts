@@ -1,19 +1,23 @@
+import type {
+  CreatePricingRuleDto,
+  ListPricingRulesQueryDto,
+  PaginatedDto,
+  PricingRuleView,
+} from "@repo/schemas";
 import {
   keepPreviousData,
   queryOptions,
-  useQuery,
-  useMutation,
-  type UseQueryOptions,
   type UseMutationOptions,
+  type UseQueryOptions,
+  useMutation,
+  useQuery,
 } from "@tanstack/react-query";
-import { getPricingRules, createPricingRule } from "./pricing-rules.api";
-import type {
-  PricingRuleView,
-  ListPricingRulesQueryDto,
-  CreatePricingRuleDto,
-  PaginatedDto,
-} from "@repo/schemas";
-import type { ProblemDetailsError } from "@/shared/errors";
+import { ProblemDetailsError } from "@/shared/errors";
+import {
+  createPricingRule,
+  deletePricingRule,
+  getPricingRules,
+} from "./pricing-rules.api";
 
 type PaginatedPricingRules = PaginatedDto<PricingRuleView>;
 
@@ -58,6 +62,11 @@ type CreatePricingRuleOptions = Omit<
   "mutationFn" | "mutationKey"
 >;
 
+type DeletePricingRuleOptions = Omit<
+  UseMutationOptions<void, ProblemDetailsError, { pricingRuleId: string }>,
+  "mutationFn" | "mutationKey"
+>;
+
 export function usePricingRules<TData = PaginatedPricingRules>(
   params: ListPricingRulesQueryDto,
   overrides?: PricingRulesQueryOverrides<TData>,
@@ -72,6 +81,22 @@ export function useCreatePricingRule(options?: CreatePricingRuleOptions) {
   return useMutation<string, ProblemDetailsError, CreatePricingRuleDto>({
     ...options,
     mutationFn: (data) => createPricingRule({ data }),
+    meta: {
+      invalidates: pricingRuleKeys.lists(),
+    },
+  });
+}
+
+export function useDeletePricingRule(options?: DeletePricingRuleOptions) {
+  return useMutation<void, ProblemDetailsError, { pricingRuleId: string }>({
+    ...options,
+    mutationFn: async ({ pricingRuleId }) => {
+      const result = await deletePricingRule({ data: { pricingRuleId } });
+
+      if (typeof result === "object" && result !== null && "error" in result) {
+        throw new ProblemDetailsError(result.error);
+      }
+    },
     meta: {
       invalidates: pricingRuleKeys.lists(),
     },

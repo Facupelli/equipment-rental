@@ -139,7 +139,7 @@ export async function apiFetch<T>(
   options: ApiFetchOptions = {},
 ): Promise<T> {
   const body = await apiFetchRaw<{ data: T }>(path, options);
-  return body.data;
+  return body?.data;
 }
 
 export async function apiFetchPaginated<T>(

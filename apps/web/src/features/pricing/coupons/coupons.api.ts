@@ -1,13 +1,15 @@
-import { apiFetch, apiFetchPaginated } from "@/lib/api";
 import {
   type CouponView,
-  type PaginatedDto,
-  type ListCouponsQueryDto,
   type CreateCouponDto,
   createCouponSchema,
+  type ListCouponsQueryDto,
   listCouponsQuerySchema,
+  type PaginatedDto,
+  type ProblemDetails,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
+import { apiFetch, apiFetchPaginated } from "@/lib/api";
+import { ProblemDetailsError } from "@/shared/errors";
 
 const apiUrl = "/pricing/coupons";
 
@@ -33,4 +35,20 @@ export const createCoupon = createServerFn({ method: "POST" })
     });
 
     return result;
+  });
+
+export const deleteCoupon = createServerFn({ method: "POST" })
+  .inputValidator((data: { couponId: string }) => data)
+  .handler(async ({ data }): Promise<undefined | { error: ProblemDetails }> => {
+    try {
+      await apiFetch<void>(`${apiUrl}/${data.couponId}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      if (error instanceof ProblemDetailsError) {
+        return { error: error.problemDetails };
+      }
+
+      throw error;
+    }
   });
