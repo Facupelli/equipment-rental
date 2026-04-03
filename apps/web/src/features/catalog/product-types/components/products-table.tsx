@@ -100,7 +100,7 @@ export function ProductsTable({
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL_CATEGORIES_VALUE}>All Categories</SelectItem>
+            <SelectItem value={ALL_CATEGORIES_VALUE}>Todas</SelectItem>
             {categoryList.map((category) => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name}
@@ -165,7 +165,7 @@ export function ProductsTable({
                   colSpan={productColumns.length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No products found.
+                  No se encontraron productos.
                 </TableCell>
               </TableRow>
             )}
@@ -177,7 +177,7 @@ export function ProductsTable({
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>
           {meta.total > 0
-            ? `Showing ${firstItem}–${lastItem} of ${meta.total} products`
+            ? `${firstItem}–${lastItem} de ${meta.total} productos`
             : "No products"}
         </span>
 
@@ -193,7 +193,7 @@ export function ProductsTable({
           </Button>
 
           <span className="min-w-20 text-center">
-            Page {meta.page} of {meta.totalPages}
+            Página {meta.page} de {meta.totalPages}
           </span>
 
           <Button

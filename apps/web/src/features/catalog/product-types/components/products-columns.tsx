@@ -23,7 +23,7 @@ export const productColumns: ColumnDef<ProductTypeResponse>[] = [
   {
     id: "name",
     accessorKey: "name",
-    header: "Name",
+    header: "Nombre",
     cell: ({ getValue }) => (
       <span className="font-medium text-foreground">{getValue<string>()}</span>
     ),
@@ -31,7 +31,7 @@ export const productColumns: ColumnDef<ProductTypeResponse>[] = [
   {
     id: "category",
     accessorKey: "category",
-    header: "Category",
+    header: "Categoría",
     cell: ({ row }) => {
       const category = row.original.category;
       return category ? (
@@ -52,7 +52,7 @@ export const productColumns: ColumnDef<ProductTypeResponse>[] = [
   {
     id: "status",
     accessorKey: "publishedAt",
-    header: "Status",
+    header: "Estado",
     cell: (info) => {
       const publishedAt = info.getValue();
       const retiredAt = info.row.original.retiredAt;
@@ -97,7 +97,7 @@ export const productColumns: ColumnDef<ProductTypeResponse>[] = [
   },
   {
     accessorKey: "assetCount",
-    header: "Total Assets",
+    header: "Total de Assets",
     cell: ({ getValue }) => (
       <span className="tabular-nums text-sm">{getValue<number>()}</span>
     ),

@@ -40,9 +40,7 @@ export function NewArrivals({ locationId }: NewArrivalsProps) {
   }
 
   if (!items.length) {
-    return (
-      <p className="text-sm text-muted-foreground">No new arrivals yet.</p>
-    );
+    return null;
   }
 
   return (

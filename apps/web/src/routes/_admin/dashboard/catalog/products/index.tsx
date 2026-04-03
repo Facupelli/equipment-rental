@@ -55,13 +55,13 @@ function ProductsPage() {
 
         <Button
           render={
-            <Link to="/dashboard/catalog/products/new">CREATE PRODUCT</Link>
+            <Link to="/dashboard/catalog/products/new">Crear Producto</Link>
           }
         />
       </header>
 
       <div className="p-6 space-y-2">
-        <h1 className="text-lg font-semibold">Product Catalog</h1>
+        <h1 className="text-lg font-semibold">Catálogo de Productos</h1>
 
         <ProductsTable
           products={products?.data ?? []}
