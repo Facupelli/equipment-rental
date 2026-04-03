@@ -1,11 +1,10 @@
-import { Prisma } from 'src/generated/prisma/client';
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { TrackingMode } from '@repo/types';
-
+import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import type { TrackingMode } from '@repo/types';
+import type { Prisma } from 'src/generated/prisma/client';
 import { PrismaService } from 'src/core/database/prisma.service';
 
 import { GetAssetsQuery } from './get-assets.query';
-import { GetAssetsResponse } from './get-assets.response.dto';
+import type { GetAssetsResponse } from './get-assets.response.dto';
 
 @QueryHandler(GetAssetsQuery)
 export class GetAssetsQueryHandler implements IQueryHandler<GetAssetsQuery, GetAssetsResponse> {
@@ -17,6 +16,7 @@ export class GetAssetsQueryHandler implements IQueryHandler<GetAssetsQuery, GetA
     const skip = (page - 1) * limit;
 
     const where: Prisma.AssetWhereInput = {
+      deletedAt: null,
       location: {
         tenantId: query.tenantId,
       },
