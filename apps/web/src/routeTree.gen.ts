@@ -39,9 +39,10 @@ import { Route as AdminDashboardCatalogCategoriesIndexRouteImport } from './rout
 import { Route as AdminDashboardCatalogBundlesIndexRouteImport } from './routes/_admin/dashboard/catalog/bundles/index'
 import { Route as AdminDashboardCatalogProductsNewRouteImport } from './routes/_admin/dashboard/catalog/products/new'
 import { Route as AdminDashboardCatalogBundlesNewRouteImport } from './routes/_admin/dashboard/catalog/bundles/new'
-import { Route as AdminDashboardCatalogBundlesBundleIdRouteImport } from './routes/_admin/dashboard/catalog/bundles/$bundleId'
 import { Route as AdminDashboardCatalogProductsProductIdIndexRouteImport } from './routes/_admin/dashboard/catalog/products/$productId/index'
+import { Route as AdminDashboardCatalogBundlesBundleIdIndexRouteImport } from './routes/_admin/dashboard/catalog/bundles/$bundleId/index'
 import { Route as AdminDashboardCatalogProductsProductIdEditRouteImport } from './routes/_admin/dashboard/catalog/products/$productId/edit'
+import { Route as AdminDashboardCatalogBundlesBundleIdEditRouteImport } from './routes/_admin/dashboard/catalog/bundles/$bundleId/edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -210,22 +211,28 @@ const AdminDashboardCatalogBundlesNewRoute =
     path: '/catalog/bundles/new',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
-const AdminDashboardCatalogBundlesBundleIdRoute =
-  AdminDashboardCatalogBundlesBundleIdRouteImport.update({
-    id: '/catalog/bundles/$bundleId',
-    path: '/catalog/bundles/$bundleId',
-    getParentRoute: () => AdminDashboardRouteRoute,
-  } as any)
 const AdminDashboardCatalogProductsProductIdIndexRoute =
   AdminDashboardCatalogProductsProductIdIndexRouteImport.update({
     id: '/catalog/products/$productId/',
     path: '/catalog/products/$productId/',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
+const AdminDashboardCatalogBundlesBundleIdIndexRoute =
+  AdminDashboardCatalogBundlesBundleIdIndexRouteImport.update({
+    id: '/catalog/bundles/$bundleId/',
+    path: '/catalog/bundles/$bundleId/',
+    getParentRoute: () => AdminDashboardRouteRoute,
+  } as any)
 const AdminDashboardCatalogProductsProductIdEditRoute =
   AdminDashboardCatalogProductsProductIdEditRouteImport.update({
     id: '/catalog/products/$productId/edit',
     path: '/catalog/products/$productId/edit',
+    getParentRoute: () => AdminDashboardRouteRoute,
+  } as any)
+const AdminDashboardCatalogBundlesBundleIdEditRoute =
+  AdminDashboardCatalogBundlesBundleIdEditRouteImport.update({
+    id: '/catalog/bundles/$bundleId/edit',
+    path: '/catalog/bundles/$bundleId/edit',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
 
@@ -253,14 +260,15 @@ export interface FileRoutesByFullPath {
   '/onboard/': typeof PortalTenantOnboardIndexRoute
   '/order-confirmation/': typeof PortalTenantOrderConfirmationIndexRoute
   '/rental/': typeof PortalTenantRentalIndexRoute
-  '/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdRoute
   '/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/dashboard/catalog/bundles/': typeof AdminDashboardCatalogBundlesIndexRoute
   '/dashboard/catalog/categories/': typeof AdminDashboardCatalogCategoriesIndexRoute
   '/dashboard/catalog/products/': typeof AdminDashboardCatalogProductsIndexRoute
   '/dashboard/inventory/assets/': typeof AdminDashboardInventoryAssetsIndexRoute
+  '/dashboard/catalog/bundles/$bundleId/edit': typeof AdminDashboardCatalogBundlesBundleIdEditRoute
   '/dashboard/catalog/products/$productId/edit': typeof AdminDashboardCatalogProductsProductIdEditRoute
+  '/dashboard/catalog/bundles/$bundleId/': typeof AdminDashboardCatalogBundlesBundleIdIndexRoute
   '/dashboard/catalog/products/$productId/': typeof AdminDashboardCatalogProductsProductIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -286,14 +294,15 @@ export interface FileRoutesByTo {
   '/onboard': typeof PortalTenantOnboardIndexRoute
   '/order-confirmation': typeof PortalTenantOrderConfirmationIndexRoute
   '/rental': typeof PortalTenantRentalIndexRoute
-  '/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdRoute
   '/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/dashboard/catalog/bundles': typeof AdminDashboardCatalogBundlesIndexRoute
   '/dashboard/catalog/categories': typeof AdminDashboardCatalogCategoriesIndexRoute
   '/dashboard/catalog/products': typeof AdminDashboardCatalogProductsIndexRoute
   '/dashboard/inventory/assets': typeof AdminDashboardInventoryAssetsIndexRoute
+  '/dashboard/catalog/bundles/$bundleId/edit': typeof AdminDashboardCatalogBundlesBundleIdEditRoute
   '/dashboard/catalog/products/$productId/edit': typeof AdminDashboardCatalogProductsProductIdEditRoute
+  '/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdIndexRoute
   '/dashboard/catalog/products/$productId': typeof AdminDashboardCatalogProductsProductIdIndexRoute
 }
 export interface FileRoutesById {
@@ -322,14 +331,15 @@ export interface FileRoutesById {
   '/_portal/_tenant/onboard/': typeof PortalTenantOnboardIndexRoute
   '/_portal/_tenant/order-confirmation/': typeof PortalTenantOrderConfirmationIndexRoute
   '/_portal/_tenant/rental/': typeof PortalTenantRentalIndexRoute
-  '/_admin/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdRoute
   '/_admin/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/_admin/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/_admin/dashboard/catalog/bundles/': typeof AdminDashboardCatalogBundlesIndexRoute
   '/_admin/dashboard/catalog/categories/': typeof AdminDashboardCatalogCategoriesIndexRoute
   '/_admin/dashboard/catalog/products/': typeof AdminDashboardCatalogProductsIndexRoute
   '/_admin/dashboard/inventory/assets/': typeof AdminDashboardInventoryAssetsIndexRoute
+  '/_admin/dashboard/catalog/bundles/$bundleId/edit': typeof AdminDashboardCatalogBundlesBundleIdEditRoute
   '/_admin/dashboard/catalog/products/$productId/edit': typeof AdminDashboardCatalogProductsProductIdEditRoute
+  '/_admin/dashboard/catalog/bundles/$bundleId/': typeof AdminDashboardCatalogBundlesBundleIdIndexRoute
   '/_admin/dashboard/catalog/products/$productId/': typeof AdminDashboardCatalogProductsProductIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -358,14 +368,15 @@ export interface FileRouteTypes {
     | '/onboard/'
     | '/order-confirmation/'
     | '/rental/'
-    | '/dashboard/catalog/bundles/$bundleId'
     | '/dashboard/catalog/bundles/new'
     | '/dashboard/catalog/products/new'
     | '/dashboard/catalog/bundles/'
     | '/dashboard/catalog/categories/'
     | '/dashboard/catalog/products/'
     | '/dashboard/inventory/assets/'
+    | '/dashboard/catalog/bundles/$bundleId/edit'
     | '/dashboard/catalog/products/$productId/edit'
+    | '/dashboard/catalog/bundles/$bundleId/'
     | '/dashboard/catalog/products/$productId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -391,14 +402,15 @@ export interface FileRouteTypes {
     | '/onboard'
     | '/order-confirmation'
     | '/rental'
-    | '/dashboard/catalog/bundles/$bundleId'
     | '/dashboard/catalog/bundles/new'
     | '/dashboard/catalog/products/new'
     | '/dashboard/catalog/bundles'
     | '/dashboard/catalog/categories'
     | '/dashboard/catalog/products'
     | '/dashboard/inventory/assets'
+    | '/dashboard/catalog/bundles/$bundleId/edit'
     | '/dashboard/catalog/products/$productId/edit'
+    | '/dashboard/catalog/bundles/$bundleId'
     | '/dashboard/catalog/products/$productId'
   id:
     | '__root__'
@@ -426,14 +438,15 @@ export interface FileRouteTypes {
     | '/_portal/_tenant/onboard/'
     | '/_portal/_tenant/order-confirmation/'
     | '/_portal/_tenant/rental/'
-    | '/_admin/dashboard/catalog/bundles/$bundleId'
     | '/_admin/dashboard/catalog/bundles/new'
     | '/_admin/dashboard/catalog/products/new'
     | '/_admin/dashboard/catalog/bundles/'
     | '/_admin/dashboard/catalog/categories/'
     | '/_admin/dashboard/catalog/products/'
     | '/_admin/dashboard/inventory/assets/'
+    | '/_admin/dashboard/catalog/bundles/$bundleId/edit'
     | '/_admin/dashboard/catalog/products/$productId/edit'
+    | '/_admin/dashboard/catalog/bundles/$bundleId/'
     | '/_admin/dashboard/catalog/products/$productId/'
   fileRoutesById: FileRoutesById
 }
@@ -661,13 +674,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardCatalogBundlesNewRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
-    '/_admin/dashboard/catalog/bundles/$bundleId': {
-      id: '/_admin/dashboard/catalog/bundles/$bundleId'
-      path: '/catalog/bundles/$bundleId'
-      fullPath: '/dashboard/catalog/bundles/$bundleId'
-      preLoaderRoute: typeof AdminDashboardCatalogBundlesBundleIdRouteImport
-      parentRoute: typeof AdminDashboardRouteRoute
-    }
     '/_admin/dashboard/catalog/products/$productId/': {
       id: '/_admin/dashboard/catalog/products/$productId/'
       path: '/catalog/products/$productId'
@@ -675,11 +681,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardCatalogProductsProductIdIndexRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
+    '/_admin/dashboard/catalog/bundles/$bundleId/': {
+      id: '/_admin/dashboard/catalog/bundles/$bundleId/'
+      path: '/catalog/bundles/$bundleId'
+      fullPath: '/dashboard/catalog/bundles/$bundleId/'
+      preLoaderRoute: typeof AdminDashboardCatalogBundlesBundleIdIndexRouteImport
+      parentRoute: typeof AdminDashboardRouteRoute
+    }
     '/_admin/dashboard/catalog/products/$productId/edit': {
       id: '/_admin/dashboard/catalog/products/$productId/edit'
       path: '/catalog/products/$productId/edit'
       fullPath: '/dashboard/catalog/products/$productId/edit'
       preLoaderRoute: typeof AdminDashboardCatalogProductsProductIdEditRouteImport
+      parentRoute: typeof AdminDashboardRouteRoute
+    }
+    '/_admin/dashboard/catalog/bundles/$bundleId/edit': {
+      id: '/_admin/dashboard/catalog/bundles/$bundleId/edit'
+      path: '/catalog/bundles/$bundleId/edit'
+      fullPath: '/dashboard/catalog/bundles/$bundleId/edit'
+      preLoaderRoute: typeof AdminDashboardCatalogBundlesBundleIdEditRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
   }
@@ -697,14 +717,15 @@ interface AdminDashboardRouteRouteChildren {
   AdminDashboardPricingIndexRoute: typeof AdminDashboardPricingIndexRoute
   AdminDashboardScheduleIndexRoute: typeof AdminDashboardScheduleIndexRoute
   AdminDashboardSettingsIndexRoute: typeof AdminDashboardSettingsIndexRoute
-  AdminDashboardCatalogBundlesBundleIdRoute: typeof AdminDashboardCatalogBundlesBundleIdRoute
   AdminDashboardCatalogBundlesNewRoute: typeof AdminDashboardCatalogBundlesNewRoute
   AdminDashboardCatalogProductsNewRoute: typeof AdminDashboardCatalogProductsNewRoute
   AdminDashboardCatalogBundlesIndexRoute: typeof AdminDashboardCatalogBundlesIndexRoute
   AdminDashboardCatalogCategoriesIndexRoute: typeof AdminDashboardCatalogCategoriesIndexRoute
   AdminDashboardCatalogProductsIndexRoute: typeof AdminDashboardCatalogProductsIndexRoute
   AdminDashboardInventoryAssetsIndexRoute: typeof AdminDashboardInventoryAssetsIndexRoute
+  AdminDashboardCatalogBundlesBundleIdEditRoute: typeof AdminDashboardCatalogBundlesBundleIdEditRoute
   AdminDashboardCatalogProductsProductIdEditRoute: typeof AdminDashboardCatalogProductsProductIdEditRoute
+  AdminDashboardCatalogBundlesBundleIdIndexRoute: typeof AdminDashboardCatalogBundlesBundleIdIndexRoute
   AdminDashboardCatalogProductsProductIdIndexRoute: typeof AdminDashboardCatalogProductsProductIdIndexRoute
 }
 
@@ -722,8 +743,6 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
   AdminDashboardPricingIndexRoute: AdminDashboardPricingIndexRoute,
   AdminDashboardScheduleIndexRoute: AdminDashboardScheduleIndexRoute,
   AdminDashboardSettingsIndexRoute: AdminDashboardSettingsIndexRoute,
-  AdminDashboardCatalogBundlesBundleIdRoute:
-    AdminDashboardCatalogBundlesBundleIdRoute,
   AdminDashboardCatalogBundlesNewRoute: AdminDashboardCatalogBundlesNewRoute,
   AdminDashboardCatalogProductsNewRoute: AdminDashboardCatalogProductsNewRoute,
   AdminDashboardCatalogBundlesIndexRoute:
@@ -734,8 +753,12 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
     AdminDashboardCatalogProductsIndexRoute,
   AdminDashboardInventoryAssetsIndexRoute:
     AdminDashboardInventoryAssetsIndexRoute,
+  AdminDashboardCatalogBundlesBundleIdEditRoute:
+    AdminDashboardCatalogBundlesBundleIdEditRoute,
   AdminDashboardCatalogProductsProductIdEditRoute:
     AdminDashboardCatalogProductsProductIdEditRoute,
+  AdminDashboardCatalogBundlesBundleIdIndexRoute:
+    AdminDashboardCatalogBundlesBundleIdIndexRoute,
   AdminDashboardCatalogProductsProductIdIndexRoute:
     AdminDashboardCatalogProductsProductIdIndexRoute,
 }

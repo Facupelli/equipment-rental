@@ -57,14 +57,16 @@ export function CatalogImageUploader({ onUploadComplete, currentPath }: Props) {
             e.target.value = "";
           }}
         />
-        {isPending ? "Uploading…" : "Upload image"}
+        {isPending ? "Subiendo…" : "Subir imagen"}
       </label>
 
       {isSuccess && (
-        <p className="text-sm text-green-600">Image uploaded successfully.</p>
+        <p className="text-sm text-green-600">Imagen subida exitosamente.</p>
       )}
       {isError && (
-        <p className="text-sm text-red-500">Upload failed. Please try again.</p>
+        <p className="text-sm text-red-500">
+          La subida de la imagen ha fallado. Intenta de nuevo.
+        </p>
       )}
     </div>
   );
