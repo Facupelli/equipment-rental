@@ -1,8 +1,6 @@
+import { registerCustomDomainSchema } from '@repo/schemas';
 import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
 
-export const RegisterCustomDomainSchema = z.object({
-  domain: z.string().min(1),
-});
+export const RegisterCustomDomainSchema = registerCustomDomainSchema;
 
 export class RegisterCustomDomainRequestDto extends createZodDto(RegisterCustomDomainSchema) {}

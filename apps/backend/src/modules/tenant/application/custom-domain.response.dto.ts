@@ -1,12 +1,6 @@
-import { CustomDomainStatus } from '@repo/types';
+import { customDomainResponseSchema } from '@repo/schemas';
 import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
 
-export const CustomDomainResponseSchema = z.object({
-  domain: z.string(),
-  status: z.enum(CustomDomainStatus),
-  verifiedAt: z.iso.datetime().nullable(),
-  lastError: z.string().nullable(),
-});
+export const CustomDomainResponseSchema = customDomainResponseSchema;
 
 export class CustomDomainResponseDto extends createZodDto(CustomDomainResponseSchema) {}
