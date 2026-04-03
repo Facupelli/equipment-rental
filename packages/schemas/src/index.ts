@@ -37,5 +37,6 @@ export * from "./user/user-response.schema";
 export * from "./portal/cart-pricing.schema";
 export * from "./portal/bundles.schema";
 export * from "./portal/new-arrivals.schema";
+export * from "./portal/rental-locations.schema";
 export * from "./portal/customer/register-customer.schema";
 export * from "./portal/customer/customer-me-response.schema";

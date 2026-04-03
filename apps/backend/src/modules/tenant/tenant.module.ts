@@ -24,6 +24,7 @@ import { AddScheduleToLocationCommandHandler } from './location/application/comm
 import { BulkAddSchedulesToLocationCommandHandler } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command-handler';
 import { GetLocationScheduleSlotsQueryHandler } from './location/application/queries/get-location-schedule-slots/get-location-schedule-slots.query-handler';
 import { GetLocationContextQueryHandler } from './location/application/queries/get-location-context/get-location-context.query-handler';
+import { GetRentalLocationsQueryHandler } from './location/application/queries/get-rental-locations/get-rental-locations.query-handler';
 import { GetOwnerQueryHandler } from './owner/application/queries/get-owner/get-owner.query-handler';
 import { CreateOwnerContractCommandHandler } from './owner/application/commands/create-owner-contract/create-owner-contract.command-handler';
 import { OwnerContractRepository } from './owner/infrastructure/persistence/repositories/owner-contract.repository';
@@ -49,6 +50,7 @@ import { UpdateLocationHttpController } from './location/application/commands/up
 import { DeactivateLocationHttpController } from './location/application/commands/deactivate-location/deactivate-location.http.controller';
 import { GetLocationScheduleSlotsHttpController } from './location/application/queries/get-location-schedule-slots/get-location-schedule-slots.http.controller';
 import { GetLocationSchedulesHttpController } from './location/application/queries/get-location-schedules/get-location-schedules.http.controller';
+import { GetRentalLocationsHttpController } from './location/application/queries/get-rental-locations/get-rental-locations.http.controller';
 import { AddLocationScheduleHttpController } from './location/application/commands/add-schedule-to-location/add-location-schedule.http.controller';
 import { BulkAddLocationSchedulesHttpController } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-location-schedules.http.controller';
 
@@ -77,6 +79,7 @@ const queryHandlers = [
   FindActiveContractForScopeQueryHandler,
   // location
   GetLocationsQueryHandler,
+  GetRentalLocationsQueryHandler,
   GetLocationContextQueryHandler,
   GetLocationScheduleSlotsQueryHandler,
   GetLocationSchedulesQueryHandler,
@@ -108,6 +111,7 @@ const controllers = [
   UpdateLocationHttpController,
   DeactivateLocationHttpController,
   GetLocationsHttpController,
+  GetRentalLocationsHttpController,
   GetLocationScheduleSlotsHttpController,
   GetLocationSchedulesHttpController,
   AddLocationScheduleHttpController,

@@ -2,6 +2,7 @@ import {
 	type CreateLocationDto,
 	createLocationSchema,
 	type LocationListResponse,
+	type RentalLocationsResponse,
 	type UpdateLocationDto,
 	updateLocationSchema,
 } from "@repo/schemas";
@@ -46,6 +47,19 @@ export const getLocations = createServerFn({ method: "GET" }).handler(
 		const result = await apiFetch<LocationListResponse>(apiUrl, {
 			method: "GET",
 		});
+
+		return result;
+	},
+);
+
+export const getRentalLocations = createServerFn({ method: "GET" }).handler(
+	async (): Promise<RentalLocationsResponse> => {
+		const result = await apiFetch<RentalLocationsResponse>(
+			"/rental/locations",
+			{
+				method: "GET",
+			},
+		);
 
 		return result;
 	},

@@ -1,64 +1,64 @@
-import z from "zod";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
+import z from "zod";
 import { CartPageProvider } from "@/features/rental/cart/cart-page.context";
-import { CartPageItemList } from "@/features/rental/cart/components/cartpage-itemlist";
-import { CartPageSidebar } from "@/features/rental/cart/components/cartpage-sidebar";
-import { CartPagePeriod } from "@/features/rental/cart/components/cartpage-period";
-import { locationQueries } from "@/features/tenant/locations/locations.queries";
 import { CartPageConflictPanel } from "@/features/rental/cart/components/cartpage-conflict-panel";
+import { CartPageItemList } from "@/features/rental/cart/components/cartpage-itemlist";
+import { CartPagePeriod } from "@/features/rental/cart/components/cartpage-period";
+import { CartPageSidebar } from "@/features/rental/cart/components/cartpage-sidebar";
+import { rentalLocationQueries } from "@/features/tenant/locations/locations.queries";
 
 const cartPageSearchSchema = z.object({
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
-  locationId: z.string(),
+	startDate: z.coerce.date(),
+	endDate: z.coerce.date(),
+	locationId: z.string(),
 });
 
 export const Route = createFileRoute("/_portal/_tenant/cart/")({
-  validateSearch: cartPageSearchSchema,
-  component: CartPage,
-  loader: async ({ context: { queryClient } }) => {
-    await queryClient.ensureQueryData(locationQueries.list());
-  },
+	validateSearch: cartPageSearchSchema,
+	component: CartPage,
+	loader: async ({ context: { queryClient } }) => {
+		await queryClient.ensureQueryData(rentalLocationQueries.list());
+	},
 });
 
 function CartPage() {
-  const { startDate, endDate, locationId } = useSearch({
-    from: "/_portal/_tenant/cart/",
-  });
+	const { startDate, endDate, locationId } = useSearch({
+		from: "/_portal/_tenant/cart/",
+	});
 
-  return (
-    <CartPageProvider
-      startDate={startDate}
-      endDate={endDate}
-      locationId={locationId}
-    >
-      <div className="min-h-screen bg-neutral-50">
-        <div className="mx-auto max-w-6xl px-4 md:px-6 py-8 md:py-12 space-y-8">
-          <div>
-            <h1 className="text-4xl font-black uppercase tracking-tight text-black">
-              Revisa Tu Pedido
-            </h1>
-            <p className="mt-2 text-sm text-neutral-500">
-              Revisa tu pedido y asegúrate de que todo está en orden.
-            </p>
-          </div>
+	return (
+		<CartPageProvider
+			startDate={startDate}
+			endDate={endDate}
+			locationId={locationId}
+		>
+			<div className="min-h-screen bg-neutral-50">
+				<div className="mx-auto max-w-6xl px-4 md:px-6 py-8 md:py-12 space-y-8">
+					<div>
+						<h1 className="text-4xl font-black uppercase tracking-tight text-black">
+							Revisa Tu Pedido
+						</h1>
+						<p className="mt-2 text-sm text-neutral-500">
+							Revisa tu pedido y asegúrate de que todo está en orden.
+						</p>
+					</div>
 
-          <CartPagePeriod />
+					<CartPagePeriod />
 
-          <CartPageConflictPanel />
+					<CartPageConflictPanel />
 
-          {/*
+					{/*
           CSS Grid — two-column layout:
           Left column owns the content flow.
           Right column is fixed-width sticky sidebar.
           Mobile: single column, sidebar stacks below.
         */}
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
-            <CartPageItemList />
-            <CartPageSidebar />
-          </div>
-        </div>
-      </div>
-    </CartPageProvider>
-  );
+					<div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
+						<CartPageItemList />
+						<CartPageSidebar />
+					</div>
+				</div>
+			</div>
+		</CartPageProvider>
+	);
 }

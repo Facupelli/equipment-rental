@@ -1,6 +1,7 @@
 import type {
 	CreateLocationDto,
 	LocationListResponse,
+	RentalLocationsResponse,
 	UpdateLocationDto,
 } from "@repo/schemas";
 import {
@@ -15,6 +16,7 @@ import {
 	createLocation,
 	deactivateLocation,
 	getLocations,
+	getRentalLocations,
 	updateLocation,
 } from "./locations.api";
 
@@ -35,12 +37,30 @@ export const locationQueries = {
 		}),
 };
 
+export const rentalLocationKeys = {
+	all: () => ["rental-locations"] as const,
+	lists: () => [...rentalLocationKeys.all(), "list"] as const,
+};
+
+export const rentalLocationQueries = {
+	list: () =>
+		queryOptions<RentalLocationsResponse, ProblemDetailsError>({
+			queryKey: rentalLocationKeys.lists(),
+			queryFn: () => getRentalLocations(),
+		}),
+};
+
 // -----------------------------------------------------
 // Types
 // -----------------------------------------------------
 
 type LocationQueryOptions<TData = LocationListResponse> = Omit<
 	UseQueryOptions<LocationListResponse, ProblemDetailsError, TData>,
+	"queryKey" | "queryFn"
+>;
+
+type RentalLocationQueryOptions<TData = RentalLocationsResponse> = Omit<
+	UseQueryOptions<RentalLocationsResponse, ProblemDetailsError, TData>,
 	"queryKey" | "queryFn"
 >;
 
@@ -71,6 +91,18 @@ export function useLocations<TData = LocationListResponse>(
 	options?: LocationQueryOptions<TData>,
 ) {
 	const { queryKey, queryFn } = locationQueries.list();
+
+	return useQuery({
+		...options,
+		queryKey,
+		queryFn,
+	});
+}
+
+export function useRentalLocations<TData = RentalLocationsResponse>(
+	options?: RentalLocationQueryOptions<TData>,
+) {
+	const { queryKey, queryFn } = rentalLocationQueries.list();
 
 	return useQuery({
 		...options,
