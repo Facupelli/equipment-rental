@@ -6,11 +6,12 @@ import { rentalQueries } from "@/features/rental/rental.queries";
 import type { BundleItemResponse, TenantPricingConfig } from "@repo/schemas";
 import { useQuery } from "@tanstack/react-query";
 import { useBundleCardState } from "../../cart/hooks/use-bundle-card-state";
-import { CheckCircle, Trash2, Zap } from "lucide-react";
+import { CheckCircle, ChevronDown, Trash2, Zap } from "lucide-react";
 import clsx from "clsx";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 import { formatCurrency } from "@/shared/utils/price.utils";
 import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
+import { useState } from "react";
 
 interface FeaturedBundlesProps {
   search: RentalPageSearch;
@@ -34,19 +35,24 @@ function FeaturedBundlesResults({ search }: FeaturedBundlesProps) {
   );
 
   const { data: tenantPriceConfig } = useTenantPricingConfig();
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  if (!bundles?.length) {
-    return null;
-  }
+  if (!bundles?.length) return null;
 
   const sorted = [...bundles].sort(
     (a, b) => b.components.length - a.components.length,
   );
   const featured = sorted.slice(0, 3);
   const regular = sorted.slice(3);
+  const COLLAPSED_COUNT = 4;
+  const visibleRegular = isExpanded
+    ? regular
+    : regular.slice(0, COLLAPSED_COUNT);
+  const hasHidden = regular.length > COLLAPSED_COUNT;
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Featured row */}
       <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
         {featured.map((bundle) => (
           <BundleCard
@@ -57,15 +63,39 @@ function FeaturedBundlesResults({ search }: FeaturedBundlesProps) {
         ))}
       </div>
 
+      {/* Regular rows */}
       {regular.length > 0 && (
-        <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
-          {regular.map((bundle) => (
-            <BundleCard
-              key={bundle.id}
-              bundle={bundle}
-              priceConfig={tenantPriceConfig}
-            />
-          ))}
+        <div className="flex flex-col gap-6">
+          <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+            {visibleRegular.map((bundle, index) => (
+              <div
+                key={bundle.id}
+                className={clsx(
+                  "transition-all duration-300 ease-out",
+                  index >= COLLAPSED_COUNT
+                    ? "animate-in fade-in slide-in-from-bottom-4"
+                    : "",
+                )}
+              >
+                <BundleCard bundle={bundle} priceConfig={tenantPriceConfig} />
+              </div>
+            ))}
+          </div>
+
+          {hasHidden && (
+            <button
+              onClick={() => setIsExpanded((prev) => !prev)}
+              className="flex items-center gap-2 mx-auto text-xs uppercase tracking-widest font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {isExpanded ? "Ver menos" : "Ver todos los combos"}
+              <ChevronDown
+                className={clsx(
+                  "w-4 h-4 transition-transform duration-300",
+                  isExpanded && "rotate-180",
+                )}
+              />
+            </button>
+          )}
         </div>
       )}
     </div>
