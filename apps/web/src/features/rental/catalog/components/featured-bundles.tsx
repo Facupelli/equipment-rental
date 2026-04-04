@@ -4,60 +4,70 @@ import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { rentalQueries } from "@/features/rental/rental.queries";
 import type { BundleItemResponse, TenantPricingConfig } from "@repo/schemas";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useBundleCardState } from "../../cart/hooks/use-bundle-card-state";
 import { CheckCircle, Trash2, Zap } from "lucide-react";
 import clsx from "clsx";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 import { formatCurrency } from "@/shared/utils/price.utils";
+import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
 
 interface FeaturedBundlesProps {
-  locationId?: string;
-  startDate?: Date;
-  endDate?: Date;
+  search: RentalPageSearch;
 }
 
-export function FeaturedBundles({
-  locationId,
-  startDate,
-  endDate,
-}: FeaturedBundlesProps) {
-  if (!locationId || !startDate || !endDate) {
+export function FeaturedBundles({ search }: FeaturedBundlesProps) {
+  if (!search.locationId) {
     return null;
   }
 
-  return (
-    <FeaturedBundlesResults
-      locationId={locationId}
-      startDate={startDate}
-      endDate={endDate}
-    />
-  );
+  return <FeaturedBundlesResults search={search} />;
 }
 
-function FeaturedBundlesResults({
-  locationId,
-  startDate,
-  endDate,
-}: Required<FeaturedBundlesProps>) {
-  const { data: bundles } = useSuspenseQuery(
-    rentalQueries.bundles({ locationId, startDate, endDate }),
+function FeaturedBundlesResults({ search }: FeaturedBundlesProps) {
+  const { data: bundles } = useQuery(
+    rentalQueries.bundles({
+      locationId: search.locationId,
+      startDate: search.startDate,
+      endDate: search.endDate,
+    }),
   );
+
   const { data: tenantPriceConfig } = useTenantPricingConfig();
 
-  if (!bundles.length) {
+  if (!bundles?.length) {
     return null;
   }
 
+  const sorted = [...bundles].sort(
+    (a, b) => b.components.length - a.components.length,
+  );
+  const featured = sorted.slice(0, 3);
+  const regular = sorted.slice(3);
+
   return (
-    <div className="grid  gap-6 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
-      {bundles.map((bundle) => (
-        <BundleCard
-          key={bundle.id}
-          bundle={bundle}
-          priceConfig={tenantPriceConfig}
-        />
-      ))}
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
+        {featured.map((bundle) => (
+          <BundleCard
+            key={bundle.id}
+            bundle={bundle}
+            priceConfig={tenantPriceConfig}
+          />
+        ))}
+      </div>
+
+      {regular.length > 0 && (
+        <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+          {regular.map((bundle) => (
+            <BundleCard
+              key={bundle.id}
+              bundle={bundle}
+              priceConfig={tenantPriceConfig}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

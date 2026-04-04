@@ -65,6 +65,7 @@ export const rentalQueries = {
         hasDateRange || (!params.startDate && !params.endDate)
           ? () => getRentalProducts({ data: params })
           : skipToken,
+      placeholderData: keepPreviousData,
     });
   },
   newArrivals: (params: GetNewArrivalsParams) =>
@@ -72,12 +73,18 @@ export const rentalQueries = {
       queryKey: rentalKeys.newArrival(params),
       queryFn: () => getNewArrivals({ data: params }),
     }),
-  bundles: (params: GetCombosParams) =>
-    queryOptions<BundleListResponseDto, ProblemDetailsError>({
+  bundles: (params: GetCombosParams) => {
+    const hasDateRange = !!params.startDate && !!params.endDate;
+
+    return queryOptions<BundleListResponseDto, ProblemDetailsError>({
       queryKey: rentalKeys.bundle(params),
-      queryFn: () => getRentalBundles({ data: params }),
-      enabled: !!params.startDate && !!params.endDate,
-    }),
+      queryFn:
+        hasDateRange || (!params.startDate && !params.endDate)
+          ? () => getRentalBundles({ data: params })
+          : skipToken,
+      placeholderData: keepPreviousData,
+    });
+  },
 };
 
 // -----------------------------------------------------

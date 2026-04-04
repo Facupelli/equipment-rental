@@ -12,15 +12,11 @@ import {
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { rentalQueries } from "@/features/rental/rental.queries";
-import type {
-  GetRentalProductTypesQuery,
-  RentalProductResponse,
-  TenantPricingConfig,
-} from "@repo/schemas";
+import type { RentalProductResponse, TenantPricingConfig } from "@repo/schemas";
 import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
 import { useProductCardState } from "../../cart/hooks/use-product-card-state";
 import { Minus, Plus } from "lucide-react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { formatCurrency } from "@/shared/utils/price.utils";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 
@@ -38,7 +34,7 @@ export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
 }
 
 function ProductCatalogResults({ search, onPageChange }: ProductCatalogProps) {
-  const { data: products } = useSuspenseQuery(rentalQueries.products(search));
+  const { data: products } = useQuery(rentalQueries.products(search));
   const { data: tenantPriceConfig } = useTenantPricingConfig();
 
   const currentPage = search.page ?? 1;

@@ -86,8 +86,8 @@ function NewArrivalCard({
   const price = item.pricingPreview;
 
   return (
-    <div>
-      <div className="aspect-square w-52 bg-gray-100 rounded-xs overflow-hidden mb-2">
+    <div className="w-40 shrink-0">
+      <div className="aspect-square w-full bg-gray-100 rounded-xs overflow-hidden mb-2">
         {item.imageUrl ? (
           <img
             src={`${import.meta.env.VITE_R2_PUBLIC_URL}/${item.imageUrl}`}
@@ -102,26 +102,30 @@ function NewArrivalCard({
           </div>
         )}
       </div>
+
       <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium truncate">
         {item.category?.name ?? "General"}
       </p>
       <p className="text-sm font-medium leading-tight line-clamp-2 mt-0.5">
         {item.name}
       </p>
-      {price ? (
-        <p className="text-sm font-semibold mt-1">
-          {formatCurrency(
-            price.pricePerUnit,
-            priceConfig.currency,
-            priceConfig.locale,
-          )}
-          <span className="text-xs font-normal text-muted-foreground">
-            / {item.billingUnit.label}
-          </span>
-        </p>
-      ) : (
-        <p className="text-xs text-muted-foreground mt-1">Contact us</p>
-      )}
+
+      <div className="flex items-center justify-between mt-1 gap-2">
+        {price ? (
+          <p className="text-sm font-semibold shrink-0">
+            {formatCurrency(
+              price.pricePerUnit,
+              priceConfig.currency,
+              priceConfig.locale,
+            )}
+            <span className="text-xs font-normal text-muted-foreground">
+              /{item.billingUnit.label}
+            </span>
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Contactanos</p>
+        )}
+      </div>
     </div>
   );
 }

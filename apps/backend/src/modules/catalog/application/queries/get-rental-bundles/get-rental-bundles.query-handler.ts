@@ -81,39 +81,53 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
       ...new Set(bundles.flatMap((bundle) => bundle.components.map((component) => component.productType.id))),
     ];
 
+    const availableCounts = await this.resolveAvailability(locationId, startDate, endDate, productTypeIds);
+
+    return (
+      availableCounts === null
+        ? bundles
+        : bundles.filter((bundle) =>
+            bundle.components.every(
+              (component) => (availableCounts.get(component.productType.id) ?? 0) >= component.quantity,
+            ),
+          )
+    ).map((bundle) => ({
+      id: bundle.id,
+      name: bundle.name,
+      imageUrl: bundle.imageUrl ?? '',
+      description: bundle.description,
+      billingUnit: bundle.billingUnit,
+      pricingPreview: bundle.pricingTiers[0]
+        ? {
+            pricePerUnit: Number(bundle.pricingTiers[0].pricePerUnit),
+            fromUnit: bundle.pricingTiers[0].fromUnit,
+          }
+        : null,
+      components: bundle.components.map((component) => ({
+        quantity: component.quantity,
+        productType: {
+          name: component.productType.name,
+          description: component.productType.description,
+          id: component.productType.id,
+          includedItems: component.productType.includedItems as RentalIncludedItemReadModel[],
+        },
+      })),
+    }));
+  }
+
+  private async resolveAvailability(
+    locationId: string,
+    startDate: Date | undefined,
+    endDate: Date | undefined,
+    productTypeIds: string[],
+  ): Promise<Map<string, number> | null> {
+    if (!startDate || !endDate) return null;
+
     const availabilityRows = await this.queryBus.execute<GetAvailableAssetCountsQuery, AvailableAssetCountReadModel[]>(
       new GetAvailableAssetCountsQuery(locationId, startDate, endDate, productTypeIds),
     );
 
     const availableCounts = new Map(availabilityRows.map((row) => [row.productTypeId, row.availableCount]));
-
-    return bundles
-      .filter((bundle) =>
-        bundle.components.every(
-          (component) => (availableCounts.get(component.productType.id) ?? 0) >= component.quantity,
-        ),
-      )
-      .map((bundle) => ({
-        id: bundle.id,
-        name: bundle.name,
-        imageUrl: bundle.imageUrl ?? '',
-        description: bundle.description,
-        billingUnit: bundle.billingUnit,
-        pricingPreview: bundle.pricingTiers[0]
-          ? {
-              pricePerUnit: Number(bundle.pricingTiers[0].pricePerUnit),
-              fromUnit: bundle.pricingTiers[0].fromUnit,
-            }
-          : null,
-        components: bundle.components.map((component) => ({
-          quantity: component.quantity,
-          productType: {
-            name: component.productType.name,
-            description: component.productType.description,
-            id: component.productType.id,
-            includedItems: component.productType.includedItems as RentalIncludedItemReadModel[],
-          },
-        })),
-      }));
+    return availableCounts;
   }
 }
