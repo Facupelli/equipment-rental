@@ -53,7 +53,7 @@ function FeaturedBundlesResults({ search }: FeaturedBundlesProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Featured row */}
-      <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
+      <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
         {featured.map((bundle) => (
           <BundleCard
             key={bundle.id}
