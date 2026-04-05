@@ -14,6 +14,7 @@ import { Public } from 'src/core/decorators/public.decorator';
 export class TenantContextController {
   private readonly rootDomain: string;
   private readonly adminHostname: string;
+  private readonly platformHostnames: Set<string>;
 
   constructor(
     private readonly configService: ConfigService<Env, true>,
@@ -23,6 +24,7 @@ export class TenantContextController {
 
     this.rootDomain = rootDomain;
     this.adminHostname = `app.${rootDomain}`;
+    this.platformHostnames = new Set([rootDomain, `www.${rootDomain}`, 'localhost']);
   }
 
   @Public()
@@ -30,18 +32,22 @@ export class TenantContextController {
   async resolve(@Query('hostname') raw: string): Promise<ResolvedTenantContext> {
     const hostname = this.normalize(raw);
 
-    // Path 1 — admin face, no tenant needed
+    if (this.platformHostnames.has(hostname)) {
+      return { face: 'platform' };
+    }
+
+    // admin face, no tenant needed
     if (hostname === this.adminHostname) {
       return { face: 'admin' };
     }
 
-    // Path 2 — subdomain of root domain, resolve by slug
+    // subdomain of root domain, resolve by slug
     if (hostname.endsWith(`.${this.rootDomain}`)) {
       const slug = hostname.replace(`.${this.rootDomain}`, '');
       return this.resolveBySlug(slug);
     }
 
-    // Path 3 — custom domain lookup
+    // custom domain lookup
     return this.resolveByCustomDomain(hostname);
   }
 

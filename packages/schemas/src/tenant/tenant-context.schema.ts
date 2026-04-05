@@ -8,5 +8,6 @@ export type TenantContext = {
 };
 
 export type ResolvedTenantContext =
+  | { face: "platform" }
   | { face: "admin" }
   | { face: "portal"; tenant: TenantContext };
