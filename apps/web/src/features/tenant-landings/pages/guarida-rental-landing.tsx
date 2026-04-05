@@ -1,4 +1,5 @@
-import { Video, Truck, UserCog, ArrowRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight, Truck, UserCog, Video } from "lucide-react";
 
 const SERVICES = [
   {
@@ -12,17 +13,10 @@ const SERVICES = [
   },
 ];
 
-const FOOTER_LINKS = ["INSTAGRAM", "VIMEO", "CONTACTO", "LEGAL"];
-
 export function GuaridaRentalLandingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600;700&display=swap');
-
-        .font-bebas  { font-family: 'Bebas Neue', sans-serif; }
-        .font-barlow { font-family: 'Barlow Condensed', sans-serif; }
-
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -41,7 +35,7 @@ export function GuaridaRentalLandingPage() {
       `}</style>
 
       {/* ── Root ── */}
-      <section className="relative w-full min-h-screen overflow-hidden font-barlow">
+      <section className="relative w-full min-h-screen overflow-hidden ">
         {/* ── Background image: grayscale + lighter than before ── */}
         <img
           src="https://images.pexels.com/photos/2512258/pexels-photo-2512258.jpeg"
@@ -71,10 +65,10 @@ export function GuaridaRentalLandingPage() {
             transform: "translateY(-50%) rotate(180deg)",
           }}
         >
-          <span className="font-barlow text-[9px] font-light tracking-[0.25em] uppercase text-white/25">
+          <span className=" text-[9px] font-light tracking-[0.25em] uppercase text-white/25">
             COORD.REF
           </span>
-          <span className="font-barlow text-[9px] font-light tracking-[0.2em] text-white/15">
+          <span className=" text-[9px] font-light tracking-[0.2em] text-white/15">
             40.4168° N, 3.7038° W
           </span>
         </div>
@@ -82,20 +76,21 @@ export function GuaridaRentalLandingPage() {
         {/* ── Content grid: nav / main / footer ── */}
         <div className="relative z-10 grid grid-rows-[auto_1fr_auto] min-h-screen">
           {/* ── Navbar ── */}
-          <nav className="flex items-center justify-between px-10 py-5 bg-black/80 backdrop-blur-sm">
-            <span className="font-bebas text-white text-2xl tracking-widest select-none">
+          <nav className="flex items-center justify-between px-6 py-5 bg-black/80 backdrop-blur-sm md:px-10">
+            <span className="text-white text-2xl tracking-widest select-none">
               GUARIDA RENTAL
             </span>
 
-            <button
+            <Link
+              to="/rental"
               className="
-              font-barlow text-[11px] font-bold tracking-[0.15em] uppercase
-              px-6 py-2.5 text-white bg-[#C85C3E]
+               text-[11px] font-bold tracking-[0.15em] uppercase
+               px-6 py-2.5 text-white bg-[#C85C3E]
               transition-colors duration-200 hover:bg-[#a84a2f]
-            "
+             "
             >
-              RESERVAR
-            </button>
+              Ver catálogo
+            </Link>
           </nav>
 
           {/* ── Hero ── */}
@@ -103,30 +98,30 @@ export function GuaridaRentalLandingPage() {
             {/* "MADRID CENTRO" label */}
             <div className="anim-1 flex items-center gap-3">
               <span className="block h-px w-10 bg-[#C85C3E]" />
-              <span className="font-barlow text-sm font-semibold tracking-[0.35em] uppercase text-[#C85C3E]">
+              <span className=" text-sm font-semibold tracking-[0.35em] uppercase text-[#C85C3E]">
                 MADRID CENTRO
               </span>
               <span className="block h-px w-10 bg-[#C85C3E]" />
             </div>
 
             {/* Main headline */}
-            <h1 className="anim-2 font-bebas text-white leading-none uppercase text-[clamp(3rem,8vw,7.5rem)] tracking-wide">
+            <h1 className="anim-2 text-white leading-none uppercase text-[clamp(3rem,8vw,7.5rem)] tracking-wide">
               No somos un
               <br />
               simple rental
             </h1>
 
             {/* Subheadline */}
-            <p className="anim-3 font-barlow text-xl font-semibold tracking-[0.28em] uppercase text-white/70">
-              LOS PACKS MÁS BARATOS DE MADRID
+            <p className="anim-3 max-w-4xl text-base font-semibold tracking-[0.2em] uppercase text-white/70 md:text-xl md:tracking-[0.28em]">
+              LOS COMBOS MÁS BARATOS DE MADRID
             </p>
 
             {/* Service icons */}
-            <div className="anim-4 grid grid-cols-3 gap-16 mt-4">
+            <div className="anim-4 mt-4 grid gap-10 md:grid-cols-3 md:gap-16">
               {SERVICES.map(({ icon, label }) => (
                 <div key={label} className="flex flex-col items-center gap-3">
                   <div className="text-[#C85C3E]">{icon}</div>
-                  <span className="font-barlow text-base font-light tracking-wider text-white/60">
+                  <span className=" text-base font-light tracking-wider text-white/60">
                     {label}
                   </span>
                 </div>
@@ -134,16 +129,16 @@ export function GuaridaRentalLandingPage() {
             </div>
 
             {/* CTA */}
-            <div className="anim-5 flex items-stretch mt-4">
-              <button
+            <Link to="/rental" className="anim-5 mt-4 flex items-stretch">
+              <span
                 className="
-                font-barlow font-bold text-base tracking-[0.18em] uppercase
-                px-10 py-4 text-white bg-[#C85C3E]
-                transition-colors duration-200 hover:bg-[#a84a2f]
-              "
+                  font-bold text-base tracking-[0.18em] uppercase
+                 px-10 py-4 text-white bg-[#C85C3E]
+                 transition-colors duration-200 hover:bg-[#a84a2f]
+               "
               >
-                EXPLORAR CATÁLOGO
-              </button>
+                Explorar catálogo
+              </span>
               <div className="flex items-center justify-center px-5 bg-white/[0.07] border-l border-white/10">
                 <ArrowRight
                   size={18}
@@ -151,31 +146,27 @@ export function GuaridaRentalLandingPage() {
                   strokeWidth={1.5}
                 />
               </div>
-            </div>
+            </Link>
           </main>
 
           {/* ── Footer ── */}
           <footer className="flex items-end justify-between px-10 py-6">
-            <p className="font-barlow text-[10px] font-light tracking-[0.18em] uppercase text-white/30">
+            <p className=" text-[10px] font-light tracking-[0.18em] uppercase text-white/30">
               ©{new Date().getFullYear()}{" "}
               <strong className="font-semibold text-white/45">
                 GUARIDA RENTAL
               </strong>
-              . NO SOMOS UN SIMPLE RENTAL. MADRID.
+              . MADRID.
             </p>
 
-            <ul className="hidden md:flex items-center gap-6">
-              {FOOTER_LINKS.map((item) => (
-                <li key={item}>
-                  <a
-                    href="#"
-                    className="font-barlow text-[10px] font-medium tracking-[0.2em] uppercase text-white/35 hover:text-white/70 transition-colors duration-200"
-                  >
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <a
+              href="https://www.instagram.com/guarida.rental/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[10px] font-medium tracking-[0.2em] uppercase text-white/35 transition-colors duration-200 hover:text-white/70"
+            >
+              Instagram
+            </a>
           </footer>
         </div>
       </section>
