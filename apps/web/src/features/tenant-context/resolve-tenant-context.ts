@@ -106,7 +106,12 @@ export const resolveTenantContext = createServerFn({ method: "GET" }).handler(
 
       return context;
     } catch (error) {
-      console.log("TENANT CONTEXT RESOLUTION ERROR:", { error });
+      console.log(
+        "TENANT CONTEXT RESOLUTION ERROR:",
+        error instanceof Error ? error.message : String(error),
+        "hostname:",
+        hostname,
+      );
       throw error;
     }
   },
