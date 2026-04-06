@@ -17,6 +17,12 @@ export class GetRentalProductTypesHttpController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() dto: GetRentalProductTypesRequestDto,
   ): Promise<GetRentalProductTypesResponseDto> {
+    const sort = (
+      dto as GetRentalProductTypesRequestDto & {
+        sort?: 'price-desc' | 'price-asc' | 'alphabetical';
+      }
+    ).sort;
+
     return await this.queryBus.execute(
       new GetRentalProductTypesQuery(
         user.tenantId,
@@ -25,6 +31,7 @@ export class GetRentalProductTypesHttpController {
         dto.endDate,
         dto.categoryId,
         dto.search,
+        sort,
         dto.page,
         dto.limit,
       ),

@@ -1,3 +1,11 @@
+import type {
+  GetRentalProductTypesQuery,
+  RentalProductResponse,
+  RentalProductSort,
+  TenantPricingConfig,
+} from "@repo/schemas";
+import { useQuery } from "@tanstack/react-query";
+import { Minus, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,30 +18,92 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { rentalQueries } from "@/features/rental/rental.queries";
-import type { RentalProductResponse, TenantPricingConfig } from "@repo/schemas";
-import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
-import { useProductCardState } from "../../cart/hooks/use-product-card-state";
-import { Minus, Plus } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { formatCurrency } from "@/shared/utils/price.utils";
+import { useProductCardState } from "../../cart/hooks/use-product-card-state";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
+import {
+  DEFAULT_RENTAL_PRODUCT_SORT,
+  type RentalPageSearch,
+} from "../hooks/use-catalog-page-search";
 
 interface ProductCatalogProps {
   search: RentalPageSearch;
   onPageChange: (page: number) => void;
+  onSortChange: (sort: RentalProductSort) => void;
 }
 
-export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
+interface ProductCatalogResultsProps {
+  search: GetRentalProductTypesQuery;
+  onPageChange: (page: number) => void;
+}
+
+const SORT_OPTIONS: Array<{ label: string; value: RentalProductSort }> = [
+  { label: "Mayor precio", value: "price-desc" },
+  { label: "Menor precio", value: "price-asc" },
+  { label: "Alfabético", value: "alphabetical" },
+];
+
+export function ProductCatalog({
+  search,
+  onPageChange,
+  onSortChange,
+}: ProductCatalogProps) {
   if (!search.locationId) {
     return null;
   }
 
-  return <ProductCatalogResults search={search} onPageChange={onPageChange} />;
+  const productSearch: GetRentalProductTypesQuery = {
+    ...search,
+    locationId: search.locationId,
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-end pt-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">
+            Ordenar por
+          </span>
+          <Select
+            value={search.sort ?? DEFAULT_RENTAL_PRODUCT_SORT}
+            onValueChange={(value) => onSortChange(value as RentalProductSort)}
+            items={SORT_OPTIONS}
+          >
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <ProductCatalogResults
+        search={productSearch}
+        onPageChange={onPageChange}
+      />
+    </>
+  );
 }
 
-function ProductCatalogResults({ search, onPageChange }: ProductCatalogProps) {
+function ProductCatalogResults({
+  search,
+  onPageChange,
+}: ProductCatalogResultsProps) {
   const { data: products } = useQuery(rentalQueries.products(search));
   const { data: tenantPriceConfig } = useTenantPricingConfig();
 
@@ -175,9 +245,11 @@ function ProductCard({
 export function ProductCatalogSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 py-10">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <ProductSkeleton key={i} />
-      ))}
+      {Array.from({ length: 8 }, (_, index) => `product-skeleton-${index}`).map(
+        (key) => (
+          <ProductSkeleton key={key} />
+        ),
+      )}
     </div>
   );
 }
@@ -257,7 +329,9 @@ function PaginationControls({
 
         {pageWindow.map((entry, i) =>
           entry === "ellipsis" ? (
-            <PaginationItem key={`ellipsis-${i}`}>
+            <PaginationItem
+              key={`ellipsis-${pageWindow[i - 1]}-${pageWindow[i + 1]}`}
+            >
               <PaginationEllipsis />
             </PaginationItem>
           ) : (

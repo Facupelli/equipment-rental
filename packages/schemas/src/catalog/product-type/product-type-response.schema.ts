@@ -104,18 +104,26 @@ const rentalProductItemSchema = z.object({
   pricingTiers: z.array(rentalProductPricingTierResponseSchema),
 });
 
+export const rentalProductSortSchema = z.enum([
+  "price-desc",
+  "price-asc",
+  "alphabetical",
+]);
+
 export const getRentalProductQuerySchema = z.object({
   locationId: z.uuid(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
   categoryId: z.uuid().optional(),
   search: z.string().optional(),
+  sort: rentalProductSortSchema.optional(),
   page: z.coerce.number().optional(),
   limit: z.coerce.number().optional(),
 });
 
 export const rentalProductDataSchema = z.array(rentalProductItemSchema);
 
+export type RentalProductSort = z.infer<typeof rentalProductSortSchema>;
 export type RentalProductResponse = z.infer<typeof rentalProductItemSchema>;
 export type RentalProductListResponse = z.infer<typeof rentalProductDataSchema>;
 export type GetRentalProductTypesQuery = z.infer<
