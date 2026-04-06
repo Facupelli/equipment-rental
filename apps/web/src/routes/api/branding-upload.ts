@@ -1,27 +1,27 @@
-import { createFileRoute } from "@tanstack/react-router";
 import {
   handleRequest,
-  route,
-  type Router,
   RejectUpload,
+  type Router,
+  route,
 } from "@better-upload/server";
 import { cloudflare } from "@better-upload/server/clients";
-import { getCurrentTenant } from "@/features/tenant/tenant.api";
+import { createFileRoute } from "@tanstack/react-router";
 import { serverEnv } from "@/config/server-env";
+import { getCurrentTenant } from "@/features/tenant/tenant.api";
 
 const s3 = cloudflare({
   accountId: serverEnv.CLOUDFLARE_ACCOUNT_ID,
-  accessKeyId: serverEnv.CLOUDFLARE_R2_ACCESS_KEY_ID,
-  secretAccessKey: serverEnv.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+  accessKeyId: process.env.BRANDING_ACCESS_KEY_ID!,
+  secretAccessKey: process.env.BRANDING_SECRET_ACCESS_KEY!,
 });
 
 const uploadRouter: Router = {
   client: s3,
-  bucketName: serverEnv.CLOUDFLARE_R2_BUCKET_NAME,
+  bucketName: serverEnv.CLOUDFLARE_R2_BRANDING_BUCKET_NAME,
   routes: {
-    catalogImages: route({
+    brandingLogo: route({
       fileTypes: ["image/webp"],
-      maxFileSize: 1024 * 1024 * 3, // 3MB after client-side compression
+      maxFileSize: 1024 * 1024 * 3,
       onBeforeUpload: async () => {
         const tenant = await getCurrentTenant();
 
@@ -29,18 +29,18 @@ const uploadRouter: Router = {
           throw new RejectUpload("Unauthorized");
         }
 
-        const key = `${tenant.id}/catalog/${crypto.randomUUID()}.webp`;
+        const key = `${tenant.id}/logo/${crypto.randomUUID()}.webp`;
 
         return {
           objectInfo: { key },
-          metadata: { key }, // echoed back to client after upload
+          metadata: { key },
         };
       },
     }),
   },
 };
 
-export const Route = createFileRoute("/api/upload")({
+export const Route = createFileRoute("/api/branding-upload" as never)({
   server: {
     handlers: {
       POST: async ({ request }) => {

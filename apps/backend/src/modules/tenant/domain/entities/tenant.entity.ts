@@ -21,6 +21,7 @@ export interface ReconstituteTenantProps {
   id: string;
   name: string;
   slug: string;
+  logoUrl: string | null;
   config: TenantConfig;
   billingUnits: TenantBillingUnit[];
 }
@@ -30,6 +31,7 @@ export class Tenant extends AggregateRootBase {
     public readonly id: string,
     public readonly name: string,
     public readonly slug: string,
+    private logoUrl: string | null,
     private config: TenantConfig,
     private readonly billingUnits: TenantBillingUnit[],
   ) {
@@ -45,7 +47,7 @@ export class Tenant extends AggregateRootBase {
     if (!props.slug || props.slug.trim().length === 0) {
       throw new InvalidTenantSlugException();
     }
-    const tenant = new Tenant(randomUUID(), props.name.trim(), props.slug.trim(), TenantConfig.default(), []);
+    const tenant = new Tenant(randomUUID(), props.name.trim(), props.slug.trim(), null, TenantConfig.default(), []);
 
     tenant.recordDomainEvent(
       new TenantRegisteredEvent({
@@ -58,13 +60,17 @@ export class Tenant extends AggregateRootBase {
   }
 
   static reconstitute(props: ReconstituteTenantProps): Tenant {
-    return new Tenant(props.id, props.name, props.slug, props.config, props.billingUnits);
+    return new Tenant(props.id, props.name, props.slug, props.logoUrl, props.config, props.billingUnits);
   }
 
   // --- Queries ---
 
   getConfig(): TenantConfig {
     return this.config;
+  }
+
+  getLogoUrl(): string | null {
+    return this.logoUrl;
   }
 
   getActiveBillingUnits(): TenantBillingUnit[] {
@@ -75,6 +81,10 @@ export class Tenant extends AggregateRootBase {
 
   updateConfig(patch: TenantConfigPatch): void {
     this.config = this.config.merge(patch);
+  }
+
+  updateBranding(logoUrl: string | null): void {
+    this.logoUrl = logoUrl;
   }
 
   activateBillingUnit(billingUnitId: string): void {

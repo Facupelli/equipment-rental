@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiCustomerUploadRouteImport } from './routes/api/customer-upload'
+import { Route as ApiBrandingUploadRouteImport } from './routes/api/branding-upload'
 import { Route as PortalRegisterRouteImport } from './routes/_portal/register'
 import { Route as PortalLoginRouteImport } from './routes/_portal/login'
 import { Route as PortalTenantRouteRouteImport } from './routes/_portal/_tenant/route'
@@ -57,6 +58,11 @@ const ApiUploadRoute = ApiUploadRouteImport.update({
 const ApiCustomerUploadRoute = ApiCustomerUploadRouteImport.update({
   id: '/api/customer-upload',
   path: '/api/customer-upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBrandingUploadRoute = ApiBrandingUploadRouteImport.update({
+  id: '/api/branding-upload',
+  path: '/api/branding-upload',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortalRegisterRoute = PortalRegisterRouteImport.update({
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AdminDashboardRouteRouteWithChildren
   '/login': typeof PortalLoginRoute
   '/register': typeof PortalRegisterRoute
+  '/api/branding-upload': typeof ApiBrandingUploadRoute
   '/api/customer-upload': typeof ApiCustomerUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/admin/login': typeof AdminAdminLoginRoute
@@ -275,6 +282,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof PortalLoginRoute
   '/register': typeof PortalRegisterRoute
+  '/api/branding-upload': typeof ApiBrandingUploadRoute
   '/api/customer-upload': typeof ApiCustomerUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/admin/login': typeof AdminAdminLoginRoute
@@ -312,6 +320,7 @@ export interface FileRoutesById {
   '/_portal/_tenant': typeof PortalTenantRouteRouteWithChildren
   '/_portal/login': typeof PortalLoginRoute
   '/_portal/register': typeof PortalRegisterRoute
+  '/api/branding-upload': typeof ApiBrandingUploadRoute
   '/api/customer-upload': typeof ApiCustomerUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/_admin/admin/login': typeof AdminAdminLoginRoute
@@ -349,6 +358,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/register'
+    | '/api/branding-upload'
     | '/api/customer-upload'
     | '/api/upload'
     | '/admin/login'
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/api/branding-upload'
     | '/api/customer-upload'
     | '/api/upload'
     | '/admin/login'
@@ -419,6 +430,7 @@ export interface FileRouteTypes {
     | '/_portal/_tenant'
     | '/_portal/login'
     | '/_portal/register'
+    | '/api/branding-upload'
     | '/api/customer-upload'
     | '/api/upload'
     | '/_admin/admin/login'
@@ -456,6 +468,7 @@ export interface RootRouteChildren {
   PortalTenantRouteRoute: typeof PortalTenantRouteRouteWithChildren
   PortalLoginRoute: typeof PortalLoginRoute
   PortalRegisterRoute: typeof PortalRegisterRoute
+  ApiBrandingUploadRoute: typeof ApiBrandingUploadRoute
   ApiCustomerUploadRoute: typeof ApiCustomerUploadRoute
   ApiUploadRoute: typeof ApiUploadRoute
   AdminAdminLoginRoute: typeof AdminAdminLoginRoute
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       path: '/api/customer-upload'
       fullPath: '/api/customer-upload'
       preLoaderRoute: typeof ApiCustomerUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/branding-upload': {
+      id: '/api/branding-upload'
+      path: '/api/branding-upload'
+      fullPath: '/api/branding-upload'
+      preLoaderRoute: typeof ApiBrandingUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_portal/register': {
@@ -790,6 +810,7 @@ const rootRouteChildren: RootRouteChildren = {
   PortalTenantRouteRoute: PortalTenantRouteRouteWithChildren,
   PortalLoginRoute: PortalLoginRoute,
   PortalRegisterRoute: PortalRegisterRoute,
+  ApiBrandingUploadRoute: ApiBrandingUploadRoute,
   ApiCustomerUploadRoute: ApiCustomerUploadRoute,
   ApiUploadRoute: ApiUploadRoute,
   AdminAdminLoginRoute: AdminAdminLoginRoute,

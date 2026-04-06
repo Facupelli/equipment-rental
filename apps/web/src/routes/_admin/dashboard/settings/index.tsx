@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useBillingUnits } from "@/features/billing-unit/billing-unit.queries";
 import { useSyncTenantBillingUnits } from "@/features/tenant/billing-unit/tenant-billing.queries";
+import { TenantBrandingSection } from "@/features/tenant/components/tenant-branding-section";
 import { TenantConfigForm } from "@/features/tenant/components/tenant-config-form";
 import { CustomDomainSection } from "@/features/tenant/custom-domain/components/custom-domain-section";
 import { tenantQueries } from "@/features/tenant/tenant.queries";
@@ -40,6 +41,8 @@ function RouteComponent() {
 			</div>
 
 			<div className="max-w-3xl mx-auto space-y-10">
+				<TenantBrandingSection />
+
 				<section>
 					{isPending && (
 						<p className="text-sm text-muted-foreground">Loading...</p>

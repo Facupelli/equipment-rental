@@ -17,6 +17,7 @@ import { TenantBillingUnitRepository } from './infrastructure/persistence/reposi
 import { GetTenantBillingUnitsQueryHandler } from './application/queries/get-billing-units/get-tenant-billing-units.query-handler';
 import { SyncTenantBillingUnitsService } from './application/commands/sync-billing-units/sync-tenant-billing-units.service';
 import { UpdateTenantConfigCommandHandler } from './application/commands/update-config/update-config.command-handler';
+import { UpdateTenantBrandingCommandHandler } from './application/commands/update-branding/update-branding.command-handler';
 import { FindTenantByCustomDomainQueryHandler } from './application/queries/find-tenant-by-custom-domain/find-tenant-by-custom-domain.query-handler';
 import { FindTenantBySlugQueryHandler } from './application/queries/find-tenant-by-slug/find-tenant-by-slug.query-handler';
 import { GetLocationSchedulesQueryHandler } from './location/application/queries/get-location-schedules/get-location-schedules.query-handler';
@@ -49,6 +50,7 @@ import { GetOwnerHttpController } from './owner/infrastructure/controllers/get-o
 import { TenantPublicApi } from './tenant.public-api';
 import { TenantFacade } from './tenant.facade';
 import { UpdateTenantConfigHttpController } from './application/commands/update-config/update-tenant-config.http.controller';
+import { UpdateTenantBrandingHttpController } from './application/commands/update-branding/update-tenant-branding.http.controller';
 import { SyncTenantBillingUnitsHttpController } from './application/commands/sync-billing-units/sync-tenant-billing-units.http.controller';
 import { GetTenantPricingConfigHttpController } from './application/queries/get-tenant-config/get-tenant-pricing-config.http.controller';
 import { CreateLocationHttpController } from './location/application/commands/create-location/create-location.http.controller';
@@ -66,6 +68,7 @@ const commandHandlers = [
   RegisterCustomDomainService,
   RefreshCustomDomainStatusService,
   UpdateTenantConfigCommandHandler,
+  UpdateTenantBrandingCommandHandler,
   SyncTenantBillingUnitsService,
   // owner
   CreateOwnerCommandHandler,
@@ -118,6 +121,7 @@ const controllers = [
   GetCustomDomainHttpController,
   GetTenantPricingConfigHttpController,
   UpdateTenantConfigHttpController,
+  UpdateTenantBrandingHttpController,
   GetTenantBillingUnitsHttpController,
   SyncTenantBillingUnitsHttpController,
   CreateLocationHttpController,

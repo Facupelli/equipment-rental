@@ -32,6 +32,7 @@ export const tenantResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   slug: z.string(),
+  logoUrl: z.string().nullable(),
   createdAt: z.coerce.date(),
   config: tenantConfigSchema,
   billingUnits: z.array(tenantBillingUnitResponseSchema),

@@ -33,6 +33,7 @@ export class GetTenantQueryHandler implements IQueryHandler<GetTenantQuery, Tena
       id: tenant.id,
       name: tenant.name,
       slug: tenant.slug,
+      logoUrl: tenant.logoUrl,
       createdAt: tenant.createdAt,
       config: tenantConfigSchema.parse(tenant.config),
       billingUnits: tenant.billingUnits.map((tbu) => ({

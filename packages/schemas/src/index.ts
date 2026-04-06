@@ -38,5 +38,6 @@ export * from "./tenant/tenant-billing-unit/sync-billing-units.schema";
 export * from "./tenant/tenant-billing-unit/tenant-billing-unit-response.schema";
 export * from "./tenant/tenant-context.schema";
 export * from "./tenant/tenant-response.schema";
+export * from "./tenant/update-branding.schema";
 export * from "./tenant/update-config.schema";
 export * from "./user/user-response.schema";
