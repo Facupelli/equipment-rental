@@ -36,10 +36,6 @@ async function getInternalPortalHeaders(
 }
 
 // ── apiFetchRaw ───────────────────────────────────────────────────────────────
-// Core fetch wrapper. Proactive token refresh is handled upstream by
-// ensureValidSession() in the _admin/dashboard layout beforeLoad — by the time any
-// server function calls apiFetch, the session is already guaranteed fresh.
-//
 // This function retains a reactive 401 fallback as a safety net for edge cases:
 // revoked tokens, clock skew, or any request that somehow bypasses beforeLoad.
 //

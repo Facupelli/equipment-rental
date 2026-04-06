@@ -1,4 +1,6 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
+import { logoutFn } from "@/features/auth/auth.api";
 import type { SessionUser } from "@/lib/session";
 import type { ProblemDetailsError } from "@/shared/errors";
 import { portalCustomerKeys } from "../customer/customer.queries";
@@ -36,6 +38,25 @@ export function useCustomerRegister() {
 			console.error(
 				`[${error.problemDetails.status}] ${error.problemDetails.detail}`,
 			);
+		},
+	});
+}
+
+export function useCustomerLogout() {
+	const queryClient = useQueryClient();
+	const router = useRouter();
+
+	return useMutation<void, ProblemDetailsError>({
+		mutationFn: () => logoutFn(),
+		meta: {
+			invalidates: portalCustomerKeys.all(),
+		},
+		onSuccess: async () => {
+			queryClient.removeQueries({ queryKey: portalCustomerKeys.all() });
+			await router.navigate({
+				to: "/login",
+				search: { redirectTo: "/rental" },
+			});
 		},
 	});
 }
