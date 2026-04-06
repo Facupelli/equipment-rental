@@ -75,7 +75,7 @@ function FeaturedBundlesResults({ search }: FeaturedBundlesResultsProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Featured row */}
-      <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
+      <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(300px,1fr))] items-start">
         {featured.map((bundle) => (
           <BundleCard
             key={bundle.id}
@@ -88,7 +88,7 @@ function FeaturedBundlesResults({ search }: FeaturedBundlesResultsProps) {
       {/* Regular rows */}
       {regular.length > 0 && (
         <div className="flex flex-col gap-6">
-          <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 items-start">
             {visibleRegular.map((bundle, index) => (
               <div
                 key={bundle.id}
@@ -251,7 +251,7 @@ function BundleCard({
                     key={`${bundle.id}-${component.productType.id}`}
                     className="min-w-0 text-xs text-muted-foreground"
                   >
-                    <span className="line-clamp-2 font-medium text-foreground">
+                    <span className="line-clamp-1 font-medium text-foreground">
                       {component.quantity}x {component.productType.name}
                     </span>
                   </p>
@@ -304,10 +304,10 @@ function BundleCard({
       </Card>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-h-[calc(100vh-2rem)] overflow-hidden p-0 sm:max-w-5xl">
-          <div className="grid max-h-[calc(100vh-2rem)] overflow-y-auto lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-            <div className="bg-muted/30">
-              <div className="relative flex min-h-70 items-center justify-center border-b bg-white p-8 lg:min-h-full lg:border-b-0 lg:border-r">
+        <DialogContent className="overflow-hidden p-0 sm:max-w-5xl">
+          <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:max-h-[70vh]">
+            <div className="h-full lg:sticky lg:top-0 lg:self-start">
+              <div className="relative w-full flex items-center justify-center border-r p-6 lg:h-full ">
                 {bundle.imageUrl ? (
                   <img
                     src={`${imageBaseUrl}/${bundle.imageUrl}`}
@@ -322,12 +322,6 @@ function BundleCard({
                   </div>
                 )}
                 <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-                  <Badge
-                    variant="secondary"
-                    className="rounded-xs px-2 py-1 text-[10px] uppercase tracking-widest"
-                  >
-                    Combo destacado
-                  </Badge>
                   {isInCart && (
                     <Badge className="rounded-xs bg-black px-2 py-1 text-[10px] uppercase tracking-widest text-white hover:bg-black">
                       Agregado
@@ -337,8 +331,8 @@ function BundleCard({
               </div>
             </div>
 
-            <div className="flex flex-col gap-6 p-6 lg:p-8">
-              <DialogHeader className="gap-4">
+            <div className="flex flex-col gap-4 p-5 lg:p-6 lg:max-h-[80vh] lg:overflow-y-auto">
+              <DialogHeader className="gap-2">
                 <div className="space-y-2">
                   <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-muted-foreground">
                     Detalle del combo
@@ -354,8 +348,8 @@ function BundleCard({
                 )}
               </DialogHeader>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border bg-muted/20 p-4">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-lg border bg-muted/20 p-3">
                   <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
                     Precio por {bundle.billingUnit.label.toLowerCase()}
                   </p>
@@ -369,7 +363,7 @@ function BundleCard({
                       : "Contactanos"}
                   </p>
                 </div>
-                <div className="rounded-lg border bg-muted/20 p-4">
+                <div className="rounded-lg border bg-muted/20 p-3">
                   <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
                     Componentes
                   </p>
@@ -379,15 +373,15 @@ function BundleCard({
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-muted/10 p-4">
-                <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
+              <div className="rounded-lg border bg-muted/10 p-3">
+                <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
                   Que incluye
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {bundle.components.map((component) => (
                     <div
                       key={`${bundle.id}-dialog-${component.productType.id}`}
-                      className="rounded-md border bg-background p-4"
+                      className="rounded-md border bg-background p-3"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -444,7 +438,7 @@ function BundleCard({
                 </div>
               </div>
 
-              <DialogFooter className="border-t pt-6 sm:justify-between">
+              <DialogFooter className="border-t pt-4 sm:justify-between">
                 {isInCart ? (
                   <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <Button variant="outline" disabled>
