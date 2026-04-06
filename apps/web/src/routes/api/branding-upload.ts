@@ -11,8 +11,8 @@ import { getCurrentTenant } from "@/features/tenant/tenant.api";
 
 const s3 = cloudflare({
   accountId: serverEnv.CLOUDFLARE_ACCOUNT_ID,
-  accessKeyId: process.env.BRANDING_ACCESS_KEY_ID!,
-  secretAccessKey: process.env.BRANDING_SECRET_ACCESS_KEY!,
+  accessKeyId: serverEnv.R2_BRANDING_ACCESS_KEY_ID,
+  secretAccessKey: serverEnv.R2_BRANDING_SECRET_ACCESS_KEY,
 });
 
 const uploadRouter: Router = {

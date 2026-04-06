@@ -2,19 +2,21 @@ import { Controller, Get } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { RentalLocationsResponse } from '@repo/schemas';
 
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { CustomerOnly } from 'src/core/decorators/customer-only.decorator';
-import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
+import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 
 import { GetRentalLocationsQuery } from './get-rental-locations.query';
+import { Public } from 'src/core/decorators/public.decorator';
 
-@CustomerOnly()
+@Public()
 @Controller('rental/locations')
 export class GetRentalLocationsHttpController {
-  constructor(private readonly queryBus: QueryBus) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly tenantContext: TenantContextService,
+  ) {}
 
   @Get()
-  async getLocations(@CurrentUser() user: AuthenticatedUser): Promise<RentalLocationsResponse> {
-    return this.queryBus.execute(new GetRentalLocationsQuery(user.tenantId));
+  async getLocations(): Promise<RentalLocationsResponse> {
+    return this.queryBus.execute(new GetRentalLocationsQuery(this.tenantContext.requireTenantId()));
   }
 }

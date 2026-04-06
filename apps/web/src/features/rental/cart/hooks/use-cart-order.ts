@@ -2,33 +2,34 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import type { Dayjs } from "dayjs";
 import {
-	useCartActions,
-	useCartItems,
+  useCartActions,
+  useCartItems,
 } from "@/features/rental/cart/cart.hooks";
 import { useCartPricePreview } from "@/features/rental/rental.queries";
 import { useCreateOrder } from "@/features/orders/orders.queries";
 import { ProblemDetailsError } from "@/shared/errors";
 import type {
-	CalculateCartPricesRequest,
-	CartPriceLineItem,
+  CalculateCartPricesRequest,
+  CartPriceLineItem,
 } from "@repo/schemas";
 import { fromDate, toISOString } from "@/lib/dates/parse";
 import { useCurrentCustomer } from "../../customer/customer.queries";
+import { PORTAL_AUTH_REDIRECT_ROUTES } from "../../auth/portal-auth.redirect";
 import type { ConflictGroup } from "../cart.types";
 import { formatSlot } from "../cart.utils";
 
 type UseCartOrderParams = {
-	location: {
-		id: string;
-		name: string;
-	};
-	startDate: Date;
-	endDate: Date;
+  location: {
+    id: string;
+    name: string;
+  };
+  startDate: Date;
+  endDate: Date;
 };
 
 export type CartOrderPeriod = {
-	start: Dayjs;
-	end: Dayjs;
+  start: Dayjs;
+  end: Dayjs;
 };
 
 // Line item enriched with the cart item's display name.
@@ -51,181 +52,185 @@ export type JoinedLineItem = CartPriceLineItem & { name: string };
  * - Track unexpected booking errors (non-422) for inline error display
  */
 export function useCartOrder({
-	location,
-	startDate,
-	endDate,
+  location,
+  startDate,
+  endDate,
 }: UseCartOrderParams) {
-	const navigate = useNavigate();
-	const { data: customer } = useCurrentCustomer();
-	const cartItems = useCartItems();
-	const { clearCart } = useCartActions();
+  const navigate = useNavigate();
+  const { data: customer } = useCurrentCustomer();
+  const cartItems = useCartItems();
+  const { clearCart } = useCartActions();
 
-	const [pickupTime, setPickupTime] = useState<number | undefined>(undefined);
-	const [returnTime, setReturnTime] = useState<number | undefined>(undefined);
-	const [insuranceSelected, setInsuranceSelected] = useState(false);
-	const [isTimesRequired, setIsTimesRequired] = useState(false);
-	const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
-	const [conflictGroups, setConflictGroups] = useState<ConflictGroup[]>([]);
-	const [isBookingError, setIsBookingError] = useState(false);
+  const [pickupTime, setPickupTime] = useState<number | undefined>(undefined);
+  const [returnTime, setReturnTime] = useState<number | undefined>(undefined);
+  const [insuranceSelected, setInsuranceSelected] = useState(false);
+  const [isTimesRequired, setIsTimesRequired] = useState(false);
+  const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
+  const [conflictGroups, setConflictGroups] = useState<ConflictGroup[]>([]);
+  const [isBookingError, setIsBookingError] = useState(false);
 
-	const onPickupTimeChange = (value: number) => {
-		setPickupTime(value);
-		if (value && returnTime) setIsTimesRequired(false);
-	};
+  const onPickupTimeChange = (value: number) => {
+    setPickupTime(value);
+    if (value && returnTime) setIsTimesRequired(false);
+  };
 
-	const onReturnTimeChange = (value: number) => {
-		setReturnTime(value);
-		if (pickupTime && value) setIsTimesRequired(false);
-	};
+  const onReturnTimeChange = (value: number) => {
+    setReturnTime(value);
+    if (pickupTime && value) setIsTimesRequired(false);
+  };
 
-	const onInsuranceSelectedChange = (value: boolean) => {
-		setInsuranceSelected(value);
-	};
+  const onInsuranceSelectedChange = (value: boolean) => {
+    setInsuranceSelected(value);
+  };
 
-	// Layer boundary: native Date → dayjs, once.
-	// All downstream logic and transport use these dayjs instances.
-	const period: CartOrderPeriod = useMemo(
-		() => ({ start: fromDate(startDate), end: fromDate(endDate) }),
-		[startDate, endDate],
-	);
+  // Layer boundary: native Date → dayjs, once.
+  // All downstream logic and transport use these dayjs instances.
+  const period: CartOrderPeriod = useMemo(
+    () => ({ start: fromDate(startDate), end: fromDate(endDate) }),
+    [startDate, endDate],
+  );
 
-	// Built once — reused for both the price preview query and the order mutation.
-	const itemPayload = useMemo(
-		() =>
-			cartItems.map((item) =>
-				item.type === "PRODUCT"
-					? {
-							type: "PRODUCT" as const,
-							productTypeId: item.productTypeId,
-							quantity: item.quantity,
-						}
-					: {
-							type: "BUNDLE" as const,
-							bundleId: item.bundleId,
-							quantity: item.quantity,
-						},
-			),
-		[cartItems],
-	);
+  // Built once — reused for both the price preview query and the order mutation.
+  const itemPayload = useMemo(
+    () =>
+      cartItems.map((item) =>
+        item.type === "PRODUCT"
+          ? {
+              type: "PRODUCT" as const,
+              productTypeId: item.productTypeId,
+              quantity: item.quantity,
+            }
+          : {
+              type: "BUNDLE" as const,
+              bundleId: item.bundleId,
+              quantity: item.quantity,
+            },
+      ),
+    [cartItems],
+  );
 
-	const pricePreviewRequest: CalculateCartPricesRequest = {
-		currency: "USD",
-		locationId: location.id,
-		period: {
-			start: toISOString(period.start),
-			end: toISOString(period.end),
-		},
-		items: itemPayload,
-		insuranceSelected,
-	};
+  const pricePreviewRequest: CalculateCartPricesRequest = {
+    currency: "USD",
+    locationId: location.id,
+    period: {
+      start: toISOString(period.start),
+      end: toISOString(period.end),
+    },
+    items: itemPayload,
+    insuranceSelected,
+  };
 
-	const {
-		data: breakdown,
-		isPending: isPriceLoading,
-		isError: isPriceError,
-	} = useCartPricePreview(pricePreviewRequest, {
-		enabled: Boolean(startDate && endDate && location.id),
-	});
+  const {
+    data: breakdown,
+    isPending: isPriceLoading,
+    isError: isPriceError,
+  } = useCartPricePreview(pricePreviewRequest, {
+    enabled: Boolean(startDate && endDate && location.id),
+  });
 
-	// Pre-join line items with cart item names so downstream components
-	// don't need to know about the cart store or the breakdown shape.
-	const joinedLineItems: JoinedLineItem[] | undefined = useMemo(
-		() =>
-			breakdown?.lineItems.map((line) => {
-				const cartItem = cartItems.find(
-					(i) =>
-						(i.type === "PRODUCT" && i.productTypeId === line.id) ||
-						(i.type === "BUNDLE" && i.bundleId === line.id),
-				);
-				return { ...line, name: cartItem?.name ?? line.id };
-			}),
-		[breakdown, cartItems],
-	);
+  // Pre-join line items with cart item names so downstream components
+  // don't need to know about the cart store or the breakdown shape.
+  const joinedLineItems: JoinedLineItem[] | undefined = useMemo(
+    () =>
+      breakdown?.lineItems.map((line) => {
+        const cartItem = cartItems.find(
+          (i) =>
+            (i.type === "PRODUCT" && i.productTypeId === line.id) ||
+            (i.type === "BUNDLE" && i.bundleId === line.id),
+        );
+        return { ...line, name: cartItem?.name ?? line.id };
+      }),
+    [breakdown, cartItems],
+  );
 
-	const { mutateAsync: createOrder } = useCreateOrder();
+  const { mutateAsync: createOrder } = useCreateOrder();
 
-	const handleBook = async () => {
-		// Reset both error states at the start of each attempt.
-		setUnavailableIds([]);
-		setIsBookingError(false);
+  const handleBook = async () => {
+    setUnavailableIds([]);
+    setIsBookingError(false);
 
-		if (!pickupTime || !returnTime) {
-			setIsTimesRequired(true);
-			return;
-		}
+    if (!customer) {
+      navigate({
+        to: "/login",
+        search: {
+          redirectTo: PORTAL_AUTH_REDIRECT_ROUTES[1],
+          locationId: location.id,
+          startDate,
+          endDate,
+        },
+      });
+      return;
+    }
 
-		try {
-			if (!customer) {
-				throw new ProblemDetailsError({
-					type: "about:blank",
-					title: "Unauthorized",
-					status: 401,
-					detail: "No active session. Please log in.",
-				});
-			}
+    if (!pickupTime || !returnTime) {
+      setIsTimesRequired(true);
+      return;
+    }
 
-			await createOrder({
-				locationId: location.id,
-				periodStart: toISOString(period.start),
-				periodEnd: toISOString(period.end),
-				currency: "USD",
-				items: itemPayload,
-				insuranceSelected,
-				pickupTime,
-				returnTime,
-			});
+    try {
+      await createOrder({
+        locationId: location.id,
+        periodStart: toISOString(period.start),
+        periodEnd: toISOString(period.end),
+        currency: "USD",
+        items: itemPayload,
+        insuranceSelected,
+        pickupTime,
+        returnTime,
+      });
 
-			clearCart();
+      clearCart();
 
-			navigate({
-				to: "/order-confirmation",
-				search: {
-					pickupDate: period.start.format("YYYY-MM-DD"),
-					pickupLocation: location.name,
-					pickupTime: formatSlot(pickupTime),
-				},
-			});
-		} catch (error) {
-			if (
-				error instanceof ProblemDetailsError &&
-				error.problemDetails.status === 422
-			) {
-				const ids = (error.problemDetails.unavailableItems ?? []).map(
-					(i: { productTypeId?: string; bundleId?: string }) =>
-						i.productTypeId ?? i.bundleId ?? "",
-				);
-				setUnavailableIds(ids.filter(Boolean));
+      navigate({
+        to: "/order-confirmation",
+        search: {
+          pickupDate: period.start.format("YYYY-MM-DD"),
+          pickupLocation: location.name,
+          pickupTime: formatSlot(pickupTime),
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof ProblemDetailsError &&
+        error.problemDetails.status === 422
+      ) {
+        const ids = (error.problemDetails.unavailableItems ?? []).map(
+          (i: { productTypeId?: string; bundleId?: string }) =>
+            i.productTypeId ?? i.bundleId ?? "",
+        );
+        setUnavailableIds(ids.filter(Boolean));
 
-				const groups: ConflictGroup[] =
-					error.problemDetails.conflictGroups ?? [];
-				setConflictGroups(groups);
+        const groups: ConflictGroup[] =
+          error.problemDetails.conflictGroups ?? [];
+        setConflictGroups(groups);
 
-				return;
-			}
+        return;
+      }
 
-			// Any non-422 error (5xx, network failure, etc.) — surface inline
-			// without re-throwing, so the page stays intact and the user can retry.
-			setIsBookingError(true);
-		}
-	};
+      // Any non-422 error (5xx, network failure, etc.) — surface inline
+      // without re-throwing, so the page stays intact and the user can retry.
+      setIsBookingError(true);
+    }
+  };
 
-	return {
-		cartItems,
-		period,
-		breakdown,
-		joinedLineItems,
-		insuranceSelected,
-		pickupTime,
-		returnTime,
-		onInsuranceSelectedChange,
-		onPickupTimeChange,
-		onReturnTimeChange,
-		isTimesRequired,
-		isPriceLoading,
-		isPriceError,
-		isBookingError,
-		unavailableIds,
-		conflictGroups,
-		handleBook,
-	};
+  return {
+    cartItems,
+    period,
+    breakdown,
+    joinedLineItems,
+    insuranceSelected,
+    isAuthenticated: Boolean(customer),
+    pickupTime,
+    returnTime,
+    onInsuranceSelectedChange,
+    onPickupTimeChange,
+    onReturnTimeChange,
+    isTimesRequired,
+    isPriceLoading,
+    isPriceError,
+    isBookingError,
+    unavailableIds,
+    conflictGroups,
+    handleBook,
+  };
 }

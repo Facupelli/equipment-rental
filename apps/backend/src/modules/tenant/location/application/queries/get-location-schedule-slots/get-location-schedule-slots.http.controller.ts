@@ -2,19 +2,22 @@ import { BadRequestException, Controller, Get, Param, Query } from '@nestjs/comm
 import { QueryBus } from '@nestjs/cqrs';
 import { ScheduleSlotType } from '@repo/types';
 
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { GetLocationScheduleSlotsQuery } from 'src/modules/tenant/public/queries/get-location-schedule-slots.query';
 
 import { GetLocationScheduleSlotsQueryDto } from './get-location-schedule-slots.request.dto';
+import { Public } from 'src/core/decorators/public.decorator';
+import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 
+@Public()
 @Controller('locations')
 export class GetLocationScheduleSlotsHttpController {
-  constructor(private readonly queryBus: QueryBus) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly tenantContext: TenantContextService,
+  ) {}
 
   @Get(':locationId/schedules/slots')
   async getLocationScheduleSlots(
-    @CurrentUser() user: AuthenticatedUser,
     @Param('locationId') locationId: string,
     @Query() query: GetLocationScheduleSlotsQueryDto,
   ): Promise<number[]> {
@@ -26,6 +29,8 @@ export class GetLocationScheduleSlotsHttpController {
       throw new BadRequestException(`Invalid type. Expected ${ScheduleSlotType.PICKUP} or ${ScheduleSlotType.RETURN}.`);
     }
 
-    return this.queryBus.execute(new GetLocationScheduleSlotsQuery(user.tenantId, locationId, query.date, query.type));
+    return this.queryBus.execute(
+      new GetLocationScheduleSlotsQuery(this.tenantContext.requireTenantId(), locationId, query.date, query.type),
+    );
   }
 }

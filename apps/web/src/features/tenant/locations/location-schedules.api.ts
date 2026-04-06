@@ -37,6 +37,8 @@ export const getLocationScheduleSlots = createServerFn({ method: "GET" })
     return apiFetch<LocationScheduleSlotsResponse>(
       `${apiUrl(locationId)}/slots`,
       {
+        authenticated: false,
+        face: "portal",
         method: "GET",
         params,
       },

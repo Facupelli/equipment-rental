@@ -1,10 +1,7 @@
-import { CustomerOnly } from 'src/core/decorators/customer-only.decorator';
 import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Post } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { Result } from 'neverthrow';
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ProblemException } from 'src/core/exceptions/problem.exception';
-import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import {
   BundleInactiveForBookingError,
   BundleNotBookableAtLocationError,
@@ -21,20 +18,22 @@ import { CalculateCartPricesQuery } from './calculate-cart-prices.query';
 import { CalculateCartPricesError, CartPriceResult } from './calculate-cart-prices.query-handler';
 import { CalculateCartPricesRequestDto } from './calculate-cart-prices.request.dto';
 import { CalculateCartPricesResponseDto } from './calculate-cart-prices.response.dto';
+import { Public } from 'src/core/decorators/public.decorator';
+import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 
-@CustomerOnly()
+@Public()
 @Controller('pricing')
 export class CalculateCartPricesHttpController {
-  constructor(private readonly queryBus: QueryBus) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly tenantContext: TenantContextService,
+  ) {}
 
   @Post('cart/preview')
   @HttpCode(HttpStatus.OK)
-  async calculateCartPrices(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: CalculateCartPricesRequestDto,
-  ): Promise<CalculateCartPricesResponseDto> {
+  async calculateCartPrices(@Body() dto: CalculateCartPricesRequestDto): Promise<CalculateCartPricesResponseDto> {
     const query = new CalculateCartPricesQuery(
-      user.tenantId,
+      this.tenantContext.requireTenantId(),
       dto.locationId,
       dto.currency,
       {

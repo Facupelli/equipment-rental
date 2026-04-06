@@ -57,6 +57,8 @@ export const getRentalLocations = createServerFn({ method: "GET" }).handler(
 		const result = await apiFetch<RentalLocationsResponse>(
 			"/rental/locations",
 			{
+				authenticated: false,
+				face: "portal",
 				method: "GET",
 			},
 		);

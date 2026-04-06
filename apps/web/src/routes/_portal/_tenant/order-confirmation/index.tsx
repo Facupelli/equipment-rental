@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { CheckCircle2, Mail, CalendarCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { buildR2PublicUrl } from "@/lib/r2-public-url";
 
 const orderConfirmationSearchSchema = z.object({
   pickupDate: z.string().catch("—"),
@@ -15,16 +16,27 @@ export const Route = createFileRoute("/_portal/_tenant/order-confirmation/")({
 });
 
 function OrderConfirmationPage() {
+  const { tenantContext } = Route.useRouteContext();
+
   const { pickupDate, pickupLocation, pickupTime } = Route.useSearch();
 
   const formattedDate = formatPickupDate(pickupDate);
+  const logoUrl = buildR2PublicUrl(tenantContext.tenant.logoUrl, "branding");
 
   return (
     <div className="min-h-screen bg-[#f0f0f0] flex flex-col items-center ">
       {/* ── Top bar ── */}
       <header className="w-full bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold tracking-widest uppercase text-neutral-900">
-          <p className="text-xl font-bold text-primary">DEPIQO</p>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={tenantContext.tenant.name}
+              className="h-10 w-auto object-contain"
+            />
+          ) : (
+            <span>{tenantContext.tenant.name}</span>
+          )}
         </div>
         <Button
           className="text-neutral-400 hover:text-neutral-700 transition-colors"

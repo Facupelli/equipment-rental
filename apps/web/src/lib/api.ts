@@ -1,7 +1,9 @@
-import { problemDetailsSchema, type PaginatedDto } from "@repo/schemas";
+import { type PaginatedDto, problemDetailsSchema } from "@repo/schemas";
+import { refreshSession } from "@/features/auth/refresh-session";
+import { getCurrentTenantContext } from "@/features/tenant-context/resolve-tenant-context";
 import { ProblemDetailsError } from "@/shared/errors";
 import { getAppSession } from "./session";
-import { refreshSession } from "@/features/auth/refresh-session";
+import { serverEnv } from "@/config/server-env";
 
 type ApiFetchOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -10,6 +12,28 @@ type ApiFetchOptions = Omit<RequestInit, "body"> & {
   /** Pass 'admin' or 'portal' so refreshSession redirects to the right login page on failure. */
   face?: "admin" | "portal";
 };
+
+async function getInternalPortalHeaders(
+  authenticated: boolean,
+  face: "admin" | "portal",
+): Promise<Record<string, string>> {
+  if (authenticated || face !== "portal") {
+    return {};
+  }
+
+  const tenantContext = await getCurrentTenantContext();
+
+  if (tenantContext.face !== "portal") {
+    return {};
+  }
+
+  const internalToken = serverEnv.INTERNAL_API_TOKEN;
+
+  return {
+    "x-internal-token": internalToken,
+    "x-tenant-id": tenantContext.tenant.id,
+  };
+}
 
 // ── apiFetchRaw ───────────────────────────────────────────────────────────────
 // Core fetch wrapper. Proactive token refresh is handled upstream by
@@ -48,6 +72,10 @@ async function apiFetchRaw<T>(
 
   let currentToken: string | undefined;
   let hasRetried = false;
+  const internalPortalHeaders = await getInternalPortalHeaders(
+    authenticated,
+    face,
+  );
 
   while (true) {
     const authHeader: Record<string, string> = {};
@@ -67,7 +95,7 @@ async function apiFetchRaw<T>(
         });
       }
 
-      authHeader["Authorization"] = `Bearer ${currentToken}`;
+      authHeader.Authorization = `Bearer ${currentToken}`;
     }
 
     let response: Response;
@@ -78,6 +106,7 @@ async function apiFetchRaw<T>(
         headers: {
           "Content-Type": "application/json",
           ...authHeader,
+          ...internalPortalHeaders,
           ...headers,
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
