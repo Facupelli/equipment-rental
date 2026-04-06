@@ -13,6 +13,7 @@ export type UpdateProductTypeProps = {
   description?: string | null;
   imageUrl?: string;
   trackingMode?: TrackingMode;
+  excludeFromNewArrivals?: boolean;
   attributes?: Record<string, unknown> | null;
   includedItems?: IncludedItemInput[] | null;
 };

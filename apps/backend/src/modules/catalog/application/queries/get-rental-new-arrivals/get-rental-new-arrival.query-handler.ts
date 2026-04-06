@@ -45,6 +45,7 @@ export class GetNewArrivalsQueryHandler implements IQueryHandler<GetNewArrivalsQ
       where: {
         tenantId,
         retiredAt: null,
+        excludeFromNewArrivals: false,
         publishedAt: { not: null, gte: since },
       },
       select: {

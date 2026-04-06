@@ -38,6 +38,7 @@ export const productTypeResponseSchema = z.object({
   imageUrl: z.string(),
   description: z.string().nullable(),
   trackingMode: z.enum(TrackingMode),
+  excludeFromNewArrivals: z.boolean(),
   attributes: productTypeAttributesSchema,
   includedItems: z.array(productTypeIncludedItemSchema),
   // Total number of active, non-deleted assets for this product type.

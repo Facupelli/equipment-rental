@@ -16,6 +16,7 @@ export const createProductTypeSchema = z.object({
   imageUrl: z.string(),
   description: z.string().nullable(),
   trackingMode: z.enum(TrackingMode),
+  excludeFromNewArrivals: z.boolean().default(false),
   attributes: productTypeAttributesSchema,
   includedItems: z.array(productTypeIncludedItemSchema),
 });
@@ -27,6 +28,7 @@ export const updateProductTypeSchema = z.object({
   imageUrl: z.string().optional(),
   description: z.string().nullable().optional(),
   trackingMode: z.enum(TrackingMode).optional(),
+  excludeFromNewArrivals: z.boolean().optional(),
   attributes: productTypeAttributesSchema.optional(),
   includedItems: z.array(productTypeIncludedItemSchema).optional(),
 });

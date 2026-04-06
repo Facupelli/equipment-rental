@@ -27,6 +27,7 @@ export class CreateProductTypeHttpController {
         description: dto.description ?? null,
         imageUrl: dto.imageUrl ?? '',
         trackingMode: dto.trackingMode,
+        excludeFromNewArrivals: dto.excludeFromNewArrivals,
         attributes: dto.attributes ?? null,
         includedItems:
           dto.includedItems?.map((item) => ({

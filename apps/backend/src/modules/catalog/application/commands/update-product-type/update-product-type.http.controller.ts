@@ -40,6 +40,7 @@ export class UpdateProductTypeHttpController {
       description: dto.description,
       imageUrl: dto.imageUrl,
       trackingMode: dto.trackingMode,
+      excludeFromNewArrivals: dto.excludeFromNewArrivals,
       attributes: dto.attributes,
       includedItems:
         dto.includedItems?.map((item) => ({

@@ -27,6 +27,7 @@ export const productTypeFormSchema = z.object({
 	imageUrl: z.string().min(1, "Product image is required"),
 	description: z.string().or(z.literal("")),
 	trackingMode: z.enum(TrackingMode),
+	excludeFromNewArrivals: z.boolean(),
 	attributes: z.array(attributeRowSchema),
 	includedItems: z.array(includedItemRowSchema),
 });
@@ -42,6 +43,7 @@ export const productTypeFormDefaults: ProductTypeFormValues = {
 	imageUrl: "",
 	description: "",
 	trackingMode: TrackingMode.IDENTIFIED,
+	excludeFromNewArrivals: false,
 	attributes: [],
 	includedItems: [],
 };
@@ -55,6 +57,7 @@ export function productTypeToFormValues(productType: {
 	imageUrl: string | null;
 	description: string | null;
 	trackingMode: TrackingMode;
+	excludeFromNewArrivals: boolean;
 	attributes: Record<string, string>;
 	includedItems: ProductTypeIncludedItemDto[];
 }): ProductTypeFormValues {
@@ -66,6 +69,7 @@ export function productTypeToFormValues(productType: {
 		imageUrl: productType.imageUrl ?? "",
 		description: productType.description ?? "",
 		trackingMode: productType.trackingMode,
+		excludeFromNewArrivals: productType.excludeFromNewArrivals,
 		attributes: Object.entries(productType.attributes).map(([key, value]) => ({
 			key,
 			value,
@@ -104,6 +108,7 @@ export function toCreateProductTypeDto(
 		imageUrl: emptyToNull(values.imageUrl),
 		description: emptyToNull(values.description),
 		trackingMode: values.trackingMode,
+		excludeFromNewArrivals: values.excludeFromNewArrivals,
 		attributes: mapAttributeRows(values.attributes),
 		includedItems: mapIncludedItemRows(values.includedItems),
 	};
@@ -133,6 +138,9 @@ export function toUpdateProductTypeDto(
 	}
 	if (dirtyValues.trackingMode !== undefined) {
 		dto.trackingMode = dirtyValues.trackingMode;
+	}
+	if (dirtyValues.excludeFromNewArrivals !== undefined) {
+		dto.excludeFromNewArrivals = dirtyValues.excludeFromNewArrivals;
 	}
 	if (dirtyValues.attributes !== undefined) {
 		dto.attributes = mapAttributeRows(dirtyValues.attributes);

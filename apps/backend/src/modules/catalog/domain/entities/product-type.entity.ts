@@ -22,6 +22,7 @@ export interface CreateProductTypeProps {
   imageUrl: string;
   description: string | null;
   trackingMode: TrackingMode;
+  excludeFromNewArrivals: boolean;
   attributes: Record<string, unknown> | null;
   includedItems: IncludedItem[] | null;
 }
@@ -35,6 +36,7 @@ export interface ReconstituteProductTypeProps {
   imageUrl: string;
   description: string | null;
   trackingMode: TrackingMode;
+  excludeFromNewArrivals: boolean;
   attributes: Record<string, unknown>;
   includedItems: unknown[];
   hasPricingTiersConfigured: boolean;
@@ -52,6 +54,7 @@ export class ProductType {
     private imageUrl: string,
     private description: string | null,
     private trackingMode: TrackingMode,
+    private excludeFromNewArrivals: boolean,
     private attributes: Record<string, unknown>,
     private includedItems: unknown[],
     private hasPricingTiersConfigured: boolean,
@@ -75,6 +78,7 @@ export class ProductType {
         props.imageUrl,
         props.description?.trim() ?? null,
         props.trackingMode,
+        props.excludeFromNewArrivals,
         props.attributes ?? {},
         props.includedItems ?? [],
         false,
@@ -94,6 +98,7 @@ export class ProductType {
       props.imageUrl,
       props.description,
       props.trackingMode,
+      props.excludeFromNewArrivals,
       props.attributes,
       props.includedItems,
       props.hasPricingTiersConfigured,
@@ -126,6 +131,10 @@ export class ProductType {
 
   get currentTrackingMode(): TrackingMode {
     return this.trackingMode;
+  }
+
+  get isExcludedFromNewArrivals(): boolean {
+    return this.excludeFromNewArrivals;
   }
 
   get currentAttributes(): Record<string, unknown> {
@@ -195,6 +204,10 @@ export class ProductType {
 
     if (props.trackingMode !== undefined) {
       this.trackingMode = props.trackingMode;
+    }
+
+    if (props.excludeFromNewArrivals !== undefined) {
+      this.excludeFromNewArrivals = props.excludeFromNewArrivals;
     }
 
     if (props.attributes !== undefined) {

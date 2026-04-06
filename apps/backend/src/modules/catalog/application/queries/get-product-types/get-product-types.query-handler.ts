@@ -16,6 +16,7 @@ type ProductTypeListItemReadModel = {
   imageUrl: string;
   description: string | null;
   trackingMode: TrackingMode;
+  excludeFromNewArrivals: boolean;
   attributes: Record<string, string>;
   includedItems: ProductTypeIncludedItemReadModel[];
   createdAt: Date;
@@ -128,6 +129,7 @@ export class GetProductTypesQueryHandler implements IQueryHandler<
         imageUrl: pt.imageUrl ?? '',
         description: pt.description,
         trackingMode: pt.trackingMode as TrackingMode,
+        excludeFromNewArrivals: pt.excludeFromNewArrivals,
         attributes: pt.attributes as Record<string, string>,
         includedItems: pt.includedItems as ProductTypeIncludedItemReadModel[],
         createdAt: pt.createdAt,
