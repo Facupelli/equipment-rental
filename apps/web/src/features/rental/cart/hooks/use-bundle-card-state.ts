@@ -21,7 +21,7 @@ export function useBundleCardState(bundle: BundleItemResponse) {
         name: component.productType.name,
         quantity: component.quantity,
         description: component.productType.description,
-        imageUrl: "",
+        imageUrl: component.productType.imageUrl,
         includedItems: component.productType.includedItems,
       })),
     });

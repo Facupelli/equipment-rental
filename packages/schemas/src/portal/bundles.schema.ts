@@ -13,6 +13,7 @@ const comboComponentSchema = z.object({
     name: z.string(),
     description: z.string().nullable(),
     includedItems: z.array(productTypeIncludedItemSchema),
+    imageUrl: z.string().nullable(),
   }),
 });
 

@@ -6,40 +6,17 @@ import {
   AvailableAssetCountReadModel,
   GetAvailableAssetCountsQuery,
 } from 'src/modules/inventory/public/queries/get-available-asset-counts.query';
-
-type RentalIncludedItemReadModel = {
-  name: string;
-  quantity: number;
-  notes: string | null;
-};
-
-type RentalBundleReadModel = Array<{
-  id: string;
-  name: string;
-  imageUrl: string;
-  description: string | null;
-  billingUnit: { label: string };
-  pricingPreview: { pricePerUnit: number; fromUnit: number } | null;
-  components: Array<{
-    quantity: number;
-    productType: {
-      name: string;
-      description: string | null;
-      id: string;
-      includedItems: RentalIncludedItemReadModel[];
-    };
-  }>;
-}>;
+import { BundleListResponseDto, ProductTypeIncludedItemDto } from '@repo/schemas';
 
 @Injectable()
 @QueryHandler(GetRentalBundlesQuery)
-export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuery, RentalBundleReadModel> {
+export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuery, BundleListResponseDto> {
   constructor(
     private readonly prisma: PrismaService,
     private readonly queryBus: QueryBus,
   ) {}
 
-  async execute(query: GetRentalBundlesQuery): Promise<RentalBundleReadModel> {
+  async execute(query: GetRentalBundlesQuery): Promise<BundleListResponseDto> {
     const { tenantId, locationId, startDate, endDate } = query;
 
     const bundles = await this.prisma.client.bundle.findMany({
@@ -69,7 +46,7 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
           select: {
             quantity: true,
             productType: {
-              select: { id: true, name: true, description: true, includedItems: true },
+              select: { id: true, name: true, description: true, includedItems: true, imageUrl: true },
             },
           },
         },
@@ -109,7 +86,8 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
           name: component.productType.name,
           description: component.productType.description,
           id: component.productType.id,
-          includedItems: component.productType.includedItems as RentalIncludedItemReadModel[],
+          includedItems: component.productType.includedItems as ProductTypeIncludedItemDto[],
+          imageUrl: component.productType.imageUrl ?? null,
         },
       })),
     }));
