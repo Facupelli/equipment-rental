@@ -1,6 +1,7 @@
 import { OrderStatus } from '@repo/types';
 
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
+import { OrderFinancialSnapshot } from '../value-objects/order-financial-snapshot.value-object';
 
 import { Order } from './order.entity';
 import { InvalidOrderStatusTransitionException } from '../exceptions/order.exceptions';
@@ -9,9 +10,26 @@ function makeOrder(status: OrderStatus = OrderStatus.PENDING_REVIEW): Order {
   return Order.create({
     tenantId: 'tenant-1',
     locationId: 'location-1',
+    currency: 'ARS',
     customerId: 'customer-1',
     period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
     status,
+    insuranceSelected: false,
+  });
+}
+
+function makeReconstitutedOrder(status: OrderStatus = OrderStatus.PENDING_REVIEW): Order {
+  return Order.reconstitute({
+    id: 'order-1',
+    tenantId: 'tenant-1',
+    locationId: 'location-1',
+    customerId: 'customer-1',
+    period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
+    status,
+    insuranceSelected: false,
+    financialSnapshot: OrderFinancialSnapshot.zero('ARS', false),
+    notes: null,
+    items: [],
   });
 }
 
@@ -62,5 +80,12 @@ describe('Order', () => {
 
     expect(() => order.reject()).toThrow(InvalidOrderStatusTransitionException);
     expect(() => order.expire()).toThrow(InvalidOrderStatusTransitionException);
+  });
+
+  it('reconstitutes existing orders with financial snapshot state', () => {
+    const order = makeReconstitutedOrder();
+
+    expect(order.currentFinancialSnapshot.total.toString()).toBe('0');
+    expect(order.currentInsuranceSelected).toBe(false);
   });
 });

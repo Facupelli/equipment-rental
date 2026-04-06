@@ -17,9 +17,11 @@ function makeOrder(status: OrderStatus): Order {
   return Order.create({
     tenantId: 'tenant-1',
     locationId: 'location-1',
+    currency: 'ARS',
     customerId: 'customer-1',
     period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
     status,
+    insuranceSelected: false,
   });
 }
 

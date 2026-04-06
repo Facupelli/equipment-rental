@@ -523,16 +523,18 @@ model AssetAssignment {
 // ---------------------------------------------------------------------------
 
 model Order {
-  id           String      @id @default(uuid())
-  tenantId     String      @map("tenant_id")
-  locationId   String      @map("location_id")
-  customerId   String?     @map("customer_id")
-  couponId     String?  @map("coupon_id")
-  status       OrderStatus @default(CONFIRMED)
-  orderNumber  Int         @map("order_number") @default(0)
-  notes        String?
-  periodStart  DateTime    @map("period_start")
-  periodEnd    DateTime    @map("period_end")
+  id                String      @id @default(uuid())
+  tenantId          String      @map("tenant_id")
+  locationId        String      @map("location_id")
+  customerId        String?     @map("customer_id")
+  couponId          String?     @map("coupon_id")
+  status            OrderStatus @default(CONFIRMED)
+  orderNumber       Int         @map("order_number") @default(0)
+  notes             String?
+  insuranceSelected Boolean     @default(false) @map("insurance_selected")
+  financialSnapshot Json        @default("{}") @map("financial_snapshot")
+  periodStart       DateTime    @map("period_start")
+  periodEnd         DateTime    @map("period_end")
 
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")

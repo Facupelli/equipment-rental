@@ -25,6 +25,7 @@ export const createOrderSchema = z.object({
   returnTime: z.number().min(0).max(1439),
   items: z.array(orderItemSchema).min(1, "At least one item is required"),
   currency: z.string().min(1, "Currency is required"),
+  insuranceSelected: z.boolean().default(false),
 });
 
 export type ProductOrderItemDto = z.infer<typeof productOrderItemSchema>;

@@ -3,11 +3,20 @@ import {
   AlertTriangle,
   ArrowRight,
   Banknote,
+  CircleHelp,
   Tag,
-  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { computeOriginalSubtotal, formatDiscount } from "../cart.utils";
 import { useCartPageContext } from "../cart-page.context";
 import { PRDOUCT_TYPE_DICT } from "@/features/catalog/catalog.constants";
@@ -23,11 +32,13 @@ export function CartPageSidebar() {
   const {
     breakdown,
     joinedLineItems,
+    insuranceSelected,
     isPriceLoading,
     isPriceError,
     isBookingError,
     cartItems,
     handleBook,
+    onInsuranceSelectedChange,
   } = useCartPageContext();
 
   const isDisabled = cartItems.length === 0 || isPriceLoading || isPriceError;
@@ -40,6 +51,11 @@ export function CartPageSidebar() {
       {/* ── Desktop/tablet sidebar — sticky only on lg+ ── */}
       <div className="lg:sticky lg:top-6 border border-neutral-200 bg-white p-6">
         <CartPagePriceBreakdown
+          insuranceAmount={breakdown?.insuranceAmount}
+          insuranceApplied={breakdown?.insuranceApplied}
+          insuranceSelected={insuranceSelected}
+          itemsSubtotal={breakdown?.itemsSubtotal}
+          onInsuranceSelectedChange={onInsuranceSelectedChange}
           total={breakdown?.total}
           totalBeforeDiscounts={breakdown?.totalBeforeDiscounts}
           totalDiscount={breakdown?.totalDiscount}
@@ -73,12 +89,6 @@ export function CartPageSidebar() {
             <Banknote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
             <p className="text-[11px] text-neutral-500">
               El pago se cobra al retirar los equipos.
-            </p>
-          </div>
-          <div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
-            <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
-            <p className="text-[11px] text-neutral-500">
-              Puedes cancelar antes de que el pedido sea confirmado.
             </p>
           </div>
         </div>
@@ -130,6 +140,11 @@ export function CartPageSidebar() {
 // total, and savings banner. Shows pre-discount subtotal only when relevant.
 
 type CartPagePriceBreakdownProps = {
+  insuranceAmount: number | undefined;
+  insuranceApplied: boolean | undefined;
+  insuranceSelected: boolean;
+  itemsSubtotal: number | undefined;
+  onInsuranceSelectedChange: (value: boolean) => void;
   total: number | undefined;
   totalBeforeDiscounts: number | undefined;
   totalDiscount: number | undefined;
@@ -140,6 +155,11 @@ type CartPagePriceBreakdownProps = {
 };
 
 export function CartPagePriceBreakdown({
+  insuranceAmount,
+  insuranceApplied,
+  insuranceSelected,
+  itemsSubtotal,
+  onInsuranceSelectedChange,
   total,
   totalBeforeDiscounts,
   totalDiscount,
@@ -160,6 +180,7 @@ export function CartPagePriceBreakdown({
   }
 
   const hasSavings = (totalDiscount ?? 0) > 0;
+  const shouldShowInsuranceRow = insuranceSelected || insuranceApplied;
 
   return (
     <div>
@@ -170,8 +191,8 @@ export function CartPagePriceBreakdown({
       {/* Line items */}
       <div className="space-y-4">
         {isLoading
-          ? Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="flex items-start justify-between gap-4">
+          ? ["line-item-skeleton-1", "line-item-skeleton-2"].map((key) => (
+              <div key={key} className="flex items-start justify-between gap-4">
                 <Skeleton className="h-8 w-32" />
                 <Skeleton className="h-5 w-16" />
               </div>
@@ -187,38 +208,45 @@ export function CartPagePriceBreakdown({
 
       <div className="my-4 border-t border-neutral-200" />
 
-      {/* Subtotal row — shows pre-discount amount when savings exist */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-500">Subtotal</p>
-        {isLoading ? (
-          <Skeleton className="h-5 w-20" />
-        ) : (
-          <p className="text-sm text-black">
-            {hasSavings && totalBeforeDiscounts != null
-              ? formatCurrency(
-                  totalBeforeDiscounts,
-                  priceConfig.currency,
-                  priceConfig.locale,
-                )
-              : total != null
-                ? formatCurrency(
-                    total,
-                    priceConfig.currency,
-                    priceConfig.locale,
-                  )
-                : "—"}
-          </p>
-        )}
-      </div>
+      <InsuranceToggleRow
+        checked={insuranceSelected}
+        onCheckedChange={onInsuranceSelectedChange}
+      />
 
-      {/* Discount deduction row — only visible when savings exist */}
-      {!isLoading && hasSavings && totalDiscount != null && (
-        <div className="mt-2 flex items-center justify-between">
-          <p className="text-sm text-green-700">Descuentos aplicados</p>
-          <p className="text-sm font-semibold text-green-700">
-            {`\u2212${formatCurrency(totalDiscount, priceConfig.currency, priceConfig.locale)}`}
-          </p>
-        </div>
+      <div className="my-4 border-t border-neutral-200" />
+
+      <BreakdownRow
+        label="Subtotal antes de descuentos"
+        value={totalBeforeDiscounts}
+        isLoading={isLoading}
+        priceConfig={priceConfig}
+      />
+
+      {hasSavings && (
+        <BreakdownRow
+          label="Descuentos"
+          value={totalDiscount}
+          isLoading={isLoading}
+          priceConfig={priceConfig}
+          tone="success"
+          prefix="−"
+        />
+      )}
+
+      <BreakdownRow
+        label="Subtotal de equipos"
+        value={itemsSubtotal}
+        isLoading={isLoading}
+        priceConfig={priceConfig}
+      />
+
+      {shouldShowInsuranceRow && (
+        <BreakdownRow
+          label="Seguro de equipos"
+          value={insuranceAmount}
+          isLoading={isLoading}
+          priceConfig={priceConfig}
+        />
       )}
 
       <div className="my-4 border-t border-neutral-200" />
@@ -247,6 +275,101 @@ export function CartPagePriceBreakdown({
             priceConfig={priceConfig}
           />
         </div>
+      )}
+    </div>
+  );
+}
+
+type InsuranceToggleRowProps = {
+  checked: boolean;
+  onCheckedChange: (value: boolean) => void;
+};
+
+function InsuranceToggleRow({
+  checked,
+  onCheckedChange,
+}: InsuranceToggleRowProps) {
+  return (
+    <div className="flex items-center gap-4">
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        aria-label="Activar seguro de equipos"
+      />
+
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="text-[15px] font-medium text-neutral-700">
+          Seguro de Equipos
+        </span>
+
+        <Popover>
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                aria-label="Más información sobre el seguro de equipos"
+                className="flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 transition-colors hover:text-neutral-600"
+              >
+                <CircleHelp className="h-4 w-4" />
+              </button>
+            }
+          />
+          <PopoverContent
+            align="start"
+            sideOffset={10}
+            className="w-80 gap-3 border border-neutral-200 bg-neutral-900"
+          >
+            <PopoverHeader className="gap-2">
+              <PopoverTitle className="text-sm text-neutral-50">
+                Seguro de equipos
+              </PopoverTitle>
+              <PopoverDescription className="text-xs leading-5 text-neutral-200">
+                Protege tu pedido con una cobertura adicional ante imprevistos
+                durante el alquiler. El cargo corresponde al 6% del subtotal
+                antes de descuentos y se suma al total final del pedido.
+              </PopoverDescription>
+            </PopoverHeader>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+  );
+}
+
+type BreakdownRowProps = {
+  label: string;
+  value: number | undefined;
+  isLoading: boolean;
+  priceConfig: TenantPricingConfig;
+  tone?: "default" | "success";
+  prefix?: string;
+};
+
+function BreakdownRow({
+  label,
+  value,
+  isLoading,
+  priceConfig,
+  tone = "default",
+  prefix,
+}: BreakdownRowProps) {
+  const textColor = tone === "success" ? "text-green-700" : "text-neutral-500";
+  const valueColor =
+    tone === "success"
+      ? "text-green-700 font-semibold"
+      : "text-black font-medium";
+
+  return (
+    <div className="mt-2 flex items-center justify-between first:mt-0">
+      <p className={cn("text-sm", textColor)}>{label}</p>
+      {isLoading ? (
+        <Skeleton className="h-5 w-20" />
+      ) : (
+        <p className={cn("text-sm", valueColor)}>
+          {value != null
+            ? `${prefix ?? ""}${formatCurrency(value, priceConfig.currency, priceConfig.locale)}`
+            : "—"}
+        </p>
       )}
     </div>
   );

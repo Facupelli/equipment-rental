@@ -108,9 +108,11 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
       const order = Order.create({
         tenantId: command.tenantId,
         locationId: command.locationId,
+        currency: command.currency,
         customerId: command.customerId,
         period,
         status: bookingMode === BookingMode.REQUEST_TO_BOOK ? OrderStatus.PENDING_REVIEW : OrderStatus.CONFIRMED,
+        insuranceSelected: command.insuranceSelected,
       });
 
       const demandUnits = buildDemandUnits(resolvedItems);

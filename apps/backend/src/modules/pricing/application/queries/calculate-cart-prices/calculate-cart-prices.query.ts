@@ -19,6 +19,7 @@ export class CalculateCartPricesQuery {
     public readonly currency: string,
     public readonly period: { start: Date; end: Date },
     public readonly items: CartQueryItem[],
+    public readonly insuranceSelected: boolean,
     public readonly customerId?: string,
     public readonly couponCode?: string,
   ) {}

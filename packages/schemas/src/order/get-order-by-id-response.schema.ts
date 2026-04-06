@@ -84,6 +84,11 @@ const FinancialLineSchema = z.object({
 
 const FinancialBreakdownSchema = z.object({
   items: z.array(FinancialLineSchema),
+  itemsSubtotal: z.string(),
+  subtotalBeforeDiscounts: z.string(),
+  itemsDiscountTotal: z.string(),
+  insuranceApplied: z.boolean(),
+  insuranceAmount: z.string(),
   total: z.string(),
   yourRevenue: z.string(),
   ownerObligations: z.string(),

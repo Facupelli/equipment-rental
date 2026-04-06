@@ -95,7 +95,7 @@ function OrderHeader() {
   const { order, actions } = useOrderDetailContext();
 
   return (
-    <header className="bg-white border-b border-neutral-200">
+    <header className="border-b border-neutral-200">
       <div className="flex items-start justify-between gap-6">
         {/* Title + meta */}
         <div>
@@ -381,8 +381,11 @@ function ActivityEntry({
 function OrderClientCard() {
   const { order } = useOrderDetailContext();
 
-  // Guarded by the conditional render in OrderDetailPage
-  const customer = order.customer!;
+  if (!order.customer) {
+    return null;
+  }
+
+  const customer = order.customer;
 
   const displayName = getCustomerDisplayName(customer);
   const contactName = getCustomerContactName(customer);
@@ -486,17 +489,17 @@ function OrderLogisticsCard() {
 // ─── Financials Card ──────────────────────────────────────────────────────────
 
 function OrderFinancialsCard() {
-  const { order, actions } = useOrderDetailContext();
+  const { order } = useOrderDetailContext();
   const { financial } = order;
   const hasOwnerObligations = financial.ownerObligations !== "0";
 
   return (
     <section className="bg-white border border-neutral-200 rounded-lg p-5">
-      <SidebarSectionLabel label="Financial Summary" />
+      <SidebarSectionLabel label="Resumen financiero" />
 
       <div>
-        {financial.items.map((line, i) => (
-          <div key={i} className="border-b border-neutral-100">
+        {financial.items.map((line) => (
+          <div key={line.orderItemId} className="border-b border-neutral-100">
             {/* Item label + base price */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-neutral-500">{line.label}</span>
@@ -530,7 +533,7 @@ function OrderFinancialsCard() {
             {line.discounts.length > 0 && (
               <div className="flex items-center justify-between pt-0.5">
                 <span className="text-[11px] text-neutral-400">
-                  After discounts
+                  Después de descuentos
                 </span>
                 <span className="font-mono text-sm font-semibold text-neutral-950">
                   {formatMoney(line.finalPrice)}
@@ -548,14 +551,14 @@ function OrderFinancialsCard() {
                 )}
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-neutral-400">
-                    Owner — {line.ownerSplit.ownerName}
+                    Propietario - {line.ownerSplit.ownerName}
                   </span>
                   <span className="font-mono text-[11px] text-neutral-400">
                     {formatMoney(line.ownerSplit.ownerAmount)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-neutral-400">Rental</span>
+                  <span className="text-[11px] text-neutral-400">Renta</span>
                   <span className="font-mono text-[11px] text-neutral-400">
                     {formatMoney(line.ownerSplit.rentalAmount)}
                   </span>
@@ -566,17 +569,44 @@ function OrderFinancialsCard() {
         ))}
       </div>
 
+      <div className="mt-4 border-t border-dashed border-neutral-200 pt-4">
+        <div className="space-y-2">
+          <FinancialSummaryRow
+            label="Subtotal antes de descuentos"
+            value={financial.subtotalBeforeDiscounts}
+          />
+          <FinancialSummaryRow
+            label="Descuentos de artículos"
+            value={financial.itemsDiscountTotal}
+            tone="success"
+            prefix="-"
+          />
+          <FinancialSummaryRow
+            label="Subtotal de equipos"
+            value={financial.itemsSubtotal}
+          />
+          {financial.insuranceApplied && (
+            <FinancialSummaryRow
+              label="Seguro de equipos"
+              value={financial.insuranceAmount}
+            />
+          )}
+        </div>
+      </div>
+
       {/* Revenue breakdown — only shown when order has external-owned assets */}
       {hasOwnerObligations && (
         <div className="mt-3 pt-3 border-t border-dashed border-neutral-200 flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-500">Your Revenue</span>
+            <span className="text-xs text-neutral-500">Tus ingresos</span>
             <span className="font-mono text-xs font-medium text-emerald-700">
               {formatMoney(financial.yourRevenue)}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-500">Owner Obligations</span>
+            <span className="text-xs text-neutral-500">
+              Obligaciones con propietarios
+            </span>
             <span className="font-mono text-xs font-medium text-amber-600">
               {formatMoney(financial.ownerObligations)}
             </span>
@@ -586,29 +616,41 @@ function OrderFinancialsCard() {
 
       {/* Total */}
       <div className="flex items-baseline justify-between pt-4 mt-1">
-        <span className="text-sm font-bold text-neutral-950">Total Amount</span>
+        <span className="text-sm font-bold text-neutral-950">Total</span>
         <span className="font-mono text-xl font-bold text-neutral-950 tracking-tight">
           {formatMoney(financial.total)}
         </span>
       </div>
-
-      {/* CTA buttons */}
-      <div className="mt-5 space-y-2">
-        <Button
-          className="w-full rounded-md bg-neutral-950 text-white hover:bg-neutral-800 font-medium text-sm h-11 transition-colors"
-          onClick={actions.handleReleaseEquipment}
-        >
-          Release Equipment →
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full rounded-md border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 font-medium text-sm h-9 transition-colors"
-          onClick={actions.handleProcessPayment}
-        >
-          Process Payment
-        </Button>
-      </div>
     </section>
+  );
+}
+
+function FinancialSummaryRow({
+  label,
+  value,
+  tone = "default",
+  prefix,
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "success";
+  prefix?: string;
+}) {
+  const labelClassName =
+    tone === "success" ? "text-sm text-green-700" : "text-sm text-neutral-500";
+  const valueClassName =
+    tone === "success"
+      ? "font-mono text-sm font-semibold text-green-700"
+      : "font-mono text-sm text-neutral-950";
+
+  return (
+    <div className="flex items-center justify-between">
+      <span className={labelClassName}>{label}</span>
+      <span className={valueClassName}>
+        {prefix}
+        {formatMoney(value)}
+      </span>
+    </div>
   );
 }
 

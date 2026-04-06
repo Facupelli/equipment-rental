@@ -27,6 +27,7 @@ export const calculateCartPricesRequestSchema = z.object({
     end: z.iso.datetime(),
   }),
   items: z.array(cartItemSchema),
+  insuranceSelected: z.boolean().default(false),
 });
 
 // ── Response schemas ───────────────────────────────────────────────────────
@@ -53,6 +54,9 @@ export type CartPriceLineItem = z.infer<typeof cartPriceLineItemSchema>;
 
 export const cartPriceResultSchema = z.object({
   lineItems: z.array(cartPriceLineItemSchema),
+  itemsSubtotal: z.number().nonnegative(),
+  insuranceApplied: z.boolean(),
+  insuranceAmount: z.number().nonnegative(),
   total: z.number().nonnegative(),
   totalBeforeDiscounts: z.number().nonnegative(),
   totalDiscount: z.number().nonnegative(),

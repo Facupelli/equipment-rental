@@ -12,6 +12,7 @@ export class CreateOrderCommand {
     public readonly returnTime: number,
     public readonly items: CreateOrderItemCommand[],
     public readonly currency: string,
+    public readonly insuranceSelected: boolean,
     public readonly couponCode?: string,
   ) {}
 }

@@ -43,11 +43,16 @@ export type CartPriceLineItem = {
 
 export type CartPriceResult = {
   lineItems: CartPriceLineItem[];
+  itemsSubtotal: number;
+  insuranceApplied: boolean;
+  insuranceAmount: number;
   total: number;
   totalBeforeDiscounts: number;
   totalDiscount: number;
   couponApplied: boolean;
 };
+
+const EQUIPMENT_INSURANCE_RATE = new Decimal('0.06');
 
 export type CalculateCartPricesError =
   | PricingPeriodInvalidError
@@ -84,6 +89,9 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
     if (query.items.length === 0) {
       return ok({
         lineItems: [],
+        itemsSubtotal: 0,
+        insuranceApplied: query.insuranceSelected,
+        insuranceAmount: 0,
         total: 0,
         totalBeforeDiscounts: 0,
         totalDiscount: 0,
@@ -277,7 +285,7 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
     });
 
     // ── Step 8: Compute total ──────────────────────────────────────────────
-    const total = lineItems.reduce((acc, line) => acc + line.subtotal, 0);
+    const itemsSubtotal = lineItems.reduce((acc, line) => acc + line.subtotal, 0);
 
     const totalBeforeDiscounts = allPrices
       .reduce((acc, r) => acc.add(r.basePrice), Money.zero(query.currency))
@@ -289,8 +297,17 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       .toDecimal()
       .toNumber();
 
+    const insuranceAmount = query.insuranceSelected
+      ? new Decimal(totalBeforeDiscounts).mul(EQUIPMENT_INSURANCE_RATE).toNumber()
+      : 0;
+
+    const total = new Decimal(itemsSubtotal).plus(insuranceAmount).toNumber();
+
     return ok({
       lineItems,
+      itemsSubtotal,
+      insuranceApplied: query.insuranceSelected,
+      insuranceAmount,
       total,
       totalBeforeDiscounts,
       totalDiscount,

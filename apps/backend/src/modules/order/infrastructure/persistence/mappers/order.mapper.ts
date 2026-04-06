@@ -6,6 +6,7 @@ import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domai
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
 import { OrderItemOwnerSplit, SplitStatus } from 'src/modules/order/domain/entities/order-item-owner-split.entity';
+import { OrderFinancialSnapshot } from 'src/modules/order/domain/value-objects/order-financial-snapshot.value-object';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
 
 // ── Prisma row shapes (from include queries) ──────────────────────────────────
@@ -63,6 +64,8 @@ type OrderRow = {
   periodStart: Date;
   periodEnd: Date;
   status: string;
+  insuranceSelected: boolean;
+  financialSnapshot: JsonValue;
   notes: string | null;
   items: OrderItemRow[];
 };
@@ -128,6 +131,8 @@ export class OrderMapper {
       customerId: row.customerId,
       period: DateRange.create(row.periodStart, row.periodEnd),
       status: row.status as OrderStatus,
+      insuranceSelected: row.insuranceSelected,
+      financialSnapshot: OrderFinancialSnapshot.fromJSON(row.financialSnapshot),
       notes: row.notes,
       items,
     });
@@ -142,6 +147,8 @@ export class OrderMapper {
       periodStart: order.currentPeriod.start,
       periodEnd: order.currentPeriod.end,
       status: order.currentStatus,
+      insuranceSelected: order.currentInsuranceSelected,
+      financialSnapshot: order.currentFinancialSnapshot.toJSON(),
       notes: order.currentNotes,
     };
 

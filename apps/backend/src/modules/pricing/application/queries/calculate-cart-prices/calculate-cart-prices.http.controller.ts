@@ -42,6 +42,7 @@ export class CalculateCartPricesHttpController {
         end: new Date(dto.period.end),
       },
       dto.items,
+      dto.insuranceSelected,
     );
 
     const result = await this.queryBus.execute<

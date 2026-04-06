@@ -53,6 +53,9 @@ describe('CreateOrderService', () => {
       save: jest.fn(async (order) => {
         savedStatus = order.currentStatus;
         savedPeriod = order.currentPeriod;
+        expect(order.currentInsuranceSelected).toBe(false);
+        expect(order.currentFinancialSnapshot.total.toString()).toBe('100');
+        expect(order.currentFinancialSnapshot.insuranceAmount.toString()).toBe('0');
         return order.id;
       }),
     } as unknown as OrderRepository;
@@ -123,6 +126,7 @@ describe('CreateOrderService', () => {
       900,
       [{ type: 'PRODUCT', productTypeId: 'product-1', quantity: 1 }],
       'ARS',
+      false,
     );
   }
 

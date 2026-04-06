@@ -3,6 +3,7 @@ import { GetOrderByIdQuery } from './get-order-by-id.query';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { OrderItemType, OrderStatus } from '@repo/types';
+import { OrderFinancialSnapshot } from 'src/modules/order/domain/value-objects/order-financial-snapshot.value-object';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
 import Decimal from 'decimal.js';
 import { OrderNotFoundException } from '../../../domain/exceptions/order.exceptions';
@@ -82,6 +83,7 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
     }
 
     const period = DateRange.create(order.periodStart, order.periodEnd);
+    const financialSnapshot = OrderFinancialSnapshot.fromJSON(order.financialSnapshot);
 
     // ── Items ─────────────────────────────────────────────────────────────────
 
@@ -193,9 +195,7 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
       };
     });
 
-    const total = financialItems.reduce((sum, line) => sum.plus(line.finalPrice), new Decimal(0));
-
-    const yourRevenue = total.minus(totalOwnerObligations);
+    const yourRevenue = financialSnapshot.itemsSubtotal.minus(totalOwnerObligations);
 
     return {
       id: order.id,
@@ -209,7 +209,12 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
       items,
       financial: {
         items: financialItems,
-        total: total.toString(),
+        itemsSubtotal: financialSnapshot.itemsSubtotal.toString(),
+        subtotalBeforeDiscounts: financialSnapshot.subtotalBeforeDiscounts.toString(),
+        itemsDiscountTotal: financialSnapshot.itemsDiscountTotal.toString(),
+        insuranceApplied: financialSnapshot.insuranceApplied,
+        insuranceAmount: financialSnapshot.insuranceAmount.toString(),
+        total: financialSnapshot.total.toString(),
         yourRevenue: yourRevenue.toString(),
         ownerObligations: totalOwnerObligations.toString(),
       },

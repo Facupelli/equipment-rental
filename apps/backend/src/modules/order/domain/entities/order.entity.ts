@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import Decimal from 'decimal.js';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { OrderItem } from './order-item.entity';
 import {
@@ -7,6 +8,9 @@ import {
   OrderItemNotFoundException,
 } from '../exceptions/order.exceptions';
 import { OrderStatus } from '@repo/types';
+import { OrderFinancialSnapshot } from '../value-objects/order-financial-snapshot.value-object';
+
+const EQUIPMENT_INSURANCE_RATE = new Decimal('0.06');
 
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.PENDING_REVIEW]: [OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.EXPIRED],
@@ -21,8 +25,10 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 export interface CreateOrderProps {
   tenantId: string;
   locationId: string;
+  currency: string;
   period: DateRange;
   status: OrderStatus;
+  insuranceSelected: boolean;
   customerId?: string;
   notes?: string;
 }
@@ -34,6 +40,8 @@ export interface ReconstituteOrderProps {
   customerId: string | null;
   period: DateRange;
   status: OrderStatus;
+  insuranceSelected: boolean;
+  financialSnapshot: OrderFinancialSnapshot;
   notes: string | null;
   items: OrderItem[];
 }
@@ -46,6 +54,8 @@ export class Order {
     public readonly customerId: string | null,
     private period: DateRange,
     private status: OrderStatus,
+    private readonly insuranceSelected: boolean,
+    private financialSnapshot: OrderFinancialSnapshot,
     private notes: string | null,
     private readonly items: OrderItem[],
   ) {}
@@ -58,6 +68,8 @@ export class Order {
       props.customerId ?? null,
       props.period,
       props.status,
+      props.insuranceSelected,
+      OrderFinancialSnapshot.zero(props.currency, props.insuranceSelected),
       props.notes?.trim() ?? null,
       [],
     );
@@ -71,6 +83,8 @@ export class Order {
       props.customerId,
       props.period,
       props.status,
+      props.insuranceSelected,
+      props.financialSnapshot,
       props.notes,
       props.items,
     );
@@ -86,6 +100,14 @@ export class Order {
 
   get currentNotes(): string | null {
     return this.notes;
+  }
+
+  get currentInsuranceSelected(): boolean {
+    return this.insuranceSelected;
+  }
+
+  get currentFinancialSnapshot(): OrderFinancialSnapshot {
+    return this.financialSnapshot;
   }
 
   getItems(): OrderItem[] {
@@ -105,6 +127,7 @@ export class Order {
       throw new OrderItemNotAllowedException(this.status);
     }
     this.items.push(item);
+    this.recalculateFinancialSnapshot();
   }
 
   removeItem(itemId: string, assetId: string): void {
@@ -114,6 +137,7 @@ export class Order {
     }
     this.items[idx].voidOwnerSplitForAsset(assetId);
     this.items.splice(idx, 1);
+    this.recalculateFinancialSnapshot();
   }
 
   transitionTo(next: OrderStatus): void {
@@ -147,5 +171,32 @@ export class Order {
 
   complete(): void {
     this.transitionTo(OrderStatus.COMPLETED);
+  }
+
+  private recalculateFinancialSnapshot(): void {
+    const currency = this.items[0]?.priceSnapshot.currency ?? this.financialSnapshot.currency;
+
+    const subtotalBeforeDiscounts = this.items.reduce(
+      (sum, item) => sum.plus(item.priceSnapshot.basePrice),
+      new Decimal(0),
+    );
+    const itemsDiscountTotal = this.items.reduce(
+      (sum, item) => sum.plus(item.priceSnapshot.totalDiscountAmount()),
+      new Decimal(0),
+    );
+    const itemsSubtotal = this.items.reduce((sum, item) => sum.plus(item.priceSnapshot.finalPrice), new Decimal(0));
+    const insuranceAmount = this.insuranceSelected
+      ? subtotalBeforeDiscounts.mul(EQUIPMENT_INSURANCE_RATE)
+      : new Decimal(0);
+
+    this.financialSnapshot = OrderFinancialSnapshot.create({
+      currency,
+      subtotalBeforeDiscounts,
+      itemsDiscountTotal,
+      itemsSubtotal,
+      insuranceApplied: this.insuranceSelected,
+      insuranceAmount,
+      total: itemsSubtotal.plus(insuranceAmount),
+    });
   }
 }

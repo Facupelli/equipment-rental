@@ -47,6 +47,7 @@ export class CreateOrderHttpController {
         dto.returnTime,
         dto.items,
         dto.currency,
+        dto.insuranceSelected,
       ),
     );
 
