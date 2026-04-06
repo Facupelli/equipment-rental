@@ -63,7 +63,7 @@ export function useCartOrder({
 
   const [pickupTime, setPickupTime] = useState<number | undefined>(undefined);
   const [returnTime, setReturnTime] = useState<number | undefined>(undefined);
-  const [insuranceSelected, setInsuranceSelected] = useState(false);
+  const [insuranceSelected, setInsuranceSelected] = useState(true);
   const [isTimesRequired, setIsTimesRequired] = useState(false);
   const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
   const [conflictGroups, setConflictGroups] = useState<ConflictGroup[]>([]);
