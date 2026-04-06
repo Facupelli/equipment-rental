@@ -49,8 +49,8 @@ export function useRentalPageSearch() {
 		setUrlParam({ categoryId: next, page: 1 });
 	}
 
-	function handleLocationChange(value: string | null) {
-		setUrlParam({ locationId: value ?? undefined, page: 1 });
+	function handleLocationChange(locationId: string) {
+		setUrlParam({ locationId, page: 1 });
 	}
 
 	function handleSortChange(sort: RentalProductSort) {
