@@ -21,6 +21,7 @@ export class FindTenantBySlugQueryHandler implements IQueryHandler<FindTenantByS
         name: true,
         customDomain: true,
         logoUrl: true,
+        faviconUrl: true,
         primaryColor: true,
       },
     });

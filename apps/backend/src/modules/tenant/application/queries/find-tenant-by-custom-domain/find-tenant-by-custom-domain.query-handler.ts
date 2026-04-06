@@ -24,6 +24,7 @@ export class FindTenantByCustomDomainQueryHandler implements IQueryHandler<
         name: true,
         customDomain: true,
         logoUrl: true,
+        faviconUrl: true,
         primaryColor: true,
       },
     });

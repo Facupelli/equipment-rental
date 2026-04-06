@@ -17,7 +17,9 @@ export class UpdateTenantBrandingHttpController {
 
   @Patch('branding')
   async updateBranding(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateTenantBrandingDto): Promise<void> {
-    const result = await this.commandBus.execute(new UpdateTenantBrandingCommand(user.tenantId, dto.logoUrl));
+    const result = await this.commandBus.execute(
+      new UpdateTenantBrandingCommand(user.tenantId, dto.logoUrl, dto.faviconUrl),
+    );
 
     if (result.isErr()) {
       if (result.error instanceof TenantNotFoundError) {

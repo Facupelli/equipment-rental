@@ -20,6 +20,7 @@ export class TenantMapper {
       name: raw.name,
       slug: raw.slug,
       logoUrl: raw.logoUrl,
+      faviconUrl: raw.faviconUrl,
       config: TenantConfig.reconstitute(raw.config as unknown as TenantConfigProps),
       billingUnits,
     });
@@ -31,6 +32,7 @@ export class TenantMapper {
       name: entity.name,
       slug: entity.slug,
       logoUrl: entity.getLogoUrl(),
+      faviconUrl: entity.getFaviconUrl(),
       config: entity.getConfig().toPlainObject() as unknown as InputJsonValue,
     };
   }

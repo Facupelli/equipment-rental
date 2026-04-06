@@ -22,6 +22,7 @@ export interface ReconstituteTenantProps {
   name: string;
   slug: string;
   logoUrl: string | null;
+  faviconUrl: string | null;
   config: TenantConfig;
   billingUnits: TenantBillingUnit[];
 }
@@ -32,6 +33,7 @@ export class Tenant extends AggregateRootBase {
     public readonly name: string,
     public readonly slug: string,
     private logoUrl: string | null,
+    private faviconUrl: string | null,
     private config: TenantConfig,
     private readonly billingUnits: TenantBillingUnit[],
   ) {
@@ -47,7 +49,15 @@ export class Tenant extends AggregateRootBase {
     if (!props.slug || props.slug.trim().length === 0) {
       throw new InvalidTenantSlugException();
     }
-    const tenant = new Tenant(randomUUID(), props.name.trim(), props.slug.trim(), null, TenantConfig.default(), []);
+    const tenant = new Tenant(
+      randomUUID(),
+      props.name.trim(),
+      props.slug.trim(),
+      null,
+      null,
+      TenantConfig.default(),
+      [],
+    );
 
     tenant.recordDomainEvent(
       new TenantRegisteredEvent({
@@ -60,7 +70,15 @@ export class Tenant extends AggregateRootBase {
   }
 
   static reconstitute(props: ReconstituteTenantProps): Tenant {
-    return new Tenant(props.id, props.name, props.slug, props.logoUrl, props.config, props.billingUnits);
+    return new Tenant(
+      props.id,
+      props.name,
+      props.slug,
+      props.logoUrl,
+      props.faviconUrl,
+      props.config,
+      props.billingUnits,
+    );
   }
 
   // --- Queries ---
@@ -73,6 +91,10 @@ export class Tenant extends AggregateRootBase {
     return this.logoUrl;
   }
 
+  getFaviconUrl(): string | null {
+    return this.faviconUrl;
+  }
+
   getActiveBillingUnits(): TenantBillingUnit[] {
     return [...this.billingUnits];
   }
@@ -83,8 +105,9 @@ export class Tenant extends AggregateRootBase {
     this.config = this.config.merge(patch);
   }
 
-  updateBranding(logoUrl: string | null): void {
+  updateBranding(logoUrl: string | null, faviconUrl: string | null): void {
     this.logoUrl = logoUrl;
+    this.faviconUrl = faviconUrl;
   }
 
   activateBillingUnit(billingUnitId: string): void {

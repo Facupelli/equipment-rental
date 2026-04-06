@@ -5,37 +5,38 @@ export const roundingRuleSchema = z.enum(RoundingRule);
 export const bookingModeSchema = z.enum(BookingMode);
 
 export const tenantPricingConfigSchema = z.object({
-  overRentalEnabled: z.boolean(),
-  maxOverRentThreshold: z.number(),
-  weekendCountsAsOne: z.boolean(),
-  roundingRule: roundingRuleSchema,
-  currency: z.string(),
-  locale: z.string(),
+	overRentalEnabled: z.boolean(),
+	maxOverRentThreshold: z.number(),
+	weekendCountsAsOne: z.boolean(),
+	roundingRule: roundingRuleSchema,
+	currency: z.string(),
+	locale: z.string(),
 });
 
 export const tenantConfigSchema = z.object({
-  pricing: tenantPricingConfigSchema,
-  timezone: z.string(),
-  newArrivalsWindowDays: z.number().int().positive(),
-  bookingMode: bookingModeSchema.default(BookingMode.INSTANT_BOOK),
+	pricing: tenantPricingConfigSchema,
+	timezone: z.string(),
+	newArrivalsWindowDays: z.number().int().positive(),
+	bookingMode: bookingModeSchema.default(BookingMode.INSTANT_BOOK),
 });
 
 const tenantBillingUnitResponseSchema = z.object({
-  id: z.uuid(),
-  billingUnitId: z.uuid(),
-  label: z.string(),
-  durationMinutes: z.number().int(),
-  sortOrder: z.number().int(),
+	id: z.uuid(),
+	billingUnitId: z.uuid(),
+	label: z.string(),
+	durationMinutes: z.number().int(),
+	sortOrder: z.number().int(),
 });
 
 export const tenantResponseSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  slug: z.string(),
-  logoUrl: z.string().nullable(),
-  createdAt: z.coerce.date(),
-  config: tenantConfigSchema,
-  billingUnits: z.array(tenantBillingUnitResponseSchema),
+	id: z.uuid(),
+	name: z.string(),
+	slug: z.string(),
+	logoUrl: z.string().nullable(),
+	faviconUrl: z.string().nullable(),
+	createdAt: z.coerce.date(),
+	config: tenantConfigSchema,
+	billingUnits: z.array(tenantBillingUnitResponseSchema),
 });
 
 export type TenantPricingConfig = z.infer<typeof tenantPricingConfigSchema>;

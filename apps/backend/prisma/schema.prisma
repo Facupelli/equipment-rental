@@ -223,6 +223,7 @@ model Tenant {
   slug         String   @unique
   customDomain String?  @unique @map("custom_domain")
   logoUrl      String?  @map("logo_url")
+  faviconUrl   String?  @map("favicon_url")
   primaryColor String?  @map("primary_color")
 
   createdAt DateTime  @default(now()) @map("created_at")

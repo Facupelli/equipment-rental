@@ -20,7 +20,7 @@ export class UpdateTenantBrandingCommandHandler implements ICommandHandler<
       return err(new TenantNotFoundError(command.tenantId));
     }
 
-    tenant.updateBranding(command.logoUrl);
+    tenant.updateBranding(command.logoUrl, command.faviconUrl);
 
     await this.tenantRepo.save(tenant);
 
