@@ -188,7 +188,8 @@ function FiltersSheet({
                 setUrlParam({ startDate: range?.from, endDate: range?.to })
               }
               numberOfMonths={1}
-              buttonClassName="w-full justify-start rounded-2xl bg-white/6 px-4 py-3 hover:bg-white/10"
+              buttonClassName="w-full justify-start bg-white/6 px-4 py-3 hover:bg-white/10"
+              datesButtonClassName="text-neutral-400"
             />
           </div>
 
@@ -233,6 +234,7 @@ interface DateRangePickerProps {
   chipClassName?: string;
   iconClassName?: string;
   separatorClassName?: string;
+  datesButtonClassName?: string;
 }
 
 function DateRangePicker({
@@ -241,9 +243,15 @@ function DateRangePicker({
   onChange,
   numberOfMonths = 2,
   buttonClassName,
+  datesButtonClassName,
 }: Pick<
   DateRangePickerProps,
-  "startDate" | "endDate" | "onChange" | "numberOfMonths" | "buttonClassName"
+  | "startDate"
+  | "endDate"
+  | "onChange"
+  | "numberOfMonths"
+  | "buttonClassName"
+  | "datesButtonClassName"
 >) {
   const value = { from: startDate, to: endDate };
 
@@ -268,21 +276,36 @@ function DateRangePicker({
           >
             {value.from && value.to ? (
               <>
-                <div className="flex items-center gap-2">
+                <div
+                  className={cn(
+                    "flex items-center gap-2 text-foreground",
+                    datesButtonClassName,
+                  )}
+                >
                   <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm font-medium tabular-nums text-foreground">
+                  <span className="text-sm font-medium tabular-nums">
                     {fromLabel}
                   </span>
                 </div>
                 <span className="mx-3 text-muted-foreground text-sm">→</span>
-                <span className="text-sm font-medium tabular-nums text-foreground">
+                <span
+                  className={cn(
+                    "text-sm font-medium tabular-nums text-foreground",
+                    datesButtonClassName,
+                  )}
+                >
                   {toLabel}
                 </span>
               </>
             ) : (
               <div className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm font-medium tabular-nums text-foreground">
+                <span
+                  className={cn(
+                    "text-sm font-medium tabular-nums text-foreground",
+                    datesButtonClassName,
+                  )}
+                >
                   Selecciona el periodo de alquiler
                 </span>
               </div>
