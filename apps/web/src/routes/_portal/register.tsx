@@ -25,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { buildR2PublicUrl } from "@/lib/r2-public-url";
 
 export const Route = createFileRoute("/_portal/register")({
   beforeLoad: ({ context }) => {
@@ -38,6 +39,8 @@ export const Route = createFileRoute("/_portal/register")({
 const formId = "register-customer";
 
 function RegisterPage() {
+  const { tenantContext } = Route.useRouteContext();
+
   const { mutateAsync: register, isPending } = useCustomerRegister();
 
   const form = useForm({
@@ -57,11 +60,26 @@ function RegisterPage() {
     },
   });
 
+  if (tenantContext.face !== "portal") {
+    return <div>Tenant not found</div>;
+  }
+
+  const src = buildR2PublicUrl(tenantContext.tenant.logoUrl, "branding");
+
   return (
     <div className="min-h-screen bg-neutral-100 flex flex-col">
       <main className="flex-1 flex items-center justify-center px-4 gap-20 ">
         <div className="w-md space-y-6">
-          <h1 className="font-black text-6xl">RENTAL BLUEPRINT</h1>
+          <h1 className="font-black text-6xl">{tenantContext.tenant.name}</h1>
+          {src && (
+            <div>
+              <img
+                src={src}
+                alt={tenantContext.tenant.name}
+                className="size-72 object-contain"
+              />
+            </div>
+          )}
           <p className="text-muted-foreground text-lg">
             Acceda al mejor equipamiento profesional. Gestione sus reservas de
             forma sencilla y potencia sus proyectos con nuestra infraestructura

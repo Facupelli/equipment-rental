@@ -23,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { buildR2PublicUrl } from "@/lib/r2-public-url";
 
 export const Route = createFileRoute("/_portal/login")({
   beforeLoad: ({ context }) => {
@@ -36,6 +37,8 @@ export const Route = createFileRoute("/_portal/login")({
 const formId = "login-customer";
 
 function LoginPage() {
+  const { tenantContext } = Route.useRouteContext();
+
   const navigate = useNavigate();
   const { mutateAsync: customerLogin, isPending } = useCustomerLogin();
 
@@ -54,12 +57,29 @@ function LoginPage() {
     },
   });
 
+  if (tenantContext.face !== "portal") {
+    return <div>Tenant not found</div>;
+  }
+
+  const src = buildR2PublicUrl(tenantContext.tenant.logoUrl, "branding");
+
   return (
     <div className="bg-neutral-100 flex flex-col">
       <main className="h-svh grid grid-cols-[1fr_620px]">
         <div className="bg-neutral-900 h-full flex items-center justify-center ">
           <div className="w-md">
-            <h1 className="font-black text-6xl text-white">RENTAL BLUEPRINT</h1>
+            <h1 className="font-black text-6xl text-white pb-2">
+              {tenantContext.tenant.name}
+            </h1>
+            {src && (
+              <div>
+                <img
+                  src={src}
+                  alt={tenantContext.tenant.name}
+                  className="size-72 object-contain"
+                />
+              </div>
+            )}
           </div>
         </div>
 
