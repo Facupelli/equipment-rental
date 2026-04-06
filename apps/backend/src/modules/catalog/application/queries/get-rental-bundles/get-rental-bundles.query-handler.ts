@@ -46,7 +46,7 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
           select: {
             quantity: true,
             productType: {
-              select: { id: true, name: true, description: true, includedItems: true, imageUrl: true },
+              select: { id: true, name: true, description: true, includedItems: true, imageUrl: true, category: true },
             },
           },
         },
@@ -88,6 +88,9 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
           id: component.productType.id,
           includedItems: component.productType.includedItems as ProductTypeIncludedItemDto[],
           imageUrl: component.productType.imageUrl ?? null,
+          category: component.productType.category
+            ? { id: component.productType.category.id, name: component.productType.category.name }
+            : null,
         },
       })),
     }));

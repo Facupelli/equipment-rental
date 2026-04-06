@@ -14,6 +14,12 @@ const comboComponentSchema = z.object({
     description: z.string().nullable(),
     includedItems: z.array(productTypeIncludedItemSchema),
     imageUrl: z.string().nullable(),
+    category: z
+      .object({
+        id: z.uuid(),
+        name: z.string(),
+      })
+      .nullable(),
   }),
 });
 
