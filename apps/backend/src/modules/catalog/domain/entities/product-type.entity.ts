@@ -4,6 +4,7 @@ import { Result, err, ok } from 'neverthrow';
 import {
   InvalidProductTypeNameError,
   ProductTypeAlreadyPublishedError,
+  ProductTypeCannotBePublishedWithoutPricingTiersError,
   ProductTypeAlreadyRetiredError,
 } from '../errors/catalog.errors';
 
@@ -36,6 +37,7 @@ export interface ReconstituteProductTypeProps {
   trackingMode: TrackingMode;
   attributes: Record<string, unknown>;
   includedItems: unknown[];
+  hasPricingTiersConfigured: boolean;
   publishedAt: Date | null;
   retiredAt: Date | null;
 }
@@ -52,6 +54,7 @@ export class ProductType {
     private trackingMode: TrackingMode,
     private attributes: Record<string, unknown>,
     private includedItems: unknown[],
+    private hasPricingTiersConfigured: boolean,
     private publishedAt: Date | null,
     private retiredAt: Date | null,
   ) {}
@@ -74,6 +77,7 @@ export class ProductType {
         props.trackingMode,
         props.attributes ?? {},
         props.includedItems ?? [],
+        false,
         null, // starts as draft
         null,
       ),
@@ -92,6 +96,7 @@ export class ProductType {
       props.trackingMode,
       props.attributes,
       props.includedItems,
+      props.hasPricingTiersConfigured,
       props.publishedAt,
       props.retiredAt,
     );
@@ -203,12 +208,20 @@ export class ProductType {
     return ok(undefined);
   }
 
-  publish(): Result<void, ProductTypeAlreadyRetiredError | ProductTypeAlreadyPublishedError> {
+  publish(): Result<
+    void,
+    | ProductTypeAlreadyRetiredError
+    | ProductTypeAlreadyPublishedError
+    | ProductTypeCannotBePublishedWithoutPricingTiersError
+  > {
     if (this.isRetired()) {
       return err(new ProductTypeAlreadyRetiredError());
     }
     if (this.isPublished()) {
       return err(new ProductTypeAlreadyPublishedError());
+    }
+    if (!this.hasPricingTiersConfigured) {
+      return err(new ProductTypeCannotBePublishedWithoutPricingTiersError(this.id));
     }
     this.publishedAt = new Date();
     return ok(undefined);

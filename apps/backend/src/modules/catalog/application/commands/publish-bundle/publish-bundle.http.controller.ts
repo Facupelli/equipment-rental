@@ -1,5 +1,12 @@
 import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
-import { ConflictException, Controller, NotFoundException, Param, Patch } from '@nestjs/common';
+import {
+  ConflictException,
+  Controller,
+  NotFoundException,
+  Param,
+  Patch,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { Permission } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -8,6 +15,7 @@ import { PublishBundleCommand } from './publish-bundle.command';
 import {
   BundleAlreadyPublishedError,
   BundleAlreadyRetiredError,
+  BundleCannotBePublishedWithoutPricingTiersError,
   BundleNotFoundError,
 } from '../../../domain/errors/catalog.errors';
 
@@ -29,6 +37,10 @@ export class PublishBundleHttpController {
 
       if (error instanceof BundleAlreadyPublishedError || error instanceof BundleAlreadyRetiredError) {
         throw new ConflictException(error.message);
+      }
+
+      if (error instanceof BundleCannotBePublishedWithoutPricingTiersError) {
+        throw new UnprocessableEntityException(error.message);
       }
 
       throw error;

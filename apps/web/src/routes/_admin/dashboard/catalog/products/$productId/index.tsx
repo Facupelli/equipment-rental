@@ -36,6 +36,7 @@ import {
   productKeys,
   productQueries,
 } from "@/features/catalog/product-types/products.queries";
+import { ProblemDetailsError } from "@/shared/errors";
 
 export const Route = createFileRoute(
   "/_admin/dashboard/catalog/products/$productId/",
@@ -194,6 +195,7 @@ function RouteComponent() {
 }
 
 function ProductHeader() {
+  const [serverError, setServerError] = useState<string | null>(null);
   const { product } = useProduct();
   const productImageBaseUrl =
     (
@@ -205,7 +207,18 @@ function ProductHeader() {
   const isPublished = product.publishedAt !== null;
   const isRetired = product.retiredAt !== null;
 
-  const { mutate: publish, isPending: isPublishing } = usePublishProductType();
+  const { mutateAsync: publish, isPending: isPublishing } =
+    usePublishProductType();
+
+  const handlePublish = async (productId: string) => {
+    try {
+      await publish({ productTypeId: productId });
+    } catch (error) {
+      if (error instanceof ProblemDetailsError) {
+        setServerError(error.problemDetails.detail);
+      }
+    }
+  };
 
   return (
     <div className="flex items-start justify-between gap-8">
@@ -255,7 +268,7 @@ function ProductHeader() {
 
           {!isPublished && !isRetired && (
             <Button
-              onClick={() => publish({ productTypeId: product.id })}
+              onClick={() => handlePublish(product.id)}
               disabled={isPublishing}
             >
               {isPublishing ? "Publicando..." : "Publicar"}
@@ -266,6 +279,10 @@ function ProductHeader() {
             <RetireProductTypeAlertDialog product={product} />
           )}
         </div>
+
+        {serverError && (
+          <p className="pt-2 text-sm text-destructive">{serverError}</p>
+        )}
       </div>
 
       {/* Right — image */}

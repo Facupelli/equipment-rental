@@ -5,13 +5,17 @@ import { PublishProductTypeCommand } from './publish-product-type.command';
 import {
   ProductTypeAlreadyPublishedError,
   ProductTypeAlreadyRetiredError,
+  ProductTypeCannotBePublishedWithoutPricingTiersError,
   ProductTypeNotFoundError,
 } from 'src/modules/catalog/domain/errors/catalog.errors';
 import { ProductTypeRepository } from 'src/modules/catalog/infrastructure/repositories/product-type.repository';
 
 type PublishProductTypeResult = Result<
   void,
-  ProductTypeNotFoundError | ProductTypeAlreadyPublishedError | ProductTypeAlreadyRetiredError
+  | ProductTypeNotFoundError
+  | ProductTypeAlreadyPublishedError
+  | ProductTypeAlreadyRetiredError
+  | ProductTypeCannotBePublishedWithoutPricingTiersError
 >;
 
 @Injectable()

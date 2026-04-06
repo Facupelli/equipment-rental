@@ -4,6 +4,7 @@ import { Result, err, ok } from 'neverthrow';
 import {
   BundleAlreadyPublishedError,
   BundleAlreadyRetiredError,
+  BundleCannotBePublishedWithoutPricingTiersError,
   BundleComponentNotFoundError,
   DuplicateBundleComponentError,
   InvalidBundleComponentQuantityError,
@@ -26,6 +27,7 @@ export interface ReconstituteBundleProps {
   imageUrl: string | null;
   description: string | null;
   components: BundleComponent[];
+  hasPricingTiersConfigured: boolean;
   publishedAt: Date | null;
   retiredAt: Date | null;
 }
@@ -39,6 +41,7 @@ export class Bundle {
     private imageUrl: string | null,
     private description: string | null,
     private readonly components: BundleComponent[],
+    private hasPricingTiersConfigured: boolean,
     private publishedAt: Date | null,
     private retiredAt: Date | null,
   ) {}
@@ -58,6 +61,7 @@ export class Bundle {
         props.imageUrl,
         props.description?.trim() ?? null,
         [],
+        false,
         null,
         null,
       ),
@@ -73,6 +77,7 @@ export class Bundle {
       props.imageUrl,
       props.description,
       props.components,
+      props.hasPricingTiersConfigured,
       props.publishedAt,
       props.retiredAt,
     );
@@ -122,12 +127,18 @@ export class Bundle {
 
   // --- Commands ---
 
-  publish(): Result<void, BundleAlreadyRetiredError | BundleAlreadyPublishedError> {
+  publish(): Result<
+    void,
+    BundleAlreadyRetiredError | BundleAlreadyPublishedError | BundleCannotBePublishedWithoutPricingTiersError
+  > {
     if (this.isRetired()) {
       return err(new BundleAlreadyRetiredError());
     }
     if (this.isPublished()) {
       return err(new BundleAlreadyPublishedError());
+    }
+    if (!this.hasPricingTiersConfigured) {
+      return err(new BundleCannotBePublishedWithoutPricingTiersError(this.id));
     }
     this.publishedAt = new Date();
     return ok(undefined);

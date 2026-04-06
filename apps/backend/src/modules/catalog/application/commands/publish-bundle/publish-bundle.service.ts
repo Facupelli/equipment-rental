@@ -5,11 +5,18 @@ import { PublishBundleCommand } from './publish-bundle.command';
 import {
   BundleAlreadyPublishedError,
   BundleAlreadyRetiredError,
+  BundleCannotBePublishedWithoutPricingTiersError,
   BundleNotFoundError,
 } from 'src/modules/catalog/domain/errors/catalog.errors';
 import { BundleRepository } from 'src/modules/catalog/infrastructure/repositories/bundle.repository';
 
-type PublishBundleResult = Result<void, BundleNotFoundError | BundleAlreadyPublishedError | BundleAlreadyRetiredError>;
+type PublishBundleResult = Result<
+  void,
+  | BundleNotFoundError
+  | BundleAlreadyPublishedError
+  | BundleAlreadyRetiredError
+  | BundleCannotBePublishedWithoutPricingTiersError
+>;
 
 @Injectable()
 @CommandHandler(PublishBundleCommand)

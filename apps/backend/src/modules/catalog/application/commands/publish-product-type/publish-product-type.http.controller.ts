@@ -1,5 +1,12 @@
 import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
-import { ConflictException, Controller, NotFoundException, Param, Patch } from '@nestjs/common';
+import {
+  ConflictException,
+  Controller,
+  NotFoundException,
+  Param,
+  Patch,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { Permission } from '@repo/types';
 import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
@@ -8,6 +15,7 @@ import { PublishProductTypeCommand } from './publish-product-type.command';
 import {
   ProductTypeAlreadyPublishedError,
   ProductTypeAlreadyRetiredError,
+  ProductTypeCannotBePublishedWithoutPricingTiersError,
   ProductTypeNotFoundError,
 } from '../../../domain/errors/catalog.errors';
 
@@ -29,6 +37,10 @@ export class PublishProductTypeHttpController {
 
       if (error instanceof ProductTypeAlreadyPublishedError || error instanceof ProductTypeAlreadyRetiredError) {
         throw new ConflictException(error.message);
+      }
+
+      if (error instanceof ProductTypeCannotBePublishedWithoutPricingTiersError) {
+        throw new UnprocessableEntityException(error.message);
       }
 
       throw error;

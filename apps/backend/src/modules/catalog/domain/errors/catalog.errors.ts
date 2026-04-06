@@ -50,6 +50,12 @@ export class ProductTypeAlreadyPublishedError extends CatalogError {
   }
 }
 
+export class ProductTypeCannotBePublishedWithoutPricingTiersError extends CatalogError {
+  constructor(productTypeId: string) {
+    super(`Product type '${productTypeId}' cannot be published without at least one pricing tier.`);
+  }
+}
+
 export class InvalidProductCategoryNameError extends CatalogError {
   constructor() {
     super('Product category name cannot be empty.');
@@ -89,5 +95,11 @@ export class BundleAlreadyRetiredError extends CatalogError {
 export class BundleAlreadyPublishedError extends CatalogError {
   constructor() {
     super('This bundle is already published.');
+  }
+}
+
+export class BundleCannotBePublishedWithoutPricingTiersError extends CatalogError {
+  constructor(bundleId: string) {
+    super(`Bundle '${bundleId}' cannot be published without at least one pricing tier.`);
   }
 }

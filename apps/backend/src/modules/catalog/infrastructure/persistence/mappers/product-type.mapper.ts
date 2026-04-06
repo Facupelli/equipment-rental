@@ -24,6 +24,7 @@ export class ProductTypeMapper {
       trackingMode: raw.trackingMode as TrackingMode,
       attributes: raw.attributes as Record<string, unknown>,
       includedItems: raw.includedItems as unknown[],
+      hasPricingTiersConfigured: raw.pricingTiers.length > 0,
       publishedAt: raw.publishedAt,
       retiredAt: raw.retiredAt,
     });

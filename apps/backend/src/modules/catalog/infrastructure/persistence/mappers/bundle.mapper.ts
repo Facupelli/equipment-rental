@@ -23,6 +23,7 @@ export class BundleMapper {
       imageUrl: raw.imageUrl ?? '',
       description: raw.description,
       components,
+      hasPricingTiersConfigured: raw.pricingTiers.length > 0,
       publishedAt: raw.publishedAt,
       retiredAt: raw.retiredAt,
     });
