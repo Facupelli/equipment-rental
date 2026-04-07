@@ -1,7 +1,6 @@
 import {
   keepPreviousData,
   queryOptions,
-  skipToken,
   useQuery,
   type UseQueryOptions,
 } from "@tanstack/react-query";
@@ -48,8 +47,17 @@ export const rentalKeys = {
   newArrival: (params: GetNewArrivalsParams) =>
     [...rentalKeys.newArrivals(), params] as const,
   bundles: () => [...rentalKeys.all(), "bundles"] as const,
-  bundle: (params: GetCombosParams) =>
-    [...rentalKeys.bundles(), params] as const,
+  bundle: (params: GetCombosParams) => {
+    const hasDateRange = !!params.startDate && !!params.endDate;
+    return [
+      ...rentalKeys.bundles(),
+      {
+        ...params,
+        startDate: hasDateRange ? params.startDate : undefined,
+        endDate: hasDateRange ? params.endDate : undefined,
+      },
+    ] as const;
+  },
   cartPreviews: () => [...rentalKeys.all(), "cart-preview"] as const,
   cartPreview: (params: CalculateCartPricesRequest) =>
     [...rentalKeys.cartPreviews(), params] as const,
@@ -57,14 +65,18 @@ export const rentalKeys = {
 
 export const rentalQueries = {
   products: (params: GetRentalProductTypesQuery) => {
-    const hasDateRange = !!params.startDate && !!params.endDate;
+    const normalizedParams =
+      params.startDate && params.endDate
+        ? params
+        : {
+            ...params,
+            startDate: undefined,
+            endDate: undefined,
+          };
 
     return queryOptions<PaginatedRentalProducts, ProblemDetailsError>({
       queryKey: rentalKeys.product(params),
-      queryFn:
-        hasDateRange || (!params.startDate && !params.endDate)
-          ? () => getRentalProducts({ data: params })
-          : skipToken,
+      queryFn: () => getRentalProducts({ data: normalizedParams }),
       placeholderData: keepPreviousData,
     });
   },
@@ -74,14 +86,18 @@ export const rentalQueries = {
       queryFn: () => getNewArrivals({ data: params }),
     }),
   bundles: (params: GetCombosParams) => {
-    const hasDateRange = !!params.startDate && !!params.endDate;
+    const normalizedParams =
+      params.startDate && params.endDate
+        ? params
+        : {
+            ...params,
+            startDate: undefined,
+            endDate: undefined,
+          };
 
     return queryOptions<BundleListResponseDto, ProblemDetailsError>({
       queryKey: rentalKeys.bundle(params),
-      queryFn:
-        hasDateRange || (!params.startDate && !params.endDate)
-          ? () => getRentalBundles({ data: params })
-          : skipToken,
+      queryFn: () => getRentalBundles({ data: normalizedParams }),
       placeholderData: keepPreviousData,
     });
   },

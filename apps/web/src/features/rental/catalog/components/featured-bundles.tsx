@@ -1,5 +1,5 @@
 import type { BundleItemResponse, TenantPricingConfig } from "@repo/schemas";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { CheckCircle, ChevronDown, Trash2, Zap } from "lucide-react";
 import { useState } from "react";
@@ -63,7 +63,7 @@ export function FeaturedBundles({ search }: FeaturedBundlesProps) {
 }
 
 function FeaturedBundlesResults({ search }: FeaturedBundlesResultsProps) {
-  const { data: bundles } = useQuery(
+  const { data: bundles } = useSuspenseQuery(
     rentalQueries.bundles({
       locationId: search.locationId,
       startDate: search.startDate,

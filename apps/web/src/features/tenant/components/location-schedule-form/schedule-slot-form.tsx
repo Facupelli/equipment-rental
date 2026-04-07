@@ -301,12 +301,6 @@ export function ScheduleSlotForm({
             }}
           </form.Field>
         )}
-        A note on the openTime field I only reset slotIntervalMinutes on
-        closeTime change because that's the natural direction — the user sets an
-        open time first, then brings close time to match it to declare a fixed
-        hour. If you also want the reverse (user changes openTime to match an
-        existing closeTime), the same reset logic can be mirrored there. Worth
-        considering?
       </FieldGroup>
 
       {/* ----------------------------------------------------------------
