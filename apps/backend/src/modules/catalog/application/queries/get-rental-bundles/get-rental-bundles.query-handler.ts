@@ -60,15 +60,13 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
 
     const availableCounts = await this.resolveAvailability(locationId, startDate, endDate, productTypeIds);
 
-    return (
-      availableCounts === null
-        ? bundles
-        : bundles.filter((bundle) =>
-            bundle.components.every(
+    return bundles.map((bundle) => ({
+      isAvailable:
+        availableCounts === null
+          ? true
+          : bundle.components.every(
               (component) => (availableCounts.get(component.productType.id) ?? 0) >= component.quantity,
             ),
-          )
-    ).map((bundle) => ({
       id: bundle.id,
       name: bundle.name,
       imageUrl: bundle.imageUrl ?? '',

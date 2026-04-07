@@ -235,7 +235,7 @@ function ProductCard({
           </div>
         ) : (
           <Button size="sm" onClick={handleAdd} disabled={isUnavailable}>
-            {isAvailable ? "Agregar" : "Sin disponibilidad"}
+            {isAvailable ? "Agregar" : "No disponible para este periodo"}
           </Button>
         )}
       </CardFooter>

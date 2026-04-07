@@ -30,6 +30,7 @@ export const bundleItemResponseSchema = z.object({
   name: z.string(),
   imageUrl: z.string(),
   description: z.string().nullable(),
+  isAvailable: z.boolean(),
   billingUnit: z.object({
     label: z.string(),
   }),

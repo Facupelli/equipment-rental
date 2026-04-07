@@ -19,6 +19,7 @@ interface BundleDetailDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   isInCart: boolean;
+  isUnavailable: boolean;
   onAdd: () => void;
   onRemove: () => void;
   imageBaseUrl: string;
@@ -30,6 +31,7 @@ export function BundleDetailDialog({
   isOpen,
   onOpenChange,
   isInCart,
+  isUnavailable,
   onAdd,
   onRemove,
   imageBaseUrl,
@@ -172,9 +174,15 @@ export function BundleDetailDialog({
                   </Button>
                 </div>
               ) : (
-                <Button className="w-full sm:w-auto" onClick={onAdd}>
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={onAdd}
+                  disabled={isUnavailable}
+                >
                   <Zap className="mr-2 h-4 w-4" />
-                  Reservar Combo
+                  {isUnavailable
+                    ? "No disponible para este periodo"
+                    : "Reservar Combo"}
                 </Button>
               )}
             </DialogFooter>

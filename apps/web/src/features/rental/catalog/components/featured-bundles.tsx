@@ -147,7 +147,8 @@ function BundleCard({
   bundle: BundleItemResponse;
   priceConfig: TenantPricingConfig;
 }) {
-  const { isInCart, handleAdd, handleRemove } = useBundleCardState(bundle);
+  const { isInCart, isUnavailable, handleAdd, handleRemove } =
+    useBundleCardState(bundle);
   const price = bundle.pricingPreview;
   const [isOpen, setIsOpen] = useState(false);
 
@@ -236,6 +237,11 @@ function BundleCard({
               {isInCart && "Agregado"}
             </Badge>
           )}
+          {isUnavailable && !isInCart && (
+            <Badge className="absolute top-2 right-2 text-[10px] uppercase tracking-widest bg-amber-100 text-amber-900 hover:bg-amber-100">
+              No disponible
+            </Badge>
+          )}
         </div>
 
         <CardHeader className="flex-1">
@@ -265,6 +271,7 @@ function BundleCard({
               {bundle.description}
             </p>
           )}
+
           {bundle.components.length > 0 && (
             <div className="mt-3 space-y-2">
               <p className="text-[10px] font-medium uppercase text-muted-foreground">
@@ -335,9 +342,15 @@ function BundleCard({
               </Button>
             </div>
           ) : (
-            <Button className="w-full" onClick={handleAddClick}>
+            <Button
+              className="w-full"
+              onClick={handleAddClick}
+              disabled={isUnavailable}
+            >
               <Zap className="w-4 h-4 mr-2" />
-              Reservar Combo
+              {isUnavailable
+                ? "No disponible para este periodo"
+                : "Reservar Combo"}
             </Button>
           )}
         </CardFooter>
@@ -349,6 +362,7 @@ function BundleCard({
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         isInCart={isInCart}
+        isUnavailable={isUnavailable}
         onAdd={handleAdd}
         onRemove={handleRemove}
         imageBaseUrl={imageBaseUrl}
@@ -403,47 +417,49 @@ function getBundlePreviewRows(
 export function FeaturedBundlesSkeleton() {
   return (
     <div className="grid gap-6 grid-cols-1 sm:grid-cols-3 items-start">
-      {["featured-bundle-skeleton-1", "featured-bundle-skeleton-2"].map(
-        (key) => (
-          <Card
-            key={key}
-            className="overflow-hidden rounded-xs flex flex-col py-0 pb-4"
-          >
-            <div className="relative aspect-video overflow-hidden bg-gray-100">
-              <Skeleton className="h-full w-full" />
-              <Skeleton className="absolute top-2 left-2 h-5 w-28 rounded-xs" />
+      {[
+        "featured-bundle-skeleton-1",
+        "featured-bundle-skeleton-2",
+        "featured-bundle-skeleton-3",
+      ].map((key) => (
+        <Card
+          key={key}
+          className="overflow-hidden rounded-xs flex flex-col py-0 pb-4"
+        >
+          <div className="relative aspect-video overflow-hidden bg-gray-100">
+            <Skeleton className="h-full w-full" />
+            <Skeleton className="absolute top-2 left-2 h-5 w-28 rounded-xs" />
+          </div>
+          <CardHeader className="flex-1">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-2/3" />
+              </div>
+              <div className="shrink-0 space-y-2 text-right">
+                <Skeleton className="ml-auto h-6 w-20" />
+                <Skeleton className="ml-auto h-3 w-12" />
+              </div>
             </div>
-            <CardHeader className="flex-1">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-3 w-2/3" />
-                </div>
-                <div className="shrink-0 space-y-2 text-right">
-                  <Skeleton className="ml-auto h-6 w-20" />
-                  <Skeleton className="ml-auto h-3 w-12" />
-                </div>
+            <div className="mt-3 space-y-2">
+              <Skeleton className="h-3 w-16" />
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-4 w-4/5" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-5/6" />
               </div>
-              <div className="mt-3 space-y-2">
-                <Skeleton className="h-3 w-16" />
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-5/6" />
-                  <Skeleton className="h-4 w-4/5" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-5/6" />
-                </div>
-                <Skeleton className="h-5 w-16" />
-              </div>
-            </CardHeader>
-            <CardFooter className="p-4">
-              <Skeleton className="h-9 w-full" />
-            </CardFooter>
-          </Card>
-        ),
-      )}
+              <Skeleton className="h-5 w-16" />
+            </div>
+          </CardHeader>
+          <CardFooter className="p-4">
+            <Skeleton className="h-9 w-full" />
+          </CardFooter>
+        </Card>
+      ))}
     </div>
   );
 }
