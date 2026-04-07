@@ -7,20 +7,35 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { rentalQueries } from "@/features/rental/rental.queries";
 import { formatCurrency } from "@/shared/utils/price.utils";
 import { useBundleCardState } from "../../cart/hooks/use-bundle-card-state";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
+import { groupBundleComponents } from "@/features/catalog/bundles/bundles.utils";
+import { BundleDetailDialog } from "./bundle-detail-dialog";
+
+type BundlePreviewComponent = {
+  id: string;
+  category: {
+    id: string;
+    name: string;
+  } | null;
+  productTypeId: string;
+  name: string;
+  quantity: number;
+};
+
+type BundlePreviewRow =
+  | {
+      type: "category";
+      name: string;
+    }
+  | {
+      type: "component";
+      component: BundlePreviewComponent;
+    };
 
 interface FeaturedBundlesProps {
   search: RentalPageSearch;
@@ -75,7 +90,7 @@ function FeaturedBundlesResults({ search }: FeaturedBundlesResultsProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Featured row */}
-      <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(300px,1fr))] items-start">
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-3 items-start">
         {featured.map((bundle) => (
           <BundleCard
             key={bundle.id}
@@ -135,18 +150,29 @@ function BundleCard({
   const { isInCart, handleAdd, handleRemove } = useBundleCardState(bundle);
   const price = bundle.pricingPreview;
   const [isOpen, setIsOpen] = useState(false);
+
+  const bundleComponents = bundle.components.map((component) => ({
+    ...component.productType,
+    productTypeId: component.productType.id,
+    quantity: component.quantity,
+  }));
+  const previewRows = getBundlePreviewRows(
+    groupBundleComponents(bundleComponents),
+  );
+
+  const MAX_PREVIEW_ROWS = 6;
   const [showAllItems, setShowAllItems] = useState(false);
-  const PREVIEW_ITEM_COUNT = 6;
+  const hasMore = previewRows.length > MAX_PREVIEW_ROWS;
+  const visibleRows = showAllItems
+    ? previewRows
+    : previewRows.slice(0, MAX_PREVIEW_ROWS);
+
   const imageBaseUrl =
     (
       import.meta as ImportMeta & {
         env?: { VITE_R2_PUBLIC_URL?: string };
       }
     ).env?.VITE_R2_PUBLIC_URL ?? "";
-  const visibleComponents = showAllItems
-    ? bundle.components
-    : bundle.components.slice(0, PREVIEW_ITEM_COUNT);
-  const hasHiddenComponents = bundle.components.length > PREVIEW_ITEM_COUNT;
 
   function openDetails() {
     setIsOpen(true);
@@ -245,19 +271,34 @@ function BundleCard({
               <p className="text-[10px] font-medium uppercase text-muted-foreground">
                 Que incluye
               </p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                {visibleComponents.map((component) => (
-                  <p
-                    key={`${bundle.id}-${component.productType.id}`}
-                    className="min-w-0 text-xs text-muted-foreground"
-                  >
-                    <span className="line-clamp-1 font-medium text-foreground">
-                      {component.quantity}x {component.productType.name}
-                    </span>
-                  </p>
-                ))}
+
+              <div className="relative">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  {visibleRows.map((row, index) =>
+                    row.type === "category" ? (
+                      <p
+                        key={`${bundle.id}-category-${row.name}-${index}`}
+                        className="col-span-2 pt-1 text-[10px] font-medium uppercase tracking-[0.24em] text-muted-foreground first:pt-0"
+                      >
+                        {row.name}
+                      </p>
+                    ) : (
+                      <p
+                        key={`${bundle.id}-${row.component.productTypeId}`}
+                        className="min-w-0 text-xs text-muted-foreground"
+                      >
+                        <span className="line-clamp-1 font-medium text-foreground">
+                          {row.component.quantity}x {row.component.name}
+                        </span>
+                      </p>
+                    ),
+                  )}
+                </div>
+                {!showAllItems && hasMore && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-linear-to-t from-background via-background/90 to-transparent" />
+                )}
               </div>
-              {hasHiddenComponents && (
+              {hasMore && (
                 <Button
                   variant="ghost"
                   size="xs"
@@ -303,171 +344,66 @@ function BundleCard({
         </CardFooter>
       </Card>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="overflow-hidden p-0 sm:max-w-5xl">
-          <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:max-h-[70vh]">
-            <div className="h-full lg:sticky lg:top-0 lg:self-start">
-              <div className="relative w-full flex items-center justify-center border-r p-6 lg:h-full ">
-                {bundle.imageUrl ? (
-                  <img
-                    src={`${imageBaseUrl}/${bundle.imageUrl}`}
-                    alt={bundle.name}
-                    className="max-h-105 w-full object-contain lg:max-h-155"
-                  />
-                ) : (
-                  <div className="flex h-full min-h-70 w-full items-center justify-center bg-muted">
-                    <span className="text-sm text-muted-foreground">
-                      No image
-                    </span>
-                  </div>
-                )}
-                <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-                  {isInCart && (
-                    <Badge className="rounded-xs bg-black px-2 py-1 text-[10px] uppercase tracking-widest text-white hover:bg-black">
-                      Agregado
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4 p-5 lg:p-6 lg:max-h-[80vh] lg:overflow-y-auto">
-              <DialogHeader className="gap-2">
-                <div className="space-y-2">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-muted-foreground">
-                    Detalle del combo
-                  </p>
-                  <DialogTitle className="text-3xl font-semibold leading-tight">
-                    {bundle.name}
-                  </DialogTitle>
-                </div>
-                {bundle.description && (
-                  <DialogDescription className="text-sm leading-6 text-muted-foreground">
-                    {bundle.description}
-                  </DialogDescription>
-                )}
-              </DialogHeader>
-
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-lg border bg-muted/20 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                    Precio por {bundle.billingUnit.label.toLowerCase()}
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold leading-none">
-                    {price
-                      ? formatCurrency(
-                          price.pricePerUnit,
-                          priceConfig.currency,
-                          priceConfig.locale,
-                        )
-                      : "Contactanos"}
-                  </p>
-                </div>
-                <div className="rounded-lg border bg-muted/20 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                    Componentes
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold leading-none">
-                    {bundle.components.length}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-lg border bg-muted/10 p-3">
-                <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                  Que incluye
-                </p>
-                <div className="space-y-2">
-                  {bundle.components.map((component) => (
-                    <div
-                      key={`${bundle.id}-dialog-${component.productType.id}`}
-                      className="rounded-md border bg-background p-3"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">
-                            {component.quantity}x {component.productType.name}
-                          </p>
-                          {component.productType.description && (
-                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                              {component.productType.description}
-                            </p>
-                          )}
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className="shrink-0 rounded-xs text-[10px] uppercase tracking-widest"
-                        >
-                          Qty {component.quantity}
-                        </Badge>
-                      </div>
-                      {component.productType.includedItems.length > 0 && (
-                        <div className="mt-4 rounded-md border bg-muted/30 px-3 py-3">
-                          <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                            Incluye tambien
-                          </p>
-                          <div className="flex flex-wrap gap-x-5 gap-y-2">
-                            {component.productType.includedItems.map(
-                              (item, index) => (
-                                <div
-                                  key={`${component.productType.id}-${item.name}-${index}`}
-                                  className="flex items-start gap-2"
-                                >
-                                  <CheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                  <div className="text-xs text-muted-foreground">
-                                    <p>
-                                      {item.name}
-                                      {item.quantity > 1 && (
-                                        <span className="ml-1">
-                                          x{item.quantity}
-                                        </span>
-                                      )}
-                                    </p>
-                                    {item.notes && (
-                                      <p className="mt-0.5">{item.notes}</p>
-                                    )}
-                                  </div>
-                                </div>
-                              ),
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <DialogFooter className="border-t pt-4 sm:justify-between">
-                {isInCart ? (
-                  <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <Button variant="outline" disabled>
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Reservedo
-                    </Button>
-                    <Button variant="outline" onClick={handleRemove}>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Quitar del pedido
-                    </Button>
-                  </div>
-                ) : (
-                  <Button className="w-full sm:w-auto" onClick={handleAdd}>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Reservar Combo
-                  </Button>
-                )}
-              </DialogFooter>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <BundleDetailDialog
+        bundle={bundle}
+        priceConfig={priceConfig}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        isInCart={isInCart}
+        onAdd={handleAdd}
+        onRemove={handleRemove}
+        imageBaseUrl={imageBaseUrl}
+      />
     </>
   );
 }
 
+function getBundlePreviewRows(
+  groupedComponents: ReturnType<
+    typeof groupBundleComponents<BundlePreviewComponent>
+  >,
+): BundlePreviewRow[] {
+  const rows: BundlePreviewRow[] = [];
+
+  for (const group of groupedComponents.categorized) {
+    rows.push({
+      type: "category",
+      name: group.categoryName,
+    });
+
+    for (const component of group.components) {
+      rows.push({
+        type: "component",
+        component: {
+          productTypeId: component.id,
+          id: component.id,
+          category: component.category,
+          name: component.name,
+          quantity: component.quantity,
+        },
+      });
+    }
+  }
+
+  for (const component of groupedComponents.uncategorized) {
+    rows.push({
+      type: "component",
+      component: {
+        productTypeId: component.id,
+        id: component.id,
+        category: component.category,
+        name: component.name,
+        quantity: component.quantity,
+      },
+    });
+  }
+
+  return rows;
+}
+
 export function FeaturedBundlesSkeleton() {
   return (
-    <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(300px,1fr))] items-start">
+    <div className="grid gap-6 grid-cols-1 sm:grid-cols-3 items-start">
       {["featured-bundle-skeleton-1", "featured-bundle-skeleton-2"].map(
         (key) => (
           <Card

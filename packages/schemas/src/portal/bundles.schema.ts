@@ -23,6 +23,8 @@ const comboComponentSchema = z.object({
   }),
 });
 
+export type BundleComponent = z.infer<typeof comboComponentSchema>;
+
 export const bundleItemResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
