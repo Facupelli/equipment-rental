@@ -29,7 +29,7 @@ export type CartProductItem = {
 	quantity: number;
 	pricePerUnit: number;
 	billingUnitLabel: string;
-	assetCount: number;
+	assetCount: number | null;
 	imageUrl: string | null;
 	includedItems: CartIncludedItem[];
 };

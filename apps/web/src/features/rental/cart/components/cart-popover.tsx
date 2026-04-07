@@ -183,7 +183,9 @@ function CartPopoverItem({ item }: { item: CartItem }) {
 			: { type: "BUNDLE" as const, bundleId: item.bundleId };
 
 	const atStockLimit =
-		item.type === "PRODUCT" ? item.quantity >= item.assetCount : false;
+		item.type === "PRODUCT" && item.assetCount !== null
+			? item.quantity >= item.assetCount
+			: false;
 
 	return (
 		<div className="flex items-start justify-between gap-4 py-6">

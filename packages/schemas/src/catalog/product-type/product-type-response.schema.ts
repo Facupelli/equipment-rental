@@ -1,74 +1,74 @@
 import { z } from "zod";
 import {
-  productTypeAttributesSchema,
-  productTypeIncludedItemSchema,
+	productTypeAttributesSchema,
+	productTypeIncludedItemSchema,
 } from "./product-type.schema";
 import { TrackingMode } from "@repo/types";
 
 export const productTypeCategoryResponseSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  description: z.string().nullable(),
+	id: z.uuid(),
+	name: z.string(),
+	description: z.string().nullable(),
 });
 
 export const productTypeBillingUnitResponseSchema = z.object({
-  id: z.uuid(),
-  label: z.string(),
-  durationMinutes: z.number().int(),
+	id: z.uuid(),
+	label: z.string(),
+	durationMinutes: z.number().int(),
 });
 
 export const productTypePricingTierResponseSchema = z.object({
-  id: z.uuid(),
-  fromUnit: z.number().int(),
-  toUnit: z.number().int().nullable(),
-  pricePerUnit: z.number(),
-  locationId: z.uuid().nullable(),
-  location: z
-    .object({
-      id: z.uuid(),
-      name: z.string(),
-    })
-    .nullable(),
+	id: z.uuid(),
+	fromUnit: z.number().int(),
+	toUnit: z.number().int().nullable(),
+	pricePerUnit: z.number(),
+	locationId: z.uuid().nullable(),
+	location: z
+		.object({
+			id: z.uuid(),
+			name: z.string(),
+		})
+		.nullable(),
 });
 
 export const productTypeResponseSchema = z.object({
-  id: z.uuid(),
-  tenantId: z.uuid(),
-  name: z.string(),
-  imageUrl: z.string(),
-  description: z.string().nullable(),
-  trackingMode: z.enum(TrackingMode),
-  excludeFromNewArrivals: z.boolean(),
-  attributes: productTypeAttributesSchema,
-  includedItems: z.array(productTypeIncludedItemSchema),
-  // Total number of active, non-deleted assets for this product type.
-  // Used as the upper bound when composing bundle components.
-  assetCount: z.number().int().nonnegative(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
-  publishedAt: z.coerce.date().nullable(),
-  retiredAt: z.coerce.date().nullable(),
-  category: productTypeCategoryResponseSchema.nullable(),
-  billingUnit: productTypeBillingUnitResponseSchema,
-  pricingTiers: z.array(productTypePricingTierResponseSchema),
+	id: z.uuid(),
+	tenantId: z.uuid(),
+	name: z.string(),
+	imageUrl: z.string(),
+	description: z.string().nullable(),
+	trackingMode: z.enum(TrackingMode),
+	excludeFromNewArrivals: z.boolean(),
+	attributes: productTypeAttributesSchema,
+	includedItems: z.array(productTypeIncludedItemSchema),
+	// Total number of active, non-deleted assets for this product type.
+	// Used as the upper bound when composing bundle components.
+	assetCount: z.number().int().nonnegative(),
+	createdAt: z.coerce.date(),
+	updatedAt: z.coerce.date(),
+	publishedAt: z.coerce.date().nullable(),
+	retiredAt: z.coerce.date().nullable(),
+	category: productTypeCategoryResponseSchema.nullable(),
+	billingUnit: productTypeBillingUnitResponseSchema,
+	pricingTiers: z.array(productTypePricingTierResponseSchema),
 });
 
 export const getProductTypesQuerySchema = z.object({
-  categoryId: z.uuid().optional(),
-  isActive: z.coerce.boolean().optional(),
-  search: z.string().optional(),
-  page: z.coerce.number().optional(),
-  limit: z.coerce.number().optional(),
+	categoryId: z.uuid().optional(),
+	isActive: z.coerce.boolean().optional(),
+	search: z.string().optional(),
+	page: z.coerce.number().optional(),
+	limit: z.coerce.number().optional(),
 });
 
 export type ProductTypeCategoryResponse = z.infer<
-  typeof productTypeCategoryResponseSchema
+	typeof productTypeCategoryResponseSchema
 >;
 export type ProductTypeBillingUnitResponse = z.infer<
-  typeof productTypeBillingUnitResponseSchema
+	typeof productTypeBillingUnitResponseSchema
 >;
 export type ProductTypePricingTierResponse = z.infer<
-  typeof productTypePricingTierResponseSchema
+	typeof productTypePricingTierResponseSchema
 >;
 export type ProductTypeResponse = z.infer<typeof productTypeResponseSchema>;
 export type GetProductTypesQuery = z.infer<typeof getProductTypesQuerySchema>;
@@ -76,50 +76,50 @@ export type GetProductTypesQuery = z.infer<typeof getProductTypesQuerySchema>;
 // RENTAL
 
 export const rentalProductBillingUnitResponseSchema = z.object({
-  id: z.uuid(),
-  label: z.string(),
+	id: z.uuid(),
+	label: z.string(),
 });
 
 export const rentalProductPricingTierResponseSchema = z.object({
-  id: z.uuid(),
-  fromUnit: z.number().int(),
-  toUnit: z.number().int().nullable(),
-  pricePerUnit: z.number(),
+	id: z.uuid(),
+	fromUnit: z.number().int(),
+	toUnit: z.number().int().nullable(),
+	pricePerUnit: z.number(),
 });
 
 const rentalProductCategorySchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
+	id: z.uuid(),
+	name: z.string(),
 });
 
 const rentalProductItemSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  imageUrl: z.string(),
-  description: z.string().nullable(),
-  attributes: productTypeAttributesSchema,
-  includedItems: z.array(productTypeIncludedItemSchema),
-  availableCount: z.number().int().nonnegative(),
-  category: rentalProductCategorySchema.nullable(),
-  billingUnit: rentalProductBillingUnitResponseSchema,
-  pricingTiers: z.array(rentalProductPricingTierResponseSchema),
+	id: z.uuid(),
+	name: z.string(),
+	imageUrl: z.string(),
+	description: z.string().nullable(),
+	attributes: productTypeAttributesSchema,
+	includedItems: z.array(productTypeIncludedItemSchema),
+	availableCount: z.number().int().nonnegative().nullable(),
+	category: rentalProductCategorySchema.nullable(),
+	billingUnit: rentalProductBillingUnitResponseSchema,
+	pricingTiers: z.array(rentalProductPricingTierResponseSchema),
 });
 
 export const rentalProductSortSchema = z.enum([
-  "price-desc",
-  "price-asc",
-  "alphabetical",
+	"price-desc",
+	"price-asc",
+	"alphabetical",
 ]);
 
 export const getRentalProductQuerySchema = z.object({
-  locationId: z.uuid(),
-  startDate: z.coerce.date().optional(),
-  endDate: z.coerce.date().optional(),
-  categoryId: z.uuid().optional(),
-  search: z.string().optional(),
-  sort: rentalProductSortSchema.optional(),
-  page: z.coerce.number().optional(),
-  limit: z.coerce.number().optional(),
+	locationId: z.uuid(),
+	startDate: z.coerce.date().optional(),
+	endDate: z.coerce.date().optional(),
+	categoryId: z.uuid().optional(),
+	search: z.string().optional(),
+	sort: rentalProductSortSchema.optional(),
+	page: z.coerce.number().optional(),
+	limit: z.coerce.number().optional(),
 });
 
 export const rentalProductDataSchema = z.array(rentalProductItemSchema);
@@ -128,5 +128,5 @@ export type RentalProductSort = z.infer<typeof rentalProductSortSchema>;
 export type RentalProductResponse = z.infer<typeof rentalProductItemSchema>;
 export type RentalProductListResponse = z.infer<typeof rentalProductDataSchema>;
 export type GetRentalProductTypesQuery = z.infer<
-  typeof getRentalProductQuerySchema
+	typeof getRentalProductQuerySchema
 >;
