@@ -89,11 +89,28 @@ model User {
 
   tenant           Tenant             @relation(fields: [tenantId], references: [id])
   userRoles        UserRole[]
+  profile          UserProfile?
   reviewedProfiles CustomerProfile[]
   
   @@unique([tenantId, email])
   @@index([tenantId, isActive, deletedAt])
   @@map("users")
+}
+
+model UserProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  fullName       String   @map("full_name")
+  documentNumber String   @map("document_number")
+  phone          String
+  address        String
+  signUrl        String   @map("sign_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_profiles")
 }
 
 // ---------------------------------------------------------------------------

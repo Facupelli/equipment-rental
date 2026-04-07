@@ -44,3 +44,27 @@ export class InvitationExpiredError extends UsersError {
     super(`Invitation '${invitationId}' has expired.`);
   }
 }
+
+export class UserNotFoundError extends UsersError {
+  constructor(userId: string, tenantId: string) {
+    super(`User '${userId}' was not found in tenant '${tenantId}'.`);
+  }
+}
+
+export class UserProfileAlreadyExistsError extends UsersError {
+  constructor(userId: string) {
+    super(`User '${userId}' already has a profile.`);
+  }
+}
+
+export class UserProfileNotFoundError extends UsersError {
+  constructor(userId: string) {
+    super(`User profile for user '${userId}' was not found.`);
+  }
+}
+
+export class UserIsNotTenantAdminError extends UsersError {
+  constructor(userId: string, tenantId: string) {
+    super(`User '${userId}' is not the tenant admin for tenant '${tenantId}'.`);
+  }
+}

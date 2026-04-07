@@ -12,6 +12,7 @@ const TENANT_EXCLUDED_MODELS = new Set([
   'BillingUnit', // global lookup table, no tenant scope
   'TenantBillingUnit', // join table — tenantId is the FK, not a scope guard
   'RefreshToken',
+  'UserProfile', // scoped through User
   'Asset', // scoped through Location
   'AssetAssignment', // scoped through Asset
   'OrderItem', // scoped through Order
