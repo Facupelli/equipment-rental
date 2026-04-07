@@ -12,3 +12,8 @@ export enum OrderItemType {
   PRODUCT = "PRODUCT",
   BUNDLE = "BUNDLE",
 }
+
+export enum FulfillmentMethod {
+  PICKUP = "PICKUP",
+  DELIVERY = "DELIVERY",
+}

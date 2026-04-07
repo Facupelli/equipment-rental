@@ -2,7 +2,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetOrderByIdQuery } from './get-order-by-id.query';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
-import { OrderItemType, OrderStatus } from '@repo/types';
+import { FulfillmentMethod, OrderItemType, OrderStatus } from '@repo/types';
 import { OrderFinancialSnapshot } from 'src/modules/order/domain/value-objects/order-financial-snapshot.value-object';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
 import Decimal from 'decimal.js';
@@ -29,6 +29,19 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
         },
         location: {
           select: { name: true },
+        },
+        deliveryRequest: {
+          select: {
+            recipientName: true,
+            phone: true,
+            addressLine1: true,
+            addressLine2: true,
+            city: true,
+            stateRegion: true,
+            postalCode: true,
+            country: true,
+            instructions: true,
+          },
         },
         items: {
           include: {
@@ -200,11 +213,25 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
     return {
       id: order.id,
       status: order.status as OrderStatus,
+      fulfillmentMethod: order.fulfillmentMethod as FulfillmentMethod,
       number: order.orderNumber,
       createdAt: order.createdAt,
       notes: order.notes,
       customer: order.customer ?? null,
       location: { name: order.location.name },
+      deliveryRequest: order.deliveryRequest
+        ? {
+            recipientName: order.deliveryRequest.recipientName,
+            phone: order.deliveryRequest.phone,
+            addressLine1: order.deliveryRequest.addressLine1,
+            addressLine2: order.deliveryRequest.addressLine2,
+            city: order.deliveryRequest.city,
+            stateRegion: order.deliveryRequest.stateRegion,
+            postalCode: order.deliveryRequest.postalCode,
+            country: order.deliveryRequest.country,
+            instructions: order.deliveryRequest.instructions,
+          }
+        : null,
       period,
       items,
       financial: {

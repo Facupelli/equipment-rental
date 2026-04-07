@@ -27,6 +27,11 @@ enum OrderItemType {
   BUNDLE
 }
 
+enum FulfillmentMethod {
+  PICKUP
+  DELIVERY
+}
+
 enum AssignmentType {
   ORDER
   BLACKOUT
@@ -541,35 +546,57 @@ model AssetAssignment {
 // ---------------------------------------------------------------------------
 
 model Order {
-  id                String      @id @default(uuid())
-  tenantId          String      @map("tenant_id")
-  locationId        String      @map("location_id")
-  customerId        String?     @map("customer_id")
-  couponId          String?     @map("coupon_id")
-  status            OrderStatus @default(CONFIRMED)
-  orderNumber       Int         @map("order_number") @default(0)
+  id                String            @id @default(uuid())
+  tenantId          String            @map("tenant_id")
+  locationId        String            @map("location_id")
+  customerId        String?           @map("customer_id")
+  couponId          String?           @map("coupon_id")
+  status            OrderStatus       @default(CONFIRMED)
+  fulfillmentMethod FulfillmentMethod @default(PICKUP) @map("fulfillment_method")
+  orderNumber       Int               @map("order_number") @default(0)
   notes             String?
-  insuranceSelected Boolean     @default(false) @map("insurance_selected")
-  financialSnapshot Json        @default("{}") @map("financial_snapshot")
-  periodStart       DateTime    @map("period_start")
-  periodEnd         DateTime    @map("period_end")
+  insuranceSelected Boolean           @default(false) @map("insurance_selected")
+  financialSnapshot Json              @default("{}") @map("financial_snapshot")
+  periodStart       DateTime          @map("period_start")
+  periodEnd         DateTime          @map("period_end")
 
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
-  deletedAt    DateTime?   @map("deleted_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  deletedAt         DateTime?         @map("deleted_at")
 
-  location         Location          @relation(fields: [locationId], references: [id])
-  items            OrderItem[]
-  assetAssignments AssetAssignment[]
-  customer         Customer? @relation(fields: [customerId], references: [id])
-  coupon           Coupon?  @relation(fields: [couponId], references: [id])
-  couponRedemption CouponRedemption?
+  location           Location          @relation(fields: [locationId], references: [id])
+  items              OrderItem[]
+  assetAssignments   AssetAssignment[]
+  customer           Customer?         @relation(fields: [customerId], references: [id])
+  coupon             Coupon?           @relation(fields: [couponId], references: [id])
+  couponRedemption   CouponRedemption?
+  deliveryRequest    OrderDeliveryRequest?
 
   @@index([tenantId, locationId, status, createdAt(sort: Desc)])
   @@index([tenantId, locationId, periodStart, periodEnd])
   @@index([tenantId, deletedAt])
   @@unique([tenantId, orderNumber])
   @@map("orders")
+}
+
+model OrderDeliveryRequest {
+  id            String   @id @default(uuid())
+  orderId       String   @unique @map("order_id")
+  recipientName String   @map("recipient_name")
+  phone         String
+  addressLine1  String   @map("address_line_1")
+  addressLine2  String?  @map("address_line_2")
+  city          String
+  stateRegion   String   @map("state_region")
+  postalCode    String   @map("postal_code")
+  country       String
+  instructions  String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("order_delivery_requests")
 }
 
 model OrderItem {

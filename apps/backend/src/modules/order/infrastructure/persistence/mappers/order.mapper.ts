@@ -1,5 +1,5 @@
 import { JsonValue } from '@prisma/client/runtime/client';
-import { ContractBasis, OrderStatus, OrderItemType } from '@repo/types';
+import { ContractBasis, FulfillmentMethod, OrderStatus, OrderItemType } from '@repo/types';
 import Decimal from 'decimal.js';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
@@ -7,6 +7,7 @@ import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { Order } from 'src/modules/order/domain/entities/order.entity';
 import { OrderItemOwnerSplit, SplitStatus } from 'src/modules/order/domain/entities/order-item-owner-split.entity';
 import { OrderFinancialSnapshot } from 'src/modules/order/domain/value-objects/order-financial-snapshot.value-object';
+import { OrderDeliveryRequest } from 'src/modules/order/domain/value-objects/order-delivery-request.value-object';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
 
 // ── Prisma row shapes (from include queries) ──────────────────────────────────
@@ -64,9 +65,21 @@ type OrderRow = {
   periodStart: Date;
   periodEnd: Date;
   status: string;
+  fulfillmentMethod: string;
   insuranceSelected: boolean;
   financialSnapshot: JsonValue;
   notes: string | null;
+  deliveryRequest: {
+    recipientName: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2: string | null;
+    city: string;
+    stateRegion: string;
+    postalCode: string;
+    country: string;
+    instructions: string | null;
+  } | null;
   items: OrderItemRow[];
 };
 
@@ -131,6 +144,20 @@ export class OrderMapper {
       customerId: row.customerId,
       period: DateRange.create(row.periodStart, row.periodEnd),
       status: row.status as OrderStatus,
+      fulfillmentMethod: row.fulfillmentMethod as FulfillmentMethod,
+      deliveryRequest: row.deliveryRequest
+        ? OrderDeliveryRequest.reconstitute({
+            recipientName: row.deliveryRequest.recipientName,
+            phone: row.deliveryRequest.phone,
+            addressLine1: row.deliveryRequest.addressLine1,
+            addressLine2: row.deliveryRequest.addressLine2,
+            city: row.deliveryRequest.city,
+            stateRegion: row.deliveryRequest.stateRegion,
+            postalCode: row.deliveryRequest.postalCode,
+            country: row.deliveryRequest.country,
+            instructions: row.deliveryRequest.instructions,
+          })
+        : null,
       insuranceSelected: row.insuranceSelected,
       financialSnapshot: OrderFinancialSnapshot.fromJSON(row.financialSnapshot),
       notes: row.notes,
@@ -147,10 +174,18 @@ export class OrderMapper {
       periodStart: order.currentPeriod.start,
       periodEnd: order.currentPeriod.end,
       status: order.currentStatus,
+      fulfillmentMethod: order.currentFulfillmentMethod,
       insuranceSelected: order.currentInsuranceSelected,
       financialSnapshot: order.currentFinancialSnapshot.toJSON(),
       notes: order.currentNotes,
     };
+
+    const deliveryRequestRow = order.currentDeliveryRequest
+      ? {
+          orderId: order.id,
+          ...order.currentDeliveryRequest.toJSON(),
+        }
+      : null;
 
     const itemRows = [];
     const snapshotRows = [];
@@ -207,6 +242,6 @@ export class OrderMapper {
       }
     }
 
-    return { orderRow, itemRows, snapshotRows, snapshotComponentRows, splitRows };
+    return { orderRow, deliveryRequestRow, itemRows, snapshotRows, snapshotComponentRows, splitRows };
   }
 }

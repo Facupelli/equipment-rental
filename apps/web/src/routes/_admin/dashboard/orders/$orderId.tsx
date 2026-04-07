@@ -1,44 +1,44 @@
-import {
-  createOrderDetailQueryOptions,
-  type ParsedOrderDetailResponseDto,
-} from "@/features/orders/queries/get-order-by-id";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FulfillmentMethod } from "@repo/types";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  Clock,
+  ExternalLink,
   FileText,
-  Pencil,
   Mail,
   MapPin,
-  Clock,
   Package,
-  ExternalLink,
+  Pencil,
+  Truck,
   User2Icon,
 } from "lucide-react";
-import {
-  formatDiscountLine,
-  formatMoney,
-  formatOrderNumber,
-  getExternalOwnersByProductType,
-} from "@/features/orders/order.utils";
-import {
-  getItemSerialNumber,
-  getItemQty,
-  getBundleSummary,
-  getOwnerDisplay,
-} from "@/features/orders/order.utils";
-import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
 import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
-import {
-  OrderDetailProvider,
-  useOrderDetailContext,
-} from "@/features/orders/contexts/order-detail.context";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getCustomerContactName,
   getCustomerDisplayName,
   getCustomerInitials,
 } from "@/features/customer/customer.utils";
+import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
+import {
+  OrderDetailProvider,
+  useOrderDetailContext,
+} from "@/features/orders/contexts/order-detail.context";
+import {
+  formatDiscountLine,
+  formatMoney,
+  formatOrderNumber,
+  getBundleSummary,
+  getExternalOwnersByProductType,
+  getItemQty,
+  getItemSerialNumber,
+  getOwnerDisplay,
+} from "@/features/orders/order.utils";
+import {
+  createOrderDetailQueryOptions,
+  type ParsedOrderDetailResponseDto,
+} from "@/features/orders/queries/get-order-by-id";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
@@ -438,7 +438,7 @@ function OrderClientCard() {
 
 function OrderLogisticsCard() {
   const { order } = useOrderDetailContext();
-  const { location, period } = order;
+  const { deliveryRequest, fulfillmentMethod, location, period } = order;
 
   return (
     <section className="bg-white border border-neutral-200 rounded-lg p-5">
@@ -482,6 +482,51 @@ function OrderLogisticsCard() {
           </p>
         </div>
       </div>
+
+      <div className="mt-4 flex items-center gap-3 bg-neutral-50 border border-neutral-100 rounded-md px-3 py-2.5">
+        <Truck className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+        <div>
+          <p className="font-mono text-[9px] tracking-widest uppercase text-neutral-400 mb-0.5">
+            Fulfillment
+          </p>
+          <p className="text-sm font-semibold text-neutral-950">
+            {fulfillmentMethod === FulfillmentMethod.DELIVERY
+              ? "Solicitó delivery"
+              : "Retiro en punto de entrega"}
+          </p>
+        </div>
+      </div>
+
+      {deliveryRequest && (
+        <div className="mt-4 rounded-md border border-neutral-200 bg-white p-4">
+          <p className="font-mono text-[9px] tracking-widest uppercase text-neutral-400 mb-3">
+            Delivery Request
+          </p>
+
+          <div className="space-y-2 text-sm text-neutral-700">
+            <p className="font-semibold text-neutral-950">
+              {deliveryRequest.recipientName}
+            </p>
+            <p>{deliveryRequest.phone}</p>
+            <p>
+              {deliveryRequest.addressLine1}
+              {deliveryRequest.addressLine2
+                ? `, ${deliveryRequest.addressLine2}`
+                : ""}
+            </p>
+            <p>
+              {deliveryRequest.city}, {deliveryRequest.stateRegion}{" "}
+              {deliveryRequest.postalCode}
+            </p>
+            <p>{deliveryRequest.country}</p>
+            {deliveryRequest.instructions && (
+              <div className="rounded-md bg-neutral-50 px-3 py-2 text-neutral-600">
+                {deliveryRequest.instructions}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

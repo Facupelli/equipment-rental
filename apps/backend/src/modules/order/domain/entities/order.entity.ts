@@ -1,14 +1,17 @@
 import { randomUUID } from 'crypto';
 import Decimal from 'decimal.js';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
+import { FulfillmentMethod } from '@repo/types';
 import { OrderItem } from './order-item.entity';
 import {
   InvalidOrderStatusTransitionException,
+  MissingOrderDeliveryRequestException,
   OrderItemNotAllowedException,
   OrderItemNotFoundException,
 } from '../exceptions/order.exceptions';
 import { OrderStatus } from '@repo/types';
 import { OrderFinancialSnapshot } from '../value-objects/order-financial-snapshot.value-object';
+import { OrderDeliveryRequest } from '../value-objects/order-delivery-request.value-object';
 
 const EQUIPMENT_INSURANCE_RATE = new Decimal('0.06');
 
@@ -28,6 +31,8 @@ export interface CreateOrderProps {
   currency: string;
   period: DateRange;
   status: OrderStatus;
+  fulfillmentMethod: FulfillmentMethod;
+  deliveryRequest?: OrderDeliveryRequest | null;
   insuranceSelected: boolean;
   customerId?: string;
   notes?: string;
@@ -40,6 +45,8 @@ export interface ReconstituteOrderProps {
   customerId: string | null;
   period: DateRange;
   status: OrderStatus;
+  fulfillmentMethod: FulfillmentMethod;
+  deliveryRequest: OrderDeliveryRequest | null;
   insuranceSelected: boolean;
   financialSnapshot: OrderFinancialSnapshot;
   notes: string | null;
@@ -54,6 +61,8 @@ export class Order {
     public readonly customerId: string | null,
     private period: DateRange,
     private status: OrderStatus,
+    private readonly fulfillmentMethod: FulfillmentMethod,
+    private readonly deliveryRequest: OrderDeliveryRequest | null,
     private readonly insuranceSelected: boolean,
     private financialSnapshot: OrderFinancialSnapshot,
     private notes: string | null,
@@ -68,6 +77,8 @@ export class Order {
       props.customerId ?? null,
       props.period,
       props.status,
+      props.fulfillmentMethod,
+      Order.assertDeliveryRequest(props.fulfillmentMethod, props.deliveryRequest ?? null),
       props.insuranceSelected,
       OrderFinancialSnapshot.zero(props.currency, props.insuranceSelected),
       props.notes?.trim() ?? null,
@@ -83,6 +94,8 @@ export class Order {
       props.customerId,
       props.period,
       props.status,
+      props.fulfillmentMethod,
+      Order.assertDeliveryRequest(props.fulfillmentMethod, props.deliveryRequest),
       props.insuranceSelected,
       props.financialSnapshot,
       props.notes,
@@ -100,6 +113,14 @@ export class Order {
 
   get currentNotes(): string | null {
     return this.notes;
+  }
+
+  get currentFulfillmentMethod(): FulfillmentMethod {
+    return this.fulfillmentMethod;
+  }
+
+  get currentDeliveryRequest(): OrderDeliveryRequest | null {
+    return this.deliveryRequest;
   }
 
   get currentInsuranceSelected(): boolean {
@@ -198,5 +219,20 @@ export class Order {
       insuranceAmount,
       total: itemsSubtotal.plus(insuranceAmount),
     });
+  }
+
+  private static assertDeliveryRequest(
+    fulfillmentMethod: FulfillmentMethod,
+    deliveryRequest: OrderDeliveryRequest | null,
+  ): OrderDeliveryRequest | null {
+    if (fulfillmentMethod === FulfillmentMethod.DELIVERY) {
+      if (!deliveryRequest) {
+        throw new MissingOrderDeliveryRequestException();
+      }
+
+      return deliveryRequest;
+    }
+
+    return null;
   }
 }

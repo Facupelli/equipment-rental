@@ -12,6 +12,7 @@ export class OrderRepository {
     const raw = await this.prisma.client.order.findFirst({
       where: { id, tenantId },
       include: {
+        deliveryRequest: true,
         items: {
           include: {
             bundleSnapshot: {
@@ -32,13 +33,26 @@ export class OrderRepository {
 
   async save(order: Order, tx?: PrismaTransactionClient): Promise<string> {
     const client = tx ?? this.prisma.client;
-    const { orderRow, itemRows, snapshotRows, snapshotComponentRows, splitRows } = OrderMapper.toPersistence(order);
+    const { orderRow, deliveryRequestRow, itemRows, snapshotRows, snapshotComponentRows, splitRows } =
+      OrderMapper.toPersistence(order);
 
     await client.order.upsert({
       where: { id: orderRow.id },
       create: orderRow,
       update: orderRow,
     });
+
+    if (deliveryRequestRow) {
+      await client.orderDeliveryRequest.upsert({
+        where: { orderId: deliveryRequestRow.orderId },
+        create: deliveryRequestRow,
+        update: deliveryRequestRow,
+      });
+    } else {
+      await client.orderDeliveryRequest.deleteMany({
+        where: { orderId: order.id },
+      });
+    }
 
     for (const item of itemRows) {
       await client.orderItem.upsert({

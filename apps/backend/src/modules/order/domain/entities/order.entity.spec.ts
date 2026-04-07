@@ -1,7 +1,8 @@
-import { OrderStatus } from '@repo/types';
+import { FulfillmentMethod, OrderStatus } from '@repo/types';
 
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { OrderFinancialSnapshot } from '../value-objects/order-financial-snapshot.value-object';
+import { OrderDeliveryRequest } from '../value-objects/order-delivery-request.value-object';
 
 import { Order } from './order.entity';
 import { InvalidOrderStatusTransitionException } from '../exceptions/order.exceptions';
@@ -14,7 +15,21 @@ function makeOrder(status: OrderStatus = OrderStatus.PENDING_REVIEW): Order {
     customerId: 'customer-1',
     period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
     status,
+    fulfillmentMethod: FulfillmentMethod.PICKUP,
     insuranceSelected: false,
+  });
+}
+
+function makeDeliveryRequest(): OrderDeliveryRequest {
+  return OrderDeliveryRequest.create({
+    recipientName: 'Jane Doe',
+    phone: '+5491122334455',
+    addressLine1: 'Av. Libertador 1234',
+    city: 'Buenos Aires',
+    stateRegion: 'Buenos Aires',
+    postalCode: '1425',
+    country: 'Argentina',
+    instructions: 'Call before arrival',
   });
 }
 
@@ -26,6 +41,8 @@ function makeReconstitutedOrder(status: OrderStatus = OrderStatus.PENDING_REVIEW
     customerId: 'customer-1',
     period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
     status,
+    fulfillmentMethod: FulfillmentMethod.PICKUP,
+    deliveryRequest: null,
     insuranceSelected: false,
     financialSnapshot: OrderFinancialSnapshot.zero('ARS', false),
     notes: null,
@@ -87,5 +104,22 @@ describe('Order', () => {
 
     expect(order.currentFinancialSnapshot.total.toString()).toBe('0');
     expect(order.currentInsuranceSelected).toBe(false);
+  });
+
+  it('stores delivery request only for delivery fulfillment', () => {
+    const order = Order.create({
+      tenantId: 'tenant-1',
+      locationId: 'location-1',
+      currency: 'ARS',
+      customerId: 'customer-1',
+      period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
+      status: OrderStatus.PENDING_REVIEW,
+      fulfillmentMethod: FulfillmentMethod.DELIVERY,
+      deliveryRequest: makeDeliveryRequest(),
+      insuranceSelected: false,
+    });
+
+    expect(order.currentFulfillmentMethod).toBe(FulfillmentMethod.DELIVERY);
+    expect(order.currentDeliveryRequest?.recipientName).toBe('Jane Doe');
   });
 });

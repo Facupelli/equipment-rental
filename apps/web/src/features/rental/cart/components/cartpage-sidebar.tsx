@@ -1,12 +1,15 @@
-import type { JoinedLineItem } from "@/features/rental/cart/hooks/use-cart-order";
+import type { CartDiscountLineItem, TenantPricingConfig } from "@repo/schemas";
+import { FulfillmentMethod } from "@repo/types";
 import {
 	AlertTriangle,
 	ArrowRight,
 	Banknote,
 	CircleHelp,
+	MapPin,
 	Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
 	Popover,
 	PopoverContent,
@@ -15,16 +18,18 @@ import {
 	PopoverTitle,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { computeOriginalSubtotal, formatDiscount } from "../cart.utils";
-import { useCartPageContext } from "../cart-page.context";
+import { Textarea } from "@/components/ui/textarea";
 import { PRDOUCT_TYPE_DICT } from "@/features/catalog/catalog.constants";
+import type { JoinedLineItem } from "@/features/rental/cart/hooks/use-cart-order";
 import { cn } from "@/lib/utils";
 import { useIsVisible } from "@/shared/hooks/use-is-visible";
-import type { CartDiscountLineItem, TenantPricingConfig } from "@repo/schemas";
 import { formatCurrency } from "@/shared/utils/price.utils";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
+import { computeOriginalSubtotal, formatDiscount } from "../cart.utils";
+import { useCartPageContext } from "../cart-page.context";
 
 export function CartPageSidebar() {
 	const { data: tenantPriceConfig } = useTenantPricingConfig();
@@ -33,13 +38,18 @@ export function CartPageSidebar() {
 		breakdown,
 		joinedLineItems,
 		insuranceSelected,
+		fulfillmentMethod,
+		deliveryRequest,
 		isAuthenticated,
 		isPriceLoading,
 		isPriceError,
 		isBookingError,
+		isDeliveryDetailsRequired,
 		cartItems,
 		handleBook,
 		onInsuranceSelectedChange,
+		onFulfillmentMethodChange,
+		onDeliveryRequestFieldChange,
 	} = useCartPageContext();
 
 	const isDisabled = cartItems.length === 0 || isPriceLoading || isPriceError;
@@ -67,6 +77,14 @@ export function CartPageSidebar() {
 					isLoading={isPriceLoading}
 					isError={isPriceError}
 					priceConfig={tenantPriceConfig}
+				/>
+
+				<CartPageFulfillmentForm
+					fulfillmentMethod={fulfillmentMethod}
+					deliveryRequest={deliveryRequest}
+					isDeliveryDetailsRequired={isDeliveryDetailsRequired}
+					onFulfillmentMethodChange={onFulfillmentMethodChange}
+					onDeliveryRequestFieldChange={onDeliveryRequestFieldChange}
 				/>
 
 				{isBookingError && (
@@ -145,6 +163,195 @@ export function CartPageSidebar() {
 				</Button>
 			</div>
 		</>
+	);
+}
+
+type DeliveryRequestFormState = {
+	recipientName: string;
+	phone: string;
+	addressLine1: string;
+	addressLine2: string;
+	city: string;
+	stateRegion: string;
+	postalCode: string;
+	country: string;
+	instructions: string;
+};
+
+type DeliveryRequestField = keyof DeliveryRequestFormState;
+
+type CartPageFulfillmentFormProps = {
+	fulfillmentMethod: FulfillmentMethod;
+	deliveryRequest: DeliveryRequestFormState;
+	isDeliveryDetailsRequired: boolean;
+	onFulfillmentMethodChange: (value: FulfillmentMethod) => void;
+	onDeliveryRequestFieldChange: (
+		field: DeliveryRequestField,
+		value: string,
+	) => void;
+};
+
+function CartPageFulfillmentForm({
+	fulfillmentMethod,
+	deliveryRequest,
+	isDeliveryDetailsRequired,
+	onFulfillmentMethodChange,
+	onDeliveryRequestFieldChange,
+}: CartPageFulfillmentFormProps) {
+	return (
+		<div className="mt-6 border border-neutral-200 bg-neutral-50 p-4">
+			<div className="mb-4 flex items-center gap-2">
+				<MapPin className="h-4 w-4 text-neutral-500" />
+				<h3 className="text-xs font-bold uppercase tracking-widest text-black">
+					Entrega
+				</h3>
+			</div>
+
+			<RadioGroup
+				value={fulfillmentMethod}
+				onValueChange={(value) =>
+					onFulfillmentMethodChange(value as FulfillmentMethod)
+				}
+			>
+				<div className="flex items-start gap-3 border border-neutral-200 bg-white p-3">
+					<RadioGroupItem value={FulfillmentMethod.PICKUP} />
+					<div>
+						<p className="text-sm font-semibold text-neutral-950">
+							Retiro en sucursal
+						</p>
+						<p className="text-xs text-neutral-500">
+							El cliente retira y devuelve en la ubicación elegida.
+						</p>
+					</div>
+				</div>
+				<div className="flex items-start gap-3 border border-neutral-200 bg-white p-3">
+					<RadioGroupItem value={FulfillmentMethod.DELIVERY} />
+					<div>
+						<p className="text-sm font-semibold text-neutral-950">
+							Entrega a domicilio
+						</p>
+						<p className="text-xs text-neutral-500">
+							Guardamos el destino solicitado por el cliente para que el admin
+							lo vea en el pedido.
+						</p>
+					</div>
+				</div>
+			</RadioGroup>
+
+			{fulfillmentMethod === FulfillmentMethod.DELIVERY && (
+				<div className="mt-4 space-y-3 border-t border-neutral-200 pt-4">
+					{isDeliveryDetailsRequired && (
+						<div className="border border-red-100 bg-red-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-red-600">
+							Completa los datos de entrega requeridos antes de reservar.
+						</div>
+					)}
+
+					<div className="grid gap-3 md:grid-cols-2">
+						<DeliveryInput
+							label="Destinatario"
+							value={deliveryRequest.recipientName}
+							onChange={(value) =>
+								onDeliveryRequestFieldChange("recipientName", value)
+							}
+						/>
+						<DeliveryInput
+							label="Teléfono"
+							value={deliveryRequest.phone}
+							onChange={(value) => onDeliveryRequestFieldChange("phone", value)}
+						/>
+					</div>
+
+					<DeliveryInput
+						label="Dirección"
+						value={deliveryRequest.addressLine1}
+						onChange={(value) =>
+							onDeliveryRequestFieldChange("addressLine1", value)
+						}
+					/>
+
+					<DeliveryInput
+						label="Dirección adicional"
+						value={deliveryRequest.addressLine2}
+						onChange={(value) =>
+							onDeliveryRequestFieldChange("addressLine2", value)
+						}
+						required={false}
+					/>
+
+					<div className="grid gap-3 md:grid-cols-2">
+						<DeliveryInput
+							label="Ciudad"
+							value={deliveryRequest.city}
+							onChange={(value) => onDeliveryRequestFieldChange("city", value)}
+						/>
+						<DeliveryInput
+							label="Provincia / región"
+							value={deliveryRequest.stateRegion}
+							onChange={(value) =>
+								onDeliveryRequestFieldChange("stateRegion", value)
+							}
+						/>
+					</div>
+
+					<div className="grid gap-3 md:grid-cols-2">
+						<DeliveryInput
+							label="Código postal"
+							value={deliveryRequest.postalCode}
+							onChange={(value) =>
+								onDeliveryRequestFieldChange("postalCode", value)
+							}
+						/>
+						<DeliveryInput
+							label="País"
+							value={deliveryRequest.country}
+							onChange={(value) =>
+								onDeliveryRequestFieldChange("country", value)
+							}
+						/>
+					</div>
+
+					<div className="space-y-1.5">
+						<p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
+							Instrucciones adicionales
+						</p>
+						<Textarea
+							value={deliveryRequest.instructions}
+							onChange={(event) =>
+								onDeliveryRequestFieldChange("instructions", event.target.value)
+							}
+							placeholder="Ej: llamar antes de llegar, ingresar por portón lateral"
+							className="min-h-24 rounded-none border-neutral-300 bg-white"
+						/>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+}
+
+function DeliveryInput({
+	label,
+	value,
+	onChange,
+	required = true,
+}: {
+	label: string;
+	value: string;
+	onChange: (value: string) => void;
+	required?: boolean;
+}) {
+	return (
+		<div className="space-y-1.5">
+			<p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
+				{label}
+				{required ? " *" : ""}
+			</p>
+			<Input
+				value={value}
+				onChange={(event) => onChange(event.target.value)}
+				className="rounded-none border-neutral-300 bg-white"
+			/>
+		</div>
 	);
 }
 

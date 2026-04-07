@@ -1,5 +1,5 @@
 import { QueryBus } from '@nestjs/cqrs';
-import { BookingMode, OrderAssignmentStage, OrderStatus, ScheduleSlotType } from '@repo/types';
+import { BookingMode, FulfillmentMethod, OrderAssignmentStage, OrderStatus, ScheduleSlotType } from '@repo/types';
 import Decimal from 'decimal.js';
 import { ok } from 'neverthrow';
 
@@ -117,17 +117,18 @@ describe('CreateOrderService', () => {
   }
 
   function makeCommand() {
-    return new CreateOrderCommand(
-      'tenant-1',
-      'location-1',
-      'customer-1',
-      { start: new Date('2026-03-30T00:00:00.000Z'), end: new Date('2026-03-31T00:00:00.000Z') },
-      600,
-      900,
-      [{ type: 'PRODUCT', productTypeId: 'product-1', quantity: 1 }],
-      'ARS',
-      false,
-    );
+    return new CreateOrderCommand({
+      tenantId: 'tenant-1',
+      locationId: 'location-1',
+      customerId: 'customer-1',
+      period: { start: new Date('2026-03-30T00:00:00.000Z'), end: new Date('2026-03-31T00:00:00.000Z') },
+      pickupTime: 600,
+      returnTime: 900,
+      items: [{ type: 'PRODUCT', productTypeId: 'product-1', quantity: 1 }],
+      currency: 'ARS',
+      insuranceSelected: false,
+      fulfillmentMethod: FulfillmentMethod.PICKUP,
+    });
   }
 
   it('creates confirmed orders for instant-book tenants', async () => {

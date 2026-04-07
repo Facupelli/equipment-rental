@@ -35,6 +35,13 @@ export class OrderAssignmentsNotFoundException extends Error {
   }
 }
 
+export class MissingOrderDeliveryRequestException extends Error {
+  constructor() {
+    super('Delivery orders must include a delivery request snapshot.');
+    this.name = 'MissingOrderDeliveryRequestException';
+  }
+}
+
 export class TenantConfigNotFoundException extends Error {
   constructor(tenantId: string) {
     super(`Tenant '${tenantId}' config was not found.`);

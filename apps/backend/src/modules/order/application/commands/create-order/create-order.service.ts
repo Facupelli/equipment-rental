@@ -3,6 +3,7 @@ import {
   AssignmentSource,
   AssignmentType,
   BookingMode,
+  FulfillmentMethod,
   OrderItemType,
   OrderAssignmentStage,
   OrderStatus,
@@ -31,6 +32,7 @@ import {
 import { Order } from 'src/modules/order/domain/entities/order.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
+import { OrderDeliveryRequest } from 'src/modules/order/domain/value-objects/order-delivery-request.value-object';
 import { TenantConfig } from '@repo/schemas';
 
 import { CreateOrderCommand } from './create-order.command';
@@ -112,6 +114,11 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
         customerId: command.customerId,
         period,
         status: bookingMode === BookingMode.REQUEST_TO_BOOK ? OrderStatus.PENDING_REVIEW : OrderStatus.CONFIRMED,
+        fulfillmentMethod: command.fulfillmentMethod,
+        deliveryRequest:
+          command.fulfillmentMethod === FulfillmentMethod.DELIVERY && command.deliveryRequest
+            ? OrderDeliveryRequest.create(command.deliveryRequest)
+            : null,
         insuranceSelected: command.insuranceSelected,
       });
 

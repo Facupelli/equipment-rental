@@ -1,4 +1,4 @@
-import { OrderStatus } from '@repo/types';
+import { FulfillmentMethod, OrderStatus } from '@repo/types';
 
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 
@@ -16,6 +16,7 @@ function makeOrder(status: OrderStatus): Order {
     customerId: 'customer-1',
     period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
     status,
+    fulfillmentMethod: FulfillmentMethod.PICKUP,
     insuranceSelected: false,
   });
 }

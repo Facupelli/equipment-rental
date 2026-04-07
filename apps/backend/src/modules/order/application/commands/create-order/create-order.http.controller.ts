@@ -1,3 +1,4 @@
+import { FulfillmentMethod } from '@repo/types';
 import { CustomerOnly } from 'src/core/decorators/customer-only.decorator';
 import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Post } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
@@ -38,17 +39,19 @@ export class CreateOrderHttpController {
     @Body() dto: CreateOrderRequestDto,
   ): Promise<CreateOrderResponseDto> {
     const result = await this.commandBus.execute(
-      new CreateOrderCommand(
-        user.tenantId,
-        dto.locationId,
-        user.id,
-        { start: new Date(dto.periodStart), end: new Date(dto.periodEnd) },
-        dto.pickupTime,
-        dto.returnTime,
-        dto.items,
-        dto.currency,
-        dto.insuranceSelected,
-      ),
+      new CreateOrderCommand({
+        tenantId: user.tenantId,
+        locationId: dto.locationId,
+        customerId: user.id,
+        period: { start: new Date(dto.periodStart), end: new Date(dto.periodEnd) },
+        pickupTime: dto.pickupTime,
+        returnTime: dto.returnTime,
+        items: dto.items,
+        currency: dto.currency,
+        insuranceSelected: dto.insuranceSelected,
+        fulfillmentMethod: dto.fulfillmentMethod as FulfillmentMethod,
+        deliveryRequest: dto.deliveryRequest ?? undefined,
+      }),
     );
 
     if (result.isErr()) {

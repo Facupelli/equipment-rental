@@ -1,4 +1,9 @@
-import { OrderItemType, OrderStatus, PricingRuleEffectType } from "@repo/types";
+import {
+  FulfillmentMethod,
+  OrderItemType,
+  OrderStatus,
+  PricingRuleEffectType,
+} from "@repo/types";
 import { z } from "zod";
 
 const CustomerSummarySchema = z.object({
@@ -17,6 +22,18 @@ const LocationSummarySchema = z.object({
 const RentalPeriodSchema = z.object({
   start: z.date(),
   end: z.date(),
+});
+
+const DeliveryRequestSchema = z.object({
+  recipientName: z.string(),
+  phone: z.string(),
+  addressLine1: z.string(),
+  addressLine2: z.string().nullable(),
+  city: z.string(),
+  stateRegion: z.string(),
+  postalCode: z.string(),
+  country: z.string(),
+  instructions: z.string().nullable(),
 });
 
 const AssetSummarySchema = z.object({
@@ -97,11 +114,13 @@ const FinancialBreakdownSchema = z.object({
 export const orderDetailSchema = z.object({
   id: z.uuid(),
   status: z.enum(OrderStatus),
+  fulfillmentMethod: z.enum(FulfillmentMethod),
   number: z.number().int(),
   createdAt: z.date(),
   notes: z.string().nullable(),
   customer: CustomerSummarySchema.nullable(),
   location: LocationSummarySchema,
+  deliveryRequest: DeliveryRequestSchema.nullable(),
   period: RentalPeriodSchema,
   items: z.array(OrderItemDetailSchema),
   financial: FinancialBreakdownSchema,

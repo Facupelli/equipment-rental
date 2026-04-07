@@ -1,4 +1,4 @@
-import { OrderAssignmentStage, OrderStatus } from '@repo/types';
+import { FulfillmentMethod, OrderAssignmentStage, OrderStatus } from '@repo/types';
 import { ConfirmOrderService } from './confirm-order/confirm-order.service';
 import { RejectOrderService } from './reject-order/reject-order.service';
 import { CancelOrderService } from './cancel-order/cancel-order.service';
@@ -21,6 +21,7 @@ function makeOrder(status: OrderStatus): Order {
     customerId: 'customer-1',
     period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
     status,
+    fulfillmentMethod: FulfillmentMethod.PICKUP,
     insuranceSelected: false,
   });
 }
