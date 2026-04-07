@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCategories } from "@/features/catalog/product-categories/categories.queries";
+import { useRentalCategories } from "@/features/rental/catalog/categories.queries";
 
 interface CategoryFilterProps {
   activeCategory: string | undefined;
@@ -11,13 +11,15 @@ export function CategoryFilter({
   activeCategory,
   onSelect,
 }: CategoryFilterProps) {
-  const { data: categories, isFetching } = useCategories();
+  const { data: categories, isFetching } = useRentalCategories();
 
   if (isFetching) {
+    const skeletonKeys = ["one", "two", "three", "four", "five"];
+
     return (
       <div className="hidden md:flex gap-2 pb-4 border-b">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-9 w-24 rounded-full" />
+        {skeletonKeys.map((key) => (
+          <Skeleton key={key} className="h-9 w-24 rounded-full" />
         ))}
       </div>
     );

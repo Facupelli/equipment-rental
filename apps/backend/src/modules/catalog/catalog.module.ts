@@ -42,6 +42,7 @@ import { RetireBundleHttpController } from './application/commands/retire-bundle
 import { GetRentalProductTypesHttpController } from './application/queries/get-rental-product-types/get-rental-product-types.http.controller';
 import { GetRentalBundlesHttpController } from './application/queries/get-rental-bundles/get-rental-bundles.http.controller';
 import { GetNewArrivalsHttpController } from './application/queries/get-rental-new-arrivals/get-rental-new-arrival.http.controller';
+import { GetRentalCategoriesHttpController } from './application/queries/get-rental-categories/get-rental-categories.http.controller';
 
 const repositories = [ProductCategoryRepository, ProductTypeRepository, BundleRepository];
 
@@ -90,6 +91,7 @@ const rentalQueryHandlers = [GetRentalProductTypesQueryHandler, GetNewArrivalsQu
     GetRentalProductTypesHttpController,
     GetRentalBundlesHttpController,
     GetNewArrivalsHttpController,
+    GetRentalCategoriesHttpController,
   ],
   providers: [
     ...repositories,

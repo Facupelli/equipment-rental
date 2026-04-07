@@ -23,7 +23,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useCategories } from "@/features/catalog/product-categories/categories.queries";
+import { useRentalCategories } from "@/features/rental/catalog/categories.queries";
 import { useRentalLocations } from "@/features/tenant/locations/locations.queries";
 import dayjs from "@/lib/dates/dayjs";
 import { cn } from "@/lib/utils";
@@ -150,7 +150,7 @@ function FiltersSheet({
   onCategorySelect,
   activeFilterCount,
 }: FiltersSheetProps) {
-  const { data: categories } = useCategories();
+  const { data: categories } = useRentalCategories();
 
   return (
     <Sheet>
