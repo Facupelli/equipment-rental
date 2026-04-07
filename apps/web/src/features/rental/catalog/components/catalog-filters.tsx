@@ -371,9 +371,14 @@ function isScheduleBoundaryDisabled(
 }
 
 function isSameCalendarDay(left: Date, right: Date): boolean {
+  const leftDate = new Date(left);
+  const rightDate = new Date(right);
+
   return (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
+    !Number.isNaN(leftDate.getTime()) &&
+    !Number.isNaN(rightDate.getTime()) &&
+    leftDate.getFullYear() === rightDate.getFullYear() &&
+    leftDate.getMonth() === rightDate.getMonth() &&
+    leftDate.getDate() === rightDate.getDate()
   );
 }

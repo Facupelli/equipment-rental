@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import {
+  LocationScheduleResponseSchema,
   addScheduleToLocationSchema,
   getLocationScheduleSlotsQuerySchema,
   type AddScheduleToLocationDto,
@@ -19,22 +20,23 @@ const rentalApiUrl = (locationId: string) =>
 export const getLocationSchedules = createServerFn({ method: "GET" })
   .inputValidator((data: { locationId: string }) => data)
   .handler(async ({ data }): Promise<LocationScheduleResponseDto[]> => {
-    return apiFetch<LocationScheduleResponseDto[]>(apiUrl(data.locationId), {
+    const result = await apiFetch<unknown>(apiUrl(data.locationId), {
       method: "GET",
     });
+
+    return z.array(LocationScheduleResponseSchema).parse(result);
   });
 
 export const getRentalLocationSchedules = createServerFn({ method: "GET" })
   .inputValidator((data: { locationId: string }) => data)
   .handler(async ({ data }): Promise<LocationScheduleResponseDto[]> => {
-    return apiFetch<LocationScheduleResponseDto[]>(
-      rentalApiUrl(data.locationId),
-      {
-        authenticated: false,
-        face: "portal",
-        method: "GET",
-      },
-    );
+    const result = await apiFetch<unknown>(rentalApiUrl(data.locationId), {
+      authenticated: false,
+      face: "portal",
+      method: "GET",
+    });
+
+    return z.array(LocationScheduleResponseSchema).parse(result);
   });
 
 const locationSlotsSchema = getLocationScheduleSlotsQuerySchema.extend({

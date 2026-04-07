@@ -25,7 +25,7 @@ export const LocationScheduleResponseSchema = z.object({
   locationId: z.uuid(),
   type: z.enum(ScheduleSlotType),
   dayOfWeek: z.number().int().min(0).max(6).nullable(),
-  specificDate: z.date().nullable(),
+  specificDate: z.coerce.date().nullable(),
   openTime: z.number().int().min(0).max(1439),
   closeTime: z.number().int().min(0).max(1439),
   slotIntervalMinutes: z.number().nullable(),
