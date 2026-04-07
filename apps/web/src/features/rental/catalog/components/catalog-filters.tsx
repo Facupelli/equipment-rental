@@ -24,9 +24,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useRentalCategories } from "@/features/rental/catalog/categories.queries";
+import { useRentalLocationSchedules } from "@/features/tenant/locations/location-schedules.queries";
 import { useRentalLocations } from "@/features/tenant/locations/locations.queries";
 import dayjs from "@/lib/dates/dayjs";
 import { cn } from "@/lib/utils";
+import { ScheduleSlotType } from "@repo/types";
+import type { LocationScheduleResponseDto } from "@repo/schemas";
 import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
 
 interface RentalFiltersProps {
@@ -85,6 +88,7 @@ export function RentalFilters({
                 Periodo de alquiler
               </p>
               <DateRangePicker
+                locationId={search.locationId}
                 startDate={search.startDate}
                 endDate={search.endDate}
                 onChange={(range) =>
@@ -182,6 +186,7 @@ function FiltersSheet({
               PERIODO DE ALQUILER
             </p>
             <DateRangePicker
+              locationId={search.locationId}
               startDate={search.startDate}
               endDate={search.endDate}
               onChange={(range) =>
@@ -226,6 +231,7 @@ function FiltersSheet({
 }
 
 interface DateRangePickerProps {
+  locationId?: string;
   startDate?: Date;
   endDate?: Date;
   onChange: (range: DateRange | undefined) => void;
@@ -244,16 +250,23 @@ function DateRangePicker({
   numberOfMonths = 2,
   buttonClassName,
   datesButtonClassName,
+  locationId,
 }: Pick<
   DateRangePickerProps,
   | "startDate"
   | "endDate"
+  | "locationId"
   | "onChange"
   | "numberOfMonths"
   | "buttonClassName"
   | "datesButtonClassName"
 >) {
   const value = { from: startDate, to: endDate };
+  const { data: schedules } = useRentalLocationSchedules(locationId ?? "", {
+    enabled: Boolean(locationId),
+  });
+  const boundaryType =
+    value.from && !value.to ? ScheduleSlotType.RETURN : ScheduleSlotType.PICKUP;
 
   const fromLabel = value.from
     ? dayjs(value.from).format("DD MMM YYYY")
@@ -321,8 +334,46 @@ function DateRangePicker({
           selected={value}
           onSelect={onChange}
           numberOfMonths={numberOfMonths}
+          disabled={(date) =>
+            isScheduleBoundaryDisabled(date, boundaryType, schedules)
+          }
         />
       </PopoverContent>
     </Popover>
+  );
+}
+
+function isScheduleBoundaryDisabled(
+  date: Date,
+  type: ScheduleSlotType,
+  schedules?: LocationScheduleResponseDto[],
+): boolean {
+  if (!schedules || schedules.length === 0) {
+    return false;
+  }
+
+  const typedSchedules = schedules.filter((schedule) => schedule.type === type);
+  const overrideSchedules = typedSchedules.filter((schedule) => {
+    if (!schedule.specificDate) {
+      return false;
+    }
+
+    return isSameCalendarDay(schedule.specificDate, date);
+  });
+
+  if (overrideSchedules.length > 0) {
+    return false;
+  }
+
+  return !typedSchedules.some(
+    (schedule) => schedule.dayOfWeek === date.getDay(),
+  );
+}
+
+function isSameCalendarDay(left: Date, right: Date): boolean {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
   );
 }

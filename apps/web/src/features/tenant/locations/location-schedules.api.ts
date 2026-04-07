@@ -11,6 +11,8 @@ import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
 
 const apiUrl = (locationId: string) => `/locations/${locationId}/schedules`;
+const rentalApiUrl = (locationId: string) =>
+  `/rental/locations/${locationId}/schedules`;
 
 // ---------------------------------------------------------------------------
 
@@ -20,6 +22,19 @@ export const getLocationSchedules = createServerFn({ method: "GET" })
     return apiFetch<LocationScheduleResponseDto[]>(apiUrl(data.locationId), {
       method: "GET",
     });
+  });
+
+export const getRentalLocationSchedules = createServerFn({ method: "GET" })
+  .inputValidator((data: { locationId: string }) => data)
+  .handler(async ({ data }): Promise<LocationScheduleResponseDto[]> => {
+    return apiFetch<LocationScheduleResponseDto[]>(
+      rentalApiUrl(data.locationId),
+      {
+        authenticated: false,
+        face: "portal",
+        method: "GET",
+      },
+    );
   });
 
 const locationSlotsSchema = getLocationScheduleSlotsQuerySchema.extend({

@@ -1,4 +1,5 @@
 import {
+  queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
@@ -7,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import {
   getLocationSchedules,
+  getRentalLocationSchedules,
   createLocationSchedule,
   updateLocationSchedule,
   bulkCreateLocationSchedules,
@@ -22,17 +24,19 @@ import type {
 
 // ---------------------------------------------------------------------------
 
-type LocationSchedulesQueryOptions<TData = LocationScheduleResponseDto[]> =
-  Omit<
-    UseQueryOptions<LocationScheduleResponseDto[], ProblemDetailsError, TData>,
-    "queryKey" | "queryFn"
-  >;
+export type LocationSchedulesQueryOverrides<
+  TData = LocationScheduleResponseDto[],
+> = Omit<
+  UseQueryOptions<LocationScheduleResponseDto[], ProblemDetailsError, TData>,
+  "queryKey" | "queryFn"
+>;
 
-type LocationScheduleSlotsQueryOptions<TData = LocationScheduleSlotsResponse> =
-  Omit<
-    UseQueryOptions<LocationScheduleSlotsResponse, ProblemDetailsError, TData>,
-    "queryKey" | "queryFn"
-  >;
+export type LocationScheduleSlotsQueryOverrides<
+  TData = LocationScheduleSlotsResponse,
+> = Omit<
+  UseQueryOptions<LocationScheduleSlotsResponse, ProblemDetailsError, TData>,
+  "queryKey" | "queryFn"
+>;
 
 type CreateScheduleMutationOptions = Omit<
   MutationOptions<
@@ -64,51 +68,77 @@ type UpdateScheduleMutationOptions = Omit<
 // ---------------------------------------------------------------------------
 
 export const locationSchedulesQueryKeys = {
-  all: (locationId: string) => ["locations", locationId, "schedules"] as const,
+  all: () => ["location-schedules"] as const,
+  admin: () => [...locationSchedulesQueryKeys.all(), "admin"] as const,
+  portal: () => [...locationSchedulesQueryKeys.all(), "portal"] as const,
+  list: (locationId: string) =>
+    [...locationSchedulesQueryKeys.admin(), locationId] as const,
+  rentalList: (locationId: string) =>
+    [...locationSchedulesQueryKeys.portal(), "list", locationId] as const,
+  slots: (params: GetLocationScheduleSlotsQueryDto & { locationId: string }) =>
+    [
+      ...locationSchedulesQueryKeys.portal(),
+      "slots",
+      params.locationId,
+      params.type,
+      params.date,
+    ] as const,
 };
 
 // ---------------------------------------------------------------------------
 
-export function createLocationSchedulesQueryOptions<
-  TData = LocationScheduleResponseDto[],
->(
-  locationId: string,
-  options?: LocationSchedulesQueryOptions<TData>,
-): UseQueryOptions<LocationScheduleResponseDto[], ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: locationSchedulesQueryKeys.all(locationId),
-    queryFn: () => getLocationSchedules({ data: { locationId } }),
-  };
-}
+export const locationScheduleQueries = {
+  list: <TData = LocationScheduleResponseDto[]>(
+    locationId: string,
+    overrides?: LocationSchedulesQueryOverrides<TData>,
+  ) =>
+    queryOptions<LocationScheduleResponseDto[], ProblemDetailsError, TData>({
+      queryKey: locationSchedulesQueryKeys.list(locationId),
+      queryFn: () => getLocationSchedules({ data: { locationId } }),
+      ...overrides,
+    }),
 
-export function createLocationScheduleSlotsQueryOptions<
-  TData = LocationScheduleSlotsResponse,
->(
-  params: GetLocationScheduleSlotsQueryDto & { locationId: string },
-  options?: LocationScheduleSlotsQueryOptions<TData>,
-): UseQueryOptions<LocationScheduleSlotsResponse, ProblemDetailsError, TData> {
-  return {
-    ...options,
-    queryKey: [params.date, "schedules", "slots"],
-    queryFn: () => getLocationScheduleSlots({ data: params }),
-  };
-}
+  rentalList: <TData = LocationScheduleResponseDto[]>(
+    locationId: string,
+    overrides?: LocationSchedulesQueryOverrides<TData>,
+  ) =>
+    queryOptions<LocationScheduleResponseDto[], ProblemDetailsError, TData>({
+      queryKey: locationSchedulesQueryKeys.rentalList(locationId),
+      queryFn: () => getRentalLocationSchedules({ data: { locationId } }),
+      ...overrides,
+    }),
+
+  slots: <TData = LocationScheduleSlotsResponse>(
+    params: GetLocationScheduleSlotsQueryDto & { locationId: string },
+    overrides?: LocationScheduleSlotsQueryOverrides<TData>,
+  ) =>
+    queryOptions<LocationScheduleSlotsResponse, ProblemDetailsError, TData>({
+      queryKey: locationSchedulesQueryKeys.slots(params),
+      queryFn: () => getLocationScheduleSlots({ data: params }),
+      ...overrides,
+    }),
+};
 
 // ---------------------------------------------------------------------------
 
 export function useLocationSchedules<TData = LocationScheduleResponseDto[]>(
   locationId: string,
-  options?: LocationSchedulesQueryOptions<TData>,
+  overrides?: LocationSchedulesQueryOverrides<TData>,
 ) {
-  return useQuery(createLocationSchedulesQueryOptions(locationId, options));
+  return useQuery(locationScheduleQueries.list(locationId, overrides));
+}
+
+export function useRentalLocationSchedules<
+  TData = LocationScheduleResponseDto[],
+>(locationId: string, overrides?: LocationSchedulesQueryOverrides<TData>) {
+  return useQuery(locationScheduleQueries.rentalList(locationId, overrides));
 }
 
 export function useLocationScheduleSlots<TData = LocationScheduleSlotsResponse>(
   params: GetLocationScheduleSlotsQueryDto & { locationId: string },
-  options?: LocationScheduleSlotsQueryOptions<TData>,
+  overrides?: LocationScheduleSlotsQueryOverrides<TData>,
 ) {
-  return useQuery(createLocationScheduleSlotsQueryOptions(params, options));
+  return useQuery(locationScheduleQueries.slots(params, overrides));
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +158,7 @@ export function useCreateLocationSchedule(
       createLocationSchedule({ data: { locationId, dto } }),
     onSuccess: async (data, variables, context, onMutateResult) => {
       await queryClient.invalidateQueries({
-        queryKey: locationSchedulesQueryKeys.all(variables.locationId),
+        queryKey: locationSchedulesQueryKeys.all(),
       });
 
       await options?.onSuccess?.(data, variables, context, onMutateResult);
@@ -154,7 +184,7 @@ export function useBulkCreateLocationSchedules(
       bulkCreateLocationSchedules({ data: { locationId, items } }),
     onSuccess: async (data, variables, context, onMutateResult) => {
       await queryClient.invalidateQueries({
-        queryKey: locationSchedulesQueryKeys.all(variables.locationId),
+        queryKey: locationSchedulesQueryKeys.all(),
       });
 
       await options?.onSuccess?.(data, variables, context, onMutateResult);
@@ -182,7 +212,7 @@ export function useUpdateLocationSchedule(
       updateLocationSchedule({ data: { locationId, scheduleId, dto } }),
     onSuccess: async (data, variables, context, onMutateResult) => {
       await queryClient.invalidateQueries({
-        queryKey: locationSchedulesQueryKeys.all(variables.locationId),
+        queryKey: locationSchedulesQueryKeys.all(),
       });
 
       await options?.onSuccess?.(data, variables, context, onMutateResult);

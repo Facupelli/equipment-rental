@@ -58,6 +58,7 @@ import { UpdateLocationHttpController } from './location/application/commands/up
 import { DeactivateLocationHttpController } from './location/application/commands/deactivate-location/deactivate-location.http.controller';
 import { GetLocationScheduleSlotsHttpController } from './location/application/queries/get-location-schedule-slots/get-location-schedule-slots.http.controller';
 import { GetLocationSchedulesHttpController } from './location/application/queries/get-location-schedules/get-location-schedules.http.controller';
+import { GetRentalLocationSchedulesHttpController } from './location/application/queries/get-rental-location-schedules/get-rental-location-schedules.http.controller';
 import { GetRentalLocationsHttpController } from './location/application/queries/get-rental-locations/get-rental-locations.http.controller';
 import { AddLocationScheduleHttpController } from './location/application/commands/add-schedule-to-location/add-location-schedule.http.controller';
 import { BulkAddLocationSchedulesHttpController } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-location-schedules.http.controller';
@@ -129,6 +130,7 @@ const controllers = [
   DeactivateLocationHttpController,
   GetLocationsHttpController,
   GetRentalLocationsHttpController,
+  GetRentalLocationSchedulesHttpController,
   GetLocationScheduleSlotsHttpController,
   GetLocationSchedulesHttpController,
   AddLocationScheduleHttpController,
