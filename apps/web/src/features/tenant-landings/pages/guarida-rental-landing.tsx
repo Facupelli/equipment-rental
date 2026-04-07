@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Truck, UserCog, Video } from "lucide-react";
+import { ArrowRight, MessageCircle, Truck, UserCog, Video } from "lucide-react";
 import { getResolvedTenantBranding } from "@/features/tenant-branding/tenant-branding";
 import { Route } from "@/routes/index";
 
@@ -14,6 +14,8 @@ const SERVICES = [
     label: "Técnicos Especializados",
   },
 ];
+
+const WHATSAPP_HREF = "https://wa.me/34680870274";
 
 export function GuaridaRentalLandingPage() {
   const { tenantContext } = Route.useRouteContext();
@@ -154,7 +156,7 @@ export function GuaridaRentalLandingPage() {
             {/* CTA */}
             <Link
               to="/rental"
-              className="anim-5 mt-10 flex w-full max-w-100 items-stretch self-start md:mt-4 md:w-auto md:max-w-none md:self-center"
+              className="anim-5 mt-6 flex w-full max-w-100 items-stretch self-start md:mt-4 md:w-auto md:max-w-none md:self-center"
             >
               <span
                 className="
@@ -173,6 +175,23 @@ export function GuaridaRentalLandingPage() {
               </div>
             </Link>
           </main>
+
+          <a
+            href={WHATSAPP_HREF}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-sm items-center justify-center gap-2 md:gap-4 bg-neutral-900 px-2 md:px-8 py-3 text-center flex"
+          >
+            <div className="flex size-6 md:size-8 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-black">
+              <MessageCircle className="size-4 md:size-5" />
+            </div>
+            <span className="text-[10px] md:text-[12px] font-medium md:tracking-[0.22em] text-white/55 uppercase">
+              No encontrás tu combo?
+            </span>
+            <span className="text-[10px] md:text-[12px] font-medium md:tracking-[0.18em] text-[#C85C3E] uppercase">
+              Escribinos y te lo armamos
+            </span>
+          </a>
 
           {/* ── Footer ── */}
           <footer className="hidden items-end justify-between px-10 py-6 md:flex">
