@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Truck, UserCog, Video } from "lucide-react";
+import { getResolvedTenantBranding } from "@/features/tenant-branding/tenant-branding";
+import { Route } from "@/routes/index";
 
 const SERVICES = [
   {
@@ -14,6 +16,15 @@ const SERVICES = [
 ];
 
 export function GuaridaRentalLandingPage() {
+  const { tenantContext } = Route.useRouteContext();
+  const branding = getResolvedTenantBranding(tenantContext);
+
+  console.log({ branding });
+
+  if (!branding) {
+    return null;
+  }
+
   return (
     <>
       <style>{`
@@ -77,9 +88,19 @@ export function GuaridaRentalLandingPage() {
         <div className="relative z-10 grid grid-rows-[auto_1fr_auto] min-h-screen">
           {/* ── Navbar ── */}
           <nav className="flex items-center justify-between px-6 py-5 bg-black/80 backdrop-blur-sm md:px-10">
-            <span className="text-white text-2xl tracking-widest select-none">
-              GUARIDA RENTAL
-            </span>
+            {branding.logoSrc ? (
+              // <div className="bg-neutral-50 p-2 rounded-md">
+              <img
+                src={branding.logoSrc}
+                alt={branding.tenantName}
+                className="h-12 w-auto max-w-48 object-contain"
+              />
+            ) : (
+              // </div>
+              <span className="text-white text-2xl tracking-widest select-none">
+                {branding.tenantName}
+              </span>
+            )}
 
             <Link
               to="/rental"
@@ -154,7 +175,7 @@ export function GuaridaRentalLandingPage() {
             <p className=" text-[10px] font-light tracking-[0.18em] uppercase text-white/30">
               ©{new Date().getFullYear()}{" "}
               <strong className="font-semibold text-white/45">
-                GUARIDA RENTAL
+                {branding.tenantName}
               </strong>
               . MADRID.
             </p>

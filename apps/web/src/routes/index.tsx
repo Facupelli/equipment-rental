@@ -1,4 +1,5 @@
 import { DepiqoLandingPage } from "@/features/marketing/pages/depiqo-landing";
+import { getResolvedTenantBranding } from "@/features/tenant-branding/tenant-branding";
 import { tenantLandingRegistry } from "@/features/tenant-landings/tenant-landing-registry";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 
@@ -14,11 +15,11 @@ const platformSeo = {
 export const Route = createFileRoute("/")({
 	loader: ({ context: { tenantContext } }) => {
 		if (tenantContext.face === "platform") {
-			return { seo: platformSeo };
+			return { seo: platformSeo, branding: null };
 		}
 
 		if (tenantContext.face === "admin") {
-			return { seo: platformSeo };
+			return { seo: platformSeo, branding: null };
 		}
 
 		const landing = tenantLandingRegistry[tenantContext.tenant.slug];
@@ -27,7 +28,10 @@ export const Route = createFileRoute("/")({
 			throw notFound();
 		}
 
-		return { seo: landing.seo };
+		return {
+			seo: landing.seo,
+			branding: getResolvedTenantBranding(tenantContext),
+		};
 	},
 	head: ({ loaderData }) => {
 		const seo = loaderData?.seo ?? platformSeo;
@@ -55,6 +59,15 @@ export const Route = createFileRoute("/")({
 					content: seo.ogDescription ?? seo.description,
 				},
 			],
+			links: loaderData?.branding?.faviconHref
+				? [
+						{
+							rel: "icon",
+							type: "image/png",
+							href: loaderData.branding.faviconHref,
+						},
+					]
+				: undefined,
 		};
 	},
 	component: HomePage,

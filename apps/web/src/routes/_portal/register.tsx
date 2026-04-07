@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { Mail, Lock, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,34 +24,11 @@ import {
 	useCustomerRegister,
 } from "@/features/rental/auth/portal-auth.queries";
 import { Link } from "@tanstack/react-router";
-import { buildR2PublicUrl } from "@/lib/r2-public-url";
+import { getTenantBranding } from "@/features/tenant-branding/tenant-branding";
 import { PoweredByFooter } from "@/shared/components/powered-by-footer";
 
 export const Route = createFileRoute("/_portal/register")({
 	validateSearch: portalAuthRedirectSchema,
-	beforeLoad: ({ context }) => {
-		if (context.tenantContext.face !== "portal") {
-			throw redirect({ to: "/admin/login" });
-		}
-	},
-	loader: ({ context }) => ({
-		faviconHref:
-			context.tenantContext.face === "portal"
-				? buildR2PublicUrl(context.tenantContext.tenant.faviconUrl, "branding")
-				: null,
-	}),
-	head: ({ loaderData }) =>
-		loaderData?.faviconHref
-			? {
-					links: [
-						{
-							rel: "icon",
-							type: "image/png",
-							href: loaderData.faviconHref,
-						},
-					],
-				}
-			: {},
 	component: RegisterPage,
 });
 
@@ -86,11 +63,7 @@ function RegisterPage() {
 		},
 	});
 
-	if (tenantContext.face !== "portal") {
-		return <div>Tenant not found</div>;
-	}
-
-	const src = buildR2PublicUrl(tenantContext.tenant.logoUrl, "branding");
+	const branding = getTenantBranding(tenantContext.tenant);
 
 	return (
 		<div className="grid grid-rows-[1fr_auto] min-h-svh bg-neutral-100">
@@ -99,11 +72,11 @@ function RegisterPage() {
 				<div className="w-full max-w-md space-y-8">
 					{/* ── Logo + heading ── */}
 					<div className="space-y-2">
-						{src && (
+						{branding.logoSrc && (
 							<div className="flex justify-center">
 								<img
-									src={src}
-									alt={tenantContext.tenant.name}
+									src={branding.logoSrc}
+									alt={branding.tenantName}
 									className="size-32 object-contain"
 								/>
 							</div>

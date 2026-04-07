@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PortalRouteRouteImport } from './routes/_portal/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiCustomerUploadRouteImport } from './routes/api/customer-upload'
@@ -45,6 +46,10 @@ import { Route as AdminDashboardCatalogBundlesBundleIdIndexRouteImport } from '.
 import { Route as AdminDashboardCatalogProductsProductIdEditRouteImport } from './routes/_admin/dashboard/catalog/products/$productId/edit'
 import { Route as AdminDashboardCatalogBundlesBundleIdEditRouteImport } from './routes/_admin/dashboard/catalog/bundles/$bundleId/edit'
 
+const PortalRouteRoute = PortalRouteRouteImport.update({
+  id: '/_portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -66,18 +71,18 @@ const ApiBrandingUploadRoute = ApiBrandingUploadRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortalRegisterRoute = PortalRegisterRouteImport.update({
-  id: '/_portal/register',
+  id: '/register',
   path: '/register',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
 const PortalLoginRoute = PortalLoginRouteImport.update({
-  id: '/_portal/login',
+  id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
 const PortalTenantRouteRoute = PortalTenantRouteRouteImport.update({
-  id: '/_portal/_tenant',
-  getParentRoute: () => rootRouteImport,
+  id: '/_tenant',
+  getParentRoute: () => PortalRouteRoute,
 } as any)
 const AdminDashboardRouteRoute = AdminDashboardRouteRouteImport.update({
   id: '/_admin/dashboard',
@@ -316,6 +321,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_portal': typeof PortalRouteRouteWithChildren
   '/_admin/dashboard': typeof AdminDashboardRouteRouteWithChildren
   '/_portal/_tenant': typeof PortalTenantRouteRouteWithChildren
   '/_portal/login': typeof PortalLoginRoute
@@ -426,6 +432,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_portal'
     | '/_admin/dashboard'
     | '/_portal/_tenant'
     | '/_portal/login'
@@ -464,10 +471,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PortalRouteRoute: typeof PortalRouteRouteWithChildren
   AdminDashboardRouteRoute: typeof AdminDashboardRouteRouteWithChildren
-  PortalTenantRouteRoute: typeof PortalTenantRouteRouteWithChildren
-  PortalLoginRoute: typeof PortalLoginRoute
-  PortalRegisterRoute: typeof PortalRegisterRoute
   ApiBrandingUploadRoute: typeof ApiBrandingUploadRoute
   ApiCustomerUploadRoute: typeof ApiCustomerUploadRoute
   ApiUploadRoute: typeof ApiUploadRoute
@@ -477,6 +482,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_portal': {
+      id: '/_portal'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PortalRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -510,21 +522,21 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof PortalRegisterRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
     '/_portal/login': {
       id: '/_portal/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof PortalLoginRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
     '/_portal/_tenant': {
       id: '/_portal/_tenant'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof PortalTenantRouteRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
     '/_admin/dashboard': {
       id: '/_admin/dashboard'
@@ -725,6 +737,40 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PortalTenantRouteRouteChildren {
+  PortalTenantCartIndexRoute: typeof PortalTenantCartIndexRoute
+  PortalTenantOnboardIndexRoute: typeof PortalTenantOnboardIndexRoute
+  PortalTenantOrderConfirmationIndexRoute: typeof PortalTenantOrderConfirmationIndexRoute
+  PortalTenantRentalIndexRoute: typeof PortalTenantRentalIndexRoute
+}
+
+const PortalTenantRouteRouteChildren: PortalTenantRouteRouteChildren = {
+  PortalTenantCartIndexRoute: PortalTenantCartIndexRoute,
+  PortalTenantOnboardIndexRoute: PortalTenantOnboardIndexRoute,
+  PortalTenantOrderConfirmationIndexRoute:
+    PortalTenantOrderConfirmationIndexRoute,
+  PortalTenantRentalIndexRoute: PortalTenantRentalIndexRoute,
+}
+
+const PortalTenantRouteRouteWithChildren =
+  PortalTenantRouteRoute._addFileChildren(PortalTenantRouteRouteChildren)
+
+interface PortalRouteRouteChildren {
+  PortalTenantRouteRoute: typeof PortalTenantRouteRouteWithChildren
+  PortalLoginRoute: typeof PortalLoginRoute
+  PortalRegisterRoute: typeof PortalRegisterRoute
+}
+
+const PortalRouteRouteChildren: PortalRouteRouteChildren = {
+  PortalTenantRouteRoute: PortalTenantRouteRouteWithChildren,
+  PortalLoginRoute: PortalLoginRoute,
+  PortalRegisterRoute: PortalRegisterRoute,
+}
+
+const PortalRouteRouteWithChildren = PortalRouteRoute._addFileChildren(
+  PortalRouteRouteChildren,
+)
+
 interface AdminDashboardRouteRouteChildren {
   AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
   AdminDashboardCustomersCustomerIdRoute: typeof AdminDashboardCustomersCustomerIdRoute
@@ -786,30 +832,10 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
 const AdminDashboardRouteRouteWithChildren =
   AdminDashboardRouteRoute._addFileChildren(AdminDashboardRouteRouteChildren)
 
-interface PortalTenantRouteRouteChildren {
-  PortalTenantCartIndexRoute: typeof PortalTenantCartIndexRoute
-  PortalTenantOnboardIndexRoute: typeof PortalTenantOnboardIndexRoute
-  PortalTenantOrderConfirmationIndexRoute: typeof PortalTenantOrderConfirmationIndexRoute
-  PortalTenantRentalIndexRoute: typeof PortalTenantRentalIndexRoute
-}
-
-const PortalTenantRouteRouteChildren: PortalTenantRouteRouteChildren = {
-  PortalTenantCartIndexRoute: PortalTenantCartIndexRoute,
-  PortalTenantOnboardIndexRoute: PortalTenantOnboardIndexRoute,
-  PortalTenantOrderConfirmationIndexRoute:
-    PortalTenantOrderConfirmationIndexRoute,
-  PortalTenantRentalIndexRoute: PortalTenantRentalIndexRoute,
-}
-
-const PortalTenantRouteRouteWithChildren =
-  PortalTenantRouteRoute._addFileChildren(PortalTenantRouteRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PortalRouteRoute: PortalRouteRouteWithChildren,
   AdminDashboardRouteRoute: AdminDashboardRouteRouteWithChildren,
-  PortalTenantRouteRoute: PortalTenantRouteRouteWithChildren,
-  PortalLoginRoute: PortalLoginRoute,
-  PortalRegisterRoute: PortalRegisterRoute,
   ApiBrandingUploadRoute: ApiBrandingUploadRoute,
   ApiCustomerUploadRoute: ApiCustomerUploadRoute,
   ApiUploadRoute: ApiUploadRoute,
