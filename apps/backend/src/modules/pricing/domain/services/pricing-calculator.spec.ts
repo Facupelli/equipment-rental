@@ -102,6 +102,8 @@ function makeInput(overrides: Partial<PricingCalculatorInput> = {}): PricingCalc
   return {
     period: makePeriod(60),
     billingUnitDurationMinutes: 60,
+    tenantTimezone: 'UTC',
+    weekendCountsAsOne: false,
     tiers: [makeTier(1, null, 10)],
     rules: [],
     context: makeContext(),
@@ -148,6 +150,23 @@ describe('PricingCalculator', () => {
       // 30 min / 60 min per unit = 0.5 → ceils to 1 unit
       const result = calculator.calculate(makeInput({ period: makePeriod(30) }));
       expect(result.totalUnits).toBe(1);
+    });
+
+    it('day billing collapses a fully occupied weekend into one unit when enabled', () => {
+      const period = DateRange.create(new Date('2025-01-03T13:00:00Z'), new Date('2025-01-06T13:00:00Z'));
+
+      const result = calculator.calculate(
+        makeInput({
+          period,
+          billingUnitDurationMinutes: 1440,
+          tenantTimezone: 'America/Argentina/Buenos_Aires',
+          weekendCountsAsOne: true,
+          tiers: [makeTier(1, 1, 100), makeTier(2, 2, 80), makeTier(3, null, 60)],
+        }),
+      );
+
+      expect(result.totalUnits).toBe(2);
+      expect(result.pricePerBillingUnit.amount.toNumber()).toBe(80);
     });
   });
 

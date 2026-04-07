@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
+import { TenantConfig } from '@repo/schemas';
 import { Result, err, ok } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
+import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 import { RuleApplicationContext } from '../domain/types/pricing-rule.types';
 import {
   CalculateBundlePriceDto,
@@ -20,27 +23,31 @@ import { PricingBundleNotFoundError, PricingProductTypeNotFoundError } from '../
 import { ResolveCouponForPricingService } from './services/resolve-coupon-for-pricing.service';
 import { RedeemCouponService } from './services/redeem-coupon.service';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
+import { BillingUnitResolverService } from '../domain/services/billing-unit-resolver.service';
 
 @Injectable()
 export class PricingApplicationService implements PricingPublicApi {
   private readonly calculator = new PricingCalculator();
+  private readonly billingUnitResolver = new BillingUnitResolverService();
 
   constructor(
+    private readonly queryBus: QueryBus,
     private readonly pricingRead: PricingComputationReadService,
     private readonly resolveCouponForPricingService: ResolveCouponForPricingService,
     private readonly redeemCouponService: RedeemCouponService,
   ) {}
 
   async calculateProductPrice(dto: CalculateProductPriceDto): Promise<PricingResult> {
-    const meta = await this.pricingRead.loadProductTypeMeta(dto.productTypeId);
+    const [meta, rules, tenantPricingContext, tiers] = await Promise.all([
+      this.pricingRead.loadProductTypeMeta(dto.productTypeId),
+      this.pricingRead.loadActiveRulesForTenant(dto.tenantId),
+      this.loadTenantPricingContext(dto.tenantId),
+      this.pricingRead.loadTiersForProduct(dto.productTypeId, dto.locationId),
+    ]);
+
     if (!meta) {
       throw new PricingProductTypeNotFoundError(dto.productTypeId);
     }
-
-    const [tiers, rules] = await Promise.all([
-      this.pricingRead.loadTiersForProduct(dto.productTypeId, dto.locationId),
-      this.pricingRead.loadActiveRulesForTenant(dto.tenantId),
-    ]);
 
     const period = DateRange.create(dto.period.start, dto.period.end);
 
@@ -56,6 +63,8 @@ export class PricingApplicationService implements PricingPublicApi {
     return this.calculator.calculate({
       period,
       billingUnitDurationMinutes: meta.billingUnitDurationMinutes,
+      tenantTimezone: tenantPricingContext.timezone,
+      weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
       tiers,
       rules,
       context,
@@ -65,15 +74,16 @@ export class PricingApplicationService implements PricingPublicApi {
   }
 
   async calculateBundlePrice(dto: CalculateBundlePriceDto): Promise<PricingResult> {
-    const meta = await this.pricingRead.loadBundleMeta(dto.bundleId);
+    const [meta, rules, tenantPricingContext, tiers] = await Promise.all([
+      this.pricingRead.loadBundleMeta(dto.bundleId),
+      this.pricingRead.loadActiveRulesForTenant(dto.tenantId),
+      this.loadTenantPricingContext(dto.tenantId),
+      this.pricingRead.loadTiersForBundle(dto.bundleId, dto.locationId),
+    ]);
+
     if (!meta) {
       throw new PricingBundleNotFoundError(dto.bundleId);
     }
-
-    const [tiers, rules] = await Promise.all([
-      this.pricingRead.loadTiersForBundle(dto.bundleId, dto.locationId),
-      this.pricingRead.loadActiveRulesForTenant(dto.tenantId),
-    ]);
 
     const period = DateRange.create(dto.period.start, dto.period.end);
 
@@ -88,6 +98,8 @@ export class PricingApplicationService implements PricingPublicApi {
     return this.calculator.calculate({
       period,
       billingUnitDurationMinutes: meta.billingUnitDurationMinutes,
+      tenantTimezone: tenantPricingContext.timezone,
+      weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
       tiers,
       rules,
       context,
@@ -97,19 +109,22 @@ export class PricingApplicationService implements PricingPublicApi {
   }
 
   async getComponentStandalonePrices(dto: GetComponentStandalonePricesDto): Promise<Map<string, Decimal>> {
-    const componentData = await this.pricingRead.loadTiersForBundleComponents(
-      dto.componentProductTypeIds,
-      dto.locationId,
-    );
+    const [componentData, tenantPricingContext] = await Promise.all([
+      this.pricingRead.loadTiersForBundleComponents(dto.componentProductTypeIds, dto.locationId),
+      this.loadTenantPricingContext(dto.tenantId),
+    ]);
 
     const result = new Map<string, Decimal>();
 
     for (const [productTypeId, { billingUnitDurationMinutes, tiers }] of componentData) {
       // Resolve units using the component's own billing unit duration —
       // components may have different billing units than the bundle itself.
-      const units = Math.ceil(
-        DateRange.create(dto.period.start, dto.period.end).durationInMinutes() / billingUnitDurationMinutes,
-      );
+      const units = this.billingUnitResolver.resolveUnits({
+        period: dto.period,
+        billingUnitDurationMinutes,
+        tenantTimezone: tenantPricingContext.timezone,
+        weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
+      });
 
       // Find the tier that covers this unit count.
       // If no tier is configured for this component at this location,
@@ -129,6 +144,21 @@ export class PricingApplicationService implements PricingPublicApi {
     }
 
     return result;
+  }
+
+  private async loadTenantPricingContext(tenantId: string): Promise<{ timezone: string; weekendCountsAsOne: boolean }> {
+    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
+      new GetTenantConfigQuery(tenantId),
+    );
+
+    if (!tenantConfig) {
+      throw new Error(`Tenant config not found for tenant "${tenantId}"`);
+    }
+
+    return {
+      timezone: tenantConfig.timezone,
+      weekendCountsAsOne: tenantConfig.pricing.weekendCountsAsOne,
+    };
   }
 
   async resolveCouponForPricing(

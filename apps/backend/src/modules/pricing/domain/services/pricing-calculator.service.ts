@@ -6,6 +6,7 @@ import { DurationDiscountTier, RuleApplicationContext } from '../types/pricing-r
 import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exceptions';
 import { PricingTier } from '../entities/pricing-tier.entity';
 import { PricingRuleEffectType, PricingRuleType } from '@repo/types';
+import { BillingUnitResolverService } from './billing-unit-resolver.service';
 
 export type AppliedDiscount = {
   ruleId: string;
@@ -26,6 +27,8 @@ export type PricingResult = {
 export type PricingCalculatorInput = {
   period: DateRange;
   billingUnitDurationMinutes: number;
+  tenantTimezone: string;
+  weekendCountsAsOne: boolean;
   tiers: PricingTier[];
   rules: PricingRule[];
   context: RuleApplicationContext;
@@ -45,8 +48,15 @@ export type PricingCalculatorInput = {
  *   5. Flooring the result at zero
  */
 export class PricingCalculator {
+  private readonly billingUnitResolver = new BillingUnitResolverService();
+
   calculate(input: PricingCalculatorInput): PricingResult {
-    const units = this.resolveUnits(input.period, input.billingUnitDurationMinutes);
+    const units = this.billingUnitResolver.resolveUnits({
+      period: input.period,
+      billingUnitDurationMinutes: input.billingUnitDurationMinutes,
+      tenantTimezone: input.tenantTimezone,
+      weekendCountsAsOne: input.weekendCountsAsOne,
+    });
     const tier = this.resolveTier(input.tiers, units, input.entityId);
     const basePrice = this.computeBasePrice(tier, units, input.currency);
     const applicableRules = this.filterRules(input.rules, input.context);
@@ -59,16 +69,6 @@ export class PricingCalculator {
       totalUnits: units,
       appliedDiscounts,
     };
-  }
-
-  // ── Step 1: Billing units ─────────────────────────────────────────────────
-
-  /**
-   * Partial units bill as full units — ceiling is intentional.
-   * A 90-minute rental on an hourly product = 2 units, not 1.5.
-   */
-  private resolveUnits(period: DateRange, billingUnitDurationMinutes: number): number {
-    return Math.ceil(period.durationInMinutes() / billingUnitDurationMinutes);
   }
 
   // ── Step 2: Tier resolution ───────────────────────────────────────────────

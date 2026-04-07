@@ -64,7 +64,7 @@ export function TenantConfigForm() {
 
           <div className="rounded-xl border border-border bg-card divide-y divide-border">
             {/* Over-rental */}
-            <form.Field name="overRentalEnabled">
+            {/* <form.Field name="overRentalEnabled">
               {(field) => (
                 <div className="grid grid-cols-[1fr_auto] items-start gap-8 px-5 py-4">
                   <div>
@@ -80,14 +80,15 @@ export function TenantConfigForm() {
                       checked={field.state.value}
                       onCheckedChange={field.handleChange}
                       aria-label="Toggle over-rental"
+                      disabled
                     />
                   </div>
                 </div>
               )}
-            </form.Field>
+            </form.Field> */}
 
             {/* Max over-rent threshold */}
-            <form.Field name="maxOverRentThreshold">
+            {/* <form.Field name="maxOverRentThreshold">
               {(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
@@ -120,7 +121,7 @@ export function TenantConfigForm() {
                   </div>
                 );
               }}
-            </form.Field>
+            </form.Field> */}
 
             {/* Weekend counts as one */}
             <form.Field name="weekendCountsAsOne">
@@ -128,10 +129,11 @@ export function TenantConfigForm() {
                 <div className="grid grid-cols-[1fr_auto] items-start gap-8 px-5 py-4">
                   <div>
                     <p className="text-sm font-semibold text-foreground">
-                      Weekend counts as one day
+                      Sistema day/weekend
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Saturday and Sunday are billed as a single billing unit.
+                      Sabado y Domingo son contados como una sola unidad de
+                      facturación.
                     </p>
                   </div>
                   <div className="pt-1">
@@ -285,7 +287,7 @@ export function TenantConfigForm() {
                       <SelectItem value={BookingMode.INSTANT_BOOK}>
                         Instant book
                       </SelectItem>
-                      <SelectItem value={BookingMode.REQUEST_TO_BOOK}>
+                      <SelectItem value={BookingMode.REQUEST_TO_BOOK} disabled>
                         Request to book
                       </SelectItem>
                     </SelectContent>
