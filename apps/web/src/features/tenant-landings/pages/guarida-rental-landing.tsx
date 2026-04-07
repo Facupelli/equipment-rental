@@ -46,7 +46,7 @@ export function GuaridaRentalLandingPage() {
       `}</style>
 
       {/* ── Root ── */}
-      <section className="relative w-full min-h-screen overflow-hidden ">
+      <section className="relative w-full h-screen overflow-hidden ">
         {/* ── Background image: grayscale + lighter than before ── */}
         <img
           src="https://images.pexels.com/photos/2512258/pexels-photo-2512258.jpeg"
@@ -93,11 +93,11 @@ export function GuaridaRentalLandingPage() {
               <img
                 src={branding.logoSrc}
                 alt={branding.tenantName}
-                className="h-12 w-auto max-w-48 object-contain"
+                className="h-8 md:h-12 w-auto max-w-48 object-contain"
               />
             ) : (
               // </div>
-              <span className="text-white text-2xl tracking-widest select-none">
+              <span className="text-white text-xl md:text-2xl tracking-widest select-none">
                 {branding.tenantName}
               </span>
             )}
@@ -106,7 +106,7 @@ export function GuaridaRentalLandingPage() {
               to="/rental"
               className="
                text-[11px] font-bold tracking-[0.15em] uppercase
-               px-6 py-2.5 text-white bg-[#C85C3E]
+               px-4 md:px-6 py-1.5 md:py-2.5 text-white bg-[#C85C3E]
               transition-colors duration-200 hover:bg-[#a84a2f]
              "
             >

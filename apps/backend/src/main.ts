@@ -6,6 +6,7 @@ import { AppLogger } from './core/logger/app-logger.service';
 import { TransformInterceptor } from './core/response/transform.interceptor';
 
 const PORT = process.env.PORT ?? 3000;
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
