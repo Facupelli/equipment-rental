@@ -49,7 +49,7 @@ export function BundleDetailDialog({
         On mobile: single column, full screen height, entire dialog scrolls.
         On desktop: two columns, max 70vh, only the right panel scrolls.
       */}
-      <DialogContent className="overflow-hidden p-0 sm:max-w-5xl max-h-dvh sm:max-h-[85vh] flex flex-col">
+      <DialogContent className="overflow-hidden p-0 sm:max-w-5xl max-h-[95vh] sm:max-h-[85vh] flex flex-col">
         <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] min-h-0 flex-1">
           {/* Image panel — compact banner on mobile, sticky side on desktop */}
           <div className="lg:sticky lg:top-0 lg:self-start lg:h-full lg:max-h-[85vh] shrink-0">

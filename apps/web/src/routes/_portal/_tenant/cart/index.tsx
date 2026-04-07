@@ -53,7 +53,7 @@ function CartPage() {
           Right column is fixed-width sticky sidebar.
           Mobile: single column, sidebar stacks below.
         */}
-					<div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
+					<div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:items-start lg:gap-12">
 						<CartPageItemList />
 						<CartPageSidebar />
 					</div>

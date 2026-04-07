@@ -1,19 +1,19 @@
 import type { JoinedLineItem } from "@/features/rental/cart/hooks/use-cart-order";
 import {
-  AlertTriangle,
-  ArrowRight,
-  Banknote,
-  CircleHelp,
-  Tag,
+	AlertTriangle,
+	ArrowRight,
+	Banknote,
+	CircleHelp,
+	Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
+	Popover,
+	PopoverContent,
+	PopoverDescription,
+	PopoverHeader,
+	PopoverTitle,
+	PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -27,125 +27,125 @@ import { formatCurrency } from "@/shared/utils/price.utils";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 
 export function CartPageSidebar() {
-  const { data: tenantPriceConfig } = useTenantPricingConfig();
+	const { data: tenantPriceConfig } = useTenantPricingConfig();
 
-  const {
-    breakdown,
-    joinedLineItems,
-    insuranceSelected,
-    isAuthenticated,
-    isPriceLoading,
-    isPriceError,
-    isBookingError,
-    cartItems,
-    handleBook,
-    onInsuranceSelectedChange,
-  } = useCartPageContext();
+	const {
+		breakdown,
+		joinedLineItems,
+		insuranceSelected,
+		isAuthenticated,
+		isPriceLoading,
+		isPriceError,
+		isBookingError,
+		cartItems,
+		handleBook,
+		onInsuranceSelectedChange,
+	} = useCartPageContext();
 
-  const isDisabled = cartItems.length === 0 || isPriceLoading || isPriceError;
-  const ctaLabel = isAuthenticated
-    ? "Alquilar Equipo"
-    : "Iniciar sesión para reservar";
+	const isDisabled = cartItems.length === 0 || isPriceLoading || isPriceError;
+	const ctaLabel = isAuthenticated
+		? "Alquilar Equipo"
+		: "Iniciar sesión para reservar";
 
-  const [bookButtonRef, isBookButtonVisible] =
-    useIsVisible<HTMLButtonElement>();
+	const [bookButtonRef, isBookButtonVisible] =
+		useIsVisible<HTMLButtonElement>();
 
-  return (
-    <>
-      {/* ── Desktop/tablet sidebar — sticky only on lg+ ── */}
-      <div className="lg:sticky lg:top-6 border border-neutral-200 bg-white p-6">
-        <CartPagePriceBreakdown
-          insuranceAmount={breakdown?.insuranceAmount}
-          insuranceApplied={breakdown?.insuranceApplied}
-          insuranceSelected={insuranceSelected}
-          itemsSubtotal={breakdown?.itemsSubtotal}
-          onInsuranceSelectedChange={onInsuranceSelectedChange}
-          total={breakdown?.total}
-          totalBeforeDiscounts={breakdown?.totalBeforeDiscounts}
-          totalDiscount={breakdown?.totalDiscount}
-          lineItems={joinedLineItems}
-          isLoading={isPriceLoading}
-          isError={isPriceError}
-          priceConfig={tenantPriceConfig}
-        />
+	return (
+		<>
+			{/* ── Desktop/tablet sidebar — sticky only on lg+ ── */}
+			<div className="border border-neutral-200 bg-white p-6 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+				<CartPagePriceBreakdown
+					insuranceAmount={breakdown?.insuranceAmount}
+					insuranceApplied={breakdown?.insuranceApplied}
+					insuranceSelected={insuranceSelected}
+					itemsSubtotal={breakdown?.itemsSubtotal}
+					onInsuranceSelectedChange={onInsuranceSelectedChange}
+					total={breakdown?.total}
+					totalBeforeDiscounts={breakdown?.totalBeforeDiscounts}
+					totalDiscount={breakdown?.totalDiscount}
+					lineItems={joinedLineItems}
+					isLoading={isPriceLoading}
+					isError={isPriceError}
+					priceConfig={tenantPriceConfig}
+				/>
 
-        {isBookingError && (
-          <div className="mt-6 flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
-            <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
-              La reserva falló inesperadamente. Por favor, inténtalo de nuevo.
-            </p>
-          </div>
-        )}
+				{isBookingError && (
+					<div className="mt-6 flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
+						<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+						<p className="text-xs font-semibold uppercase tracking-wider text-red-600">
+							La reserva falló inesperadamente. Por favor, inténtalo de nuevo.
+						</p>
+					</div>
+				)}
 
-        <Button
-          ref={bookButtonRef}
-          onClick={handleBook}
-          disabled={isDisabled}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-none bg-black py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
-        >
-          {ctaLabel}
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Button>
+				<Button
+					ref={bookButtonRef}
+					onClick={handleBook}
+					disabled={isDisabled}
+					className="mt-4 flex w-full items-center justify-center gap-2 rounded-none bg-black py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
+				>
+					{ctaLabel}
+					<ArrowRight className="h-3.5 w-3.5" />
+				</Button>
 
-        <div className="mt-4 space-y-2">
-          {!isAuthenticated && (
-            <div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
-              <CircleHelp className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
-              <p className="text-[11px] text-neutral-500">
-                Puedes revisar tu pedido sin cuenta. Te pediremos iniciar sesión
-                antes de completar la reserva.
-              </p>
-            </div>
-          )}
-          <div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
-            <Banknote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
-            <p className="text-[11px] text-neutral-500">
-              El pago se cobra al retirar los equipos.
-            </p>
-          </div>
-        </div>
-      </div>
+				<div className="mt-4 space-y-2">
+					{!isAuthenticated && (
+						<div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
+							<CircleHelp className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+							<p className="text-[11px] text-neutral-500">
+								Puedes revisar tu pedido sin cuenta. Te pediremos iniciar sesión
+								antes de completar la reserva.
+							</p>
+						</div>
+					)}
+					<div className="flex items-start gap-3 bg-neutral-50 px-3 py-2.5">
+						<Banknote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+						<p className="text-[11px] text-neutral-500">
+							El pago se cobra al retirar los equipos.
+						</p>
+					</div>
+				</div>
+			</div>
 
-      {/* ── Floating CTA bar — mobile only, hides when real button is visible ── */}
-      <div
-        className={cn(
-          "lg:hidden fixed bottom-0 left-0 right-0 z-20",
-          "border-t border-neutral-200 bg-white px-4 py-3",
-          "flex items-center justify-between gap-4",
-          "transition-transform duration-200",
-          isBookButtonVisible ? "translate-y-full" : "translate-y-0",
-        )}
-      >
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            Total a pagar
-          </p>
-          {isPriceLoading ? (
-            <Skeleton className="mt-1 h-5 w-24" />
-          ) : (
-            <p className="text-lg font-black text-black">
-              {breakdown?.total != null
-                ? formatCurrency(
-                    breakdown.total,
-                    tenantPriceConfig.currency,
-                    tenantPriceConfig.locale,
-                  )
-                : "—"}
-            </p>
-          )}
-        </div>
-        <Button
-          onClick={handleBook}
-          disabled={isDisabled}
-          className="flex items-center gap-2 rounded-none bg-black px-6 py-3 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
-        >
-          {ctaLabel}
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-    </>
-  );
+			{/* ── Floating CTA bar — mobile only, hides when real button is visible ── */}
+			<div
+				className={cn(
+					"lg:hidden fixed bottom-0 left-0 right-0 z-20",
+					"border-t border-neutral-200 bg-white px-4 py-3",
+					"flex items-center justify-between gap-4",
+					"transition-transform duration-200",
+					isBookButtonVisible ? "translate-y-full" : "translate-y-0",
+				)}
+			>
+				<div>
+					<p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+						Total a pagar
+					</p>
+					{isPriceLoading ? (
+						<Skeleton className="mt-1 h-5 w-24" />
+					) : (
+						<p className="text-lg font-black text-black">
+							{breakdown?.total != null
+								? formatCurrency(
+										breakdown.total,
+										tenantPriceConfig.currency,
+										tenantPriceConfig.locale,
+									)
+								: "—"}
+						</p>
+					)}
+				</div>
+				<Button
+					onClick={handleBook}
+					disabled={isDisabled}
+					className="flex items-center gap-2 rounded-none bg-black px-6 py-3 text-xs font-bold uppercase tracking-widest text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-300"
+				>
+					{ctaLabel}
+					<ArrowRight className="h-3.5 w-3.5" />
+				</Button>
+			</div>
+		</>
+	);
 }
 
 // ── CartPagePriceBreakdown ─────────────────────────────────────────────────────
@@ -153,276 +153,276 @@ export function CartPageSidebar() {
 // total, and savings banner. Shows pre-discount subtotal only when relevant.
 
 type CartPagePriceBreakdownProps = {
-  insuranceAmount: number | undefined;
-  insuranceApplied: boolean | undefined;
-  insuranceSelected: boolean;
-  itemsSubtotal: number | undefined;
-  onInsuranceSelectedChange: (value: boolean) => void;
-  total: number | undefined;
-  totalBeforeDiscounts: number | undefined;
-  totalDiscount: number | undefined;
-  lineItems: JoinedLineItem[] | undefined;
-  isLoading: boolean;
-  isError: boolean;
-  priceConfig: TenantPricingConfig;
+	insuranceAmount: number | undefined;
+	insuranceApplied: boolean | undefined;
+	insuranceSelected: boolean;
+	itemsSubtotal: number | undefined;
+	onInsuranceSelectedChange: (value: boolean) => void;
+	total: number | undefined;
+	totalBeforeDiscounts: number | undefined;
+	totalDiscount: number | undefined;
+	lineItems: JoinedLineItem[] | undefined;
+	isLoading: boolean;
+	isError: boolean;
+	priceConfig: TenantPricingConfig;
 };
 
 export function CartPagePriceBreakdown({
-  insuranceAmount,
-  insuranceApplied,
-  insuranceSelected,
-  itemsSubtotal,
-  onInsuranceSelectedChange,
-  total,
-  totalBeforeDiscounts,
-  totalDiscount,
-  lineItems,
-  isLoading,
-  isError,
-  priceConfig,
+	insuranceAmount,
+	insuranceApplied,
+	insuranceSelected,
+	itemsSubtotal,
+	onInsuranceSelectedChange,
+	total,
+	totalBeforeDiscounts,
+	totalDiscount,
+	lineItems,
+	isLoading,
+	isError,
+	priceConfig,
 }: CartPagePriceBreakdownProps) {
-  if (isError) {
-    return (
-      <div className="flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
-        <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
-          No se puede calcular el precio. Por favor, inténtalo de nuevo.
-        </p>
-      </div>
-    );
-  }
+	if (isError) {
+		return (
+			<div className="flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
+				<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+				<p className="text-xs font-semibold uppercase tracking-wider text-red-600">
+					No se puede calcular el precio. Por favor, inténtalo de nuevo.
+				</p>
+			</div>
+		);
+	}
 
-  const hasSavings = (totalDiscount ?? 0) > 0;
-  const shouldShowInsuranceRow = insuranceSelected || insuranceApplied;
+	const hasSavings = (totalDiscount ?? 0) > 0;
+	const shouldShowInsuranceRow = insuranceSelected || insuranceApplied;
 
-  return (
-    <div>
-      <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-black">
-        Desglose de precio
-      </h3>
+	return (
+		<div>
+			<h3 className="mb-4 text-sm font-black uppercase tracking-widest text-black">
+				Desglose de precio
+			</h3>
 
-      {/* Line items */}
-      <div className="space-y-4">
-        {isLoading
-          ? ["line-item-skeleton-1", "line-item-skeleton-2"].map((key) => (
-              <div key={key} className="flex items-start justify-between gap-4">
-                <Skeleton className="h-8 w-32" />
-                <Skeleton className="h-5 w-16" />
-              </div>
-            ))
-          : lineItems?.map((item) => (
-              <LineItemRow
-                key={item.id}
-                item={item}
-                priceConfig={priceConfig}
-              />
-            ))}
-      </div>
+			{/* Line items */}
+			<div className="space-y-4">
+				{isLoading
+					? ["line-item-skeleton-1", "line-item-skeleton-2"].map((key) => (
+							<div key={key} className="flex items-start justify-between gap-4">
+								<Skeleton className="h-8 w-32" />
+								<Skeleton className="h-5 w-16" />
+							</div>
+						))
+					: lineItems?.map((item) => (
+							<LineItemRow
+								key={item.id}
+								item={item}
+								priceConfig={priceConfig}
+							/>
+						))}
+			</div>
 
-      <div className="my-4 border-t border-neutral-200" />
+			<div className="my-4 border-t border-neutral-200" />
 
-      <InsuranceToggleRow
-        checked={insuranceSelected}
-        onCheckedChange={onInsuranceSelectedChange}
-      />
+			<InsuranceToggleRow
+				checked={insuranceSelected}
+				onCheckedChange={onInsuranceSelectedChange}
+			/>
 
-      <div className="my-4 border-t border-neutral-200" />
+			<div className="my-4 border-t border-neutral-200" />
 
-      <BreakdownRow
-        label="Subtotal antes de descuentos"
-        value={totalBeforeDiscounts}
-        isLoading={isLoading}
-        priceConfig={priceConfig}
-      />
+			<BreakdownRow
+				label="Subtotal antes de descuentos"
+				value={totalBeforeDiscounts}
+				isLoading={isLoading}
+				priceConfig={priceConfig}
+			/>
 
-      {hasSavings && (
-        <BreakdownRow
-          label="Descuentos"
-          value={totalDiscount}
-          isLoading={isLoading}
-          priceConfig={priceConfig}
-          tone="success"
-          prefix="−"
-        />
-      )}
+			{hasSavings && (
+				<BreakdownRow
+					label="Descuentos"
+					value={totalDiscount}
+					isLoading={isLoading}
+					priceConfig={priceConfig}
+					tone="success"
+					prefix="−"
+				/>
+			)}
 
-      <BreakdownRow
-        label="Subtotal de equipos"
-        value={itemsSubtotal}
-        isLoading={isLoading}
-        priceConfig={priceConfig}
-      />
+			<BreakdownRow
+				label="Subtotal de equipos"
+				value={itemsSubtotal}
+				isLoading={isLoading}
+				priceConfig={priceConfig}
+			/>
 
-      {shouldShowInsuranceRow && (
-        <BreakdownRow
-          label="Seguro de equipos"
-          value={insuranceAmount}
-          isLoading={isLoading}
-          priceConfig={priceConfig}
-        />
-      )}
+			{shouldShowInsuranceRow && (
+				<BreakdownRow
+					label="Seguro de equipos"
+					value={insuranceAmount}
+					isLoading={isLoading}
+					priceConfig={priceConfig}
+				/>
+			)}
 
-      <div className="my-4 border-t border-neutral-200" />
+			<div className="my-4 border-t border-neutral-200" />
 
-      {/* Total */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-black uppercase md:tracking-widest text-black">
-          Total a pagar
-        </p>
-        {isLoading ? (
-          <Skeleton className="h-7 w-28" />
-        ) : (
-          <p className="text-xl font-black text-black">
-            {total != null
-              ? formatCurrency(total, priceConfig.currency, priceConfig.locale)
-              : "—"}
-          </p>
-        )}
-      </div>
+			{/* Total */}
+			<div className="flex items-center justify-between">
+				<p className="text-sm font-black uppercase md:tracking-widest text-black">
+					Total a pagar
+				</p>
+				{isLoading ? (
+					<Skeleton className="h-7 w-28" />
+				) : (
+					<p className="text-xl font-black text-black">
+						{total != null
+							? formatCurrency(total, priceConfig.currency, priceConfig.locale)
+							: "—"}
+					</p>
+				)}
+			</div>
 
-      {/* Savings banner — only visible when savings exist */}
-      {!isLoading && hasSavings && totalDiscount != null && (
-        <div className="-mx-6 mt-4">
-          <SavingsBanner
-            totalDiscount={totalDiscount}
-            priceConfig={priceConfig}
-          />
-        </div>
-      )}
-    </div>
-  );
+			{/* Savings banner — only visible when savings exist */}
+			{!isLoading && hasSavings && totalDiscount != null && (
+				<div className="-mx-6 mt-4">
+					<SavingsBanner
+						totalDiscount={totalDiscount}
+						priceConfig={priceConfig}
+					/>
+				</div>
+			)}
+		</div>
+	);
 }
 
 type InsuranceToggleRowProps = {
-  checked: boolean;
-  onCheckedChange: (value: boolean) => void;
+	checked: boolean;
+	onCheckedChange: (value: boolean) => void;
 };
 
 function InsuranceToggleRow({
-  checked,
-  onCheckedChange,
+	checked,
+	onCheckedChange,
 }: InsuranceToggleRowProps) {
-  return (
-    <div className="flex items-center gap-4">
-      <Switch
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        aria-label="Activar seguro de equipos"
-      />
+	return (
+		<div className="flex items-center gap-4">
+			<Switch
+				checked={checked}
+				onCheckedChange={onCheckedChange}
+				aria-label="Activar seguro de equipos"
+			/>
 
-      <div className="flex min-w-0 items-center gap-2">
-        <span className="text-[15px] font-medium text-neutral-700">
-          Seguro de Equipos
-        </span>
+			<div className="flex min-w-0 items-center gap-2">
+				<span className="text-[15px] font-medium text-neutral-700">
+					Seguro de Equipos
+				</span>
 
-        <Popover>
-          <PopoverTrigger
-            render={
-              <button
-                type="button"
-                aria-label="Más información sobre el seguro de equipos"
-                className="flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 transition-colors hover:text-neutral-600"
-              >
-                <CircleHelp className="h-4 w-4" />
-              </button>
-            }
-          />
-          <PopoverContent
-            align="start"
-            sideOffset={10}
-            className="w-96 gap-3 border border-neutral-200 bg-neutral-900"
-          >
-            <PopoverHeader className="gap-2">
-              <PopoverTitle className="text-sm text-neutral-50">
-                Seguro de equipos
-              </PopoverTitle>
-              <PopoverDescription className="space-y-3 text-xs leading-5 text-neutral-200">
-                <p>
-                  Protege tu pedido con una cobertura adicional ante imprevistos
-                  durante el alquiler. El cargo corresponde al 6% del subtotal
-                  antes de descuentos y se suma al total final del pedido.
-                </p>
-                <p>
-                  El seguro NO incluye daños por el mal uso del equipo por parte
-                  del cliente, esto implica situaciones como rotura del puerto
-                  para tarjetas de la cámara, exposición del sensor a lásers,
-                  roturas por montar incorrectamente el equipo, etc. También
-                  quedan excluidos de la cobertura las averías o daños debidos a
-                  uso, impericia, negligencia, daños eléctricos y magnéticos,
-                  rozaduras y/o arañazos, daños al software, defectos latentes,
-                  hurto, estafa, perdida, apropiación indebida y daños por
-                  contaminación.
-                </p>
-                <p>
-                  Los equipos están asegurados durante los rodajes contra
-                  accidente consecuencia de accidentes del vehículo porteador.
-                  Durante las estancias (montaje y rodaje) en el seguro está
-                  previsto el robo, incendio, roturas, daños por agua.
-                </p>
-              </PopoverDescription>
-            </PopoverHeader>
-          </PopoverContent>
-        </Popover>
-      </div>
-    </div>
-  );
+				<Popover>
+					<PopoverTrigger
+						render={
+							<button
+								type="button"
+								aria-label="Más información sobre el seguro de equipos"
+								className="flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 transition-colors hover:text-neutral-600"
+							>
+								<CircleHelp className="h-4 w-4" />
+							</button>
+						}
+					/>
+					<PopoverContent
+						align="start"
+						sideOffset={10}
+						className="w-96 gap-3 border border-neutral-200 bg-neutral-900"
+					>
+						<PopoverHeader className="gap-2">
+							<PopoverTitle className="text-sm text-neutral-50">
+								Seguro de equipos
+							</PopoverTitle>
+							<PopoverDescription className="space-y-3 text-xs leading-5 text-neutral-200">
+								<p>
+									Protege tu pedido con una cobertura adicional ante imprevistos
+									durante el alquiler. El cargo corresponde al 6% del subtotal
+									antes de descuentos y se suma al total final del pedido.
+								</p>
+								<p>
+									El seguro NO incluye daños por el mal uso del equipo por parte
+									del cliente, esto implica situaciones como rotura del puerto
+									para tarjetas de la cámara, exposición del sensor a lásers,
+									roturas por montar incorrectamente el equipo, etc. También
+									quedan excluidos de la cobertura las averías o daños debidos a
+									uso, impericia, negligencia, daños eléctricos y magnéticos,
+									rozaduras y/o arañazos, daños al software, defectos latentes,
+									hurto, estafa, perdida, apropiación indebida y daños por
+									contaminación.
+								</p>
+								<p>
+									Los equipos están asegurados durante los rodajes contra
+									accidente consecuencia de accidentes del vehículo porteador.
+									Durante las estancias (montaje y rodaje) en el seguro está
+									previsto el robo, incendio, roturas, daños por agua.
+								</p>
+							</PopoverDescription>
+						</PopoverHeader>
+					</PopoverContent>
+				</Popover>
+			</div>
+		</div>
+	);
 }
 
 type BreakdownRowProps = {
-  label: string;
-  value: number | undefined;
-  isLoading: boolean;
-  priceConfig: TenantPricingConfig;
-  tone?: "default" | "success";
-  prefix?: string;
+	label: string;
+	value: number | undefined;
+	isLoading: boolean;
+	priceConfig: TenantPricingConfig;
+	tone?: "default" | "success";
+	prefix?: string;
 };
 
 function BreakdownRow({
-  label,
-  value,
-  isLoading,
-  priceConfig,
-  tone = "default",
-  prefix,
+	label,
+	value,
+	isLoading,
+	priceConfig,
+	tone = "default",
+	prefix,
 }: BreakdownRowProps) {
-  const textColor = tone === "success" ? "text-green-700" : "text-neutral-500";
-  const valueColor =
-    tone === "success"
-      ? "text-green-700 font-semibold"
-      : "text-black font-medium";
+	const textColor = tone === "success" ? "text-green-700" : "text-neutral-500";
+	const valueColor =
+		tone === "success"
+			? "text-green-700 font-semibold"
+			: "text-black font-medium";
 
-  return (
-    <div className="mt-2 flex items-center justify-between first:mt-0">
-      <p className={cn("text-sm", textColor)}>{label}</p>
-      {isLoading ? (
-        <Skeleton className="h-5 w-20" />
-      ) : (
-        <p className={cn("text-sm", valueColor)}>
-          {value != null
-            ? `${prefix ?? ""}${formatCurrency(value, priceConfig.currency, priceConfig.locale)}`
-            : "—"}
-        </p>
-      )}
-    </div>
-  );
+	return (
+		<div className="mt-2 flex items-center justify-between first:mt-0">
+			<p className={cn("text-sm", textColor)}>{label}</p>
+			{isLoading ? (
+				<Skeleton className="h-5 w-20" />
+			) : (
+				<p className={cn("text-sm", valueColor)}>
+					{value != null
+						? `${prefix ?? ""}${formatCurrency(value, priceConfig.currency, priceConfig.locale)}`
+						: "—"}
+				</p>
+			)}
+		</div>
+	);
 }
 
 type DiscountTagProps = {
-  discount: CartDiscountLineItem;
+	discount: CartDiscountLineItem;
 };
 
 function DiscountTag({ discount }: DiscountTagProps) {
-  return (
-    <div className="inline-flex items-center gap-1.5 border-l-2 border-green-500 bg-green-50 pl-2 pr-2.5 py-0.5">
-      <Tag className="h-2.5 w-2.5 shrink-0 text-green-600" />
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-green-700">
-        {discount.ruleLabel}
-      </span>
-      <span className="text-[10px] font-black text-green-700">
-        {formatDiscount(discount)}
-      </span>
-    </div>
-  );
+	return (
+		<div className="inline-flex items-center gap-1.5 border-l-2 border-green-500 bg-green-50 pl-2 pr-2.5 py-0.5">
+			<Tag className="h-2.5 w-2.5 shrink-0 text-green-600" />
+			<span className="text-[10px] font-semibold uppercase tracking-wider text-green-700">
+				{discount.ruleLabel}
+			</span>
+			<span className="text-[10px] font-black text-green-700">
+				{formatDiscount(discount)}
+			</span>
+		</div>
+	);
 }
 
 // ── LineItemRow ────────────────────────────────────────────────────────────────
@@ -430,50 +430,50 @@ function DiscountTag({ discount }: DiscountTagProps) {
 // and price — showing a strikethrough original when discounts apply.
 
 type LineItemRowProps = {
-  item: JoinedLineItem;
-  priceConfig: TenantPricingConfig;
+	item: JoinedLineItem;
+	priceConfig: TenantPricingConfig;
 };
 
 function LineItemRow({ item, priceConfig }: LineItemRowProps) {
-  const hasDiscounts = item.discounts.length > 0;
-  const originalSubtotal = hasDiscounts ? computeOriginalSubtotal(item) : null;
+	const hasDiscounts = item.discounts.length > 0;
+	const originalSubtotal = hasDiscounts ? computeOriginalSubtotal(item) : null;
 
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="flex flex-col gap-1">
-        <p className="text-sm text-black">{item.name}</p>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-          {PRDOUCT_TYPE_DICT[item.type]}
-        </p>
-        {hasDiscounts && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {item.discounts.map((discount) => (
-              <DiscountTag key={discount.ruleId} discount={discount} />
-            ))}
-          </div>
-        )}
-      </div>
+	return (
+		<div className="flex items-start justify-between gap-4">
+			<div className="flex flex-col gap-1">
+				<p className="text-sm text-black">{item.name}</p>
+				<p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+					{PRDOUCT_TYPE_DICT[item.type]}
+				</p>
+				{hasDiscounts && (
+					<div className="mt-1 flex flex-wrap gap-1">
+						{item.discounts.map((discount) => (
+							<DiscountTag key={discount.ruleId} discount={discount} />
+						))}
+					</div>
+				)}
+			</div>
 
-      <div className="flex shrink-0 flex-col items-end gap-0.5">
-        {originalSubtotal != null && (
-          <span className="text-xs text-neutral-400 line-through">
-            {formatCurrency(
-              originalSubtotal,
-              priceConfig.currency,
-              priceConfig.locale,
-            )}
-          </span>
-        )}
-        <span className="text-sm font-semibold text-black">
-          {formatCurrency(
-            item.subtotal,
-            priceConfig.currency,
-            priceConfig.locale,
-          )}
-        </span>
-      </div>
-    </div>
-  );
+			<div className="flex shrink-0 flex-col items-end gap-0.5">
+				{originalSubtotal != null && (
+					<span className="text-xs text-neutral-400 line-through">
+						{formatCurrency(
+							originalSubtotal,
+							priceConfig.currency,
+							priceConfig.locale,
+						)}
+					</span>
+				)}
+				<span className="text-sm font-semibold text-black">
+					{formatCurrency(
+						item.subtotal,
+						priceConfig.currency,
+						priceConfig.locale,
+					)}
+				</span>
+			</div>
+		</div>
+	);
 }
 
 // ── SavingsBanner ──────────────────────────────────────────────────────────────
@@ -481,23 +481,23 @@ function LineItemRow({ item, priceConfig }: LineItemRowProps) {
 // Stark and typography-forward — no bubble, no emoji — matches the system tone.
 
 type SavingsBannerProps = {
-  totalDiscount: number;
-  priceConfig: TenantPricingConfig;
+	totalDiscount: number;
+	priceConfig: TenantPricingConfig;
 };
 
 function SavingsBanner({ totalDiscount, priceConfig }: SavingsBannerProps) {
-  return (
-    <div className="flex items-center justify-between border-t-2 border-green-500 bg-green-50 px-4 py-2.5">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-green-700">
-        Ahorraste en este pedido
-      </p>
-      <p className="text-sm font-black text-green-700">
-        {formatCurrency(
-          totalDiscount,
-          priceConfig.currency,
-          priceConfig.locale,
-        )}
-      </p>
-    </div>
-  );
+	return (
+		<div className="flex items-center justify-between border-t-2 border-green-500 bg-green-50 px-4 py-2.5">
+			<p className="text-[10px] font-semibold uppercase tracking-widest text-green-700">
+				Ahorraste en este pedido
+			</p>
+			<p className="text-sm font-black text-green-700">
+				{formatCurrency(
+					totalDiscount,
+					priceConfig.currency,
+					priceConfig.locale,
+				)}
+			</p>
+		</div>
+	);
 }
