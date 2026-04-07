@@ -43,6 +43,7 @@ export type CartPriceLineItem = {
 
 export type CartPriceResult = {
   lineItems: CartPriceLineItem[];
+  totalUnits: number;
   itemsSubtotal: number;
   insuranceApplied: boolean;
   insuranceAmount: number;
@@ -89,6 +90,7 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
     if (query.items.length === 0) {
       return ok({
         lineItems: [],
+        totalUnits: 0,
         itemsSubtotal: 0,
         insuranceApplied: query.insuranceSelected,
         insuranceAmount: 0,
@@ -302,9 +304,11 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       : 0;
 
     const total = new Decimal(itemsSubtotal).plus(insuranceAmount).toNumber();
+    const totalUnits = allPrices[0]?.totalUnits ?? 0;
 
     return ok({
       lineItems,
+      totalUnits,
       itemsSubtotal,
       insuranceApplied: query.insuranceSelected,
       insuranceAmount,
