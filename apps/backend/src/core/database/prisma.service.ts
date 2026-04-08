@@ -25,6 +25,7 @@ const TENANT_EXCLUDED_MODELS = new Set([
   'LocationSchedule', // scoped through Location
   'CouponRedemption', // scoped through Coupon / Order
   'OrderDeliveryRequest',
+  'CustomerProfile',
 ]);
 
 // Operations that only need WHERE injection
