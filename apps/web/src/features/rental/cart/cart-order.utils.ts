@@ -6,12 +6,12 @@ import type {
 import { FulfillmentMethod } from "@repo/types";
 import { toISOString } from "@/lib/dates/parse";
 import { ProblemDetailsError } from "@/shared/errors";
+import type { CartItem, ConflictGroup } from "./cart.types";
 import type {
 	CartOrderPeriod,
 	DeliveryRequestFormState,
 	JoinedLineItem,
 } from "./cart-order.types";
-import type { CartItem, ConflictGroup } from "./cart.types";
 
 export function buildCartOrderItemPayload(cartItems: CartItem[]) {
 	return cartItems.map((item) =>
@@ -134,4 +134,12 @@ export function extractBookingConflicts(error: unknown): {
 		unavailableIds,
 		conflictGroups: error.problemDetails.conflictGroups ?? [],
 	};
+}
+
+export function isDeliveryNotSupportedError(error: unknown) {
+	return (
+		error instanceof ProblemDetailsError &&
+		error.problemDetails.status === 422 &&
+		error.problemDetails.type === "errors://delivery-not-supported"
+	);
 }

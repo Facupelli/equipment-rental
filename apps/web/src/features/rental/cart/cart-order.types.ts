@@ -20,6 +20,11 @@ export type DeliveryRequestFormState = {
 	instructions: string;
 };
 
+export type DeliveryDefaultsFormState = Pick<
+	DeliveryRequestFormState,
+	"country" | "stateRegion" | "city" | "postalCode"
+>;
+
 export type DeliveryRequestField = keyof DeliveryRequestFormState;
 
 export const EMPTY_DELIVERY_REQUEST: DeliveryRequestFormState = {

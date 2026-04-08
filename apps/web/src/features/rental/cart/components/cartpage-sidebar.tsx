@@ -65,14 +65,17 @@ export function CartPageSidebar() {
     onInsuranceSelectedChange,
   } = useCartPricingContext();
   const {
+    supportsDelivery,
     fulfillmentMethod,
     deliveryRequest,
     isDeliveryDetailsRequired,
     onFulfillmentMethodChange,
     onDeliveryRequestFieldChange,
   } = useCartDeliveryContext();
-  const { isAuthenticated, isBookingError, handleBook } =
+  const { isAuthenticated, isBookingError, bookingErrorMessage, handleBook } =
     useCartBookingContext();
+
+  console.log({ deliveryRequest });
 
   const isDisabled = cartItems.length === 0 || isPriceLoading || isPriceError;
   const ctaLabel = isAuthenticated
@@ -102,6 +105,7 @@ export function CartPageSidebar() {
         />
 
         <CartPageFulfillmentForm
+          supportsDelivery={supportsDelivery}
           fulfillmentMethod={fulfillmentMethod}
           deliveryRequest={deliveryRequest}
           isDeliveryDetailsRequired={isDeliveryDetailsRequired}
@@ -113,7 +117,7 @@ export function CartPageSidebar() {
           <div className="mt-6 flex items-start gap-3 border border-red-100 bg-red-50 px-4 py-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
             <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
-              La reserva falló inesperadamente. Por favor, inténtalo de nuevo.
+              {bookingErrorMessage}
             </p>
           </div>
         )}
@@ -189,6 +193,7 @@ export function CartPageSidebar() {
 }
 
 type CartPageFulfillmentFormProps = {
+  supportsDelivery: boolean;
   fulfillmentMethod: FulfillmentMethod;
   deliveryRequest: DeliveryRequestFormState;
   isDeliveryDetailsRequired: boolean;
@@ -200,6 +205,7 @@ type CartPageFulfillmentFormProps = {
 };
 
 function CartPageFulfillmentForm({
+  supportsDelivery,
   fulfillmentMethod,
   deliveryRequest,
   isDeliveryDetailsRequired,
@@ -237,6 +243,11 @@ function CartPageFulfillmentForm({
   };
 
   const handleSheetOpenChange = (open: boolean) => {
+    if (!supportsDelivery) {
+      closeDeliverySheet();
+      return;
+    }
+
     if (open) {
       openDeliverySheet();
       return;
@@ -333,33 +344,39 @@ function CartPageFulfillmentForm({
             </Popover>
           </div>
 
-          <ToggleGroup
-            value={[fulfillmentMethod]}
-            onValueChange={(groupValue) => {
-              const nextValue = groupValue[0];
-              if (!nextValue) {
-                return;
-              }
+          {supportsDelivery ? (
+            <ToggleGroup
+              value={[fulfillmentMethod]}
+              onValueChange={(groupValue) => {
+                const nextValue = groupValue[0];
+                if (!nextValue) {
+                  return;
+                }
 
-              handleFulfillmentMethodSelect(nextValue as FulfillmentMethod);
-            }}
-            variant="outline"
-            size="sm"
-            className="shrink-0"
-          >
-            <ToggleGroupItem
-              value={FulfillmentMethod.PICKUP}
-              className="min-w-20"
+                handleFulfillmentMethodSelect(nextValue as FulfillmentMethod);
+              }}
+              variant="outline"
+              size="sm"
+              className="shrink-0"
             >
-              Retiro
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value={FulfillmentMethod.DELIVERY}
-              className="min-w-20"
-            >
-              Envío
-            </ToggleGroupItem>
-          </ToggleGroup>
+              <ToggleGroupItem
+                value={FulfillmentMethod.PICKUP}
+                className="min-w-20"
+              >
+                Retiro
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value={FulfillmentMethod.DELIVERY}
+                className="min-w-20"
+              >
+                Envío
+              </ToggleGroupItem>
+            </ToggleGroup>
+          ) : (
+            <p className="text-sm font-medium text-neutral-700">
+              Retiro en el local
+            </p>
+          )}
         </div>
 
         {hasConfirmedDeliveryAddress &&
@@ -376,7 +393,10 @@ function CartPageFulfillmentForm({
           )}
       </div>
 
-      <Sheet open={isDeliverySheetOpen} onOpenChange={handleSheetOpenChange}>
+      <Sheet
+        open={supportsDelivery && isDeliverySheetOpen}
+        onOpenChange={handleSheetOpenChange}
+      >
         <SheetContent
           side="right"
           className="w-full overflow-y-auto sm:max-w-lg"
