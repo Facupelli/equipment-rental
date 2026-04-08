@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useLocationId } from "@/shared/contexts/location/location.hooks";
-import { parseDailyBound, toDateString } from "@/lib/dates/parse";
+import { localDateToDateParam } from "@/lib/dates/parse";
 import {
 	useCalendarDots,
 	useUpcomingSchedule,
@@ -189,10 +189,10 @@ function ScheduleContent({
 
 	const pickups = (
 		data?.events.filter((e) => e.eventType === "PICKUP") ?? []
-	).sort((a, b) => a.eventDate.valueOf() - b.eventDate.valueOf());
+	).sort((a, b) => a.eventAt.valueOf() - b.eventAt.valueOf());
 	const returns = (
 		data?.events.filter((e) => e.eventType === "RETURN") ?? []
-	).sort((a, b) => a.eventDate.valueOf() - b.eventDate.valueOf());
+	).sort((a, b) => a.eventAt.valueOf() - b.eventAt.valueOf());
 
 	return (
 		<div className="flex flex-col gap-6 overflow-y-auto">
@@ -294,7 +294,7 @@ function EventCard({ event, isSelected, onSelect, timezone }: EventCardProps) {
 	const { order } = event;
 	const queryClient = useQueryClient();
 
-	const dateRange = `${formatDateShort(order.periodStart)} – ${formatDateShort(order.periodEnd)}`;
+	const dateRange = `${formatDateShort(order.pickupDate)} – ${formatDateShort(order.returnDate)}`;
 
 	const handleMouseEnter = useCallback(() => {
 		queryClient.prefetchQuery(
@@ -322,7 +322,7 @@ function EventCard({ event, isSelected, onSelect, timezone }: EventCardProps) {
 							isSelected ? "text-background/60" : "text-muted-foreground",
 						)}
 					>
-						{event.eventDate.tz(timezone).format("HH:mm")}
+						{event.eventAt.tz(timezone).format("HH:mm")}
 					</p>
 					<div>
 						<div className="flex items-center gap-2">
@@ -441,25 +441,25 @@ function OrderQuickPanel({
 						</PanelSection>
 					)}
 
-					{order.period && (
-						<PanelSection
-							icon={<Clock className="h-3.5 w-3.5" />}
-							label="Rental Period"
-						>
-							<div className="grid grid-cols-2 gap-2">
-								<PeriodCell
-									label="Pickup"
-									date={order.period.start}
-									timezone={timezone}
-								/>
-								<PeriodCell
-									label="Return"
-									date={order.period.end}
-									timezone={timezone}
-								/>
-							</div>
-						</PanelSection>
-					)}
+					<PanelSection
+						icon={<Clock className="h-3.5 w-3.5" />}
+						label="Rental Period"
+					>
+						<div className="grid grid-cols-2 gap-2">
+							<PeriodCell
+								label="Pickup"
+								date={order.pickupDate}
+								time={order.pickupAt}
+								timezone={timezone}
+							/>
+							<PeriodCell
+								label="Return"
+								date={order.returnDate}
+								time={order.returnAt}
+								timezone={timezone}
+							/>
+						</div>
+					</PanelSection>
 
 					<PanelSection
 						icon={<MapPin className="h-3.5 w-3.5" />}
@@ -529,21 +529,23 @@ function PanelSection({
 function PeriodCell({
 	label,
 	date,
+	time,
 	timezone,
 }: {
 	label: string;
 	date: Dayjs;
+	time: Dayjs;
 	timezone: string;
 }) {
-	const local = date.tz(timezone);
+	const localTime = time.tz(timezone);
 	return (
 		<div className="bg-muted/50 rounded-md border px-3 py-2.5">
 			<p className="text-muted-foreground mb-1 font-mono text-[9px] uppercase tracking-widest">
 				{label}
 			</p>
-			<p className="text-sm font-semibold">{local.format("MMM D, YYYY")}</p>
+			<p className="text-sm font-semibold">{formatDateShort(date)}</p>
 			<p className="text-muted-foreground mt-0.5 font-mono text-[10px]">
-				{local.format("HH:mm")}
+				{localTime.format("HH:mm")}
 			</p>
 		</div>
 	);
@@ -629,10 +631,10 @@ function ScheduleSidebar({
 	const returnDates = new Set(data?.returnDates ?? []);
 
 	const pickupModifier = (date: Date) =>
-		pickupDates.has(toDateString(parseDailyBound(date.toISOString())!));
+		pickupDates.has(localDateToDateParam(date));
 
 	const returnModifier = (date: Date) =>
-		returnDates.has(toDateString(parseDailyBound(date.toISOString())!));
+		returnDates.has(localDateToDateParam(date));
 
 	const today = dateToLabel(new Date());
 	const pastModifier = (d: Date) => dateToLabel(d) < today;

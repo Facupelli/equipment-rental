@@ -1,42 +1,44 @@
 import { ProblemDetailsError } from "@/shared/errors";
 import type {
-  CreateOrderDto,
-  GetCalendarDotsQueryDto,
-  GetCalendarDotsResponseDto,
-  GetOrdersScheduleQuery,
-  GetOrdersScheduleResponse,
-  OrderSummary,
-  ScheduleEvent,
+	CreateOrderDto,
+	GetCalendarDotsQueryDto,
+	GetCalendarDotsResponseDto,
+	GetOrdersScheduleQuery,
+	GetOrdersScheduleResponse,
+	OrderSummary,
+	ScheduleEvent,
 } from "@repo/schemas";
 import {
-  useMutation,
-  useQuery,
-  type UseMutationOptions,
-  type UseQueryOptions,
+	useMutation,
+	useQuery,
+	type UseMutationOptions,
+	type UseQueryOptions,
 } from "@tanstack/react-query";
-import { createOrder, getCalendarDots, getOrdersSchedule } from "./orders.api";
 import type { Dayjs } from "dayjs";
-import dayjs from "@/lib/dates/dayjs";
+import { fromDateParam, parseTimestamp } from "@/lib/dates/parse";
+import { createOrder, getCalendarDots, getOrdersSchedule } from "./orders.api";
 
 // -----------------------------------------------------
 // Parsed Types
 // -----------------------------------------------------
 
 export type ParsedOrderSummary = Omit<
-  OrderSummary,
-  "periodStart" | "periodEnd"
+	OrderSummary,
+	"pickupDate" | "returnDate" | "pickupAt" | "returnAt"
 > & {
-  periodStart: Dayjs;
-  periodEnd: Dayjs;
+	pickupDate: Dayjs;
+	returnDate: Dayjs;
+	pickupAt: Dayjs;
+	returnAt: Dayjs;
 };
 
-export type ParsedScheduleEvent = Omit<ScheduleEvent, "eventDate" | "order"> & {
-  eventDate: Dayjs;
-  order: ParsedOrderSummary;
+export type ParsedScheduleEvent = Omit<ScheduleEvent, "eventAt" | "order"> & {
+	eventAt: Dayjs;
+	order: ParsedOrderSummary;
 };
 
 type ParsedGetOrdersScheduleResponse = {
-  events: ParsedScheduleEvent[];
+	events: ParsedScheduleEvent[];
 };
 
 // -----------------------------------------------------
@@ -44,13 +46,13 @@ type ParsedGetOrdersScheduleResponse = {
 // -----------------------------------------------------
 
 export const orderKeys = {
-  all: () => ["orders"] as const,
-  schedules: () => [...orderKeys.all(), "schedule"] as const,
-  schedule: (params: GetOrdersScheduleQuery) =>
-    [...orderKeys.schedules(), params] as const,
-  calendarDots: () => [...orderKeys.all(), "calendar-dots"] as const,
-  calendarDot: (params: GetCalendarDotsQueryDto) =>
-    [...orderKeys.calendarDots(), params] as const,
+	all: () => ["orders"] as const,
+	schedules: () => [...orderKeys.all(), "schedule"] as const,
+	schedule: (params: GetOrdersScheduleQuery) =>
+		[...orderKeys.schedules(), params] as const,
+	calendarDots: () => [...orderKeys.all(), "calendar-dots"] as const,
+	calendarDot: (params: GetCalendarDotsQueryDto) =>
+		[...orderKeys.calendarDots(), params] as const,
 };
 
 // -----------------------------------------------------
@@ -58,19 +60,19 @@ export const orderKeys = {
 // -----------------------------------------------------
 
 type GetOrdersScheduleQueryOptions<TData = ParsedGetOrdersScheduleResponse> =
-  Omit<
-    UseQueryOptions<GetOrdersScheduleResponse, ProblemDetailsError, TData>,
-    "queryKey" | "queryFn"
-  >;
+	Omit<
+		UseQueryOptions<GetOrdersScheduleResponse, ProblemDetailsError, TData>,
+		"queryKey" | "queryFn"
+	>;
 
 type GetCalendarDotsQueryOptions<TData = GetCalendarDotsResponseDto> = Omit<
-  UseQueryOptions<GetCalendarDotsResponseDto, ProblemDetailsError, TData>,
-  "queryKey" | "queryFn"
+	UseQueryOptions<GetCalendarDotsResponseDto, ProblemDetailsError, TData>,
+	"queryKey" | "queryFn"
 >;
 
 type OrderMutationOptions = Omit<
-  UseMutationOptions<string, ProblemDetailsError, CreateOrderDto>,
-  "mutationFn"
+	UseMutationOptions<string, ProblemDetailsError, CreateOrderDto>,
+	"mutationFn"
 >;
 
 // -----------------------------------------------------
@@ -78,19 +80,21 @@ type OrderMutationOptions = Omit<
 // -----------------------------------------------------
 
 function parseScheduleResponse(
-  raw: GetOrdersScheduleResponse,
+	raw: GetOrdersScheduleResponse,
 ): ParsedGetOrdersScheduleResponse {
-  return {
-    events: raw.events.map((e) => ({
-      ...e,
-      eventDate: dayjs(e.eventDate)!,
-      order: {
-        ...e.order,
-        periodStart: dayjs(e.order.periodStart)!,
-        periodEnd: dayjs(e.order.periodEnd)!,
-      },
-    })),
-  };
+	return {
+		events: raw.events.map((e) => ({
+			...e,
+			eventAt: parseTimestamp(e.eventAt)!,
+			order: {
+				...e.order,
+				pickupDate: fromDateParam(e.order.pickupDate),
+				returnDate: fromDateParam(e.order.returnDate),
+				pickupAt: parseTimestamp(e.order.pickupAt)!,
+				returnAt: parseTimestamp(e.order.returnAt)!,
+			},
+		})),
+	};
 }
 
 // -----------------------------------------------------
@@ -98,43 +102,43 @@ function parseScheduleResponse(
 // -----------------------------------------------------
 
 export function useUpcomingSchedule<TData = ParsedGetOrdersScheduleResponse>(
-  params: GetOrdersScheduleQuery,
-  options?: GetOrdersScheduleQueryOptions<TData>,
+	params: GetOrdersScheduleQuery,
+	options?: GetOrdersScheduleQueryOptions<TData>,
 ) {
-  return useQuery({
-    ...options,
-    queryKey: orderKeys.schedule(params),
-    queryFn: () => getOrdersSchedule({ data: params }),
-    select: (raw) => {
-      const parsed = parseScheduleResponse(raw);
-      return options?.select ? options.select(raw) : (parsed as TData);
-    },
-  });
+	return useQuery({
+		...options,
+		queryKey: orderKeys.schedule(params),
+		queryFn: () => getOrdersSchedule({ data: params }),
+		select: (raw) => {
+			const parsed = parseScheduleResponse(raw);
+			return options?.select ? options.select(raw) : (parsed as TData);
+		},
+	});
 }
 
 export function useCalendarDots<TData = GetCalendarDotsResponseDto>(
-  params: GetCalendarDotsQueryDto,
-  options?: GetCalendarDotsQueryOptions<TData>,
+	params: GetCalendarDotsQueryDto,
+	options?: GetCalendarDotsQueryOptions<TData>,
 ) {
-  return useQuery({
-    ...options,
-    queryKey: orderKeys.calendarDot(params),
-    queryFn: () => getCalendarDots({ data: params }),
-  });
+	return useQuery({
+		...options,
+		queryKey: orderKeys.calendarDot(params),
+		queryFn: () => getCalendarDots({ data: params }),
+	});
 }
 
 export function useCreateOrder(options?: OrderMutationOptions) {
-  return useMutation<string, ProblemDetailsError, CreateOrderDto>({
-    ...options,
-    mutationFn: async (data) => {
-      const result = await createOrder({ data });
-      if (typeof result === "object" && "error" in result) {
-        throw new ProblemDetailsError(result.error);
-      }
-      return result;
-    },
-    meta: {
-      invalidates: orderKeys.all(),
-    },
-  });
+	return useMutation<string, ProblemDetailsError, CreateOrderDto>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await createOrder({ data });
+			if (typeof result === "object" && "error" in result) {
+				throw new ProblemDetailsError(result.error);
+			}
+			return result;
+		},
+		meta: {
+			invalidates: orderKeys.all(),
+		},
+	});
 }

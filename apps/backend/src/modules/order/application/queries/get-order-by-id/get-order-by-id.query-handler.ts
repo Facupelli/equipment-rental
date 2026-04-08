@@ -1,4 +1,4 @@
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { GetOrderByIdQuery } from './get-order-by-id.query';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
@@ -8,12 +8,25 @@ import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snap
 import Decimal from 'decimal.js';
 import { OrderNotFoundException } from '../../../domain/exceptions/order.exceptions';
 import { GetOrderByIdResponseDto } from './get-order-by-id.response.dto';
+import { TenantConfig } from '@repo/schemas';
+import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 
 @QueryHandler(GetOrderByIdQuery)
 export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery, GetOrderByIdResponseDto> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   async execute(query: GetOrderByIdQuery): Promise<GetOrderByIdResponseDto> {
+    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
+      new GetTenantConfigQuery(query.tenantId),
+    );
+
+    if (!tenantConfig) {
+      throw new Error(`Tenant config not found for tenant "${query.tenantId}"`);
+    }
+
     const order = await this.prisma.client.order.findFirst({
       where: { id: query.orderId, tenantId: query.tenantId },
       include: {
@@ -216,6 +229,10 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
       fulfillmentMethod: order.fulfillmentMethod as FulfillmentMethod,
       number: order.orderNumber,
       createdAt: order.createdAt,
+      pickupDate: toLocalDateKey(order.periodStart, tenantConfig.timezone),
+      returnDate: toLocalDateKey(order.periodEnd, tenantConfig.timezone),
+      pickupAt: order.periodStart,
+      returnAt: order.periodEnd,
       notes: order.notes,
       customer: order.customer ?? null,
       location: { name: order.location.name },
@@ -247,4 +264,17 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
       },
     };
   }
+}
+
+function toLocalDateKey(date: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '00';
+
+  return `${get('year')}-${get('month')}-${get('day')}`;
 }

@@ -1,8 +1,10 @@
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { GetCalendarDotsQuery } from './get-calendar-dots.query';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { OrderStatus } from '@repo/types';
 import { GetCalendarDotsResponseDto } from './get-calendar-dots.response.dto';
+import { TenantConfig } from '@repo/schemas';
+import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 
 type RawDateRow = { date: string };
 
@@ -10,14 +12,24 @@ const OPERATIONAL_CALENDAR_STATUSES = [OrderStatus.CONFIRMED, OrderStatus.ACTIVE
 
 @QueryHandler(GetCalendarDotsQuery)
 export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDotsQuery, GetCalendarDotsResponseDto> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   async execute(query: GetCalendarDotsQuery): Promise<GetCalendarDotsResponseDto> {
     const { tenantId, locationId, from, to } = query;
+    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
+      new GetTenantConfigQuery(tenantId),
+    );
+
+    if (!tenantConfig) {
+      throw new Error(`Tenant config not found for tenant "${tenantId}"`);
+    }
 
     const [pickupRows, returnRows] = await Promise.all([
-      this.fetchPickupDates(tenantId, locationId, from, to),
-      this.fetchReturnDates(tenantId, locationId, from, to),
+      this.fetchPickupDates(tenantId, locationId, from, to, tenantConfig.timezone),
+      this.fetchReturnDates(tenantId, locationId, from, to, tenantConfig.timezone),
     ]);
 
     return {
@@ -31,9 +43,10 @@ export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDot
     locationId: string,
     from: string,
     to: string,
+    timezone: string,
   ): Promise<RawDateRow[]> {
     return this.prisma.client.$queryRaw<RawDateRow[]>`
-      SELECT DISTINCT lower(aa.period)::date::text AS date
+      SELECT DISTINCT to_char(lower(aa.period) AT TIME ZONE ${timezone}, 'YYYY-MM-DD') AS date
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id
       JOIN asset_assignments aa ON aa.order_item_id = oi.id
@@ -43,7 +56,7 @@ export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDot
         o.location_id = ${locationId}
         AND o.deleted_at IS NULL
         AND o.status IN (${OPERATIONAL_CALENDAR_STATUSES[0]}, ${OPERATIONAL_CALENDAR_STATUSES[1]})
-        AND lower(aa.period)::date BETWEEN ${from}::date AND ${to}::date
+        AND (lower(aa.period) AT TIME ZONE ${timezone})::date BETWEEN ${from}::date AND ${to}::date
     `;
   }
 
@@ -52,9 +65,10 @@ export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDot
     locationId: string,
     from: string,
     to: string,
+    timezone: string,
   ): Promise<RawDateRow[]> {
     return this.prisma.client.$queryRaw<RawDateRow[]>`
-      SELECT DISTINCT upper(aa.period)::date::text AS date
+      SELECT DISTINCT to_char(upper(aa.period) AT TIME ZONE ${timezone}, 'YYYY-MM-DD') AS date
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id
       JOIN asset_assignments aa ON aa.order_item_id = oi.id
@@ -64,7 +78,7 @@ export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDot
         o.location_id = ${locationId}
         AND o.deleted_at IS NULL
         AND o.status IN (${OPERATIONAL_CALENDAR_STATUSES[0]}, ${OPERATIONAL_CALENDAR_STATUSES[1]})
-        AND upper(aa.period)::date BETWEEN ${from}::date AND ${to}::date
+        AND (upper(aa.period) AT TIME ZONE ${timezone})::date BETWEEN ${from}::date AND ${to}::date
     `;
   }
 }
