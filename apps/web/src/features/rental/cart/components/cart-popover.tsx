@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { useRentalLocations } from "@/features/tenant/locations/locations.queries";
 import dayjs from "@/lib/dates/dayjs";
+import { dateParamToLocalDate } from "@/lib/dates/parse";
 import {
 	useCartActions,
 	useCartIsEmpty,
@@ -93,14 +94,14 @@ export function CartPopoverHeader({ onClose }: CartPopoverHeaderProps) {
 }
 
 function CartPopoverContext() {
-	const { locationId, startDate, endDate } = useSearch({
+	const { locationId, pickupDate, returnDate } = useSearch({
 		from: "/_portal/_tenant/rental/",
 	});
 	const { data: locations } = useRentalLocations();
 	const location = locations?.find((l) => l.id === locationId);
 
-	const formatDate = (date: Date) => {
-		return dayjs(date).format("MM/DD/YYYY");
+	const formatDate = (date: string) => {
+		return dayjs(dateParamToLocalDate(date)).format("MM/DD/YYYY");
 	};
 
 	return (
@@ -125,9 +126,9 @@ function CartPopoverContext() {
 					<p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 pb-1">
 						Perido de Alquiler
 					</p>
-					{startDate && endDate ? (
+					{pickupDate && returnDate ? (
 						<p className="text-sm text-black">
-							{formatDate(startDate)} — {formatDate(endDate)}
+							{formatDate(pickupDate)} — {formatDate(returnDate)}
 						</p>
 					) : (
 						<p className="text-sm text-neutral-300">
@@ -264,7 +265,7 @@ type CartPopoverFooterProps = {
 };
 
 export function CartPopoverFooter({ onClose }: CartPopoverFooterProps) {
-	const { locationId, startDate, endDate } = useSearch({
+	const { locationId, pickupDate, returnDate } = useSearch({
 		from: "/_portal/_tenant/rental/",
 	});
 	const router = useRouter();
@@ -278,8 +279,8 @@ export function CartPopoverFooter({ onClose }: CartPopoverFooterProps) {
 				to: "/cart",
 				search: {
 					locationId,
-					startDate,
-					endDate,
+					pickupDate,
+					returnDate,
 				},
 			});
 		}
@@ -289,7 +290,7 @@ export function CartPopoverFooter({ onClose }: CartPopoverFooterProps) {
 		<div className="border-t border-neutral-200 px-5 py-4">
 			<Button
 				onClick={handleReviewOrder}
-				disabled={isEmpty || !startDate || !endDate}
+				disabled={isEmpty || !pickupDate || !returnDate}
 				className="flex w-full items-center justify-center gap-2 py-5 rounded-none text-xs font-bold uppercase tracking-widest text-white "
 			>
 				Revisar Pedido

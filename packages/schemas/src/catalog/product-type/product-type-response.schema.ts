@@ -1,9 +1,10 @@
+import { TrackingMode } from "@repo/types";
 import { z } from "zod";
+import { localDateSchema } from "../../shared/rental-temporal.schema";
 import {
 	productTypeAttributesSchema,
 	productTypeIncludedItemSchema,
 } from "./product-type.schema";
-import { TrackingMode } from "@repo/types";
 
 export const productTypeCategoryResponseSchema = z.object({
 	id: z.uuid(),
@@ -113,8 +114,8 @@ export const rentalProductSortSchema = z.enum([
 
 export const getRentalProductQuerySchema = z.object({
 	locationId: z.uuid(),
-	startDate: z.coerce.date().optional(),
-	endDate: z.coerce.date().optional(),
+	pickupDate: localDateSchema.optional(),
+	returnDate: localDateSchema.optional(),
 	categoryId: z.uuid().optional(),
 	search: z.string().optional(),
 	sort: rentalProductSortSchema.optional(),

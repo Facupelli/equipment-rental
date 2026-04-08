@@ -29,8 +29,8 @@ const spoofedCustomerId = '20000000-0000-0000-0000-000000000011';
 const activeProductTierId = '20000000-0000-0000-0000-000000000012';
 const retiredBundleComponentId = '20000000-0000-0000-0000-000000000013';
 
-const orderPeriodStart = '2026-04-02T00:00:00.000Z';
-const orderPeriodEnd = '2026-04-03T00:00:00.000Z';
+const pickupDate = '2026-04-02';
+const returnDate = '2026-04-03';
 
 describe('Customer booking guardrails HTTP integration', () => {
   let moduleRef: TestingModule;
@@ -55,28 +55,50 @@ describe('Customer booking guardrails HTTP integration', () => {
   });
 
   afterEach(async () => {
-    await prisma.client.assetAssignment.deleteMany({ where: { order: { tenantId } } });
-    await prisma.client.orderItem.deleteMany({ where: { order: { tenantId } } });
+    await prisma.client.assetAssignment.deleteMany({
+      where: { order: { tenantId } },
+    });
+    await prisma.client.orderItem.deleteMany({
+      where: { order: { tenantId } },
+    });
     await prisma.client.order.deleteMany({ where: { tenantId } });
   });
 
   afterAll(async () => {
-    await prisma.client.assetAssignment.deleteMany({ where: { assetId: activeAssetId } });
-    await prisma.client.orderItem.deleteMany({ where: { order: { tenantId } } });
+    await prisma.client.assetAssignment.deleteMany({
+      where: { assetId: activeAssetId },
+    });
+    await prisma.client.orderItem.deleteMany({
+      where: { order: { tenantId } },
+    });
     await prisma.client.order.deleteMany({ where: { tenantId } });
     await prisma.client.pricingTier.deleteMany({
       where: { id: { in: [activeProductTierId] } },
     });
-    await prisma.client.bundleComponent.deleteMany({ where: { id: retiredBundleComponentId } });
+    await prisma.client.bundleComponent.deleteMany({
+      where: { id: retiredBundleComponentId },
+    });
     await prisma.client.bundle.deleteMany({ where: { id: retiredBundleId } });
     await prisma.client.asset.deleteMany({ where: { id: activeAssetId } });
-    await prisma.client.productType.deleteMany({ where: { id: { in: [activeProductId, unpublishedProductId] } } });
+    await prisma.client.productType.deleteMany({
+      where: { id: { in: [activeProductId, unpublishedProductId] } },
+    });
     await prisma.client.locationSchedule.deleteMany({ where: { locationId } });
-    await prisma.client.customer.deleteMany({ where: { id: { in: [authenticatedCustomerId, spoofedCustomerId] } } });
-    await prisma.client.location.deleteMany({ where: { id: { in: [locationId, otherTenantLocationId] } } });
-    await prisma.client.billingUnit.deleteMany({ where: { id: billingUnitId } });
-    await prisma.client.tenantOrderSequence.deleteMany({ where: { tenantId: { in: [tenantId, otherTenantId] } } });
-    await prisma.client.tenant.deleteMany({ where: { id: { in: [tenantId, otherTenantId] } } });
+    await prisma.client.customer.deleteMany({
+      where: { id: { in: [authenticatedCustomerId, spoofedCustomerId] } },
+    });
+    await prisma.client.location.deleteMany({
+      where: { id: { in: [locationId, otherTenantLocationId] } },
+    });
+    await prisma.client.billingUnit.deleteMany({
+      where: { id: billingUnitId },
+    });
+    await prisma.client.tenantOrderSequence.deleteMany({
+      where: { tenantId: { in: [tenantId, otherTenantId] } },
+    });
+    await prisma.client.tenant.deleteMany({
+      where: { id: { in: [tenantId, otherTenantId] } },
+    });
     await app.close();
   });
 
@@ -93,7 +115,9 @@ describe('Customer booking guardrails HTTP integration', () => {
 
   it('rejects order creation for retired bundles', async () => {
     const response = await customerOrderRequest(
-      buildOrderBody({ items: [{ type: 'BUNDLE', bundleId: retiredBundleId }] }),
+      buildOrderBody({
+        items: [{ type: 'BUNDLE', bundleId: retiredBundleId }],
+      }),
     ).expect(422);
 
     expect(response.body.type).toBe('errors://inactive-catalog-item');
@@ -164,7 +188,12 @@ describe('Customer booking guardrails HTTP integration', () => {
     await prisma.client.billingUnit.upsert({
       where: { id: billingUnitId },
       update: {},
-      create: { id: billingUnitId, label: 'day-guardrails', durationMinutes: 1440, sortOrder: 1 },
+      create: {
+        id: billingUnitId,
+        label: 'day-guardrails',
+        durationMinutes: 1440,
+        sortOrder: 1,
+      },
     });
 
     await prisma.client.location.upsert({
@@ -176,7 +205,11 @@ describe('Customer booking guardrails HTTP integration', () => {
     await prisma.client.location.upsert({
       where: { id: otherTenantLocationId },
       update: {},
-      create: { id: otherTenantLocationId, tenantId: otherTenantId, name: 'Foreign Location' },
+      create: {
+        id: otherTenantLocationId,
+        tenantId: otherTenantId,
+        name: 'Foreign Location',
+      },
     });
 
     await prisma.client.customer.upsert({
@@ -259,7 +292,12 @@ describe('Customer booking guardrails HTTP integration', () => {
     await prisma.client.asset.upsert({
       where: { id: activeAssetId },
       update: {},
-      create: { id: activeAssetId, locationId, productTypeId: activeProductId, isActive: true },
+      create: {
+        id: activeAssetId,
+        locationId,
+        productTypeId: activeProductId,
+        isActive: true,
+      },
     });
 
     await prisma.client.pricingTier.upsert({
@@ -280,7 +318,7 @@ describe('Customer booking guardrails HTTP integration', () => {
         {
           locationId,
           type: ScheduleSlotType.PICKUP,
-          dayOfWeek: new Date(orderPeriodStart).getDay(),
+          dayOfWeek: new Date(`${pickupDate}T00:00:00.000Z`).getUTCDay(),
           openTime: 600,
           closeTime: 1020,
           slotIntervalMinutes: 60,
@@ -288,7 +326,7 @@ describe('Customer booking guardrails HTTP integration', () => {
         {
           locationId,
           type: ScheduleSlotType.RETURN,
-          dayOfWeek: new Date(orderPeriodEnd).getDay(),
+          dayOfWeek: new Date(`${returnDate}T00:00:00.000Z`).getUTCDay(),
           openTime: 600,
           closeTime: 1020,
           slotIntervalMinutes: 60,
@@ -316,8 +354,8 @@ describe('Customer booking guardrails HTTP integration', () => {
   function buildOrderBody(overrides?: Record<string, unknown>) {
     return {
       locationId,
-      periodStart: orderPeriodStart,
-      periodEnd: orderPeriodEnd,
+      pickupDate,
+      returnDate,
       pickupTime: 600,
       returnTime: 900,
       items: [{ type: 'PRODUCT', productTypeId: activeProductId, quantity: 1 }],
@@ -330,10 +368,8 @@ describe('Customer booking guardrails HTTP integration', () => {
     return {
       locationId,
       currency: 'USD',
-      period: {
-        start: orderPeriodStart,
-        end: orderPeriodEnd,
-      },
+      pickupDate,
+      returnDate,
       items: [{ type: 'PRODUCT', productTypeId: activeProductId, quantity: 1 }],
       ...overrides,
     };

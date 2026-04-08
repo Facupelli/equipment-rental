@@ -129,11 +129,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
         return err(new OrderItemUnavailableError(availability.unavailableItems, availability.conflictGroups));
       }
 
-      const contractByAssetId = await this.ownerContractResolver.resolve(
-        command.tenantId,
-        command.period.start,
-        demandUnits,
-      );
+      const contractByAssetId = await this.ownerContractResolver.resolve(command.tenantId, period.start, demandUnits);
       const assignmentStage =
         bookingMode === BookingMode.REQUEST_TO_BOOK ? OrderAssignmentStage.HOLD : OrderAssignmentStage.COMMITTED;
       const pendingAssignments = this.attachResolvedItemsToOrder(
@@ -208,7 +204,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
         new GetLocationScheduleSlotsQuery(
           command.tenantId,
           command.locationId,
-          command.period.start,
+          command.pickupDate,
           ScheduleSlotType.PICKUP,
         ),
       ),
@@ -216,7 +212,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
         new GetLocationScheduleSlotsQuery(
           command.tenantId,
           command.locationId,
-          command.period.end,
+          command.returnDate,
           ScheduleSlotType.RETURN,
         ),
       ),
@@ -267,10 +263,10 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
     }
 
     return {
-      period: DateRange.fromLocalSlots(
-        command.period.start,
+      period: DateRange.fromLocalDateKeySlots(
+        command.pickupDate,
         command.pickupTime,
-        command.period.end,
+        command.returnDate,
         command.returnTime,
         tenantConfig.timezone,
       ),

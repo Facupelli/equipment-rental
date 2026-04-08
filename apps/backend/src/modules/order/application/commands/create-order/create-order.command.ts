@@ -1,7 +1,12 @@
 import { FulfillmentMethod } from '@repo/types';
 
 export type CreateOrderItemCommand =
-  | { type: 'PRODUCT'; productTypeId: string; quantity?: number; assetId?: string }
+  | {
+      type: 'PRODUCT';
+      productTypeId: string;
+      quantity?: number;
+      assetId?: string;
+    }
   | { type: 'BUNDLE'; bundleId: string };
 
 export type CreateOrderDeliveryRequestCommand = {
@@ -20,7 +25,8 @@ export class CreateOrderCommand {
   public readonly tenantId: string;
   public readonly locationId: string;
   public readonly customerId: string | undefined;
-  public readonly period: { start: Date; end: Date };
+  public readonly pickupDate: string;
+  public readonly returnDate: string;
   public readonly pickupTime: number;
   public readonly returnTime: number;
   public readonly items: CreateOrderItemCommand[];
@@ -34,7 +40,8 @@ export class CreateOrderCommand {
     tenantId: string;
     locationId: string;
     customerId: string | undefined;
-    period: { start: Date; end: Date };
+    pickupDate: string;
+    returnDate: string;
     pickupTime: number;
     returnTime: number;
     items: CreateOrderItemCommand[];
@@ -47,7 +54,8 @@ export class CreateOrderCommand {
     this.tenantId = props.tenantId;
     this.locationId = props.locationId;
     this.customerId = props.customerId;
-    this.period = props.period;
+    this.pickupDate = props.pickupDate;
+    this.returnDate = props.returnDate;
     this.pickupTime = props.pickupTime;
     this.returnTime = props.returnTime;
     this.items = props.items;

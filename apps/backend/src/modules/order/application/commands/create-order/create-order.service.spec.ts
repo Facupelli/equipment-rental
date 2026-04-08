@@ -101,7 +101,13 @@ describe('CreateOrderService', () => {
         async () =>
           new Map<
             string,
-            { ownerId: string; contractId: string; ownerShare: Decimal; rentalShare: Decimal; basis: never }
+            {
+              ownerId: string;
+              contractId: string;
+              ownerShare: Decimal;
+              rentalShare: Decimal;
+              basis: never;
+            }
           >(),
       ),
     } as unknown as CreateOrderOwnerContractResolver;
@@ -117,7 +123,10 @@ describe('CreateOrderService', () => {
       ownerContractResolver,
     );
 
-    return { service, saved: () => ({ savedStatus, savedPeriod, savedAssignments }) };
+    return {
+      service,
+      saved: () => ({ savedStatus, savedPeriod, savedAssignments }),
+    };
   }
 
   function makeCommand() {
@@ -125,7 +134,8 @@ describe('CreateOrderService', () => {
       tenantId: 'tenant-1',
       locationId: 'location-1',
       customerId: 'customer-1',
-      period: { start: new Date('2026-03-30T00:00:00.000Z'), end: new Date('2026-03-31T00:00:00.000Z') },
+      pickupDate: '2026-03-30',
+      returnDate: '2026-03-31',
       pickupTime: 600,
       returnTime: 900,
       items: [{ type: 'PRODUCT', productTypeId: 'product-1', quantity: 1 }],
@@ -164,7 +174,8 @@ describe('CreateOrderService', () => {
         tenantId: 'tenant-1',
         locationId: 'location-1',
         customerId: 'customer-1',
-        period: { start: new Date('2026-03-30T00:00:00.000Z'), end: new Date('2026-03-31T00:00:00.000Z') },
+        pickupDate: '2026-03-30',
+        returnDate: '2026-03-31',
         pickupTime: 600,
         returnTime: 900,
         items: [{ type: 'PRODUCT', productTypeId: 'product-1', quantity: 1 }],

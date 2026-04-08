@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { localDateSchema } from "../shared/rental-temporal.schema";
 
 // ── Request schemas ────────────────────────────────────────────────────────
 
@@ -22,10 +23,8 @@ export const cartItemSchema = z.discriminatedUnion("type", [
 export const calculateCartPricesRequestSchema = z.object({
 	locationId: z.uuid(),
 	currency: z.string().length(3),
-	period: z.object({
-		start: z.iso.datetime(),
-		end: z.iso.datetime(),
-	}),
+	pickupDate: localDateSchema,
+	returnDate: localDateSchema,
 	items: z.array(cartItemSchema),
 	insuranceSelected: z.boolean().default(false),
 });

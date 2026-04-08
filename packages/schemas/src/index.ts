@@ -24,6 +24,7 @@ export * from "./pricing/coupon-response.schema";
 export * from "./pricing/pricing-rule.schema";
 export * from "./pricing/pricing-rule-response.schema";
 export * from "./pricing/pricing-tier.schema";
+export * from "./shared/rental-temporal.schema";
 export * from "./tenant/billing-unit-response.schema";
 export * from "./tenant/custom-domain.schema";
 export * from "./tenant/location/location.schema";

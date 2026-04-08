@@ -9,7 +9,8 @@ export class GetLocationScheduleSlotsQueryHandler implements IQueryHandler<GetLo
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetLocationScheduleSlotsQuery): Promise<number[]> {
-    const dayOfWeek = query.date.getDay();
+    const dayOfWeek = this.dayOfWeek(query.date);
+    const specificDate = new Date(`${query.date}T00:00:00.000Z`);
 
     const rows = await this.prisma.client.locationSchedule.findMany({
       where: {
@@ -18,7 +19,7 @@ export class GetLocationScheduleSlotsQueryHandler implements IQueryHandler<GetLo
           tenantId: query.tenantId,
         },
         type: query.type,
-        OR: [{ specificDate: query.date }, { dayOfWeek }],
+        OR: [{ specificDate }, { dayOfWeek }],
       },
       select: {
         specificDate: true,
@@ -46,5 +47,10 @@ export class GetLocationScheduleSlotsQueryHandler implements IQueryHandler<GetLo
     });
 
     return [...new Set(allSlots)].sort((a, b) => a - b);
+  }
+
+  private dayOfWeek(dateKey: string): number {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
   }
 }

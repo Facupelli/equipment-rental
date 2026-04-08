@@ -6,8 +6,8 @@ import useDebounce from "@/shared/hooks/use-debounce";
 
 export const rentalPageSearchSchema = z.object({
 	locationId: z.string().optional(),
-	startDate: z.coerce.date().optional(),
-	endDate: z.coerce.date().optional(),
+	pickupDate: z.iso.date().optional(),
+	returnDate: z.iso.date().optional(),
 	categoryId: z.string().optional(),
 	search: z.string().optional(),
 	sort: rentalProductSortSchema.optional(),

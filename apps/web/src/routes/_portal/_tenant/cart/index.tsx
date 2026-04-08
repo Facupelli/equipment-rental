@@ -8,8 +8,8 @@ import { CartPageSidebar } from "@/features/rental/cart/components/cartpage-side
 import { rentalLocationQueries } from "@/features/tenant/locations/locations.queries";
 
 const cartPageSearchSchema = z.object({
-	startDate: z.coerce.date(),
-	endDate: z.coerce.date(),
+	pickupDate: z.iso.date(),
+	returnDate: z.iso.date(),
 	locationId: z.string(),
 });
 
@@ -22,14 +22,14 @@ export const Route = createFileRoute("/_portal/_tenant/cart/")({
 });
 
 function CartPage() {
-	const { startDate, endDate, locationId } = useSearch({
+	const { pickupDate, returnDate, locationId } = useSearch({
 		from: "/_portal/_tenant/cart/",
 	});
 
 	return (
 		<CartPageProvider
-			startDate={startDate}
-			endDate={endDate}
+			pickupDate={pickupDate}
+			returnDate={returnDate}
 			locationId={locationId}
 		>
 			<div className="min-h-screen bg-neutral-50">

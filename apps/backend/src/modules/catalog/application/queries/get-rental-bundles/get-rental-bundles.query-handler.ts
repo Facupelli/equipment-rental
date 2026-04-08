@@ -7,6 +7,9 @@ import {
   GetAvailableAssetCountsQuery,
 } from 'src/modules/inventory/public/queries/get-available-asset-counts.query';
 import { BundleListResponseDto, ProductTypeIncludedItemDto } from '@repo/schemas';
+import { TenantConfig } from '@repo/schemas';
+import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
+import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 
 @Injectable()
 @QueryHandler(GetRentalBundlesQuery)
@@ -17,7 +20,7 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
   ) {}
 
   async execute(query: GetRentalBundlesQuery): Promise<BundleListResponseDto> {
-    const { tenantId, locationId, startDate, endDate } = query;
+    const { tenantId, locationId, pickupDate, returnDate } = query;
 
     const bundles = await this.prisma.client.bundle.findMany({
       where: {
@@ -46,7 +49,14 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
           select: {
             quantity: true,
             productType: {
-              select: { id: true, name: true, description: true, includedItems: true, imageUrl: true, category: true },
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                includedItems: true,
+                imageUrl: true,
+                category: true,
+              },
             },
           },
         },
@@ -58,7 +68,13 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
       ...new Set(bundles.flatMap((bundle) => bundle.components.map((component) => component.productType.id))),
     ];
 
-    const availableCounts = await this.resolveAvailability(locationId, startDate, endDate, productTypeIds);
+    const availableCounts = await this.resolveAvailability(
+      tenantId,
+      locationId,
+      pickupDate,
+      returnDate,
+      productTypeIds,
+    );
 
     return bundles.map((bundle) => ({
       isAvailable:
@@ -87,7 +103,10 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
           includedItems: component.productType.includedItems as ProductTypeIncludedItemDto[],
           imageUrl: component.productType.imageUrl ?? null,
           category: component.productType.category
-            ? { id: component.productType.category.id, name: component.productType.category.name }
+            ? {
+                id: component.productType.category.id,
+                name: component.productType.category.name,
+              }
             : null,
         },
       })),
@@ -95,15 +114,26 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
   }
 
   private async resolveAvailability(
+    tenantId: string,
     locationId: string,
-    startDate: Date | undefined,
-    endDate: Date | undefined,
+    pickupDate: string | undefined,
+    returnDate: string | undefined,
     productTypeIds: string[],
   ): Promise<Map<string, number> | null> {
-    if (!startDate || !endDate) return null;
+    if (!pickupDate || !returnDate) return null;
+
+    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
+      new GetTenantConfigQuery(tenantId),
+    );
+
+    if (!tenantConfig) {
+      throw new Error(`Tenant config not found for tenant "${tenantId}"`);
+    }
+
+    const period = DateRange.fromLocalDateKeys(pickupDate, returnDate, tenantConfig.timezone);
 
     const availabilityRows = await this.queryBus.execute<GetAvailableAssetCountsQuery, AvailableAssetCountReadModel[]>(
-      new GetAvailableAssetCountsQuery(locationId, startDate, endDate, productTypeIds),
+      new GetAvailableAssetCountsQuery(locationId, period.start, period.end, productTypeIds),
     );
 
     const availableCounts = new Map(availabilityRows.map((row) => [row.productTypeId, row.availableCount]));

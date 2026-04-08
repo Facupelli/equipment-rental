@@ -7,6 +7,7 @@ import {
 	formatDateShort,
 	formatRentalDuration,
 } from "@/lib/dates/format";
+import { toDateParam } from "@/lib/dates/parse";
 import { formatSlot } from "../cart.utils";
 import {
 	useCartContext,
@@ -76,7 +77,7 @@ export function CartPagePeriod() {
 
 					<TimeSelectCell
 						label="Hora de Retiro"
-						date={startDate.toDate()}
+						date={toDateParam(startDate)}
 						locationId={locationId}
 						type={ScheduleSlotType.PICKUP}
 						value={pickupTime}
@@ -85,7 +86,7 @@ export function CartPagePeriod() {
 
 					<TimeSelectCell
 						label="Hora de Devolución"
-						date={endDate.toDate()}
+						date={toDateParam(endDate)}
 						locationId={locationId}
 						type={ScheduleSlotType.RETURN}
 						value={returnTime}
@@ -152,7 +153,7 @@ export function CartPagePeriod() {
 					<div className="col-span-2 grid grid-cols-2 divide-x divide-neutral-200 border-t border-neutral-200">
 						<TimeSelectCell
 							label="Hora de Retiro"
-							date={startDate.toDate()}
+							date={toDateParam(startDate)}
 							locationId={locationId}
 							type={ScheduleSlotType.PICKUP}
 							value={pickupTime}
@@ -160,7 +161,7 @@ export function CartPagePeriod() {
 						/>
 						<TimeSelectCell
 							label="Hora de Devolución"
-							date={endDate.toDate()}
+							date={toDateParam(endDate)}
 							locationId={locationId}
 							type={ScheduleSlotType.RETURN}
 							value={returnTime}
@@ -232,7 +233,7 @@ function PeriodCell({
 
 type TimeSelectCellProps = {
 	label: string;
-	date: Date;
+	date: string;
 	locationId: string;
 	type: ScheduleSlotType;
 	value: number | undefined;

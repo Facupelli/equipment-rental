@@ -28,6 +28,24 @@ export class DateRange {
     return DateRange.create(start, end);
   }
 
+  static fromLocalDateKeys(pickupDate: string, returnDate: string, timezone: string): DateRange {
+    const start = DateRange.localDateKeyToUtc(pickupDate, 0, timezone);
+    const end = DateRange.localDateKeyToUtc(returnDate, 0, timezone);
+    return DateRange.create(start, end);
+  }
+
+  static fromLocalDateKeySlots(
+    pickupDate: string,
+    pickupTime: number,
+    returnDate: string,
+    returnTime: number,
+    timezone: string,
+  ): DateRange {
+    const start = DateRange.localDateKeyToUtc(pickupDate, pickupTime, timezone);
+    const end = DateRange.localDateKeyToUtc(returnDate, returnTime, timezone);
+    return DateRange.create(start, end);
+  }
+
   private static localSlotToUtc(date: Date, minutesFromMidnight: number, timezone: string): Date {
     const dateParts = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
@@ -66,6 +84,42 @@ export class DateRange {
     const localDay = getT('day');
     const localHour = getT('hour') === 24 ? 0 : getT('hour');
     const localMinute = getT('minute');
+
+    const localAsUtcMs = Date.UTC(localYear, localMonth, localDay, localHour, localMinute);
+    const targetMs = Date.UTC(year, month - 1, day, hours, minutes);
+    const offsetMs = localAsUtcMs - utcCandidate.getTime();
+
+    return new Date(targetMs - offsetMs);
+  }
+
+  private static localDateKeyToUtc(dateKey: string, minutesFromMidnight: number, timezone: string): Date {
+    const [year, month, day] = dateKey.split('-').map(Number);
+
+    const hours = Math.floor(minutesFromMidnight / 60);
+    const minutes = minutesFromMidnight % 60;
+
+    const mm = String(month).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    const hh = String(hours).padStart(2, '0');
+    const min = String(minutes).padStart(2, '0');
+    const utcCandidate = new Date(`${year}-${mm}-${dd}T${hh}:${min}:00Z`);
+
+    const timeParts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(utcCandidate);
+
+    const get = (type: string) => Number(timeParts.find((p) => p.type === type)?.value ?? '0');
+    const localYear = get('year');
+    const localMonth = get('month') - 1;
+    const localDay = get('day');
+    const localHour = get('hour') === 24 ? 0 : get('hour');
+    const localMinute = get('minute');
 
     const localAsUtcMs = Date.UTC(localYear, localMonth, localDay, localHour, localMinute);
     const targetMs = Date.UTC(year, month - 1, day, hours, minutes);

@@ -6,7 +6,10 @@ import {
   AvailableAssetCountReadModel,
   GetAvailableAssetCountsQuery,
 } from 'src/modules/inventory/public/queries/get-available-asset-counts.query';
+import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
+import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 import { RentalProductSort } from '@repo/schemas';
+import { TenantConfig } from '@repo/schemas';
 
 type RentalIncludedItemReadModel = {
   name: string;
@@ -61,14 +64,22 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetRentalProductTypesQuery): Promise<PaginatedReadModel<RentalProductReadModel>> {
-    const { tenantId, locationId, startDate, endDate, categoryId, search } = query;
+    const { tenantId, locationId, pickupDate, returnDate, categoryId, search } = query;
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const offset = (page - 1) * limit;
     const sort = query.sort ?? DEFAULT_RENTAL_PRODUCT_SORT;
 
     const [pageRows, totalRows] = await Promise.all([
-      this.selectPageProductIds({ tenantId, locationId, categoryId, search, sort, limit, offset }),
+      this.selectPageProductIds({
+        tenantId,
+        locationId,
+        categoryId,
+        search,
+        sort,
+        limit,
+        offset,
+      }),
       this.countMatchingProducts({ tenantId, locationId, categoryId, search }),
     ]);
 
@@ -123,7 +134,7 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
       },
     });
 
-    const availableCounts = await this.resolveAvailability(locationId, startDate, endDate, productIds);
+    const availableCounts = await this.resolveAvailability(tenantId, locationId, pickupDate, returnDate, productIds);
 
     const rawProductsById = new Map(rawProducts.map((product) => [product.id, product]));
 
@@ -189,7 +200,10 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
     limit: number;
     offset: number;
   }): Promise<RentalProductPageRow[]> {
-    const { categoryFilter, searchFilter } = this.buildRawFilters({ categoryId, search });
+    const { categoryFilter, searchFilter } = this.buildRawFilters({
+      categoryId,
+      search,
+    });
 
     return this.prisma.client.$queryRaw<RentalProductPageRow[]>`
       WITH filtered_products AS (
@@ -248,7 +262,10 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
     categoryId?: string;
     search?: string;
   }): Promise<RentalProductCountRow[]> {
-    const { categoryFilter, searchFilter } = this.buildRawFilters({ categoryId, search });
+    const { categoryFilter, searchFilter } = this.buildRawFilters({
+      categoryId,
+      search,
+    });
 
     return this.prisma.client.$queryRaw<RentalProductCountRow[]>`
       WITH filtered_products AS (
@@ -310,15 +327,26 @@ export class GetRentalProductTypesQueryHandler implements IQueryHandler<
   }
 
   private async resolveAvailability(
+    tenantId: string,
     locationId: string,
-    startDate: Date | undefined,
-    endDate: Date | undefined,
+    pickupDate: string | undefined,
+    returnDate: string | undefined,
     productTypeIds: string[],
   ): Promise<Map<string, number> | null> {
-    if (!startDate || !endDate) return null;
+    if (!pickupDate || !returnDate) return null;
+
+    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
+      new GetTenantConfigQuery(tenantId),
+    );
+
+    if (!tenantConfig) {
+      throw new Error(`Tenant config not found for tenant "${tenantId}"`);
+    }
+
+    const period = DateRange.fromLocalDateKeys(pickupDate, returnDate, tenantConfig.timezone);
 
     const rows = await this.queryBus.execute<GetAvailableAssetCountsQuery, AvailableAssetCountReadModel[]>(
-      new GetAvailableAssetCountsQuery(locationId, startDate, endDate, productTypeIds),
+      new GetAvailableAssetCountsQuery(locationId, period.start, period.end, productTypeIds),
     );
 
     return new Map(rows.map((row) => [row.productTypeId, row.availableCount]));

@@ -28,8 +28,8 @@ export class GetRentalProductTypesHttpController {
       new GetRentalProductTypesQuery(
         this.tenantContext.requireTenantId(),
         dto.locationId,
-        dto.startDate,
-        dto.endDate,
+        dto.pickupDate,
+        dto.returnDate,
         dto.categoryId,
         dto.search,
         sort,

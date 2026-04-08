@@ -75,8 +75,6 @@ export function CartPageSidebar() {
   const { isAuthenticated, isBookingError, bookingErrorMessage, handleBook } =
     useCartBookingContext();
 
-  console.log({ deliveryRequest });
-
   const isDisabled = cartItems.length === 0 || isPriceLoading || isPriceError;
   const ctaLabel = isAuthenticated
     ? "Alquilar Equipo"

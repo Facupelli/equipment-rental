@@ -1,7 +1,7 @@
 import type { CartPriceResult } from "@repo/schemas";
 import { useMemo } from "react";
 import { useCartPricePreview } from "@/features/rental/rental.queries";
-import { fromDate } from "@/lib/dates/parse";
+import { fromDateParam } from "@/lib/dates/parse";
 import type { CartItem } from "../cart.types";
 import type { CartOrderPeriod } from "../cart-order.types";
 import {
@@ -12,22 +12,25 @@ import {
 
 type UseCartOrderPricingParams = {
 	locationId: string;
-	startDate: Date;
-	endDate: Date;
+	pickupDate: string;
+	returnDate: string;
 	insuranceSelected: boolean;
 	cartItems: CartItem[];
 };
 
 export function useCartOrderPricing({
 	locationId,
-	startDate,
-	endDate,
+	pickupDate,
+	returnDate,
 	insuranceSelected,
 	cartItems,
 }: UseCartOrderPricingParams) {
 	const period: CartOrderPeriod = useMemo(
-		() => ({ start: fromDate(startDate), end: fromDate(endDate) }),
-		[startDate, endDate],
+		() => ({
+			start: fromDateParam(pickupDate),
+			end: fromDateParam(returnDate),
+		}),
+		[pickupDate, returnDate],
 	);
 
 	const itemPayload = useMemo(
@@ -39,11 +42,12 @@ export function useCartOrderPricing({
 		() =>
 			buildCartPricePreviewRequest({
 				locationId,
-				period,
+				pickupDate,
+				returnDate,
 				itemPayload,
 				insuranceSelected,
 			}),
-		[insuranceSelected, itemPayload, locationId, period],
+		[pickupDate, returnDate, insuranceSelected, itemPayload, locationId],
 	);
 
 	const {
@@ -51,7 +55,7 @@ export function useCartOrderPricing({
 		isPending: isPriceLoading,
 		isError: isPriceError,
 	} = useCartPricePreview<CartPriceResult>(pricePreviewRequest, {
-		enabled: Boolean(startDate && endDate && locationId),
+		enabled: Boolean(pickupDate && returnDate && locationId),
 	});
 
 	const joinedLineItems = useMemo(

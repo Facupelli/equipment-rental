@@ -32,7 +32,7 @@ function SectionErrorFallback({
       </svg>
 
       <h3 className="mb-2 text-base font-semibold text-neutral-800">
-        Something went wrong
+        Algo salió mal
       </h3>
 
       <p className="mb-7 max-w-xs text-sm leading-relaxed text-neutral-400">
@@ -43,7 +43,7 @@ function SectionErrorFallback({
         onClick={resetErrorBoundary}
         className="border border-neutral-800 px-6 py-2 text-xs font-medium tracking-[0.15em] text-neutral-800 uppercase transition-colors hover:bg-neutral-800 hover:text-white"
       >
-        Try Again
+        Intentar de nuevo
       </button>
     </div>
   );

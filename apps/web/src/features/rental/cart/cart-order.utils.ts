@@ -4,11 +4,9 @@ import type {
 	DeliveryRequestDto,
 } from "@repo/schemas";
 import { FulfillmentMethod } from "@repo/types";
-import { toISOString } from "@/lib/dates/parse";
 import { ProblemDetailsError } from "@/shared/errors";
 import type { CartItem, ConflictGroup } from "./cart.types";
 import type {
-	CartOrderPeriod,
 	DeliveryRequestFormState,
 	JoinedLineItem,
 } from "./cart-order.types";
@@ -31,22 +29,22 @@ export function buildCartOrderItemPayload(cartItems: CartItem[]) {
 
 export function buildCartPricePreviewRequest({
 	locationId,
-	period,
+	pickupDate,
+	returnDate,
 	itemPayload,
 	insuranceSelected,
 }: {
 	locationId: string;
-	period: CartOrderPeriod;
+	pickupDate: string;
+	returnDate: string;
 	itemPayload: ReturnType<typeof buildCartOrderItemPayload>;
 	insuranceSelected: boolean;
 }): CalculateCartPricesRequest {
 	return {
 		currency: "USD",
 		locationId,
-		period: {
-			start: toISOString(period.start),
-			end: toISOString(period.end),
-		},
+		pickupDate,
+		returnDate,
 		items: itemPayload,
 		insuranceSelected,
 	};

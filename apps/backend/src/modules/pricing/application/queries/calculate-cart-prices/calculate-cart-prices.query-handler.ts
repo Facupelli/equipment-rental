@@ -14,6 +14,7 @@ import {
   GetLocationContextQuery,
   LocationContextReadModel,
 } from 'src/modules/tenant/public/queries/get-location-context.query';
+import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 import { PricingPublicApi } from '../../../pricing.public-api';
 import { CalculateCartPricesQuery, CartQueryProductItem } from './calculate-cart-prices.query';
 import Decimal from 'decimal.js';
@@ -23,6 +24,7 @@ import {
   PricingPeriodInvalidError,
   PricingProductTypeNotFoundError,
 } from '../../../domain/errors/pricing.errors';
+import { TenantConfig } from '@repo/schemas';
 
 export type CartDiscountLineItem = {
   ruleId: string;
@@ -101,23 +103,28 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       });
     }
 
-    // ── Step 2: Validate period ────────────────────────────────────────────
-    // DateRange.create throws InvalidRentalPeriodException for end <= start.
-    // That is a domain invariant violation (catalog/config error) when it
-    // originates internally, but here it originates from untrusted client
-    // input — so we translate it to a 400.
-    try {
-      DateRange.create(query.period.start, query.period.end);
-    } catch {
-      return err(new PricingPeriodInvalidError());
-    }
-
     const location = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
       new GetLocationContextQuery(query.tenantId, query.locationId),
     );
 
     if (!location) {
       return err(new PricingInvalidBookingLocationError(query.locationId));
+    }
+
+    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
+      new GetTenantConfigQuery(query.tenantId),
+    );
+
+    if (!tenantConfig) {
+      throw new Error(`Tenant config not found for tenant "${query.tenantId}"`);
+    }
+
+    let period: DateRange;
+
+    try {
+      period = DateRange.fromLocalDateKeys(query.pickupDate, query.returnDate, tenantConfig.timezone);
+    } catch {
+      return err(new PricingPeriodInvalidError());
     }
 
     // ── Step 3: Batch load product type meta ───────────────────────────────
@@ -218,7 +225,7 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
     // ── Step 6: Fire all pricing calls in parallel ─────────────────────────
     // Each unit is priced independently — this matches how CreateOrderHandler
     // will price each OrderItem at order creation time.
-    const { tenantId, locationId, currency, period } = query;
+    const { tenantId, locationId, currency } = query;
 
     const pricingTasks = query.items.flatMap((item) =>
       Array.from({ length: item.quantity }, () =>

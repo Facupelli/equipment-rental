@@ -17,7 +17,7 @@ export class GetRentalBundlesHttpController {
   @Get('bundles')
   async getBundles(@Query() dto: GetRentalBundlesRequestDto): Promise<GetRentalBundlesResponseDto> {
     return await this.queryBus.execute(
-      new GetRentalBundlesQuery(this.tenantContext.requireTenantId(), dto.locationId, dto.startDate, dto.endDate),
+      new GetRentalBundlesQuery(this.tenantContext.requireTenantId(), dto.locationId, dto.pickupDate, dto.returnDate),
     );
   }
 }

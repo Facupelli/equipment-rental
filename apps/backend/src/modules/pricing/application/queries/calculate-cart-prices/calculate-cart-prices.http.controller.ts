@@ -36,10 +36,8 @@ export class CalculateCartPricesHttpController {
       this.tenantContext.requireTenantId(),
       dto.locationId,
       dto.currency,
-      {
-        start: new Date(dto.period.start),
-        end: new Date(dto.period.end),
-      },
+      dto.pickupDate,
+      dto.returnDate,
       dto.items,
       dto.insuranceSelected,
     );

@@ -5,7 +5,7 @@ import {
 	calculateCartPricesRequestSchema,
 	type GetCombosParams,
 	type GetNewArrivalsParams,
-	type GetProductTypesQuery,
+	type GetRentalProductTypesQuery,
 	getBundleParamsSchema,
 	getNewArrivalsParamsSchema,
 	getRentalProductQuerySchema,
@@ -23,7 +23,7 @@ export interface GetProductDetailParams {
 }
 
 export const getRentalProducts = createServerFn({ method: "GET" })
-	.inputValidator((data: GetProductTypesQuery) =>
+	.inputValidator((data: GetRentalProductTypesQuery) =>
 		getRentalProductQuerySchema.parse(data),
 	)
 	.handler(async ({ data }): Promise<PaginatedDto<RentalProductResponse>> => {

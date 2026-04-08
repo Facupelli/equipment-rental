@@ -21,7 +21,8 @@ export class GetLocationScheduleSlotsHttpController {
     @Param('locationId') locationId: string,
     @Query() query: GetLocationScheduleSlotsQueryDto,
   ): Promise<number[]> {
-    if (isNaN(query.date.getTime())) {
+    // TODO: move to DTO schema
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(query.date)) {
       throw new BadRequestException('Invalid date format. Expected ISO 8601 date string (e.g. 2026-03-13).');
     }
 
