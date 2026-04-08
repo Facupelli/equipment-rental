@@ -7,6 +7,13 @@ export interface CreateLocationProps {
   tenantId: string;
   name: string;
   address: string | null;
+  supportsDelivery: boolean;
+  deliveryDefaults: {
+    country: string | null;
+    stateRegion: string | null;
+    city: string | null;
+    postalCode: string | null;
+  };
 }
 
 export interface ReconstituteLocationProps {
@@ -15,6 +22,13 @@ export interface ReconstituteLocationProps {
   name: string;
   address: string | null;
   isActive: boolean;
+  supportsDelivery: boolean;
+  deliveryDefaults: {
+    country: string | null;
+    stateRegion: string | null;
+    city: string | null;
+    postalCode: string | null;
+  };
   schedules: LocationSchedule[];
 }
 
@@ -25,6 +39,11 @@ export class Location {
     private name: string,
     private address: string | null,
     private isActive: boolean,
+    private supportsDelivery: boolean,
+    private deliveryDefaultCountry: string | null,
+    private deliveryDefaultStateRegion: string | null,
+    private deliveryDefaultCity: string | null,
+    private deliveryDefaultPostalCode: string | null,
     private schedules: LocationSchedule[],
   ) {}
 
@@ -32,11 +51,39 @@ export class Location {
     if (!props.name || props.name.trim().length === 0) {
       throw new InvalidLocationNameException();
     }
-    return new Location(randomUUID(), props.tenantId, props.name.trim(), props.address?.trim() ?? null, true, []);
+    const defaults = Location.normalizeDeliveryDefaults(props.deliveryDefaults);
+
+    return new Location(
+      randomUUID(),
+      props.tenantId,
+      props.name.trim(),
+      props.address?.trim() ?? null,
+      true,
+      props.supportsDelivery,
+      defaults.country,
+      defaults.stateRegion,
+      defaults.city,
+      defaults.postalCode,
+      [],
+    );
   }
 
   static reconstitute(props: ReconstituteLocationProps): Location {
-    return new Location(props.id, props.tenantId, props.name, props.address, props.isActive, props.schedules);
+    const defaults = Location.normalizeDeliveryDefaults(props.deliveryDefaults);
+
+    return new Location(
+      props.id,
+      props.tenantId,
+      props.name,
+      props.address,
+      props.isActive,
+      props.supportsDelivery,
+      defaults.country,
+      defaults.stateRegion,
+      defaults.city,
+      defaults.postalCode,
+      props.schedules,
+    );
   }
 
   // --- Queries ---
@@ -57,13 +104,41 @@ export class Location {
     return this.schedules;
   }
 
+  get supportsDeliveryEnabled(): boolean {
+    return this.supportsDelivery;
+  }
+
+  getDeliveryDefaults(): {
+    country: string | null;
+    stateRegion: string | null;
+    city: string | null;
+    postalCode: string | null;
+  } {
+    return {
+      country: this.deliveryDefaultCountry,
+      stateRegion: this.deliveryDefaultStateRegion,
+      city: this.deliveryDefaultCity,
+      postalCode: this.deliveryDefaultPostalCode,
+    };
+  }
+
   // --- Commands ---
 
   deactivate(): void {
     this.isActive = false;
   }
 
-  update(props: { name?: string; address?: string | null }): void {
+  update(props: {
+    name?: string;
+    address?: string | null;
+    supportsDelivery?: boolean;
+    deliveryDefaults?: {
+      country: string | null;
+      stateRegion: string | null;
+      city: string | null;
+      postalCode: string | null;
+    };
+  }): void {
     if (props.name !== undefined) {
       const normalizedName = props.name.trim();
 
@@ -76,6 +151,18 @@ export class Location {
 
     if (props.address !== undefined) {
       this.address = props.address?.trim() ?? null;
+    }
+
+    if (props.supportsDelivery !== undefined) {
+      this.supportsDelivery = props.supportsDelivery;
+    }
+
+    if (props.deliveryDefaults !== undefined) {
+      const defaults = Location.normalizeDeliveryDefaults(props.deliveryDefaults);
+      this.deliveryDefaultCountry = defaults.country;
+      this.deliveryDefaultStateRegion = defaults.stateRegion;
+      this.deliveryDefaultCity = defaults.city;
+      this.deliveryDefaultPostalCode = defaults.postalCode;
     }
   }
 
@@ -144,5 +231,24 @@ export class Location {
     }
 
     target.updateWindow(props);
+  }
+
+  private static normalizeDeliveryDefaults(props: {
+    country: string | null;
+    stateRegion: string | null;
+    city: string | null;
+    postalCode: string | null;
+  }): {
+    country: string | null;
+    stateRegion: string | null;
+    city: string | null;
+    postalCode: string | null;
+  } {
+    return {
+      country: props.country?.trim() || null,
+      stateRegion: props.stateRegion?.trim() || null,
+      city: props.city?.trim() || null,
+      postalCode: props.postalCode?.trim() || null,
+    };
   }
 }

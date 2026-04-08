@@ -12,6 +12,8 @@ export class CreateLocationCommandHandler implements ICommandHandler<CreateLocat
       tenantId: command.tenantId,
       name: command.name,
       address: command.address,
+      supportsDelivery: command.supportsDelivery,
+      deliveryDefaults: command.deliveryDefaults,
     });
 
     await this.locationRepo.save(location);

@@ -19,7 +19,10 @@ export class GetLocationContextQueryHandler implements IQueryHandler<
         id: query.locationId,
         tenantId: query.tenantId,
       },
-      select: { id: true },
+      select: {
+        id: true,
+        supportsDelivery: true,
+      },
     });
   }
 }

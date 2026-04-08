@@ -16,7 +16,13 @@ export class CreateLocationHttpController {
 
   @Post()
   async createLocation(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateLocationDto): Promise<string> {
-    const command = new CreateLocationCommand(user.tenantId, dto.name, dto.address);
+    const command = new CreateLocationCommand(
+      user.tenantId,
+      dto.name,
+      dto.address,
+      dto.supportsDelivery,
+      dto.deliveryDefaults,
+    );
     return this.commandBus.execute(command);
   }
 }

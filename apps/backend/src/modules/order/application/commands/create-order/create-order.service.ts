@@ -42,6 +42,7 @@ import { CreateOrderItemResolver } from './create-order-item-resolver';
 import { CreateOrderOwnerContractResolver } from './create-order-owner-contract-resolver';
 import { toPriceSnapshot } from './create-order-pricing-snapshot.mapper';
 import {
+  DeliveryNotSupportedForLocationError,
   InvalidPickupSlotError,
   InvalidBookingLocationError,
   InvalidReturnSlotError,
@@ -181,13 +182,19 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
     });
   }
 
-  private async validateLocation(command: CreateOrderCommand): Promise<Result<void, InvalidBookingLocationError>> {
+  private async validateLocation(
+    command: CreateOrderCommand,
+  ): Promise<Result<void, InvalidBookingLocationError | DeliveryNotSupportedForLocationError>> {
     const location = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
       new GetLocationContextQuery(command.tenantId, command.locationId),
     );
 
     if (!location) {
       return err(new InvalidBookingLocationError(command.locationId));
+    }
+
+    if (command.fulfillmentMethod === FulfillmentMethod.DELIVERY && !location.supportsDelivery) {
+      return err(new DeliveryNotSupportedForLocationError(command.locationId));
     }
 
     return ok(undefined);

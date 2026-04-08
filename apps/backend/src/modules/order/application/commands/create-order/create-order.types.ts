@@ -10,6 +10,7 @@ import {
 import { CouponNotFoundError, CouponValidationError, PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import {
+  DeliveryNotSupportedForLocationError,
   InvalidBookingLocationError,
   BundleNotFoundError,
   ConflictGroup,
@@ -62,6 +63,7 @@ export type CreateOrderError =
   | InvalidReturnSlotError
   | NoActiveContractForAssetError
   | InvalidBookingLocationError
+  | DeliveryNotSupportedForLocationError
   | ProductTypeNotFoundError
   | BundleNotFoundError
   | ProductTypeInactiveForBookingError

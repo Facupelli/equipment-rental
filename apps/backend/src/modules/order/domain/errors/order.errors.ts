@@ -45,6 +45,12 @@ export class InvalidBookingLocationError extends OrderError {
   }
 }
 
+export class DeliveryNotSupportedForLocationError extends OrderError {
+  constructor(locationId: string) {
+    super(`Location "${locationId}" does not support delivery orders.`);
+  }
+}
+
 export class OrderNotFoundError extends OrderError {
   constructor(orderId: string) {
     super(`Order "${orderId}" was not found.`);

@@ -1,5 +1,6 @@
 export type LocationContextReadModel = {
   id: string;
+  supportsDelivery: boolean;
 };
 
 export class GetLocationContextQuery {

@@ -17,6 +17,13 @@ export class LocationMapper {
       name: raw.name,
       address: raw.address,
       isActive: raw.isActive,
+      supportsDelivery: raw.supportsDelivery,
+      deliveryDefaults: {
+        country: raw.deliveryDefaultCountry,
+        stateRegion: raw.deliveryDefaultStateRegion,
+        city: raw.deliveryDefaultCity,
+        postalCode: raw.deliveryDefaultPostalCode,
+      },
       schedules: raw.schedules.map(LocationScheduleMapper.toDomain),
     });
   }
@@ -28,6 +35,11 @@ export class LocationMapper {
       name: entity.getName(),
       address: entity.getAddress(),
       isActive: entity.active,
+      supportsDelivery: entity.supportsDeliveryEnabled,
+      deliveryDefaultCountry: entity.getDeliveryDefaults().country,
+      deliveryDefaultStateRegion: entity.getDeliveryDefaults().stateRegion,
+      deliveryDefaultCity: entity.getDeliveryDefaults().city,
+      deliveryDefaultPostalCode: entity.getDeliveryDefaults().postalCode,
       schedules: {
         create: entity.getSchedules().map(LocationScheduleMapper.toNestedPersistence),
       },
@@ -39,6 +51,11 @@ export class LocationMapper {
       name: entity.getName(),
       address: entity.getAddress(),
       isActive: entity.active,
+      supportsDelivery: entity.supportsDeliveryEnabled,
+      deliveryDefaultCountry: entity.getDeliveryDefaults().country,
+      deliveryDefaultStateRegion: entity.getDeliveryDefaults().stateRegion,
+      deliveryDefaultCity: entity.getDeliveryDefaults().city,
+      deliveryDefaultPostalCode: entity.getDeliveryDefaults().postalCode,
     };
   }
 }

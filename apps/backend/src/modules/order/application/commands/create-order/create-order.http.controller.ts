@@ -19,6 +19,7 @@ import { CreateOrderRequestDto } from './create-order.request.dto';
 import { CreateOrderResponseDto } from './create-order.response.dto';
 import {
   BundleNotFoundError,
+  DeliveryNotSupportedForLocationError,
   InvalidBookingLocationError,
   InvalidPickupSlotError,
   InvalidReturnSlotError,
@@ -100,6 +101,15 @@ export class CreateOrderHttpController {
           'Invalid Booking Context',
           error.message,
           'errors://invalid-booking-context',
+        );
+      }
+
+      if (error instanceof DeliveryNotSupportedForLocationError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Delivery Not Supported',
+          error.message,
+          'errors://delivery-not-supported',
         );
       }
 

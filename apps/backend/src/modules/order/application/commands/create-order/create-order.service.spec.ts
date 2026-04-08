@@ -45,6 +45,10 @@ describe('CreateOrderService', () => {
           return { timezone: 'UTC', bookingMode };
         }
 
+        if (query.constructor.name === 'GetLocationContextQuery') {
+          return { id: 'location-1', supportsDelivery: false };
+        }
+
         return [600, 900];
       }),
     } as unknown as QueryBus;
@@ -150,5 +154,36 @@ describe('CreateOrderService', () => {
     expect(result.isOk()).toBe(true);
     expect(saved().savedStatus).toBe(OrderStatus.PENDING_REVIEW);
     expect(saved().savedAssignments).toEqual([{ stage: OrderAssignmentStage.HOLD }]);
+  });
+
+  it('rejects delivery orders for locations that do not support delivery', async () => {
+    const { service } = makeService(BookingMode.INSTANT_BOOK);
+
+    const result = await service.execute(
+      new CreateOrderCommand({
+        tenantId: 'tenant-1',
+        locationId: 'location-1',
+        customerId: 'customer-1',
+        period: { start: new Date('2026-03-30T00:00:00.000Z'), end: new Date('2026-03-31T00:00:00.000Z') },
+        pickupTime: 600,
+        returnTime: 900,
+        items: [{ type: 'PRODUCT', productTypeId: 'product-1', quantity: 1 }],
+        currency: 'ARS',
+        insuranceSelected: false,
+        fulfillmentMethod: FulfillmentMethod.DELIVERY,
+        deliveryRequest: {
+          recipientName: 'Jane Doe',
+          phone: '+5491122334455',
+          addressLine1: 'Av. Libertador 1234',
+          city: 'Buenos Aires',
+          stateRegion: 'Buenos Aires',
+          postalCode: '1425',
+          country: 'Argentina',
+        },
+      }),
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr().message).toContain('does not support delivery');
   });
 });
