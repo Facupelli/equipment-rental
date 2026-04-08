@@ -1,9 +1,9 @@
-import type { useUploadFiles } from "@better-upload/client";
+import type { useUploadFile } from "@better-upload/client";
 import { Button } from "@/components/ui/button";
 import { UploadDropzone } from "@/components/ui/upload-dropzone";
 
 type ImageUploadFieldProps = {
-	uploader: ReturnType<typeof useUploadFiles>;
+	uploader: ReturnType<typeof useUploadFile>;
 	value: File | null;
 	onChange: (file: File | null) => void;
 	id?: string;

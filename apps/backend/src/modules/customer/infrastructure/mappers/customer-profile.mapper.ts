@@ -61,4 +61,64 @@ export class CustomerProfileMapper {
       reviewedById: entity.getReviewedById(),
     };
   }
+
+  static toNewProfilePersistence(entity: CustomerProfile): Prisma.CustomerProfileUncheckedCreateWithoutCustomerInput {
+    return {
+      id: entity.id,
+      status: entity.getStatus(),
+      fullName: entity.fullName,
+      phone: entity.phone,
+      birthDate: entity.birthDate,
+      documentNumber: entity.documentNumber,
+      identityDocumentPath: entity.identityDocumentPath,
+      address: entity.address,
+      city: entity.city,
+      stateRegion: entity.stateRegion,
+      country: entity.country,
+      occupation: entity.occupation,
+      company: entity.company,
+      taxId: entity.taxId,
+      businessName: entity.businessName,
+      bankName: entity.bankName,
+      accountNumber: entity.accountNumber,
+      contact1Name: entity.contact1Name,
+      contact1Relationship: entity.contact1Relationship,
+      contact2Name: entity.contact2Name,
+      contact2Relationship: entity.contact2Relationship,
+      rejectionReason: entity.getRejectionReason(),
+      reviewedAt: entity.getReviewedAt(),
+      reviewedById: entity.getReviewedById(),
+    };
+  }
+
+  static toExistingProfileUpdatePersistence(
+    entity: CustomerProfile,
+  ): Prisma.CustomerProfileUncheckedUpdateWithoutCustomerInput {
+    return {
+      id: entity.id,
+      status: entity.getStatus(),
+      fullName: entity.fullName,
+      phone: entity.phone,
+      birthDate: entity.birthDate,
+      documentNumber: entity.documentNumber,
+      identityDocumentPath: entity.identityDocumentPath,
+      address: entity.address,
+      city: entity.city,
+      stateRegion: entity.stateRegion,
+      country: entity.country,
+      occupation: entity.occupation,
+      company: entity.company,
+      taxId: entity.taxId,
+      businessName: entity.businessName,
+      bankName: entity.bankName,
+      accountNumber: entity.accountNumber,
+      contact1Name: entity.contact1Name,
+      contact1Relationship: entity.contact1Relationship,
+      contact2Name: entity.contact2Name,
+      contact2Relationship: entity.contact2Relationship,
+      rejectionReason: entity.getRejectionReason(),
+      reviewedAt: entity.getReviewedAt(),
+      reviewedById: entity.getReviewedById(),
+    };
+  }
 }

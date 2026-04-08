@@ -1,4 +1,4 @@
-import type { useUploadFiles } from "@better-upload/client";
+import type { useUploadFile } from "@better-upload/client";
 import { Button } from "@/components/ui/button";
 import {
 	Field,
@@ -15,7 +15,7 @@ export const Step2Document = withForm({
 	defaultValues: customerFormValues,
 	props: {
 		isUploading: false,
-		uploader: null as unknown as ReturnType<typeof useUploadFiles>,
+		uploader: null as unknown as ReturnType<typeof useUploadFile>,
 	},
 	render: ({ form, uploader }) => {
 		return (
@@ -30,7 +30,7 @@ export const Step2Document = withForm({
 				</div>
 
 				<FieldGroup>
-					<form.Field name="existingIdentityDocumentPath">
+					<form.Field name="currentIdentityDocumentPath">
 						{(field) =>
 							field.state.value ? (
 								<div className="rounded-md border px-3 py-2 text-sm">
@@ -51,8 +51,8 @@ export const Step2Document = withForm({
 										</Button>
 									</div>
 									<p className="mt-2 text-xs text-muted-foreground">
-										Si no subís un archivo nuevo, se conservará este documento
-										al reenviar el formulario.
+										Si no subís un archivo nuevo, vamos a conservar este
+										documento para reenviar el formulario.
 									</p>
 								</div>
 							) : null

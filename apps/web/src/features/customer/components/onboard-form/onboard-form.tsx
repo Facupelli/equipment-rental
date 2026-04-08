@@ -1,5 +1,4 @@
-import { useUploadFiles } from "@better-upload/client";
-import { customerProfileSchema } from "@repo/schemas";
+import { useUploadFile } from "@better-upload/client";
 import {
 	ArrowLeft,
 	ArrowRight,
@@ -22,6 +21,7 @@ import {
 	type OnboardFormValues,
 	type StepNumber,
 	stepFields,
+	toCustomerProfileDto,
 } from "../../schemas/onboard-form.schema";
 import { Step1Personal } from "./onboard-step-1";
 import { Step2Document } from "./onboard-step-2";
@@ -32,11 +32,6 @@ interface CustomerFormProps {
 	customerId: string;
 	defaultValues?: Partial<OnboardFormValues>;
 	mode?: "submit" | "resubmit";
-}
-
-function toNullableString(value: string): string | null {
-	const trimmed = value.trim();
-	return trimmed.length > 0 ? trimmed : null;
 }
 
 export function CustomerForm({
@@ -50,7 +45,7 @@ export function CustomerForm({
 	const [isSubmitted, setIsSubmitted] = useState(false);
 	const [submitError, setSubmitError] = useState<string | null>(null);
 
-	const uploader = useUploadFiles({
+	const uploader = useUploadFile({
 		api: "/api/customer-upload",
 		route: "identityDocument",
 	});
@@ -67,44 +62,28 @@ export function CustomerForm({
 			setSubmitError(null);
 
 			try {
-				let identityDocumentPath = value.existingIdentityDocumentPath;
+				let identityDocumentPath = value.currentIdentityDocumentPath;
 
 				if (value.identityDocumentFile) {
 					const result = await uploader.uploadAsync(
-						[value.identityDocumentFile],
+						value.identityDocumentFile,
 						{
 							metadata: { customerId },
 						},
 					);
-					identityDocumentPath = result.files[0]?.objectInfo.key ?? null;
+					identityDocumentPath = result.file.objectInfo.key;
 				}
 
 				if (!identityDocumentPath) {
-					setSubmitError("Subí un documento o conservá el archivo actual.");
+					setSubmitError(
+						mode === "resubmit"
+							? "Subí un documento para reenviar la solicitud."
+							: "Subí tu documento.",
+					);
 					return;
 				}
 
-				const payload = customerProfileSchema.parse({
-					fullName: value.fullName,
-					phone: value.phone,
-					birthDate: value.birthDate,
-					documentNumber: value.documentNumber,
-					identityDocumentPath,
-					address: value.address,
-					city: value.city,
-					stateRegion: value.stateRegion,
-					country: value.country,
-					occupation: value.occupation,
-					company: toNullableString(value.company),
-					taxId: toNullableString(value.taxId),
-					businessName: toNullableString(value.businessName),
-					bankName: value.bankName,
-					accountNumber: value.accountNumber,
-					contact1Name: value.contact1Name,
-					contact1Relationship: value.contact1Relationship,
-					contact2Name: value.contact2Name,
-					contact2Relationship: value.contact2Relationship,
-				});
+				const payload = toCustomerProfileDto(value, identityDocumentPath);
 
 				if (mode === "resubmit") {
 					await resubmitMutation.mutateAsync(payload);
@@ -114,8 +93,15 @@ export function CustomerForm({
 
 				setIsSubmitted(true);
 			} catch (error) {
+				console.log({ error });
+
 				if (error instanceof ProblemDetailsError) {
 					setSubmitError(error.problemDetails.detail);
+					return;
+				}
+
+				if (value.identityDocumentFile) {
+					setSubmitError("No pudimos subir el documento. Intentá nuevamente.");
 					return;
 				}
 

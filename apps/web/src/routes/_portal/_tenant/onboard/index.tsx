@@ -9,6 +9,9 @@ import {
 } from "@/features/customer/schemas/onboard-form.schema";
 import { portalCustomerQueries } from "@/features/rental/customer/customer.queries";
 import { getProblemDetailsStatus } from "@/shared/errors";
+import { getTenantBranding } from "@/features/tenant-branding/tenant-branding";
+import { Button } from "@/components/ui/button";
+import { RentalHeaderAuthAction } from "@/features/rental/auth/components/rental-header-auth-action";
 
 interface OnboardLoaderData {
 	customerId: string;
@@ -22,7 +25,7 @@ const REJECTED_PREFILL_VALUES: OnboardPrefillValues =
 		phone: "+54 9 11 5555-0101",
 		birthDate: "1992-06-15",
 		documentNumber: "30123456",
-		existingIdentityDocumentPath:
+		currentIdentityDocumentPath:
 			"customers/dummy-customer/identity-document-existing.pdf",
 		address: "Av. Corrientes 1234, Piso 2",
 		city: "Buenos Aires",
@@ -88,14 +91,49 @@ export const Route = createFileRoute("/_portal/_tenant/onboard/")({
 });
 
 function RouteComponent() {
+	const { tenantContext } = Route.useRouteContext();
 	const { customerId, initialValues, mode } = Route.useLoaderData();
 	const defaultValues = toOnboardFormValues(initialValues);
 
+	const branding = getTenantBranding(tenantContext.tenant);
+
 	return (
-		<CustomerForm
-			customerId={customerId}
-			defaultValues={defaultValues}
-			mode={mode}
-		/>
+		<div className="space-y-10 min-h-svh bg-neutral-50">
+			<header className="sticky top-0 z-10 bg-white border-b">
+				<div className="container flex items-center justify-between h-16 mx-auto px-4">
+					{/* ── Logo + nav — hidden when mobile search is open ── */}
+					<div className="flex items-center gap-4 transition-all">
+						{branding.logoSrc ? (
+							<img
+								src={branding.logoSrc}
+								alt={branding.tenantName}
+								className="h-10 w-auto object-contain"
+							/>
+						) : (
+							<span className="text-xl font-bold text-primary">
+								{branding.tenantName}
+							</span>
+						)}
+						<nav className="hidden md:flex gap-4 text-sm font-medium">
+							<Button variant="ghost" className="text-primary">
+								Rental
+							</Button>
+						</nav>
+					</div>
+
+					<div className="flex items-center gap-1">
+						<RentalHeaderAuthAction />
+					</div>
+				</div>
+			</header>
+
+			<main className="py-10">
+				<CustomerForm
+					customerId={customerId}
+					defaultValues={defaultValues}
+					mode={mode}
+				/>
+			</main>
+		</div>
 	);
 }

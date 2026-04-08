@@ -143,12 +143,10 @@ export class Customer {
       return err(new CustomerProfileNotFoundError());
     }
 
-    const profileResubmitResult = this.profile.resubmit();
+    const profileResubmitResult = this.profile.resubmitWith(props);
     if (profileResubmitResult.isErr()) {
       return err(profileResubmitResult.error);
     }
-
-    this.profile = CustomerProfile.create(props);
     this.onboardingStatus = OnboardingStatus.PENDING;
 
     return ok(undefined);

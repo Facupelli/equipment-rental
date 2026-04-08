@@ -1,4 +1,6 @@
+import { customerProfileSchema, type CustomerProfile } from "@repo/schemas";
 import z from "zod";
+import { emptyToNull } from "@/shared/utils/form.utils";
 
 export const step1Schema = z.object({
 	fullName: z.string().min(2, "Ingresá tu nombre completo"),
@@ -19,21 +21,21 @@ export const step1Schema = z.object({
 export const step2Schema = z
 	.object({
 		identityDocumentFile: z.instanceof(File).nullable(),
-		existingIdentityDocumentPath: z.string().min(1).nullable(),
+		currentIdentityDocumentPath: z.string().min(1).nullable(),
 		address: z.string().min(4, "Ingresá tu domicilio"),
 		city: z.string().min(2, "Ingresá tu localidad"),
 		stateRegion: z.string().min(2, "Ingresá tu provincia o región"),
 		country: z.string().min(2, "Ingresá tu país"),
 	})
 	.superRefine((data, ctx) => {
-		if (data.identityDocumentFile || data.existingIdentityDocumentPath) {
+		if (data.identityDocumentFile || data.currentIdentityDocumentPath) {
 			return;
 		}
 
 		ctx.addIssue({
 			code: z.ZodIssueCode.custom,
 			path: ["identityDocumentFile"],
-			message: "Subí tu documento o conservá el archivo actual",
+			message: "Subí tu documento",
 		});
 	});
 
@@ -102,11 +104,11 @@ export const customerFormSchema = step1Schema
 			});
 		}
 
-		if (!data.identityDocumentFile && !data.existingIdentityDocumentPath) {
+		if (!data.identityDocumentFile && !data.currentIdentityDocumentPath) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["identityDocumentFile"],
-				message: "Subí tu documento o conservá el archivo actual",
+				message: "Subí tu documento",
 			});
 		}
 	});
@@ -118,7 +120,7 @@ export interface OnboardPrefillValues {
 	phone: string;
 	birthDate: string;
 	documentNumber: string;
-	existingIdentityDocumentPath: string | null;
+	currentIdentityDocumentPath: string | null;
 	address: string;
 	city: string;
 	stateRegion: string;
@@ -141,7 +143,7 @@ export const customerFormValues: OnboardFormValues = {
 	birthDate: "",
 	documentNumber: "",
 	identityDocumentFile: null,
-	existingIdentityDocumentPath: null,
+	currentIdentityDocumentPath: null,
 	address: "",
 	city: "",
 	stateRegion: "",
@@ -188,6 +190,33 @@ export function toOnboardFormValues(
 	});
 }
 
+export function toCustomerProfileDto(
+	values: OnboardFormValues,
+	identityDocumentPath: string,
+): CustomerProfile {
+	return customerProfileSchema.parse({
+		fullName: values.fullName.trim(),
+		phone: values.phone.trim(),
+		birthDate: values.birthDate,
+		documentNumber: values.documentNumber.trim(),
+		identityDocumentPath,
+		address: values.address.trim(),
+		city: values.city.trim(),
+		stateRegion: values.stateRegion.trim(),
+		country: values.country.trim(),
+		occupation: values.occupation.trim(),
+		company: emptyToNull(values.company ?? ""),
+		taxId: emptyToNull(values.taxId ?? ""),
+		businessName: emptyToNull(values.businessName ?? ""),
+		bankName: values.bankName.trim(),
+		accountNumber: values.accountNumber.trim(),
+		contact1Name: values.contact1Name.trim(),
+		contact1Relationship: values.contact1Relationship.trim(),
+		contact2Name: values.contact2Name.trim(),
+		contact2Relationship: values.contact2Relationship.trim(),
+	});
+}
+
 // ---------------------------------------------------------------------------
 // Per-step field names — used to scope validation to the active step
 // ---------------------------------------------------------------------------
@@ -195,7 +224,7 @@ export const stepFields = {
 	1: ["fullName", "phone", "birthDate", "documentNumber"] as const,
 	2: [
 		"identityDocumentFile",
-		"existingIdentityDocumentPath",
+		"currentIdentityDocumentPath",
 		"address",
 		"city",
 		"stateRegion",

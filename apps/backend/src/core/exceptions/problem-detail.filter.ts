@@ -55,6 +55,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const status = exception.getStatus();
 
     if (Array.isArray(responseObj.errors)) {
+      console.dir(responseObj.errors, { depth: null });
       return {
         status,
         problemDetails: {

@@ -48,25 +48,25 @@ export class CustomerProfile {
     public readonly id: string,
     public readonly customerId: string,
     private status: ProfileSubmissionStatus,
-    public readonly fullName: string,
-    public readonly phone: string,
-    public readonly birthDate: Date,
-    public readonly documentNumber: string,
-    public readonly identityDocumentPath: string,
-    public readonly address: string,
-    public readonly city: string,
-    public readonly stateRegion: string,
-    public readonly country: string,
-    public readonly occupation: string,
-    public readonly company: string | null,
-    public readonly taxId: string | null,
-    public readonly businessName: string | null,
-    public readonly bankName: string,
-    public readonly accountNumber: string,
-    public readonly contact1Name: string,
-    public readonly contact1Relationship: string,
-    public readonly contact2Name: string,
-    public readonly contact2Relationship: string,
+    public fullName: string,
+    public phone: string,
+    public birthDate: Date,
+    public documentNumber: string,
+    public identityDocumentPath: string,
+    public address: string,
+    public city: string,
+    public stateRegion: string,
+    public country: string,
+    public occupation: string,
+    public company: string | null,
+    public taxId: string | null,
+    public businessName: string | null,
+    public bankName: string,
+    public accountNumber: string,
+    public contact1Name: string,
+    public contact1Relationship: string,
+    public contact2Name: string,
+    public contact2Relationship: string,
     private rejectionReason: string | null,
     private reviewedAt: Date | null,
     private reviewedById: string | null,
@@ -175,6 +175,35 @@ export class CustomerProfile {
     this.rejectionReason = null;
     this.reviewedAt = null;
     this.reviewedById = null;
+
+    return ok(undefined);
+  }
+
+  resubmitWith(props: CreateCustomerProfileProps): Result<void, CannotSubmitApprovedProfileError> {
+    const resubmitResult = this.resubmit();
+    if (resubmitResult.isErr()) {
+      return err(resubmitResult.error);
+    }
+
+    this.fullName = props.fullName;
+    this.phone = props.phone;
+    this.birthDate = props.birthDate;
+    this.documentNumber = props.documentNumber;
+    this.identityDocumentPath = props.identityDocumentPath;
+    this.address = props.address;
+    this.city = props.city;
+    this.stateRegion = props.stateRegion;
+    this.country = props.country;
+    this.occupation = props.occupation;
+    this.company = props.company;
+    this.taxId = props.taxId;
+    this.businessName = props.businessName;
+    this.bankName = props.bankName;
+    this.accountNumber = props.accountNumber;
+    this.contact1Name = props.contact1Name;
+    this.contact1Relationship = props.contact1Relationship;
+    this.contact2Name = props.contact2Name;
+    this.contact2Relationship = props.contact2Relationship;
 
     return ok(undefined);
   }

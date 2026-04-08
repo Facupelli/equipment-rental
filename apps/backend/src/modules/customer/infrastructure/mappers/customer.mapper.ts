@@ -61,8 +61,8 @@ export class CustomerMapper {
       profile: profile
         ? {
             upsert: {
-              create: CustomerProfileMapper.toPersistence(profile),
-              update: CustomerProfileMapper.toPersistence(profile),
+              create: CustomerProfileMapper.toNewProfilePersistence(profile),
+              update: CustomerProfileMapper.toExistingProfileUpdatePersistence(profile),
             },
           }
         : undefined,
