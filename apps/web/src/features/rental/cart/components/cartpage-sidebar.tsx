@@ -328,8 +328,8 @@ function CartPageFulfillmentForm({
                   </PopoverTitle>
                   <PopoverDescription className="space-y-3 text-xs leading-5 text-neutral-200">
                     <p>
-                      Podemos gestionar un permiso para que puedas ingresar a
-                      retirar el equipo por Madrid Central.
+                      Te gestionamos el permiso para que ingreses con tu coche a
+                      Madrid Central.
                     </p>
                     <p>
                       El costo de envío se confirma según la dirección indicada.
@@ -361,7 +361,7 @@ function CartPageFulfillmentForm({
                 value={FulfillmentMethod.PICKUP}
                 className="min-w-20"
               >
-                Retiro
+                Retiro en persona
               </ToggleGroupItem>
               <ToggleGroupItem
                 value={FulfillmentMethod.DELIVERY}
