@@ -7,17 +7,17 @@ import { useSession } from "@tanstack/react-start/server";
  * receives the safe SessionUser shape returned by server functions.
  */
 export interface SessionData {
-  userId: string;
-  email: string;
-  tenantId: string;
-  actorType: ActorType;
-  accessToken: string;
-  refreshToken: string;
-  /**
-   * Unix timestamp in milliseconds of when the access token expires.
-   * Set as Date.now() + ACCESS_TOKEN_TTL_MS on login and refresh.
-   */
-  accessTokenExpiresAt: number;
+	userId: string;
+	email: string;
+	tenantId: string;
+	actorType: ActorType;
+	accessToken: string;
+	refreshToken: string;
+	/**
+	 * Unix timestamp in milliseconds of when the access token expires.
+	 * Set as Date.now() + ACCESS_TOKEN_TTL_MS on login and refresh.
+	 */
+	accessTokenExpiresAt: number;
 }
 
 /**
@@ -25,10 +25,10 @@ export interface SessionData {
  * Contains no tokens, no expiry internals.
  */
 export interface SessionUser {
-  userId: string;
-  email: string;
-  tenantId: string;
-  actorType: ActorType;
+	userId: string;
+	email: string;
+	tenantId: string;
+	actorType: ActorType;
 }
 
 // ---------------------------------------------------------------------------
@@ -46,18 +46,18 @@ export type AppSession = Awaited<ReturnType<typeof useSession<SessionData>>>;
  * encrypted by TanStack Start using SESSION_SECRET.
  */
 export function getAppSession(): Promise<AppSession> {
-  return useSession<SessionData>({
-    name: "app_session",
-    password: process.env.SESSION_SECRET!,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      // Align with your JWT_REFRESH_EXPIRATION_TIME_SECONDS.
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    },
-  });
+	return useSession<SessionData>({
+		name: "app_session",
+		password: process.env.SESSION_SECRET!,
+		cookie: {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			path: "/",
+			// Align with your JWT_REFRESH_EXPIRATION_TIME_SECONDS.
+			maxAge: 60 * 60 * 24 * 7, // 7 days
+		},
+	});
 }
 
 // ---------------------------------------------------------------------------
@@ -69,14 +69,14 @@ export function getAppSession(): Promise<AppSession> {
  * that is safe to send to the browser.
  */
 export function toSessionUser(data: Partial<SessionData>): SessionUser {
-  if (!data.userId || !data.email || !data.tenantId || !data.actorType) {
-    throw new Error("Session data is incomplete");
-  }
+	if (!data.userId || !data.email || !data.tenantId || !data.actorType) {
+		throw new Error("Session data is incomplete");
+	}
 
-  return {
-    userId: data.userId,
-    email: data.email,
-    tenantId: data.tenantId,
-    actorType: data.actorType,
-  };
+	return {
+		userId: data.userId,
+		email: data.email,
+		tenantId: data.tenantId,
+		actorType: data.actorType,
+	};
 }

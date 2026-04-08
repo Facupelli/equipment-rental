@@ -1,29 +1,29 @@
 import type {
-  CreatePricingRuleDto,
-  ListPricingRulesQueryDto,
-  PaginatedDto,
-  PricingRuleView,
+	CreatePricingRuleDto,
+	ListPricingRulesQueryDto,
+	PaginatedDto,
+	PricingRuleView,
 } from "@repo/schemas";
 import {
-  keepPreviousData,
-  queryOptions,
-  type UseMutationOptions,
-  type UseQueryOptions,
-  useMutation,
-  useQuery,
+	keepPreviousData,
+	queryOptions,
+	type UseMutationOptions,
+	type UseQueryOptions,
+	useMutation,
+	useQuery,
 } from "@tanstack/react-query";
 import { ProblemDetailsError } from "@/shared/errors";
 import {
-  createPricingRule,
-  deletePricingRule,
-  getPricingRules,
+	createPricingRule,
+	deletePricingRule,
+	getPricingRules,
 } from "./pricing-rules.api";
 
 type PaginatedPricingRules = PaginatedDto<PricingRuleView>;
 
 export type PricingRulesQueryOverrides<TData = PaginatedPricingRules> = Omit<
-  UseQueryOptions<PaginatedPricingRules, ProblemDetailsError, TData>,
-  "queryKey" | "queryFn"
+	UseQueryOptions<PaginatedPricingRules, ProblemDetailsError, TData>,
+	"queryKey" | "queryFn"
 >;
 
 // -------------------------------------------------------
@@ -31,10 +31,10 @@ export type PricingRulesQueryOverrides<TData = PaginatedPricingRules> = Omit<
 // -------------------------------------------------------
 
 export const pricingRuleKeys = {
-  all: () => ["pricing-rules"] as const,
-  lists: () => [...pricingRuleKeys.all(), "list"] as const,
-  list: (params: ListPricingRulesQueryDto) =>
-    [...pricingRuleKeys.lists(), params] as const,
+	all: () => ["pricing-rules"] as const,
+	lists: () => [...pricingRuleKeys.all(), "list"] as const,
+	list: (params: ListPricingRulesQueryDto) =>
+		[...pricingRuleKeys.lists(), params] as const,
 };
 
 // -------------------------------------------------------
@@ -42,15 +42,15 @@ export const pricingRuleKeys = {
 // -------------------------------------------------------
 
 export const pricingRuleQueries = {
-  list: <TData = PaginatedPricingRules>(
-    params: ListPricingRulesQueryDto,
-    overrides?: PricingRulesQueryOverrides<TData>,
-  ) =>
-    queryOptions<PaginatedPricingRules, ProblemDetailsError, TData>({
-      queryKey: pricingRuleKeys.list(params),
-      queryFn: () => getPricingRules({ data: params }),
-      ...overrides,
-    }),
+	list: <TData = PaginatedPricingRules>(
+		params: ListPricingRulesQueryDto,
+		overrides?: PricingRulesQueryOverrides<TData>,
+	) =>
+		queryOptions<PaginatedPricingRules, ProblemDetailsError, TData>({
+			queryKey: pricingRuleKeys.list(params),
+			queryFn: () => getPricingRules({ data: params }),
+			...overrides,
+		}),
 };
 
 // -------------------------------------------------------
@@ -58,47 +58,47 @@ export const pricingRuleQueries = {
 // -------------------------------------------------------
 
 type CreatePricingRuleOptions = Omit<
-  UseMutationOptions<string, ProblemDetailsError, CreatePricingRuleDto>,
-  "mutationFn" | "mutationKey"
+	UseMutationOptions<string, ProblemDetailsError, CreatePricingRuleDto>,
+	"mutationFn" | "mutationKey"
 >;
 
 type DeletePricingRuleOptions = Omit<
-  UseMutationOptions<void, ProblemDetailsError, { pricingRuleId: string }>,
-  "mutationFn" | "mutationKey"
+	UseMutationOptions<void, ProblemDetailsError, { pricingRuleId: string }>,
+	"mutationFn" | "mutationKey"
 >;
 
 export function usePricingRules<TData = PaginatedPricingRules>(
-  params: ListPricingRulesQueryDto,
-  overrides?: PricingRulesQueryOverrides<TData>,
+	params: ListPricingRulesQueryDto,
+	overrides?: PricingRulesQueryOverrides<TData>,
 ) {
-  return useQuery({
-    ...pricingRuleQueries.list(params, overrides),
-    placeholderData: keepPreviousData,
-  });
+	return useQuery({
+		...pricingRuleQueries.list(params, overrides),
+		placeholderData: keepPreviousData,
+	});
 }
 
 export function useCreatePricingRule(options?: CreatePricingRuleOptions) {
-  return useMutation<string, ProblemDetailsError, CreatePricingRuleDto>({
-    ...options,
-    mutationFn: (data) => createPricingRule({ data }),
-    meta: {
-      invalidates: pricingRuleKeys.lists(),
-    },
-  });
+	return useMutation<string, ProblemDetailsError, CreatePricingRuleDto>({
+		...options,
+		mutationFn: (data) => createPricingRule({ data }),
+		meta: {
+			invalidates: pricingRuleKeys.lists(),
+		},
+	});
 }
 
 export function useDeletePricingRule(options?: DeletePricingRuleOptions) {
-  return useMutation<void, ProblemDetailsError, { pricingRuleId: string }>({
-    ...options,
-    mutationFn: async ({ pricingRuleId }) => {
-      const result = await deletePricingRule({ data: { pricingRuleId } });
+	return useMutation<void, ProblemDetailsError, { pricingRuleId: string }>({
+		...options,
+		mutationFn: async ({ pricingRuleId }) => {
+			const result = await deletePricingRule({ data: { pricingRuleId } });
 
-      if (typeof result === "object" && result !== null && "error" in result) {
-        throw new ProblemDetailsError(result.error);
-      }
-    },
-    meta: {
-      invalidates: pricingRuleKeys.lists(),
-    },
-  });
+			if (typeof result === "object" && result !== null && "error" in result) {
+				throw new ProblemDetailsError(result.error);
+			}
+		},
+		meta: {
+			invalidates: pricingRuleKeys.lists(),
+		},
+	});
 }

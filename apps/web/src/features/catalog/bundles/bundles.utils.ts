@@ -1,43 +1,43 @@
 type BundleComponentGroupable = {
-  category: {
-    id: string;
-    name: string;
-  } | null;
+	category: {
+		id: string;
+		name: string;
+	} | null;
 };
 
 export function groupBundleComponents<T extends BundleComponentGroupable>(
-  components: T[],
+	components: T[],
 ) {
-  const uncategorized: T[] = [];
-  const categorized = new Map<
-    string,
-    {
-      categoryName: string;
-      components: T[];
-    }
-  >();
+	const uncategorized: T[] = [];
+	const categorized = new Map<
+		string,
+		{
+			categoryName: string;
+			components: T[];
+		}
+	>();
 
-  for (const component of components) {
-    if (!component.category) {
-      uncategorized.push(component);
-      continue;
-    }
+	for (const component of components) {
+		if (!component.category) {
+			uncategorized.push(component);
+			continue;
+		}
 
-    const group = categorized.get(component.category.id);
+		const group = categorized.get(component.category.id);
 
-    if (group) {
-      group.components.push(component);
-      continue;
-    }
+		if (group) {
+			group.components.push(component);
+			continue;
+		}
 
-    categorized.set(component.category.id, {
-      categoryName: component.category.name,
-      components: [component],
-    });
-  }
+		categorized.set(component.category.id, {
+			categoryName: component.category.name,
+			components: [component],
+		});
+	}
 
-  return {
-    uncategorized,
-    categorized: Array.from(categorized.values()),
-  };
+	return {
+		uncategorized,
+		categorized: Array.from(categorized.values()),
+	};
 }

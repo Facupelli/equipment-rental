@@ -1,35 +1,35 @@
 import { z } from "zod";
 import { emptyToNull, emptyToNullOrUndefined } from "@/shared/utils/form.utils";
 import {
-  createCustomerSchema,
-  customerRegisterSchema,
-  updateCustomerSchema,
-  type CreateCustomerDto,
-  type CustomerRegisterDto,
-  type UpdateCustomerDto,
+	createCustomerSchema,
+	customerRegisterSchema,
+	updateCustomerSchema,
+	type CreateCustomerDto,
+	type CustomerRegisterDto,
+	type UpdateCustomerDto,
 } from "@repo/schemas";
 
 const customerFieldsFormSchema = {
-  email: z.email("Invalid email"),
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  phone: z.string().or(z.literal("")),
-  isCompany: z.boolean(),
-  companyName: z.string().or(z.literal("")),
-  taxId: z.string().or(z.literal("")),
+	email: z.email("Invalid email"),
+	firstName: z.string().min(1, "First name is required"),
+	lastName: z.string().min(1, "Last name is required"),
+	phone: z.string().or(z.literal("")),
+	isCompany: z.boolean(),
+	companyName: z.string().or(z.literal("")),
+	taxId: z.string().or(z.literal("")),
 };
 
 const customerCompanyFormRefinement = (
-  data: { isCompany?: boolean | null; companyName?: string },
-  ctx: z.RefinementCtx,
+	data: { isCompany?: boolean | null; companyName?: string },
+	ctx: z.RefinementCtx,
 ) => {
-  if (data.isCompany && (!data.companyName || data.companyName.trim() === "")) {
-    ctx.addIssue({
-      code: "custom",
-      message: "Company name is required for company accounts",
-      path: ["companyName"],
-    });
-  }
+	if (data.isCompany && (!data.companyName || data.companyName.trim() === "")) {
+		ctx.addIssue({
+			code: "custom",
+			message: "Company name is required for company accounts",
+			path: ["companyName"],
+		});
+	}
 };
 
 // ---------------------------------------------------------------------------
@@ -37,48 +37,48 @@ const customerCompanyFormRefinement = (
 // ---------------------------------------------------------------------------
 
 export const customerRegisterFormSchema = z
-  .object({
-    ...customerFieldsFormSchema,
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-  })
-  .superRefine(customerCompanyFormRefinement)
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+	.object({
+		...customerFieldsFormSchema,
+		password: z.string().min(8, "Password must be at least 8 characters"),
+		confirmPassword: z.string(),
+	})
+	.superRefine(customerCompanyFormRefinement)
+	.refine((data) => data.password === data.confirmPassword, {
+		message: "Passwords do not match",
+		path: ["confirmPassword"],
+	});
 
 export type CustomerRegisterFormValues = z.infer<
-  typeof customerRegisterFormSchema
+	typeof customerRegisterFormSchema
 >;
 
 export const customerRegisterFormDefaults: CustomerRegisterFormValues = {
-  email: "",
-  password: "",
-  confirmPassword: "",
-  firstName: "",
-  lastName: "",
-  phone: "",
-  isCompany: false,
-  companyName: "",
-  taxId: "",
+	email: "",
+	password: "",
+	confirmPassword: "",
+	firstName: "",
+	lastName: "",
+	phone: "",
+	isCompany: false,
+	companyName: "",
+	taxId: "",
 };
 
 export function toCustomerRegisterDto(
-  values: CustomerRegisterFormValues,
+	values: CustomerRegisterFormValues,
 ): CustomerRegisterDto {
-  const dto = {
-    email: values.email.trim(),
-    password: values.password,
-    firstName: values.firstName.trim(),
-    lastName: values.lastName.trim(),
-    phone: emptyToNull(values.phone),
-    isCompany: values.isCompany,
-    companyName: emptyToNull(values.companyName),
-    taxId: emptyToNull(values.taxId),
-  };
+	const dto = {
+		email: values.email.trim(),
+		password: values.password,
+		firstName: values.firstName.trim(),
+		lastName: values.lastName.trim(),
+		phone: emptyToNull(values.phone),
+		isCompany: values.isCompany,
+		companyName: emptyToNull(values.companyName),
+		taxId: emptyToNull(values.taxId),
+	};
 
-  return customerRegisterSchema.parse(dto);
+	return customerRegisterSchema.parse(dto);
 }
 
 // ---------------------------------------------------------------------------
@@ -86,36 +86,36 @@ export function toCustomerRegisterDto(
 // ---------------------------------------------------------------------------
 
 export const createCustomerFormSchema = z
-  .object(customerFieldsFormSchema)
-  .superRefine(customerCompanyFormRefinement);
+	.object(customerFieldsFormSchema)
+	.superRefine(customerCompanyFormRefinement);
 
 export type CreateCustomerFormValues = z.infer<typeof createCustomerFormSchema>;
 
 export const createCustomerFormDefaults: CreateCustomerFormValues = {
-  email: "",
-  firstName: "",
-  lastName: "",
-  phone: "",
-  isCompany: false,
-  companyName: "",
-  taxId: "",
+	email: "",
+	firstName: "",
+	lastName: "",
+	phone: "",
+	isCompany: false,
+	companyName: "",
+	taxId: "",
 };
 
 export function toCreateCustomerDto(
-  values: CreateCustomerFormValues,
+	values: CreateCustomerFormValues,
 ): CreateCustomerDto {
-  const dto = {
-    email: values.email.trim(),
-    password: crypto.randomUUID(),
-    firstName: values.firstName.trim(),
-    lastName: values.lastName.trim(),
-    phone: emptyToNull(values.phone),
-    isCompany: values.isCompany,
-    companyName: emptyToNull(values.companyName),
-    taxId: emptyToNull(values.taxId),
-  };
+	const dto = {
+		email: values.email.trim(),
+		password: crypto.randomUUID(),
+		firstName: values.firstName.trim(),
+		lastName: values.lastName.trim(),
+		phone: emptyToNull(values.phone),
+		isCompany: values.isCompany,
+		companyName: emptyToNull(values.companyName),
+		taxId: emptyToNull(values.taxId),
+	};
 
-  return createCustomerSchema.parse(dto);
+	return createCustomerSchema.parse(dto);
 }
 
 // ---------------------------------------------------------------------------
@@ -123,65 +123,65 @@ export function toCreateCustomerDto(
 // ---------------------------------------------------------------------------
 
 export const updateCustomerFormSchema = z
-  .object({
-    email: z.email("Invalid email"),
-    firstName: z.string().min(1, "First name is required"),
-    lastName: z.string().min(1, "Last name is required"),
-    phone: z.string().or(z.literal("")),
-    isCompany: z.boolean(),
-    companyName: z.string().or(z.literal("")),
-    taxId: z.string().or(z.literal("")),
-  })
-  .superRefine(customerCompanyFormRefinement);
+	.object({
+		email: z.email("Invalid email"),
+		firstName: z.string().min(1, "First name is required"),
+		lastName: z.string().min(1, "Last name is required"),
+		phone: z.string().or(z.literal("")),
+		isCompany: z.boolean(),
+		companyName: z.string().or(z.literal("")),
+		taxId: z.string().or(z.literal("")),
+	})
+	.superRefine(customerCompanyFormRefinement);
 
 export type UpdateCustomerFormValues = z.infer<typeof updateCustomerFormSchema>;
 
 export function customerToFormValues(customer: {
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone: string | null;
-  isCompany: boolean;
-  companyName: string | null;
-  taxId: string | null;
+	email: string;
+	firstName: string;
+	lastName: string;
+	phone: string | null;
+	isCompany: boolean;
+	companyName: string | null;
+	taxId: string | null;
 }): UpdateCustomerFormValues {
-  return {
-    email: customer.email,
-    firstName: customer.firstName,
-    lastName: customer.lastName,
-    phone: customer.phone ?? "",
-    isCompany: customer.isCompany,
-    companyName: customer.companyName ?? "",
-    taxId: customer.taxId ?? "",
-  };
+	return {
+		email: customer.email,
+		firstName: customer.firstName,
+		lastName: customer.lastName,
+		phone: customer.phone ?? "",
+		isCompany: customer.isCompany,
+		companyName: customer.companyName ?? "",
+		taxId: customer.taxId ?? "",
+	};
 }
 
 export function toUpdateCustomerDto(
-  dirtyValues: Partial<UpdateCustomerFormValues>,
+	dirtyValues: Partial<UpdateCustomerFormValues>,
 ): UpdateCustomerDto {
-  const dto: UpdateCustomerDto = {};
+	const dto: UpdateCustomerDto = {};
 
-  if (dirtyValues.email !== undefined) {
-    dto.email = dirtyValues.email.trim();
-  }
-  if (dirtyValues.firstName !== undefined) {
-    dto.firstName = dirtyValues.firstName.trim();
-  }
-  if (dirtyValues.lastName !== undefined) {
-    dto.lastName = dirtyValues.lastName.trim();
-  }
-  if (dirtyValues.phone !== undefined) {
-    dto.phone = emptyToNullOrUndefined(dirtyValues.phone);
-  }
-  if (dirtyValues.isCompany !== undefined) {
-    dto.isCompany = dirtyValues.isCompany;
-  }
-  if (dirtyValues.companyName !== undefined) {
-    dto.companyName = emptyToNullOrUndefined(dirtyValues.companyName);
-  }
-  if (dirtyValues.taxId !== undefined) {
-    dto.taxId = emptyToNullOrUndefined(dirtyValues.taxId);
-  }
+	if (dirtyValues.email !== undefined) {
+		dto.email = dirtyValues.email.trim();
+	}
+	if (dirtyValues.firstName !== undefined) {
+		dto.firstName = dirtyValues.firstName.trim();
+	}
+	if (dirtyValues.lastName !== undefined) {
+		dto.lastName = dirtyValues.lastName.trim();
+	}
+	if (dirtyValues.phone !== undefined) {
+		dto.phone = emptyToNullOrUndefined(dirtyValues.phone);
+	}
+	if (dirtyValues.isCompany !== undefined) {
+		dto.isCompany = dirtyValues.isCompany;
+	}
+	if (dirtyValues.companyName !== undefined) {
+		dto.companyName = emptyToNullOrUndefined(dirtyValues.companyName);
+	}
+	if (dirtyValues.taxId !== undefined) {
+		dto.taxId = emptyToNullOrUndefined(dirtyValues.taxId);
+	}
 
-  return updateCustomerSchema.parse(dto);
+	return updateCustomerSchema.parse(dto);
 }

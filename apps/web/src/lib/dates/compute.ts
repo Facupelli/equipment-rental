@@ -1,7 +1,7 @@
 import { type Dayjs } from "dayjs";
 
 export function addDays(date: Dayjs, amount: number): Dayjs {
-  return date.add(amount, "day");
+	return date.add(amount, "day");
 }
 
 /**
@@ -9,5 +9,5 @@ export function addDays(date: Dayjs, amount: number): Dayjs {
  * Uses day-level diff — time component is irrelevant.
  */
 export function countNights(start: Dayjs, end: Dayjs): number {
-  return end.utc().startOf("day").diff(start.utc().startOf("day"), "day");
+	return end.utc().startOf("day").diff(start.utc().startOf("day"), "day");
 }

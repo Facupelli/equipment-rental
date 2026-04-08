@@ -23,64 +23,64 @@ let inflightRefresh: Promise<boolean> | null = null;
 // session and redirects the user to the login page.
 
 export async function refreshSession(
-  face: "admin" | "portal",
+	face: "admin" | "portal",
 ): Promise<boolean> {
-  if (inflightRefresh) {
-    return inflightRefresh;
-  }
+	if (inflightRefresh) {
+		return inflightRefresh;
+	}
 
-  inflightRefresh = attemptRefresh(face).finally(() => {
-    inflightRefresh = null;
-  });
+	inflightRefresh = attemptRefresh(face).finally(() => {
+		inflightRefresh = null;
+	});
 
-  return inflightRefresh;
+	return inflightRefresh;
 }
 
 async function attemptRefresh(face: "admin" | "portal"): Promise<boolean> {
-  const session = await getAppSession();
-  const refreshToken = session.data.refreshToken;
+	const session = await getAppSession();
+	const refreshToken = session.data.refreshToken;
 
-  const loginRoute = face === "admin" ? "/admin/login" : "/login";
+	const loginRoute = face === "admin" ? "/admin/login" : "/login";
 
-  if (!refreshToken) {
-    await session.clear();
-    throw redirect({ to: loginRoute });
-  }
+	if (!refreshToken) {
+		await session.clear();
+		throw redirect({ to: loginRoute });
+	}
 
-  let response: Response;
+	let response: Response;
 
-  try {
-    response = await fetch(`${process.env.BACKEND_URL}/auth/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // NestJS RefreshTokenStrategy uses fromAuthHeaderAsBearerToken()
-        Authorization: `Bearer ${refreshToken}`,
-      },
-    });
-  } catch {
-    // Network-level failure — don't clear the session, the user might be
-    // temporarily offline. Caller decides how to handle the false return.
-    return false;
-  }
+	try {
+		response = await fetch(`${process.env.BACKEND_URL}/auth/refresh`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				// NestJS RefreshTokenStrategy uses fromAuthHeaderAsBearerToken()
+				Authorization: `Bearer ${refreshToken}`,
+			},
+		});
+	} catch {
+		// Network-level failure — don't clear the session, the user might be
+		// temporarily offline. Caller decides how to handle the false return.
+		return false;
+	}
 
-  if (!response.ok) {
-    // API rejected the refresh token (expired, revoked, reuse detected).
-    // Unrecoverable — clear session and force re-login.
-    await session.clear();
-    throw redirect({ to: loginRoute });
-  }
+	if (!response.ok) {
+		// API rejected the refresh token (expired, revoked, reuse detected).
+		// Unrecoverable — clear session and force re-login.
+		await session.clear();
+		throw redirect({ to: loginRoute });
+	}
 
-  const body = (await response.json()) as {
-    data: { access_token: string; refresh_token: string };
-  };
+	const body = (await response.json()) as {
+		data: { access_token: string; refresh_token: string };
+	};
 
-  await session.update({
-    ...session.data,
-    accessToken: body.data.access_token,
-    refreshToken: body.data.refresh_token,
-    accessTokenExpiresAt: Date.now() + ACCESS_TOKEN_TTL_MS,
-  });
+	await session.update({
+		...session.data,
+		accessToken: body.data.access_token,
+		refreshToken: body.data.refresh_token,
+		accessTokenExpiresAt: Date.now() + ACCESS_TOKEN_TTL_MS,
+	});
 
-  return true;
+	return true;
 }

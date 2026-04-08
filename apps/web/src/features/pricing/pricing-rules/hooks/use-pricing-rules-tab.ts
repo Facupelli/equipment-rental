@@ -7,39 +7,39 @@ import { Route } from "@/routes/_admin/dashboard/pricing/index";
 const DEBOUNCE_MS = 300;
 
 export function usePricingRulesTab() {
-  const navigate = useNavigate({ from: Route.fullPath });
-  const { page, search: urlSearch } = Route.useSearch();
+	const navigate = useNavigate({ from: Route.fullPath });
+	const { page, search: urlSearch } = Route.useSearch();
 
-  const [inputValue, setInputValue] = useState(urlSearch ?? "");
-  const debouncedSearch = useDebounce(inputValue, DEBOUNCE_MS);
+	const [inputValue, setInputValue] = useState(urlSearch ?? "");
+	const debouncedSearch = useDebounce(inputValue, DEBOUNCE_MS);
 
-  // Sync debounced value → URL, reset page on new search term
-  useEffect(() => {
-    const next = debouncedSearch.trim() || undefined;
-    navigate({
-      search: (prev) => ({
-        ...prev,
-        search: next,
-        page: next !== urlSearch ? 1 : prev.page,
-      }),
-    });
-  }, [debouncedSearch]);
+	// Sync debounced value → URL, reset page on new search term
+	useEffect(() => {
+		const next = debouncedSearch.trim() || undefined;
+		navigate({
+			search: (prev) => ({
+				...prev,
+				search: next,
+				page: next !== urlSearch ? 1 : prev.page,
+			}),
+		});
+	}, [debouncedSearch]);
 
-  function handlePageChange(next: number) {
-    navigate({ search: (prev) => ({ ...prev, page: next }) });
-  }
+	function handlePageChange(next: number) {
+		navigate({ search: (prev) => ({ ...prev, page: next }) });
+	}
 
-  const query = usePricingRules({
-    page,
-    limit: 10,
-    search: urlSearch,
-  });
+	const query = usePricingRules({
+		page,
+		limit: 10,
+		search: urlSearch,
+	});
 
-  return {
-    inputValue,
-    setInputValue,
-    query,
-    page,
-    handlePageChange,
-  };
+	return {
+		inputValue,
+		setInputValue,
+		query,
+		page,
+		handlePageChange,
+	};
 }

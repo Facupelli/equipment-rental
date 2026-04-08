@@ -1,12 +1,12 @@
 import z from "zod";
 
 export const loginSchema = z.object({
-  email: z.email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+	email: z.email("Invalid email address"),
+	password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export type LoginDto = z.infer<typeof loginSchema>;
 export interface LoginResponseDto {
-  access_token: string;
-  refresh_token: string;
+	access_token: string;
+	refresh_token: string;
 }

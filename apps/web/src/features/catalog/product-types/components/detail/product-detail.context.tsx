@@ -2,26 +2,26 @@ import type { ProductTypeResponse } from "@repo/schemas";
 import { createContext, useContext, type ReactNode } from "react";
 
 interface ProductContextValue {
-  product: ProductTypeResponse;
+	product: ProductTypeResponse;
 }
 
 const ProductContext = createContext<ProductContextValue | null>(null);
 
 export function ProductProvider({
-  product,
-  children,
+	product,
+	children,
 }: ProductContextValue & { children: ReactNode }) {
-  return (
-    <ProductContext.Provider value={{ product }}>
-      {children}
-    </ProductContext.Provider>
-  );
+	return (
+		<ProductContext.Provider value={{ product }}>
+			{children}
+		</ProductContext.Provider>
+	);
 }
 
 export function useProduct() {
-  const context = useContext(ProductContext);
-  if (!context) {
-    throw new Error("useProduct must be used within ProductProvider");
-  }
-  return context;
+	const context = useContext(ProductContext);
+	if (!context) {
+		throw new Error("useProduct must be used within ProductProvider");
+	}
+	return context;
 }

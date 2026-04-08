@@ -6,13 +6,13 @@ import { apiFetch } from "@/lib/api";
 const apiUrl = "/rental/categories";
 
 export const getRentalCategories = createServerFn({ method: "GET" }).handler(
-  async (): Promise<ProductCategoryListResponse> => {
-    const result = await apiFetch<ProductCategoryListResponse>(apiUrl, {
-      authenticated: false,
-      face: "portal",
-      method: "GET",
-    });
+	async (): Promise<ProductCategoryListResponse> => {
+		const result = await apiFetch<ProductCategoryListResponse>(apiUrl, {
+			authenticated: false,
+			face: "portal",
+			method: "GET",
+		});
 
-    return result;
-  },
+		return result;
+	},
 );

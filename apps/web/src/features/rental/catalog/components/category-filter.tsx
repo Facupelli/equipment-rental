@@ -3,44 +3,44 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRentalCategories } from "@/features/rental/catalog/categories.queries";
 
 interface CategoryFilterProps {
-  activeCategory: string | undefined;
-  onSelect: (id: string) => void;
+	activeCategory: string | undefined;
+	onSelect: (id: string) => void;
 }
 
 export function CategoryFilter({
-  activeCategory,
-  onSelect,
+	activeCategory,
+	onSelect,
 }: CategoryFilterProps) {
-  const { data: categories, isFetching } = useRentalCategories();
+	const { data: categories, isFetching } = useRentalCategories();
 
-  if (isFetching) {
-    const skeletonKeys = ["one", "two", "three", "four", "five"];
+	if (isFetching) {
+		const skeletonKeys = ["one", "two", "three", "four", "five"];
 
-    return (
-      <div className="hidden md:flex gap-2 pb-4 border-b">
-        {skeletonKeys.map((key) => (
-          <Skeleton key={key} className="h-9 w-24 rounded-full" />
-        ))}
-      </div>
-    );
-  }
+		return (
+			<div className="hidden md:flex gap-2 pb-4 border-b">
+				{skeletonKeys.map((key) => (
+					<Skeleton key={key} className="h-9 w-24 rounded-full" />
+				))}
+			</div>
+		);
+	}
 
-  if (!categories?.length) {
-    return null;
-  }
+	if (!categories?.length) {
+		return null;
+	}
 
-  return (
-    <div className="hidden md:flex gap-2 pb-4 overflow-x-auto border-b scrollbar-hide">
-      {categories.map((cat) => (
-        <Button
-          key={cat.id}
-          variant={activeCategory === cat.id ? "default" : "ghost"}
-          onClick={() => onSelect(cat.id)}
-          className="rounded-full shrink-0"
-        >
-          {cat.name}
-        </Button>
-      ))}
-    </div>
-  );
+	return (
+		<div className="hidden md:flex gap-2 pb-4 overflow-x-auto border-b scrollbar-hide">
+			{categories.map((cat) => (
+				<Button
+					key={cat.id}
+					variant={activeCategory === cat.id ? "default" : "ghost"}
+					onClick={() => onSelect(cat.id)}
+					className="rounded-full shrink-0"
+				>
+					{cat.name}
+				</Button>
+			))}
+		</div>
+	);
 }

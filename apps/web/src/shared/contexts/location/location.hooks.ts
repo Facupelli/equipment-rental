@@ -1,7 +1,7 @@
 import useLocationStore from "./location.context";
 
 export const useLocationId = () =>
-  useLocationStore((state) => state.locationId);
+	useLocationStore((state) => state.locationId);
 
 export const useLocationActions = () =>
-  useLocationStore((state) => state.actions);
+	useLocationStore((state) => state.actions);

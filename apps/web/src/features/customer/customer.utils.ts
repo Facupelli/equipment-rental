@@ -8,10 +8,10 @@ type CustomerSummary = NonNullable<ParsedOrderDetailResponseDto["customer"]>;
  * For individual customers, this is their full name.
  */
 export function getCustomerDisplayName(customer: CustomerSummary): string {
-  if (customer.isCompany && customer.companyName) {
-    return customer.companyName;
-  }
-  return `${customer.firstName} ${customer.lastName}`;
+	if (customer.isCompany && customer.companyName) {
+		return customer.companyName;
+	}
+	return `${customer.firstName} ${customer.lastName}`;
 }
 
 /**
@@ -19,10 +19,10 @@ export function getCustomerDisplayName(customer: CustomerSummary): string {
  * Returns null for individual customers, as the display name already is their name.
  */
 export function getCustomerContactName(
-  customer: CustomerSummary,
+	customer: CustomerSummary,
 ): string | null {
-  if (!customer.isCompany) return null;
-  return `${customer.firstName} ${customer.lastName}`;
+	if (!customer.isCompany) return null;
+	return `${customer.firstName} ${customer.lastName}`;
 }
 
 /**
@@ -30,7 +30,7 @@ export function getCustomerContactName(
  * Used for avatar placeholders.
  */
 export function getCustomerInitials(customer: CustomerSummary): string {
-  const first = customer.firstName[0] ?? "";
-  const last = customer.lastName[0] ?? "";
-  return `${first}${last}`.toUpperCase();
+	const first = customer.firstName[0] ?? "";
+	const last = customer.lastName[0] ?? "";
+	return `${first}${last}`.toUpperCase();
 }

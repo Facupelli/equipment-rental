@@ -63,7 +63,7 @@ function RouteComponent() {
 
 	useEffect(() => {
 		if (!hasUnsavedChanges) {
-			return
+			return;
 		}
 
 		function handleBeforeUnload(event: BeforeUnloadEvent) {
@@ -80,7 +80,7 @@ function RouteComponent() {
 
 	async function handleSaveChanges() {
 		if (!hasUnsavedChanges) {
-			return
+			return;
 		}
 
 		setIsSaving(true);
@@ -91,11 +91,11 @@ function RouteComponent() {
 				targetType: "BUNDLE",
 				targetId: bundle.id,
 				tiers: pricingTiersDto.tiers,
-			})
+			});
 			setPendingTiers([]);
 			await queryClient.invalidateQueries({
 				queryKey: bundleKeys.detail(bundleId),
-			})
+			});
 		} catch (error) {
 			console.log({ error });
 		} finally {
@@ -157,7 +157,7 @@ function RouteComponent() {
 				</AlertDialogContent>
 			</AlertDialog>
 		</>
-	)
+	);
 }
 
 interface BundleHeaderProps {
@@ -237,7 +237,7 @@ function BundleHeader({
 				</div>
 			)}
 		</div>
-	)
+	);
 }
 
 function BundleComponents({ bundle }: { bundle: BundleDetailResponseDto }) {
@@ -293,7 +293,7 @@ function BundleComponents({ bundle }: { bundle: BundleDetailResponseDto }) {
 				</div>
 			)}
 		</section>
-	)
+	);
 }
 
 interface BundlePricingTiersProps {
@@ -337,7 +337,7 @@ function BundlePricingTiers({
 				billingUnitLabel={bundle.billingUnit.label}
 			/>
 		</section>
-	)
+	);
 }
 
 function EmptyState({ message }: { message: string }) {
@@ -345,7 +345,7 @@ function EmptyState({ message }: { message: string }) {
 		<div className="border-border rounded-xl border border-dashed px-6 py-10 text-center">
 			<p className="text-muted-foreground text-sm">{message}</p>
 		</div>
-	)
+	);
 }
 
 function LifecycleBadge({

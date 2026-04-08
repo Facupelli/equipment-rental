@@ -6,17 +6,17 @@ import { getCurrentUser } from "./user.api";
 // -----------------------------------------------------
 
 export const userKeys = {
-  all: () => ["user"] as const,
-  me: () => [...userKeys.all(), "me"] as const,
+	all: () => ["user"] as const,
+	me: () => [...userKeys.all(), "me"] as const,
 };
 
 export const userQueries = {
-  me: () =>
-    queryOptions({
-      queryKey: userKeys.me(),
-      queryFn: () => getCurrentUser(),
-      staleTime: 5 * 60 * 1000,
-    }),
+	me: () =>
+		queryOptions({
+			queryKey: userKeys.me(),
+			queryFn: () => getCurrentUser(),
+			staleTime: 5 * 60 * 1000,
+		}),
 };
 
 // -----------------------------------------------------
@@ -24,5 +24,5 @@ export const userQueries = {
 // -----------------------------------------------------
 
 export function useCurrentUser() {
-  return useQuery(userQueries.me());
+	return useQuery(userQueries.me());
 }

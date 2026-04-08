@@ -8,8 +8,8 @@ import { getBillingUnits } from "./billing-unit.api";
 // -----------------------------------------------------
 
 export const billingUnitKeys = {
-  all: () => ["billing-units"] as const,
-  lists: () => [...billingUnitKeys.all(), "list"] as const,
+	all: () => ["billing-units"] as const,
+	lists: () => [...billingUnitKeys.all(), "list"] as const,
 };
 
 // -----------------------------------------------------
@@ -17,8 +17,8 @@ export const billingUnitKeys = {
 // -----------------------------------------------------
 
 type BillingUnitQueryOptions<TData = BillingUnitListResponse> = Omit<
-  UseQueryOptions<BillingUnitListResponse, ProblemDetailsError, TData>,
-  "queryKey" | "queryFn"
+	UseQueryOptions<BillingUnitListResponse, ProblemDetailsError, TData>,
+	"queryKey" | "queryFn"
 >;
 
 // -----------------------------------------------------
@@ -26,11 +26,11 @@ type BillingUnitQueryOptions<TData = BillingUnitListResponse> = Omit<
 // -----------------------------------------------------
 
 export function useBillingUnits<TData = BillingUnitListResponse>(
-  options?: BillingUnitQueryOptions<TData>,
+	options?: BillingUnitQueryOptions<TData>,
 ) {
-  return useQuery({
-    ...options,
-    queryKey: billingUnitKeys.lists(),
-    queryFn: () => getBillingUnits(),
-  });
+	return useQuery({
+		...options,
+		queryKey: billingUnitKeys.lists(),
+		queryFn: () => getBillingUnits(),
+	});
 }

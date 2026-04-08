@@ -3,30 +3,30 @@ import type { MutationOptions } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { ProblemDetailsError } from "@/shared/errors";
 import {
-  createProduct,
-  publishProductType,
-  retireProductType,
-  updateProductType,
+	createProduct,
+	publishProductType,
+	retireProductType,
+	updateProductType,
 } from "./products.api";
 import { productKeys } from "./products.queries";
 
 type CreateProductOptions = Omit<
-  MutationOptions<string, ProblemDetailsError, CreateProductTypeDto>,
-  "mutationFn" | "mutationKey"
+	MutationOptions<string, ProblemDetailsError, CreateProductTypeDto>,
+	"mutationFn" | "mutationKey"
 >;
 
 type ProductLifecycleOptions = Omit<
-  MutationOptions<void, ProblemDetailsError, { productTypeId: string }>,
-  "mutationFn" | "mutationKey"
+	MutationOptions<void, ProblemDetailsError, { productTypeId: string }>,
+	"mutationFn" | "mutationKey"
 >;
 
 type UpdateProductOptions = Omit<
-  MutationOptions<
-    void,
-    ProblemDetailsError,
-    { productTypeId: string; dto: UpdateProductTypeDto }
-  >,
-  "mutationFn" | "mutationKey"
+	MutationOptions<
+		void,
+		ProblemDetailsError,
+		{ productTypeId: string; dto: UpdateProductTypeDto }
+	>,
+	"mutationFn" | "mutationKey"
 >;
 
 // -------------------------------------------------------
@@ -36,53 +36,53 @@ type UpdateProductOptions = Omit<
 // -------------------------------------------------------
 
 export function useCreateProduct(options?: CreateProductOptions) {
-  return useMutation<string, ProblemDetailsError, CreateProductTypeDto>({
-    ...options,
-    mutationFn: (data) => createProduct({ data }),
-    meta: {
-      // Invalidates all product lists on success
-      invalidates: productKeys.lists(),
-    },
-  });
+	return useMutation<string, ProblemDetailsError, CreateProductTypeDto>({
+		...options,
+		mutationFn: (data) => createProduct({ data }),
+		meta: {
+			// Invalidates all product lists on success
+			invalidates: productKeys.lists(),
+		},
+	});
 }
 
 export function useUpdateProductType(options?: UpdateProductOptions) {
-  return useMutation<
-    void,
-    ProblemDetailsError,
-    { productTypeId: string; dto: UpdateProductTypeDto }
-  >({
-    ...options,
-    mutationFn: ({ productTypeId, dto }) =>
-      updateProductType({ data: { productTypeId, dto } }),
-    meta: {
-      invalidates: productKeys.all(),
-    },
-  });
+	return useMutation<
+		void,
+		ProblemDetailsError,
+		{ productTypeId: string; dto: UpdateProductTypeDto }
+	>({
+		...options,
+		mutationFn: ({ productTypeId, dto }) =>
+			updateProductType({ data: { productTypeId, dto } }),
+		meta: {
+			invalidates: productKeys.all(),
+		},
+	});
 }
 
 export function usePublishProductType(options?: ProductLifecycleOptions) {
-  return useMutation<void, ProblemDetailsError, { productTypeId: string }>({
-    ...options,
-    mutationFn: async (data) => {
-      const result = await publishProductType({ data });
-      if (typeof result === "object" && result !== null && "error" in result) {
-        throw new ProblemDetailsError(result.error);
-      }
-    },
-    meta: {
-      // Invalidates all product details on success (surgical: lists stay intact)
-      invalidates: productKeys.details(),
-    },
-  });
+	return useMutation<void, ProblemDetailsError, { productTypeId: string }>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await publishProductType({ data });
+			if (typeof result === "object" && result !== null && "error" in result) {
+				throw new ProblemDetailsError(result.error);
+			}
+		},
+		meta: {
+			// Invalidates all product details on success (surgical: lists stay intact)
+			invalidates: productKeys.details(),
+		},
+	});
 }
 
 export function useRetireProductType(options?: ProductLifecycleOptions) {
-  return useMutation<void, ProblemDetailsError, { productTypeId: string }>({
-    ...options,
-    mutationFn: (data) => retireProductType({ data }),
-    meta: {
-      invalidates: productKeys.details(),
-    },
-  });
+	return useMutation<void, ProblemDetailsError, { productTypeId: string }>({
+		...options,
+		mutationFn: (data) => retireProductType({ data }),
+		meta: {
+			invalidates: productKeys.details(),
+		},
+	});
 }

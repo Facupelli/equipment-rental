@@ -9,75 +9,75 @@ import { CreateCouponDialogForm } from "@/features/pricing/coupons/components/cr
 import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 const promotionsSearchSchema = z.object({
-  tab: z.enum(["rules", "coupons"]).default("rules"),
-  page: z.number().int().min(1).default(1),
-  search: z.string().optional(),
+	tab: z.enum(["rules", "coupons"]).default("rules"),
+	page: z.number().int().min(1).default(1),
+	search: z.string().optional(),
 });
 
 type Tab = "rules" | "coupons";
 
 export const Route = createFileRoute("/_admin/dashboard/pricing/")({
-  validateSearch: promotionsSearchSchema,
-  errorComponent: ({ error }) => {
-    return (
-      <AdminRouteError
-        error={error}
-        genericMessage="No pudimos cargar la página de promociones."
-        forbiddenMessage="No tienes permisos para ver las promociones."
-      />
-    );
-  },
-  component: RouteComponent,
+	validateSearch: promotionsSearchSchema,
+	errorComponent: ({ error }) => {
+		return (
+			<AdminRouteError
+				error={error}
+				genericMessage="No pudimos cargar la página de promociones."
+				forbiddenMessage="No tienes permisos para ver las promociones."
+			/>
+		);
+	},
+	component: RouteComponent,
 });
 
 function RouteComponent() {
-  const navigate = useNavigate({ from: Route.fullPath });
-  const { tab } = Route.useSearch();
+	const navigate = useNavigate({ from: Route.fullPath });
+	const { tab } = Route.useSearch();
 
-  function handleTabChange(value: string) {
-    navigate({
-      search: () => ({
-        tab: value as Tab,
-        page: 1,
-        search: undefined,
-      }),
-    });
-  }
+	function handleTabChange(value: string) {
+		navigate({
+			search: () => ({
+				tab: value as Tab,
+				page: 1,
+				search: undefined,
+			}),
+		});
+	}
 
-  return (
-    <div className="space-y-6 px-6 py-8 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Promociones</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Gestiona incentivos de precios y códigos promocionales para tu flota
-            de alquiler.
-          </p>
-        </div>
-        {tab === "rules" && <CreatePricingRuleDialogForm />}
-        {tab === "coupons" && <CreateCouponDialogForm />}
-      </div>
+	return (
+		<div className="space-y-6 px-6 py-8 max-w-6xl mx-auto">
+			{/* Header */}
+			<div className="flex items-start justify-between gap-4">
+				<div>
+					<h1 className="text-3xl font-bold tracking-tight">Promociones</h1>
+					<p className="text-muted-foreground mt-1 text-sm">
+						Gestiona incentivos de precios y códigos promocionales para tu flota
+						de alquiler.
+					</p>
+				</div>
+				{tab === "rules" && <CreatePricingRuleDialogForm />}
+				{tab === "coupons" && <CreateCouponDialogForm />}
+			</div>
 
-      {/* Tabs */}
-      <Tabs
-        value={tab}
-        onValueChange={handleTabChange}
-        className="flex flex-col gap-y-10"
-      >
-        <TabsList>
-          <TabsTrigger value="rules">Reglas de Precio</TabsTrigger>
-          <TabsTrigger value="coupons">Cupones</TabsTrigger>
-        </TabsList>
+			{/* Tabs */}
+			<Tabs
+				value={tab}
+				onValueChange={handleTabChange}
+				className="flex flex-col gap-y-10"
+			>
+				<TabsList>
+					<TabsTrigger value="rules">Reglas de Precio</TabsTrigger>
+					<TabsTrigger value="coupons">Cupones</TabsTrigger>
+				</TabsList>
 
-        <TabsContent value="rules" hidden={tab !== "rules"}>
-          <PricingRulesTab />
-        </TabsContent>
+				<TabsContent value="rules" hidden={tab !== "rules"}>
+					<PricingRulesTab />
+				</TabsContent>
 
-        <TabsContent value="coupons" hidden={tab !== "coupons"}>
-          <CouponsTab />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
+				<TabsContent value="coupons" hidden={tab !== "coupons"}>
+					<CouponsTab />
+				</TabsContent>
+			</Tabs>
+		</div>
+	);
 }

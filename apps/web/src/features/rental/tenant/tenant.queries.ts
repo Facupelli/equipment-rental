@@ -6,17 +6,17 @@ import { getTenantPricingConfig } from "./tenant.api";
 // -------------------------------------------------------
 
 export const rentalTenantKeys = {
-  all: () => ["tenant-pricing-config"] as const,
-  me: () => [...rentalTenantKeys.all(), "me"] as const,
+	all: () => ["tenant-pricing-config"] as const,
+	me: () => [...rentalTenantKeys.all(), "me"] as const,
 };
 
 export const rentalTenantQueries = {
-  me: () =>
-    queryOptions({
-      queryKey: rentalTenantKeys.me(),
-      queryFn: () => getTenantPricingConfig(),
-      staleTime: 5 * 60 * 1000,
-    }),
+	me: () =>
+		queryOptions({
+			queryKey: rentalTenantKeys.me(),
+			queryFn: () => getTenantPricingConfig(),
+			staleTime: 5 * 60 * 1000,
+		}),
 };
 
 // -------------------------------------------------------
@@ -24,5 +24,5 @@ export const rentalTenantQueries = {
 // -------------------------------------------------------
 
 export function useTenantPricingConfig() {
-  return useSuspenseQuery(rentalTenantQueries.me());
+	return useSuspenseQuery(rentalTenantQueries.me());
 }
