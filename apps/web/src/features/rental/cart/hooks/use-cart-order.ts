@@ -1,24 +1,24 @@
-import type {
-	CalculateCartPricesRequest,
-	CartPriceLineItem,
-	DeliveryRequestDto,
-} from "@repo/schemas";
 import { FulfillmentMethod } from "@repo/types";
 import { useNavigate } from "@tanstack/react-router";
-import type { Dayjs } from "dayjs";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import type { CartPageContextValue } from "@/features/rental/cart/cart-page.context.types";
 import { useCreateOrder } from "@/features/orders/orders.queries";
 import {
 	useCartActions,
 	useCartItems,
 } from "@/features/rental/cart/cart.hooks";
-import { useCartPricePreview } from "@/features/rental/rental.queries";
-import { fromDate, toISOString } from "@/lib/dates/parse";
-import { ProblemDetailsError } from "@/shared/errors";
+import { toISOString } from "@/lib/dates/parse";
 import { PORTAL_AUTH_REDIRECT_ROUTES } from "../../auth/portal-auth.redirect";
 import { useCurrentCustomer } from "../../customer/customer.queries";
 import type { ConflictGroup } from "../cart.types";
+import {
+	extractBookingConflicts,
+	isDeliveryRequestComplete,
+} from "../cart-order.utils";
 import { formatSlot } from "../cart.utils";
+import { useCartOrderDelivery } from "./use-cart-order-delivery";
+import { useCartOrderPricing } from "./use-cart-order-pricing";
+import { useCartOrderTimes } from "./use-cart-order-times";
 
 type UseCartOrderParams = {
 	location: {
@@ -27,40 +27,6 @@ type UseCartOrderParams = {
 	};
 	startDate: Date;
 	endDate: Date;
-};
-
-export type CartOrderPeriod = {
-	start: Dayjs;
-	end: Dayjs;
-};
-
-// Line item enriched with the cart item's display name.
-// Computed here because this hook already owns both cartItems and breakdown —
-// the page component shouldn't need to know about either to render the sidebar.
-export type JoinedLineItem = CartPriceLineItem & { name: string };
-
-type DeliveryRequestFormState = {
-	recipientName: string;
-	phone: string;
-	addressLine1: string;
-	addressLine2: string;
-	city: string;
-	stateRegion: string;
-	postalCode: string;
-	country: string;
-	instructions: string;
-};
-
-const EMPTY_DELIVERY_REQUEST: DeliveryRequestFormState = {
-	recipientName: "",
-	phone: "",
-	addressLine1: "",
-	addressLine2: "",
-	city: "",
-	stateRegion: "",
-	postalCode: "",
-	country: "",
-	instructions: "",
 };
 
 /**
@@ -87,129 +53,26 @@ export function useCartOrder({
 	const cartItems = useCartItems();
 	const { clearCart } = useCartActions();
 
-	const [pickupTime, setPickupTime] = useState<number | undefined>(undefined);
-	const [returnTime, setReturnTime] = useState<number | undefined>(undefined);
 	const [insuranceSelected, setInsuranceSelected] = useState(true);
-	const [fulfillmentMethod, setFulfillmentMethod] = useState<FulfillmentMethod>(
-		FulfillmentMethod.PICKUP,
-	);
-	const [deliveryRequest, setDeliveryRequest] =
-		useState<DeliveryRequestFormState>(EMPTY_DELIVERY_REQUEST);
-	const [isTimesRequired, setIsTimesRequired] = useState(false);
-	const [isDeliveryDetailsRequired, setIsDeliveryDetailsRequired] =
-		useState(false);
 	const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
 	const [conflictGroups, setConflictGroups] = useState<ConflictGroup[]>([]);
 	const [isBookingError, setIsBookingError] = useState(false);
-
-	const onPickupTimeChange = (value: number) => {
-		setPickupTime(value);
-		if (value && returnTime) setIsTimesRequired(false);
-	};
-
-	const onReturnTimeChange = (value: number) => {
-		setReturnTime(value);
-		if (pickupTime && value) setIsTimesRequired(false);
-	};
 
 	const onInsuranceSelectedChange = (value: boolean) => {
 		setInsuranceSelected(value);
 	};
 
-	const onFulfillmentMethodChange = (value: FulfillmentMethod) => {
-		setFulfillmentMethod(value);
-		if (value === FulfillmentMethod.PICKUP) {
-			setIsDeliveryDetailsRequired(false);
-		}
-	};
-
-	const onDeliveryRequestFieldChange = (
-		field: keyof DeliveryRequestFormState,
-		value: string,
-	) => {
-		setDeliveryRequest((current) => ({ ...current, [field]: value }));
-		setIsDeliveryDetailsRequired(false);
-	};
-
-	// Layer boundary: native Date → dayjs, once.
-	// All downstream logic and transport use these dayjs instances.
-	const period: CartOrderPeriod = useMemo(
-		() => ({ start: fromDate(startDate), end: fromDate(endDate) }),
-		[startDate, endDate],
-	);
-
-	// Built once — reused for both the price preview query and the order mutation.
-	const itemPayload = useMemo(
-		() =>
-			cartItems.map((item) =>
-				item.type === "PRODUCT"
-					? {
-							type: "PRODUCT" as const,
-							productTypeId: item.productTypeId,
-							quantity: item.quantity,
-						}
-					: {
-							type: "BUNDLE" as const,
-							bundleId: item.bundleId,
-							quantity: item.quantity,
-						},
-			),
-		[cartItems],
-	);
-
-	const pricePreviewRequest: CalculateCartPricesRequest = {
-		currency: "USD",
+	const times = useCartOrderTimes();
+	const delivery = useCartOrderDelivery();
+	const pricing = useCartOrderPricing({
 		locationId: location.id,
-		period: {
-			start: toISOString(period.start),
-			end: toISOString(period.end),
-		},
-		items: itemPayload,
+		startDate,
+		endDate,
 		insuranceSelected,
-	};
-
-	const {
-		data: breakdown,
-		isPending: isPriceLoading,
-		isError: isPriceError,
-	} = useCartPricePreview(pricePreviewRequest, {
-		enabled: Boolean(startDate && endDate && location.id),
+		cartItems,
 	});
 
-	// Pre-join line items with cart item names so downstream components
-	// don't need to know about the cart store or the breakdown shape.
-	const joinedLineItems: JoinedLineItem[] | undefined = useMemo(
-		() =>
-			breakdown?.lineItems.map((line) => {
-				const cartItem = cartItems.find(
-					(i) =>
-						(i.type === "PRODUCT" && i.productTypeId === line.id) ||
-						(i.type === "BUNDLE" && i.bundleId === line.id),
-				);
-				return { ...line, name: cartItem?.name ?? line.id };
-			}),
-		[breakdown, cartItems],
-	);
-
 	const { mutateAsync: createOrder } = useCreateOrder();
-
-	const normalizedDeliveryRequest = useMemo<DeliveryRequestDto | null>(() => {
-		if (fulfillmentMethod !== FulfillmentMethod.DELIVERY) {
-			return null;
-		}
-
-		return {
-			recipientName: deliveryRequest.recipientName.trim(),
-			phone: deliveryRequest.phone.trim(),
-			addressLine1: deliveryRequest.addressLine1.trim(),
-			addressLine2: deliveryRequest.addressLine2.trim() || null,
-			city: deliveryRequest.city.trim(),
-			stateRegion: deliveryRequest.stateRegion.trim(),
-			postalCode: deliveryRequest.postalCode.trim(),
-			country: deliveryRequest.country.trim(),
-			instructions: deliveryRequest.instructions.trim() || null,
-		};
-	}, [deliveryRequest, fulfillmentMethod]);
 
 	const handleBook = async () => {
 		setUnavailableIds([]);
@@ -228,37 +91,31 @@ export function useCartOrder({
 			return;
 		}
 
-		if (!pickupTime || !returnTime) {
-			setIsTimesRequired(true);
+		if (!times.pickupTime || !times.returnTime) {
+			times.requireTimes();
 			return;
 		}
 
 		if (
-			fulfillmentMethod === FulfillmentMethod.DELIVERY &&
-			(!normalizedDeliveryRequest?.recipientName ||
-				!normalizedDeliveryRequest.phone ||
-				!normalizedDeliveryRequest.addressLine1 ||
-				!normalizedDeliveryRequest.city ||
-				!normalizedDeliveryRequest.stateRegion ||
-				!normalizedDeliveryRequest.postalCode ||
-				!normalizedDeliveryRequest.country)
+			delivery.fulfillmentMethod === FulfillmentMethod.DELIVERY &&
+			!isDeliveryRequestComplete(delivery.normalizedDeliveryRequest)
 		) {
-			setIsDeliveryDetailsRequired(true);
+			delivery.requireDeliveryDetails();
 			return;
 		}
 
 		try {
 			await createOrder({
 				locationId: location.id,
-				periodStart: toISOString(period.start),
-				periodEnd: toISOString(period.end),
+				periodStart: toISOString(pricing.period.start),
+				periodEnd: toISOString(pricing.period.end),
 				currency: "USD",
-				items: itemPayload,
+				items: pricing.itemPayload,
 				insuranceSelected,
-				fulfillmentMethod,
-				deliveryRequest: normalizedDeliveryRequest,
-				pickupTime,
-				returnTime,
+				fulfillmentMethod: delivery.fulfillmentMethod,
+				deliveryRequest: delivery.normalizedDeliveryRequest,
+				pickupTime: times.pickupTime,
+				returnTime: times.returnTime,
 			});
 
 			clearCart();
@@ -266,26 +123,16 @@ export function useCartOrder({
 			navigate({
 				to: "/order-confirmation",
 				search: {
-					pickupDate: period.start.format("YYYY-MM-DD"),
+					pickupDate: pricing.period.start.format("YYYY-MM-DD"),
 					pickupLocation: location.name,
-					pickupTime: formatSlot(pickupTime),
+					pickupTime: formatSlot(times.pickupTime),
 				},
 			});
 		} catch (error) {
-			if (
-				error instanceof ProblemDetailsError &&
-				error.problemDetails.status === 422
-			) {
-				const ids = (error.problemDetails.unavailableItems ?? []).map(
-					(i: { productTypeId?: string; bundleId?: string }) =>
-						i.productTypeId ?? i.bundleId ?? "",
-				);
-				setUnavailableIds(ids.filter(Boolean));
-
-				const groups: ConflictGroup[] =
-					error.problemDetails.conflictGroups ?? [];
-				setConflictGroups(groups);
-
+			const conflicts = extractBookingConflicts(error);
+			if (conflicts) {
+				setUnavailableIds(conflicts.unavailableIds);
+				setConflictGroups(conflicts.conflictGroups);
 				return;
 			}
 
@@ -296,28 +143,44 @@ export function useCartOrder({
 	};
 
 	return {
-		cartItems,
-		period,
-		breakdown,
-		joinedLineItems,
-		insuranceSelected,
-		fulfillmentMethod,
-		deliveryRequest,
-		isAuthenticated: Boolean(customer),
-		pickupTime,
-		returnTime,
-		onInsuranceSelectedChange,
-		onFulfillmentMethodChange,
-		onDeliveryRequestFieldChange,
-		onPickupTimeChange,
-		onReturnTimeChange,
-		isTimesRequired,
-		isDeliveryDetailsRequired,
-		isPriceLoading,
-		isPriceError,
-		isBookingError,
-		unavailableIds,
-		conflictGroups,
-		handleBook,
-	};
+		cart: {
+			cartItems,
+		},
+		location: {
+			locationId: location.id,
+			locationName: location.name === "-" ? undefined : location.name,
+			startDate,
+			endDate,
+			period: pricing.period,
+		},
+		pricing: {
+			breakdown: pricing.breakdown,
+			joinedLineItems: pricing.joinedLineItems,
+			insuranceSelected,
+			onInsuranceSelectedChange,
+			isPriceLoading: pricing.isPriceLoading,
+			isPriceError: pricing.isPriceError,
+		},
+		times: {
+			pickupTime: times.pickupTime,
+			returnTime: times.returnTime,
+			onPickupTimeChange: times.onPickupTimeChange,
+			onReturnTimeChange: times.onReturnTimeChange,
+			isTimesRequired: times.isTimesRequired,
+		},
+		delivery: {
+			fulfillmentMethod: delivery.fulfillmentMethod,
+			deliveryRequest: delivery.deliveryRequest,
+			isDeliveryDetailsRequired: delivery.isDeliveryDetailsRequired,
+			onFulfillmentMethodChange: delivery.onFulfillmentMethodChange,
+			onDeliveryRequestFieldChange: delivery.onDeliveryRequestFieldChange,
+		},
+		booking: {
+			isAuthenticated: Boolean(customer),
+			isBookingError,
+			unavailableIds,
+			conflictGroups,
+			handleBook,
+		},
+	} satisfies CartPageContextValue;
 }

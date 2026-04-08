@@ -8,21 +8,24 @@ import {
 	formatRentalDuration,
 } from "@/lib/dates/format";
 import { formatSlot } from "../cart.utils";
-import { useCartPageContext } from "../cart-page.context";
+import {
+	useCartContext,
+	useCartLocationContext,
+	useCartPricingContext,
+	useCartTimesContext,
+} from "../cart-page.context";
 
 export function CartPagePeriod() {
+	const { cartItems } = useCartContext();
+	const { period, locationId, locationName } = useCartLocationContext();
+	const { breakdown } = useCartPricingContext();
 	const {
-		breakdown,
-		cartItems,
-		period,
-		locationId,
-		locationName,
 		isTimesRequired,
 		onPickupTimeChange,
 		onReturnTimeChange,
 		pickupTime,
 		returnTime,
-	} = useCartPageContext();
+	} = useCartTimesContext();
 
 	const startDate = period.start;
 	const endDate = period.end;

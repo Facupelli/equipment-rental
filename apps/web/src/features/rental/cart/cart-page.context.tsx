@@ -1,13 +1,15 @@
 import { createContext, useContext } from "react";
+import type {
+	BookingSlice,
+	CartPageContextValue,
+	CartSlice,
+	DeliverySlice,
+	LocationSlice,
+	PricingSlice,
+	TimesSlice,
+} from "@/features/rental/cart/cart-page.context.types";
 import { useCartOrder } from "@/features/rental/cart/hooks/use-cart-order";
 import { useRentalLocations } from "@/features/tenant/locations/locations.queries";
-
-type CartPageContextValue = ReturnType<typeof useCartOrder> & {
-	locationName: string | undefined;
-	startDate: Date;
-	endDate: Date;
-	locationId: string;
-};
 
 const CartPageContext = createContext<CartPageContextValue | null>(null);
 
@@ -16,6 +18,30 @@ export function useCartPageContext(): CartPageContextValue {
 	if (!ctx)
 		throw new Error("useCartPageContext must be used inside CartPageProvider");
 	return ctx;
+}
+
+export function useCartContext(): CartSlice {
+	return useCartPageContext().cart;
+}
+
+export function useCartLocationContext(): LocationSlice {
+	return useCartPageContext().location;
+}
+
+export function useCartPricingContext(): PricingSlice {
+	return useCartPageContext().pricing;
+}
+
+export function useCartTimesContext(): TimesSlice {
+	return useCartPageContext().times;
+}
+
+export function useCartDeliveryContext(): DeliverySlice {
+	return useCartPageContext().delivery;
+}
+
+export function useCartBookingContext(): BookingSlice {
+	return useCartPageContext().booking;
 }
 
 type CartPageProviderProps = {
@@ -44,15 +70,7 @@ export function CartPageProvider({
 	});
 
 	return (
-		<CartPageContext.Provider
-			value={{
-				...cartOrder,
-				locationId,
-				locationName: location?.name,
-				startDate,
-				endDate,
-			}}
-		>
+		<CartPageContext.Provider value={cartOrder}>
 			{children}
 		</CartPageContext.Provider>
 	);

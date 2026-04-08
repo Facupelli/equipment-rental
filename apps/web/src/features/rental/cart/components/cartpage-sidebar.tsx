@@ -23,34 +23,43 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { PRDOUCT_TYPE_DICT } from "@/features/catalog/catalog.constants";
-import type { JoinedLineItem } from "@/features/rental/cart/hooks/use-cart-order";
+import type {
+	DeliveryRequestField,
+	DeliveryRequestFormState,
+	JoinedLineItem,
+} from "@/features/rental/cart/cart-order.types";
 import { cn } from "@/lib/utils";
 import { useIsVisible } from "@/shared/hooks/use-is-visible";
 import { formatCurrency } from "@/shared/utils/price.utils";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 import { computeOriginalSubtotal, formatDiscount } from "../cart.utils";
-import { useCartPageContext } from "../cart-page.context";
+import {
+	useCartBookingContext,
+	useCartContext,
+	useCartDeliveryContext,
+	useCartPricingContext,
+} from "../cart-page.context";
 
 export function CartPageSidebar() {
 	const { data: tenantPriceConfig } = useTenantPricingConfig();
-
+	const { cartItems } = useCartContext();
 	const {
 		breakdown,
 		joinedLineItems,
 		insuranceSelected,
-		fulfillmentMethod,
-		deliveryRequest,
-		isAuthenticated,
 		isPriceLoading,
 		isPriceError,
-		isBookingError,
-		isDeliveryDetailsRequired,
-		cartItems,
-		handleBook,
 		onInsuranceSelectedChange,
+	} = useCartPricingContext();
+	const {
+		fulfillmentMethod,
+		deliveryRequest,
+		isDeliveryDetailsRequired,
 		onFulfillmentMethodChange,
 		onDeliveryRequestFieldChange,
-	} = useCartPageContext();
+	} = useCartDeliveryContext();
+	const { isAuthenticated, isBookingError, handleBook } =
+		useCartBookingContext();
 
 	const isDisabled = cartItems.length === 0 || isPriceLoading || isPriceError;
 	const ctaLabel = isAuthenticated
@@ -165,20 +174,6 @@ export function CartPageSidebar() {
 		</>
 	);
 }
-
-type DeliveryRequestFormState = {
-	recipientName: string;
-	phone: string;
-	addressLine1: string;
-	addressLine2: string;
-	city: string;
-	stateRegion: string;
-	postalCode: string;
-	country: string;
-	instructions: string;
-};
-
-type DeliveryRequestField = keyof DeliveryRequestFormState;
 
 type CartPageFulfillmentFormProps = {
 	fulfillmentMethod: FulfillmentMethod;
