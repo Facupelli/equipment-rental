@@ -1,10 +1,8 @@
 import type {
 	GetRentalProductTypesQuery,
 	RentalProductResponse,
-	RentalProductSort,
 	TenantPricingConfig,
 } from "@repo/schemas";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Minus, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,27 +16,16 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "@/components/ui/pagination";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { rentalQueries } from "@/features/rental/rental.queries";
+import { useRentalProducts } from "@/features/rental/rental.queries";
 import { formatCurrency } from "@/shared/utils/price.utils";
 import { useProductCardState } from "../../cart/hooks/use-product-card-state";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
-import {
-	DEFAULT_RENTAL_PRODUCT_SORT,
-	type RentalPageSearch,
-} from "../hooks/use-catalog-page-search";
+import { type RentalPageSearch } from "../hooks/use-catalog-page-search";
 
 interface ProductCatalogProps {
 	search: RentalPageSearch;
 	onPageChange: (page: number) => void;
-	onSortChange: (sort: RentalProductSort) => void;
 }
 
 interface ProductCatalogResultsProps {
@@ -46,17 +33,7 @@ interface ProductCatalogResultsProps {
 	onPageChange: (page: number) => void;
 }
 
-const SORT_OPTIONS: Array<{ label: string; value: RentalProductSort }> = [
-	{ label: "Mayor precio", value: "price-desc" },
-	{ label: "Menor precio", value: "price-asc" },
-	{ label: "Alfabético", value: "alphabetical" },
-];
-
-export function ProductCatalog({
-	search,
-	onPageChange,
-	onSortChange,
-}: ProductCatalogProps) {
+export function ProductCatalog({ search, onPageChange }: ProductCatalogProps) {
 	if (!search.locationId) {
 		return null;
 	}
@@ -67,36 +44,7 @@ export function ProductCatalog({
 	};
 
 	return (
-		<>
-			<div className="flex items-center justify-end pt-4">
-				<div className="flex items-center gap-3">
-					<span className="text-sm font-medium text-muted-foreground">
-						Ordenar por
-					</span>
-					<Select
-						value={search.sort ?? DEFAULT_RENTAL_PRODUCT_SORT}
-						onValueChange={(value) => onSortChange(value as RentalProductSort)}
-						items={SORT_OPTIONS}
-					>
-						<SelectTrigger className="w-44">
-							<SelectValue placeholder="Ordenar por" />
-						</SelectTrigger>
-						<SelectContent>
-							{SORT_OPTIONS.map((option) => (
-								<SelectItem key={option.value} value={option.value}>
-									{option.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-			</div>
-
-			<ProductCatalogResults
-				search={productSearch}
-				onPageChange={onPageChange}
-			/>
-		</>
+		<ProductCatalogResults search={productSearch} onPageChange={onPageChange} />
 	);
 }
 
@@ -104,14 +52,26 @@ function ProductCatalogResults({
 	search,
 	onPageChange,
 }: ProductCatalogResultsProps) {
-	const { data: products } = useSuspenseQuery(rentalQueries.products(search));
+	const { data: products, isFetching } = useRentalProducts(search, {
+		throwOnError: true,
+	});
 	const { data: tenantPriceConfig } = useTenantPricingConfig();
+
+	if (!products) {
+		return <ProductCatalogSkeleton />;
+	}
 
 	const currentPage = search.page ?? 1;
 	const totalPages = products?.meta.totalPages ?? 1;
 
 	return (
 		<>
+			{isFetching && (
+				<p className="pt-4 text-sm text-muted-foreground">
+					Actualizando resultados...
+				</p>
+			)}
+
 			<div className="grid gap-6 py-10 grid-cols-[repeat(auto-fit,minmax(250px,350px))]">
 				{products?.data.map((product) => (
 					<ProductCard
