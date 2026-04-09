@@ -6,14 +6,14 @@ import { storefrontApiFetch } from "@/lib/storefront-api";
 const apiUrl = "/rental/categories";
 
 export const getRentalCategories = createServerFn({ method: "GET" }).handler(
-	async (): Promise<ProductCategoryListResponse> => {
-		const result = await storefrontApiFetch<ProductCategoryListResponse>(
-			apiUrl,
-			{
-				method: "GET",
-			},
-		);
+  async (): Promise<ProductCategoryListResponse> => {
+    const result = await storefrontApiFetch<ProductCategoryListResponse>(
+      apiUrl,
+      {
+        method: "GET",
+      },
+    );
 
-		return result;
-	},
+    return result;
+  },
 );
