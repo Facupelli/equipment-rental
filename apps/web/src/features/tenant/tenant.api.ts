@@ -10,14 +10,16 @@ import { apiFetch } from "@/lib/api";
 
 const apiUrl = "/tenants";
 
-export const getCurrentTenant = createServerFn({ method: "GET" }).handler(
-	async (): Promise<TenantResponse> => {
-		const result = await apiFetch<TenantResponse>(`${apiUrl}/me`, {
-			method: "GET",
-		});
+export async function getCurrentTenantServer(): Promise<TenantResponse> {
+	const result = await apiFetch<TenantResponse>(`${apiUrl}/me`, {
+		method: "GET",
+	});
 
-		return result;
-	},
+	return result;
+}
+
+export const getCurrentTenant = createServerFn({ method: "GET" }).handler(
+	async (): Promise<TenantResponse> => getCurrentTenantServer(),
 );
 
 export const updateTenantConfig = createServerFn({ method: "POST" })

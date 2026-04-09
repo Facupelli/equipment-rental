@@ -6,7 +6,7 @@ import {
 	RejectUpload,
 } from "@better-upload/server";
 import { cloudflare } from "@better-upload/server/clients";
-import { getCurrentTenant } from "@/features/tenant/tenant.api";
+import { getCurrentTenantServer } from "@/features/tenant/tenant.api";
 import { serverEnv } from "@/config/server-env";
 
 const s3 = cloudflare({
@@ -23,7 +23,7 @@ const uploadRouter: Router = {
 			fileTypes: ["image/webp"],
 			maxFileSize: 1024 * 1024 * 3, // 3MB after client-side compression
 			onBeforeUpload: async () => {
-				const tenant = await getCurrentTenant();
+				const tenant = await getCurrentTenantServer();
 
 				if (!tenant) {
 					throw new RejectUpload("Unauthorized");

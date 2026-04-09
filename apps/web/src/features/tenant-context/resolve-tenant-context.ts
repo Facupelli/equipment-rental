@@ -64,59 +64,57 @@ async function writeToCache(
 	);
 }
 
-export const resolveTenantContext = createServerFn({ method: "GET" }).handler(
-	async (): Promise<ResolvedTenantContext> => {
-		const nestApiUrl = getRequiredEnv("BACKEND_URL");
-		const internalToken = getRequiredEnv("INTERNAL_API_TOKEN");
-		const rootDomain = getRequiredEnv("ROOT_DOMAIN");
+export async function resolveTenantContextServer(): Promise<ResolvedTenantContext> {
+	const nestApiUrl = getRequiredEnv("BACKEND_URL");
+	const internalToken = getRequiredEnv("INTERNAL_API_TOKEN");
+	const rootDomain = getRequiredEnv("ROOT_DOMAIN");
 
-		const hostname = getHostname();
-		const cacheKey = buildCacheKey(hostname, rootDomain);
+	const hostname = getHostname();
+	const cacheKey = buildCacheKey(hostname, rootDomain);
 
-		const cached = await readFromCache(cacheKey);
-		if (cached) {
-			return cached;
-		}
+	const cached = await readFromCache(cacheKey);
+	if (cached) {
+		return cached;
+	}
 
-		try {
-			const response = await fetch(
-				`${nestApiUrl}/internal/tenant-context?hostname=${encodeURIComponent(hostname)}`,
-				{
-					headers: {
-						"x-internal-token": internalToken,
-					},
+	try {
+		const response = await fetch(
+			`${nestApiUrl}/internal/tenant-context?hostname=${encodeURIComponent(hostname)}`,
+			{
+				headers: {
+					"x-internal-token": internalToken,
 				},
-			);
+			},
+		);
 
-			if (response.status === 404) {
-				// Let __root.tsx notFoundComponent handle this cleanly
-				throw { isNotFound: true };
-			}
-
-			if (!response.ok) {
-				throw new Error(
-					`Tenant context resolution failed: ${response.status} ${response.statusText}`,
-				);
-			}
-
-			const body = (await response.json()) as { data: ResolvedTenantContext };
-			const context = body.data;
-
-			await writeToCache(cacheKey, context);
-
-			return context;
-		} catch (error) {
-			console.log(
-				"TENANT CONTEXT RESOLUTION ERROR:",
-				error instanceof Error ? error.message : String(error),
-				"hostname:",
-				hostname,
-			);
-			throw error;
+		if (response.status === 404) {
+			// Let __root.tsx notFoundComponent handle this cleanly
+			throw { isNotFound: true };
 		}
-	},
-);
 
-export async function getCurrentTenantContext(): Promise<ResolvedTenantContext> {
-	return resolveTenantContext();
+		if (!response.ok) {
+			throw new Error(
+				`Tenant context resolution failed: ${response.status} ${response.statusText}`,
+			);
+		}
+
+		const body = (await response.json()) as { data: ResolvedTenantContext };
+		const context = body.data;
+
+		await writeToCache(cacheKey, context);
+
+		return context;
+	} catch (error) {
+		console.log(
+			"TENANT CONTEXT RESOLUTION ERROR:",
+			error instanceof Error ? error.message : String(error),
+			"hostname:",
+			hostname,
+		);
+		throw error;
+	}
 }
+
+export const resolveTenantContext = createServerFn({ method: "GET" }).handler(
+	async (): Promise<ResolvedTenantContext> => resolveTenantContextServer(),
+);

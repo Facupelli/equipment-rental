@@ -7,7 +7,7 @@ import {
 import { cloudflare } from "@better-upload/server/clients";
 import { createFileRoute } from "@tanstack/react-router";
 import { serverEnv } from "@/config/server-env";
-import { getCurrentTenant } from "@/features/tenant/tenant.api";
+import { getCurrentTenantServer } from "@/features/tenant/tenant.api";
 
 const s3 = cloudflare({
 	accountId: serverEnv.CLOUDFLARE_ACCOUNT_ID,
@@ -23,7 +23,7 @@ const uploadRouter: Router = {
 			fileTypes: ["image/webp"],
 			maxFileSize: 1024 * 1024 * 3,
 			onBeforeUpload: async () => {
-				const tenant = await getCurrentTenant();
+				const tenant = await getCurrentTenantServer();
 
 				if (!tenant) {
 					throw new RejectUpload("Unauthorized");
@@ -41,7 +41,7 @@ const uploadRouter: Router = {
 			fileTypes: ["image/png"],
 			maxFileSize: 1024 * 1024,
 			onBeforeUpload: async () => {
-				const tenant = await getCurrentTenant();
+				const tenant = await getCurrentTenantServer();
 
 				if (!tenant) {
 					throw new RejectUpload("Unauthorized");
@@ -59,7 +59,7 @@ const uploadRouter: Router = {
 			fileTypes: ["image/webp"],
 			maxFileSize: 1024 * 1024 * 3,
 			onBeforeUpload: async () => {
-				const tenant = await getCurrentTenant();
+				const tenant = await getCurrentTenantServer();
 
 				if (!tenant) {
 					throw new RejectUpload("Unauthorized");

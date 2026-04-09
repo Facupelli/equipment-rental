@@ -3,14 +3,14 @@ import type { ActorType } from "@repo/types";
 import { createServerFn } from "@tanstack/react-start";
 import { writeSession } from "@/features/auth/auth.api";
 import type { LoginResponseDto } from "@/features/auth/schemas/login-form.schema";
-import { getCurrentTenantContext } from "@/features/tenant-context/resolve-tenant-context";
+import { resolveTenantContextServer } from "@/features/tenant-context/resolve-tenant-context";
 import { apiFetch } from "@/lib/api";
 import { getAppSession, type SessionUser, toSessionUser } from "@/lib/session";
 import type { LoginCustomerInput } from "./login/customer-login-form.schema";
 import type { RegisterCustomerInput } from "./register/customer-register-form.schema";
 
 async function getPortalTenantId(): Promise<string> {
-	const tenantContext = await getCurrentTenantContext();
+	const tenantContext = await resolveTenantContextServer();
 
 	if (tenantContext.face !== "portal") {
 		throw new Error(

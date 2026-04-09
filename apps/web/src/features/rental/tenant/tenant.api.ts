@@ -1,10 +1,10 @@
 import type { TenantPricingConfig } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
-import { getCurrentTenantContext } from "@/features/tenant-context/resolve-tenant-context";
+import { resolveTenantContextServer } from "@/features/tenant-context/resolve-tenant-context";
 import { apiFetch } from "@/lib/api";
 
 async function getPortalTenantId(): Promise<string> {
-	const tenantContext = await getCurrentTenantContext();
+	const tenantContext = await resolveTenantContextServer();
 
 	if (tenantContext.face !== "portal") {
 		throw new Error(

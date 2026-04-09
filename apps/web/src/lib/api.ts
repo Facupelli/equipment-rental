@@ -1,6 +1,6 @@
 import { type PaginatedDto, problemDetailsSchema } from "@repo/schemas";
 import { refreshSession } from "@/features/auth/refresh-session";
-import { getCurrentTenantContext } from "@/features/tenant-context/resolve-tenant-context";
+import { resolveTenantContextServer } from "@/features/tenant-context/resolve-tenant-context";
 import { ProblemDetailsError } from "@/shared/errors";
 import { getAppSession } from "./session";
 import { serverEnv } from "@/config/server-env";
@@ -21,7 +21,7 @@ async function getInternalPortalHeaders(
 		return {};
 	}
 
-	const tenantContext = await getCurrentTenantContext();
+	const tenantContext = await resolveTenantContextServer();
 
 	if (tenantContext.face !== "portal") {
 		return {};
