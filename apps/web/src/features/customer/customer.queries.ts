@@ -1,5 +1,6 @@
-import type { ProblemDetailsError } from "@/shared/errors";
+import { ProblemDetailsError } from "@/shared/errors";
 import type {
+	ApproveCustomerProfileDto,
 	CustomerDetailResponseDto,
 	CustomerProfileResponseDto,
 	CustomerResponseDto,
@@ -7,22 +8,27 @@ import type {
 	GetCustomersQueryDto,
 	PendingCustomerProfileReviewCountResponseDto,
 	PaginatedDto,
+	RejectCustomerProfileDto,
 } from "@repo/schemas";
 import {
 	keepPreviousData,
 	queryOptions,
+	type UseMutationOptions,
 	type UseQueryOptions,
 	type UseSuspenseQueryOptions,
+	useMutation,
 	useQuery,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import {
+	approveCustomerProfile,
 	getCustomerDetail,
 	getCustomerProfile,
 	getCustomerProfileReview,
 	getCustomers,
 	getPendingCustomerProfileReviewCount,
 	getPendingCustomerProfiles,
+	rejectCustomerProfile,
 } from "./customer.api";
 
 type PaginatedCustomers = PaginatedDto<CustomerResponseDto>;
@@ -126,6 +132,24 @@ type CustomerProfileReviewQueryOptions<TData = CustomerProfileResponseDto> =
 		"queryKey" | "queryFn"
 	>;
 
+type ApproveCustomerProfileMutationOptions = Omit<
+	UseMutationOptions<
+		void,
+		ProblemDetailsError,
+		{ customerProfileId: string; dto: ApproveCustomerProfileDto }
+	>,
+	"mutationFn"
+>;
+
+type RejectCustomerProfileMutationOptions = Omit<
+	UseMutationOptions<
+		void,
+		ProblemDetailsError,
+		{ customerProfileId: string; dto: RejectCustomerProfileDto }
+	>,
+	"mutationFn"
+>;
+
 // -----------------------------------------------------
 // Hooks
 // -----------------------------------------------------
@@ -201,5 +225,49 @@ export function useCustomerProfileReview<TData = CustomerProfileResponseDto>(
 		...options,
 		queryKey,
 		queryFn,
+	});
+}
+
+export function useApproveCustomerProfile(
+	options?: ApproveCustomerProfileMutationOptions,
+) {
+	return useMutation<
+		void,
+		ProblemDetailsError,
+		{ customerProfileId: string; dto: ApproveCustomerProfileDto }
+	>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await approveCustomerProfile({ data });
+
+			if (typeof result === "object" && result !== null && "error" in result) {
+				throw new ProblemDetailsError(result.error);
+			}
+		},
+		meta: {
+			invalidates: customerKeys.all(),
+		},
+	});
+}
+
+export function useRejectCustomerProfile(
+	options?: RejectCustomerProfileMutationOptions,
+) {
+	return useMutation<
+		void,
+		ProblemDetailsError,
+		{ customerProfileId: string; dto: RejectCustomerProfileDto }
+	>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await rejectCustomerProfile({ data });
+
+			if (typeof result === "object" && result !== null && "error" in result) {
+				throw new ProblemDetailsError(result.error);
+			}
+		},
+		meta: {
+			invalidates: customerKeys.all(),
+		},
 	});
 }

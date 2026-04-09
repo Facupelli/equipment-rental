@@ -1,9 +1,13 @@
 import { apiFetch, apiFetchPaginated } from "@/lib/api";
+import { ProblemDetailsError } from "@/shared/errors";
 import {
+	approveCustomerProfileSchema,
 	CustomerProfileResponseSchema,
 	getPendingCustomerProfilesResponseSchema,
 	getCustomersQuerySchema,
 	pendingCustomerProfileReviewCountResponseSchema,
+	rejectCustomerProfileSchema,
+	type ApproveCustomerProfileDto,
 	type CustomerDetailResponseDto,
 	type CustomerProfileResponseDto,
 	type CustomerResponseDto,
@@ -11,6 +15,8 @@ import {
 	type GetCustomersQueryDto,
 	type PendingCustomerProfileReviewCountResponseDto,
 	type PaginatedDto,
+	type ProblemDetails,
+	type RejectCustomerProfileDto,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
@@ -90,6 +96,62 @@ export const getPendingCustomerProfileReviewCount = createServerFn({
 
 	return pendingCustomerProfileReviewCountResponseSchema.parse(result);
 });
+
+export const approveCustomerProfile = createServerFn({ method: "POST" })
+	.inputValidator(
+		(data: { customerProfileId: string; dto: ApproveCustomerProfileDto }) => ({
+			customerProfileId:
+				customerProfileParamsSchema.shape.customerProfileId.parse(
+					data.customerProfileId,
+				),
+			dto: approveCustomerProfileSchema.parse(data.dto),
+		}),
+	)
+	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+		try {
+			await apiFetch<void>(
+				`/customer-profiles/${data.customerProfileId}/approve`,
+				{
+					method: "POST",
+					body: data.dto,
+				},
+			);
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+
+			throw error;
+		}
+	});
+
+export const rejectCustomerProfile = createServerFn({ method: "POST" })
+	.inputValidator(
+		(data: { customerProfileId: string; dto: RejectCustomerProfileDto }) => ({
+			customerProfileId:
+				customerProfileParamsSchema.shape.customerProfileId.parse(
+					data.customerProfileId,
+				),
+			dto: rejectCustomerProfileSchema.parse(data.dto),
+		}),
+	)
+	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+		try {
+			await apiFetch<void>(
+				`/customer-profiles/${data.customerProfileId}/reject`,
+				{
+					method: "POST",
+					body: data.dto,
+				},
+			);
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+
+			throw error;
+		}
+	});
 
 export const getCustomerProfileReview = createServerFn({ method: "GET" })
 	.inputValidator((data: CustomerProfileParams) =>
