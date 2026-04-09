@@ -5,73 +5,73 @@ import { z } from "zod";
 import { getAppSession } from "@/lib/session";
 
 const customerProfileParamsSchema = z.object({
-  customerProfileId: z.uuid(),
+	customerProfileId: z.uuid(),
 });
 
 const customerProfileSearchSchema = z.object({
-  objectPath: z
-    .string()
-    .min(1)
-    .regex(/^[\w\-./]+$/, "Invalid object path"),
+	objectPath: z
+		.string()
+		.min(1)
+		.regex(/^[\w\-./]+$/, "Invalid object path"),
 });
 
 const customersBucket = env.CUSTOMERS_BUCKET;
 
 export const Route = createFileRoute(
-  "/api/customer-profiles/$customerProfileId/identity-document",
+	"/api/customer-profiles/$customerProfileId/identity-document",
 )({
-  server: {
-    handlers: {
-      GET: async ({ params, request }) => {
-        const parsedParams = customerProfileParamsSchema.safeParse(params);
+	server: {
+		handlers: {
+			GET: async ({ params, request }) => {
+				const parsedParams = customerProfileParamsSchema.safeParse(params);
 
-        if (!parsedParams.success) {
-          return new Response("Invalid customer profile id", { status: 400 });
-        }
+				if (!parsedParams.success) {
+					return new Response("Invalid customer profile id", { status: 400 });
+				}
 
-        const { searchParams } = new URL(request.url);
+				const { searchParams } = new URL(request.url);
 
-        const parsedSearch = customerProfileSearchSchema.safeParse({
-          objectPath: searchParams.get("objectPath"),
-        });
+				const parsedSearch = customerProfileSearchSchema.safeParse({
+					objectPath: searchParams.get("objectPath"),
+				});
 
-        if (!parsedSearch.success) {
-          return new Response("Invalid object path", { status: 400 });
-        }
+				if (!parsedSearch.success) {
+					return new Response("Invalid object path", { status: 400 });
+				}
 
-        const session = await getAppSession();
+				const session = await getAppSession();
 
-        if (!session.data?.accessToken) {
-          return new Response("Unauthorized", { status: 401 });
-        }
+				if (!session.data?.accessToken) {
+					return new Response("Unauthorized", { status: 401 });
+				}
 
-        if (session.data.actorType !== ActorType.USER) {
-          return new Response("Forbidden", { status: 403 });
-        }
+				if (session.data.actorType !== ActorType.USER) {
+					return new Response("Forbidden", { status: 403 });
+				}
 
-        const object = await customersBucket.get(parsedSearch.data.objectPath);
+				const object = await customersBucket.get(parsedSearch.data.objectPath);
 
-        if (!object?.body) {
-          return new Response("Document not found", { status: 404 });
-        }
+				if (!object?.body) {
+					return new Response("Document not found", { status: 404 });
+				}
 
-        const headers = new Headers();
-        object.writeHttpMetadata(headers);
-        headers.set("Cache-Control", "private, no-store");
-        headers.set("Content-Disposition", "inline");
-        headers.set("X-Content-Type-Options", "nosniff");
+				const headers = new Headers();
+				object.writeHttpMetadata(headers);
+				headers.set("Cache-Control", "private, no-store");
+				headers.set("Content-Disposition", "inline");
+				headers.set("X-Content-Type-Options", "nosniff");
 
-        if (!headers.has("Content-Type")) {
-          headers.set("Content-Type", "application/octet-stream");
-        }
+				if (!headers.has("Content-Type")) {
+					headers.set("Content-Type", "application/octet-stream");
+				}
 
-        headers.set("ETag", object.httpEtag);
+				headers.set("ETag", object.httpEtag);
 
-        return new Response(object.body, {
-          status: 200,
-          headers,
-        });
-      },
-    },
-  },
+				return new Response(object.body, {
+					status: 200,
+					headers,
+				});
+			},
+		},
+	},
 });

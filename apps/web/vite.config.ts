@@ -8,8 +8,6 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-const isDev = process.env.NODE_ENV === "development";
-
 const config = defineConfig({
   plugins: [
     cloudflare({ viteEnvironment: { name: "ssr" } }),
