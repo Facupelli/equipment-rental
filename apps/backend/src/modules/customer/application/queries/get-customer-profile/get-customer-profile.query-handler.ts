@@ -20,6 +20,7 @@ export class GetCustomerProfileQueryHandler implements IQueryHandler<GetCustomer
 
     return {
       id: profile.id,
+      customerId: profile.customerId,
       status: profile.status,
       submittedAt: profile.createdAt,
 
@@ -27,6 +28,7 @@ export class GetCustomerProfileQueryHandler implements IQueryHandler<GetCustomer
       phone: profile.phone,
       birthDate: profile.birthDate,
       documentNumber: profile.documentNumber,
+      identityDocumentPath: profile.identityDocumentPath,
 
       address: profile.address,
       city: profile.city,
@@ -36,11 +38,19 @@ export class GetCustomerProfileQueryHandler implements IQueryHandler<GetCustomer
       occupation: profile.occupation,
       company: profile.company ?? null,
       taxId: profile.taxId ?? null,
+      businessName: profile.businessName ?? null,
 
       bankName: profile.bankName,
       accountNumber: profile.accountNumber,
 
+      contact1Name: profile.contact1Name,
+      contact1Relationship: profile.contact1Relationship,
+      contact2Name: profile.contact2Name,
+      contact2Relationship: profile.contact2Relationship,
+
       rejectionReason: profile.rejectionReason ?? null,
+      reviewedAt: profile.reviewedAt ?? null,
+      reviewedById: profile.reviewedById ?? null,
     };
   }
 }

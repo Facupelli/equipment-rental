@@ -24,12 +24,14 @@ export class GetCustomerProfileHttpController {
 
     return {
       id: profile.id,
+      customerId: profile.customerId,
       status: profile.status,
       submittedAt: profile.submittedAt,
       fullName: profile.fullName,
       phone: profile.phone,
       birthDate: profile.birthDate,
       documentNumber: profile.documentNumber,
+      identityDocumentPath: profile.identityDocumentPath,
       address: profile.address,
       city: profile.city,
       stateRegion: profile.stateRegion,
@@ -37,9 +39,16 @@ export class GetCustomerProfileHttpController {
       occupation: profile.occupation,
       company: profile.company,
       taxId: profile.taxId,
+      businessName: profile.businessName,
       bankName: profile.bankName,
       accountNumber: profile.accountNumber,
+      contact1Name: profile.contact1Name,
+      contact1Relationship: profile.contact1Relationship,
+      contact2Name: profile.contact2Name,
+      contact2Relationship: profile.contact2Relationship,
       rejectionReason: profile.rejectionReason,
+      reviewedAt: profile.reviewedAt,
+      reviewedById: profile.reviewedById,
     };
   }
 }

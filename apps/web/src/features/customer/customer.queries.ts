@@ -3,21 +3,26 @@ import type {
 	CustomerDetailResponseDto,
 	CustomerProfileResponseDto,
 	CustomerResponseDto,
+	GetPendingCustomerProfilesResponseDto,
 	GetCustomersQueryDto,
+	PendingCustomerProfileReviewCountResponseDto,
 	PaginatedDto,
 } from "@repo/schemas";
 import {
 	keepPreviousData,
 	queryOptions,
-	useQuery,
-	useSuspenseQuery,
 	type UseQueryOptions,
 	type UseSuspenseQueryOptions,
+	useQuery,
+	useSuspenseQuery,
 } from "@tanstack/react-query";
 import {
 	getCustomerDetail,
 	getCustomerProfile,
+	getCustomerProfileReview,
 	getCustomers,
+	getPendingCustomerProfileReviewCount,
+	getPendingCustomerProfiles,
 } from "./customer.api";
 
 type PaginatedCustomers = PaginatedDto<CustomerResponseDto>;
@@ -36,6 +41,12 @@ export const customerKeys = {
 		[...customerKeys.details(), customerId] as const,
 	profile: (customerId: string) =>
 		[...customerKeys.detail(customerId), "profile"] as const,
+	pendingProfileReviewCount: () =>
+		[...customerKeys.all(), "pending-profile-review-count"] as const,
+	pendingProfiles: () => [...customerKeys.all(), "pending-profiles"] as const,
+	profileReviews: () => [...customerKeys.all(), "profile-review"] as const,
+	profileReview: (customerProfileId: string) =>
+		[...customerKeys.profileReviews(), customerProfileId] as const,
 };
 
 export const customerQueries = {
@@ -43,6 +54,24 @@ export const customerQueries = {
 		queryOptions<CustomerDetailResponseDto, ProblemDetailsError>({
 			queryKey: customerKeys.detail(customerId),
 			queryFn: () => getCustomerDetail({ data: { customerId } }),
+		}),
+	pendingProfileReviewCount: () =>
+		queryOptions<
+			PendingCustomerProfileReviewCountResponseDto,
+			ProblemDetailsError
+		>({
+			queryKey: customerKeys.pendingProfileReviewCount(),
+			queryFn: () => getPendingCustomerProfileReviewCount(),
+		}),
+	pendingProfiles: () =>
+		queryOptions<GetPendingCustomerProfilesResponseDto, ProblemDetailsError>({
+			queryKey: customerKeys.pendingProfiles(),
+			queryFn: () => getPendingCustomerProfiles(),
+		}),
+	profileReview: (customerProfileId: string) =>
+		queryOptions<CustomerProfileResponseDto, ProblemDetailsError>({
+			queryKey: customerKeys.profileReview(customerProfileId),
+			queryFn: () => getCustomerProfileReview({ data: { customerProfileId } }),
 		}),
 };
 
@@ -68,6 +97,34 @@ type CustomerProfileQueryOptions<TData = CustomerProfileResponseDto> = Omit<
 	UseQueryOptions<CustomerProfileResponseDto, ProblemDetailsError, TData>,
 	"queryKey" | "queryFn"
 >;
+
+type PendingCustomerProfilesQueryOptions<
+	TData = GetPendingCustomerProfilesResponseDto,
+> = Omit<
+	UseSuspenseQueryOptions<
+		GetPendingCustomerProfilesResponseDto,
+		ProblemDetailsError,
+		TData
+	>,
+	"queryKey" | "queryFn"
+>;
+
+type PendingCustomerProfileReviewCountQueryOptions<
+	TData = PendingCustomerProfileReviewCountResponseDto,
+> = Omit<
+	UseSuspenseQueryOptions<
+		PendingCustomerProfileReviewCountResponseDto,
+		ProblemDetailsError,
+		TData
+	>,
+	"queryKey" | "queryFn"
+>;
+
+type CustomerProfileReviewQueryOptions<TData = CustomerProfileResponseDto> =
+	Omit<
+		UseQueryOptions<CustomerProfileResponseDto, ProblemDetailsError, TData>,
+		"queryKey" | "queryFn"
+	>;
 
 // -----------------------------------------------------
 // Hooks
@@ -106,5 +163,43 @@ export function useCustomerProfile<TData = CustomerProfileResponseDto>(
 		...options,
 		queryKey: customerKeys.profile(customerId),
 		queryFn: () => getCustomerProfile({ data: { customerId } }),
+	});
+}
+
+export function usePendingCustomerProfiles<
+	TData = GetPendingCustomerProfilesResponseDto,
+>(options?: PendingCustomerProfilesQueryOptions<TData>) {
+	const { queryKey, queryFn } = customerQueries.pendingProfiles();
+
+	return useSuspenseQuery({
+		...options,
+		queryKey,
+		queryFn,
+	});
+}
+
+export function usePendingCustomerProfileReviewCount<
+	TData = PendingCustomerProfileReviewCountResponseDto,
+>(options?: PendingCustomerProfileReviewCountQueryOptions<TData>) {
+	const { queryKey, queryFn } = customerQueries.pendingProfileReviewCount();
+
+	return useSuspenseQuery({
+		...options,
+		queryKey,
+		queryFn,
+	});
+}
+
+export function useCustomerProfileReview<TData = CustomerProfileResponseDto>(
+	customerProfileId: string,
+	options?: CustomerProfileReviewQueryOptions<TData>,
+) {
+	const { queryKey, queryFn } =
+		customerQueries.profileReview(customerProfileId);
+
+	return useQuery({
+		...options,
+		queryKey,
+		queryFn,
 	});
 }

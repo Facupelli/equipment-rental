@@ -1,4 +1,4 @@
-export interface GetCustomerProfileResult {
+export interface GetCustomerProfileReviewResult {
   id: string;
   customerId: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';

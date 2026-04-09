@@ -22,6 +22,27 @@ export class CustomerRepository {
     return CustomerMapper.toDomain(raw);
   }
 
+  async loadByProfileId(profileId: string, tenantId: string): Promise<Customer | null> {
+    const raw = await this.prisma.client.customer.findFirst({
+      where: {
+        tenantId,
+        deletedAt: null,
+        profile: {
+          id: profileId,
+        },
+      },
+      include: {
+        profile: true,
+      },
+    });
+
+    if (!raw) {
+      return null;
+    }
+
+    return CustomerMapper.toDomain(raw);
+  }
+
   async save(customer: Customer): Promise<string> {
     await this.prisma.client.customer.upsert({
       where: { id: customer.id },
