@@ -1,6 +1,5 @@
 import type { TenantContext } from "@repo/schemas";
 import { createFileRoute } from "@tanstack/react-router";
-import { rentalTenantQueries } from "@/features/rental/tenant/tenant.queries";
 
 export const Route = createFileRoute("/_portal/_tenant")({
 	beforeLoad: ({ context }) => {
@@ -18,8 +17,5 @@ export const Route = createFileRoute("/_portal/_tenant")({
 			// Re-expose as the narrowed type.
 			tenantContext: tenantContext as { face: "portal"; tenant: TenantContext },
 		};
-	},
-	loader: async ({ context: { queryClient, tenantContext } }) => {
-		await queryClient.ensureQueryData(rentalTenantQueries.me());
 	},
 });
