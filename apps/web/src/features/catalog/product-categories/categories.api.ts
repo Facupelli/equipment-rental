@@ -7,7 +7,7 @@ import {
 	updateProductCategorySchema,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
-import { apiFetch } from "@/lib/api";
+import { authenticatedApiFetch as apiFetch } from "@/lib/api-auth";
 import { ProblemDetailsError } from "@/shared/errors";
 
 const apiUrl = "/product-categories";

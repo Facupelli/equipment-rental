@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { authenticatedApiFetch as apiFetch } from "@/lib/api-auth";
 import {
 	syncTenantBillingUnitsSchema,
 	type SyncTenantBillingUnitsDto,

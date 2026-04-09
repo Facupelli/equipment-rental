@@ -6,12 +6,12 @@ import {
 	updateTenantConfigSchema,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
-import { apiFetch } from "@/lib/api";
+import { authenticatedApiFetch } from "@/lib/api-auth";
 
 const apiUrl = "/tenants";
 
 export async function getCurrentTenantServer(): Promise<TenantResponse> {
-	const result = await apiFetch<TenantResponse>(`${apiUrl}/me`, {
+	const result = await authenticatedApiFetch<TenantResponse>(`${apiUrl}/me`, {
 		method: "GET",
 	});
 
@@ -27,7 +27,7 @@ export const updateTenantConfig = createServerFn({ method: "POST" })
 		updateTenantConfigSchema.parse(data),
 	)
 	.handler(async ({ data }): Promise<string> => {
-		const result = await apiFetch<string>(`${apiUrl}/config`, {
+		const result = await authenticatedApiFetch<string>(`${apiUrl}/config`, {
 			method: "PATCH",
 			body: data,
 		});
@@ -40,7 +40,7 @@ export const updateTenantBranding = createServerFn({ method: "POST" })
 		updateTenantBrandingSchema.parse(data),
 	)
 	.handler(async ({ data }): Promise<void> => {
-		await apiFetch<void>(`${apiUrl}/branding`, {
+		await authenticatedApiFetch<void>(`${apiUrl}/branding`, {
 			method: "PATCH",
 			body: data,
 		});

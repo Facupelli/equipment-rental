@@ -8,7 +8,7 @@ import {
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { apiFetch } from "@/lib/api";
+import { authenticatedApiFetch as apiFetch } from "@/lib/api-auth";
 
 const apiUrl = "/tenants/custom-domain";
 

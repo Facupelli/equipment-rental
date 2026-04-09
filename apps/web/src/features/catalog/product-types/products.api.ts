@@ -11,7 +11,10 @@ import {
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
-import { apiFetch, apiFetchPaginated } from "@/lib/api";
+import {
+	authenticatedApiFetch as apiFetch,
+	authenticatedApiFetchPaginated as apiFetchPaginated,
+} from "@/lib/api-auth";
 import { ProblemDetailsError } from "@/shared/errors";
 
 const apiUrl = "/product-types";

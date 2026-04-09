@@ -38,6 +38,9 @@ export function useIsVisible<T extends Element>(): [
 				rect.right > 0
 			);
 		},
+		// Server rendering cannot measure the DOM, so default to hidden until
+		// the client can compute the real viewport intersection state.
+		() => false,
 	);
 
 	return [ref, isVisible];

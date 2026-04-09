@@ -1,92 +1,79 @@
-import type { PaginatedDto } from "@repo/schemas";
-import { refreshSession } from "@/features/auth/refresh-session";
+import { problemDetailsSchema, type PaginatedDto } from "@repo/schemas";
 import { ProblemDetailsError } from "@/shared/errors";
-import { getAppSession } from "./session";
-import {
-	apiFetchRaw as coreApiFetchRaw,
-	type ApiRequestOptions,
-} from "./api-core";
 
-type ApiAuthOptions = false | { redirectTo: string };
-
-type ApiFetchOptions = ApiRequestOptions & {
-	auth?: ApiAuthOptions;
+export type ApiRequestOptions = Omit<RequestInit, "body"> & {
+	body?: unknown;
+	params?: Record<string, unknown>;
 };
 
-// ── apiFetchRaw ───────────────────────────────────────────────────────────────
-// This function retains a reactive 401 fallback as a safety net for edge cases:
-// revoked tokens, clock skew, or any request that somehow bypasses beforeLoad.
-//
-// The loop runs at most twice:
-//   Attempt 1: use current token from session
-//   On 401:    call refreshSession() once → attempt 2 with fresh token
-//   Attempt 2: if 401 again, surface the error — something is genuinely wrong
+export type ApiFetchOptions = ApiRequestOptions & {
+	accessToken?: string;
+};
 
-async function apiFetchRaw<T>(
+export async function requestJson<T>(
 	path: string,
 	options: ApiFetchOptions = {},
 ): Promise<T> {
-	const { auth, ...requestOptions } = options;
-	const requiresAuth = auth !== false;
-	const redirectTo =
-		auth === false ? undefined : (auth?.redirectTo ?? "/admin/login");
+	const { body, headers, params, accessToken, ...rest } = options;
+	const url = new URL(`${process.env.BACKEND_URL}${path}`);
 
-	let currentToken: string | undefined;
-	let hasRetried = false;
-
-	while (true) {
-		const authHeader: Record<string, string> = {};
-
-		if (requiresAuth) {
-			if (!currentToken) {
-				const session = await getAppSession();
-				currentToken = session.data.accessToken;
+	if (params) {
+		Object.entries(params).forEach(([key, value]) => {
+			if (value !== undefined && value !== null) {
+				url.searchParams.set(key, String(value));
 			}
-
-			if (!currentToken) {
-				throw new ProblemDetailsError({
-					type: "about:blank",
-					title: "Unauthorized",
-					status: 401,
-					detail: "No active session. Please log in.",
-				});
-			}
-
-			authHeader.Authorization = `Bearer ${currentToken}`;
-		}
-
-		let result: T;
-
-		try {
-			result = await coreApiFetchRaw<T>(path, {
-				...requestOptions,
-				headers: {
-					...authHeader,
-					...requestOptions.headers,
-				},
-			});
-		} catch (error) {
-			if (error instanceof ProblemDetailsError) {
-				if (
-					error.problemDetails.status === 401 &&
-					requiresAuth &&
-					!hasRetried
-				) {
-					const refreshed = await refreshSession(redirectTo ?? "/admin/login");
-
-					if (refreshed) {
-						currentToken = undefined;
-						hasRetried = true;
-						continue;
-					}
-				}
-			}
-
-			throw error;
-		}
-
-		return result;
+		});
 	}
+
+	const requestHeaders = new Headers(headers);
+	if (!requestHeaders.has("Content-Type") && body !== undefined) {
+		requestHeaders.set("Content-Type", "application/json");
+	}
+	if (accessToken) {
+		requestHeaders.set("Authorization", `Bearer ${accessToken}`);
+	}
+
+	let response: Response;
+
+	try {
+		response = await fetch(url, {
+			...rest,
+			headers: requestHeaders,
+			body: body !== undefined ? JSON.stringify(body) : undefined,
+		});
+	} catch (error) {
+		throw new ProblemDetailsError({
+			type: "about:blank",
+			title: "Network Error",
+			status: 0,
+			detail:
+				error instanceof Error
+					? error.message
+					: "An unexpected network error occurred",
+		});
+	}
+
+	if (!response.ok) {
+		const raw = await response.json().catch(() => null);
+		const parsed = problemDetailsSchema.safeParse(raw);
+
+		throw new ProblemDetailsError({
+			type: parsed.success ? parsed.data.type : "about:blank",
+			title: parsed.success
+				? parsed.data.title
+				: (response.statusText ?? "Request Failed"),
+			status: parsed.success ? parsed.data.status : response.status,
+			detail:
+				(parsed.success ? parsed.data.detail : undefined) ??
+				`Request to ${path} failed with status ${response.status}`,
+		});
+	}
+
+	if (response.status === 204) {
+		return undefined as T;
+	}
+
+	return response.json() as Promise<T>;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -95,7 +82,7 @@ export async function apiFetch<T>(
 	path: string,
 	options: ApiFetchOptions = {},
 ): Promise<T> {
-	const body = await apiFetchRaw<{ data: T }>(path, options);
+	const body = await requestJson<{ data: T }>(path, options);
 	return body?.data;
 }
 
@@ -103,6 +90,6 @@ export async function apiFetchPaginated<T>(
 	path: string,
 	options: ApiFetchOptions = {},
 ): Promise<PaginatedDto<T>> {
-	const body = await apiFetchRaw<PaginatedDto<T>>(path, options);
+	const body = await requestJson<PaginatedDto<T>>(path, options);
 	return body;
 }
