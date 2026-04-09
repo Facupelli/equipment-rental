@@ -11,14 +11,14 @@ import tailwindcss from "@tailwindcss/vite";
 const isDev = process.env.NODE_ENV === "development";
 
 const config = defineConfig({
-	plugins: [
-		!isDev && cloudflare({ viteEnvironment: { name: "ssr" } }),
-		// devtools(),
-		tsconfigPaths({ projects: ["./tsconfig.json"] }),
-		tailwindcss(),
-		tanstackStart(),
-		viteReact(),
-	],
+  plugins: [
+    cloudflare({ viteEnvironment: { name: "ssr" } }),
+    // devtools(),
+    tsconfigPaths({ projects: ["./tsconfig.json"] }),
+    tailwindcss(),
+    tanstackStart(),
+    viteReact(),
+  ],
 });
 
 export default config;

@@ -31,6 +31,7 @@ import { Route as AdminDashboardPricingIndexRouteImport } from './routes/_admin/
 import { Route as AdminDashboardOwnersIndexRouteImport } from './routes/_admin/dashboard/owners/index'
 import { Route as AdminDashboardLocationsIndexRouteImport } from './routes/_admin/dashboard/locations/index'
 import { Route as AdminDashboardCustomersIndexRouteImport } from './routes/_admin/dashboard/customers/index'
+import { Route as ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport } from './routes/api/customer-profiles/$customerProfileId/identity-document'
 import { Route as AdminDashboardOwnersOwnerIdRouteImport } from './routes/_admin/dashboard/owners/$ownerId'
 import { Route as AdminDashboardOrdersOrderIdRouteImport } from './routes/_admin/dashboard/orders/$orderId'
 import { Route as AdminDashboardLocationsLocationIdRouteImport } from './routes/_admin/dashboard/locations/$locationId'
@@ -164,6 +165,12 @@ const AdminDashboardCustomersIndexRoute =
     path: '/customers/',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
+const ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute =
+  ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport.update({
+    id: '/api/customer-profiles/$customerProfileId/identity-document',
+    path: '/api/customer-profiles/$customerProfileId/identity-document',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminDashboardOwnersOwnerIdRoute =
   AdminDashboardOwnersOwnerIdRouteImport.update({
     id: '/owners/$ownerId',
@@ -276,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
+  '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/owners/': typeof AdminDashboardOwnersIndexRoute
@@ -313,6 +321,7 @@ export interface FileRoutesByTo {
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
+  '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/dashboard/customers': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/owners': typeof AdminDashboardOwnersIndexRoute
@@ -354,6 +363,7 @@ export interface FileRoutesById {
   '/_admin/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/_admin/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/_admin/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
+  '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/_admin/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/_admin/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/_admin/dashboard/owners/': typeof AdminDashboardOwnersIndexRoute
@@ -394,6 +404,7 @@ export interface FileRouteTypes {
     | '/dashboard/locations/$locationId'
     | '/dashboard/orders/$orderId'
     | '/dashboard/owners/$ownerId'
+    | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/dashboard/customers/'
     | '/dashboard/locations/'
     | '/dashboard/owners/'
@@ -431,6 +442,7 @@ export interface FileRouteTypes {
     | '/dashboard/locations/$locationId'
     | '/dashboard/orders/$orderId'
     | '/dashboard/owners/$ownerId'
+    | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/dashboard/customers'
     | '/dashboard/locations'
     | '/dashboard/owners'
@@ -471,6 +483,7 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/locations/$locationId'
     | '/_admin/dashboard/orders/$orderId'
     | '/_admin/dashboard/owners/$ownerId'
+    | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/_admin/dashboard/customers/'
     | '/_admin/dashboard/locations/'
     | '/_admin/dashboard/owners/'
@@ -504,6 +517,7 @@ export interface RootRouteChildren {
   ApiUploadRoute: typeof ApiUploadRoute
   AdminAdminLoginRoute: typeof AdminAdminLoginRoute
   AdminAdminRegisterRoute: typeof AdminAdminRegisterRoute
+  ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute: typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -661,6 +675,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/customers/'
       preLoaderRoute: typeof AdminDashboardCustomersIndexRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
+    }
+    '/api/customer-profiles/$customerProfileId/identity-document': {
+      id: '/api/customer-profiles/$customerProfileId/identity-document'
+      path: '/api/customer-profiles/$customerProfileId/identity-document'
+      fullPath: '/api/customer-profiles/$customerProfileId/identity-document'
+      preLoaderRoute: typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_admin/dashboard/owners/$ownerId': {
       id: '/_admin/dashboard/owners/$ownerId'
@@ -887,6 +908,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiUploadRoute: ApiUploadRoute,
   AdminAdminLoginRoute: AdminAdminLoginRoute,
   AdminAdminRegisterRoute: AdminAdminRegisterRoute,
+  ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute:
+    ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
