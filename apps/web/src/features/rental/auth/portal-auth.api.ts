@@ -33,8 +33,7 @@ export const registerCustomerFn = createServerFn({ method: "POST" })
 		const result = await apiFetch<string>("/auth/customer/register", {
 			method: "POST",
 			body: dto,
-			authenticated: false,
-			face: "portal",
+			auth: false,
 		});
 
 		return result;
@@ -52,8 +51,7 @@ export const loginCustomerFn = createServerFn({ method: "POST" })
 		const response = await apiFetch<LoginResponseDto>("/auth/customer/login", {
 			method: "POST",
 			body: dto,
-			authenticated: false,
-			face: "portal",
+			auth: false,
 		});
 
 		const jwtPayload = JSON.parse(

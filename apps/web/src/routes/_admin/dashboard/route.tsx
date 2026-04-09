@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_admin/dashboard")({
 		}
 
 		await ensureValidSession({
-			data: context.tenantContext.face,
+			data: "/admin/login",
 		});
 	},
 	loader: async ({ context: { queryClient } }) => {
@@ -185,7 +185,10 @@ function UserPopover({
 		<Popover>
 			<PopoverTrigger
 				render={
-					<button className="flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors hover:bg-neutral-800">
+					<button
+						type="button"
+						className="flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors hover:bg-neutral-800"
+					>
 						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-600">
 							<User className="h-4 w-4 text-neutral-300" />
 						</div>
@@ -201,6 +204,7 @@ function UserPopover({
 			/>
 			<PopoverContent side="top" align="start" className="w-62 p-1">
 				<button
+					type="button"
 					onClick={() => {
 						logOut();
 					}}

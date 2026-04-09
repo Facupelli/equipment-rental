@@ -1,39 +1,17 @@
-import { type PaginatedDto, problemDetailsSchema } from "@repo/schemas";
+import type { PaginatedDto } from "@repo/schemas";
 import { refreshSession } from "@/features/auth/refresh-session";
-import { resolveTenantContextServer } from "@/features/tenant-context/resolve-tenant-context";
 import { ProblemDetailsError } from "@/shared/errors";
 import { getAppSession } from "./session";
-import { serverEnv } from "@/config/server-env";
+import {
+	apiFetchRaw as coreApiFetchRaw,
+	type ApiRequestOptions,
+} from "./api-core";
 
-type ApiFetchOptions = Omit<RequestInit, "body"> & {
-	body?: unknown;
-	params?: Record<string, unknown>;
-	authenticated?: boolean;
-	/** Pass 'admin' or 'portal' so refreshSession redirects to the right login page on failure. */
-	face?: "admin" | "portal";
+type ApiAuthOptions = false | { redirectTo: string };
+
+type ApiFetchOptions = ApiRequestOptions & {
+	auth?: ApiAuthOptions;
 };
-
-async function getInternalPortalHeaders(
-	authenticated: boolean,
-	face: "admin" | "portal",
-): Promise<Record<string, string>> {
-	if (authenticated || face !== "portal") {
-		return {};
-	}
-
-	const tenantContext = await resolveTenantContextServer();
-
-	if (tenantContext.face !== "portal") {
-		return {};
-	}
-
-	const internalToken = serverEnv.INTERNAL_API_TOKEN;
-
-	return {
-		"x-internal-token": internalToken,
-		"x-tenant-id": tenantContext.tenant.id,
-	};
-}
 
 // ── apiFetchRaw ───────────────────────────────────────────────────────────────
 // This function retains a reactive 401 fallback as a safety net for edge cases:
@@ -48,35 +26,18 @@ async function apiFetchRaw<T>(
 	path: string,
 	options: ApiFetchOptions = {},
 ): Promise<T> {
-	const {
-		body,
-		headers,
-		params,
-		authenticated = true,
-		face = "admin",
-		...rest
-	} = options;
-
-	const url = new URL(`${process.env.BACKEND_URL}${path}`);
-	if (params) {
-		Object.entries(params).forEach(([key, value]) => {
-			if (value !== undefined && value !== null) {
-				url.searchParams.set(key, String(value));
-			}
-		});
-	}
+	const { auth, ...requestOptions } = options;
+	const requiresAuth = auth !== false;
+	const redirectTo =
+		auth === false ? undefined : (auth?.redirectTo ?? "/admin/login");
 
 	let currentToken: string | undefined;
 	let hasRetried = false;
-	const internalPortalHeaders = await getInternalPortalHeaders(
-		authenticated,
-		face,
-	);
 
 	while (true) {
 		const authHeader: Record<string, string> = {};
 
-		if (authenticated) {
+		if (requiresAuth) {
 			if (!currentToken) {
 				const session = await getAppSession();
 				currentToken = session.data.accessToken;
@@ -94,66 +55,37 @@ async function apiFetchRaw<T>(
 			authHeader.Authorization = `Bearer ${currentToken}`;
 		}
 
-		let response: Response;
+		let result: T;
 
 		try {
-			response = await fetch(url, {
-				...rest,
+			result = await coreApiFetchRaw<T>(path, {
+				...requestOptions,
 				headers: {
-					"Content-Type": "application/json",
 					...authHeader,
-					...internalPortalHeaders,
-					...headers,
+					...requestOptions.headers,
 				},
-				body: body !== undefined ? JSON.stringify(body) : undefined,
 			});
 		} catch (error) {
-			throw new ProblemDetailsError({
-				type: "about:blank",
-				title: "Network Error",
-				status: 0,
-				detail:
-					error instanceof Error
-						? error.message
-						: "An unexpected network error occurred",
-			});
-		}
+			if (error instanceof ProblemDetailsError) {
+				if (
+					error.problemDetails.status === 401 &&
+					requiresAuth &&
+					!hasRetried
+				) {
+					const refreshed = await refreshSession(redirectTo ?? "/admin/login");
 
-		// ── Reactive 401 Fallback ─────────────────────────────────────────────────
-		if (response.status === 401 && authenticated && !hasRetried) {
-			const refreshed = await refreshSession(face);
-
-			if (refreshed) {
-				currentToken = undefined; // force re-read from session on next iteration
-				hasRetried = true;
-				continue;
+					if (refreshed) {
+						currentToken = undefined;
+						hasRetried = true;
+						continue;
+					}
+				}
 			}
-			// refreshSession() returned false (network failure) — fall through to error
+
+			throw error;
 		}
 
-		if (!response.ok) {
-			const raw = await response.json().catch(() => null);
-			const parsed = problemDetailsSchema.safeParse(raw);
-
-			throw new ProblemDetailsError(
-				parsed.success
-					? parsed.data
-					: {
-							type: "about:blank",
-							title: response.statusText || "Request Failed",
-							status: response.status,
-							detail: `Request to ${path} failed with status ${response.status}`,
-						},
-			);
-		}
-
-		// ── FIX: handle 204 No Content (e.g. POST /auth/logout) ──────────────────
-		// response.json() throws on an empty body — guard against it.
-		if (response.status === 204) {
-			return undefined as T;
-		}
-
-		return response.json() as Promise<T>;
+		return result;
 	}
 }
 

@@ -10,6 +10,7 @@ import {
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
 import { apiFetch } from "@/lib/api";
+import { storefrontApiFetch } from "@/lib/storefront-api";
 
 const apiUrl = (locationId: string) => `/locations/${locationId}/schedules`;
 const rentalApiUrl = (locationId: string) =>
@@ -30,11 +31,12 @@ export const getLocationSchedules = createServerFn({ method: "GET" })
 export const getRentalLocationSchedules = createServerFn({ method: "GET" })
 	.inputValidator((data: { locationId: string }) => data)
 	.handler(async ({ data }): Promise<LocationScheduleResponseDto[]> => {
-		const result = await apiFetch<unknown>(rentalApiUrl(data.locationId), {
-			authenticated: false,
-			face: "portal",
-			method: "GET",
-		});
+		const result = await storefrontApiFetch<unknown>(
+			rentalApiUrl(data.locationId),
+			{
+				method: "GET",
+			},
+		);
 
 		return z.array(LocationScheduleResponseSchema).parse(result);
 	});
@@ -51,11 +53,9 @@ export const getLocationScheduleSlots = createServerFn({ method: "GET" })
 	.handler(async ({ data }): Promise<LocationScheduleSlotsResponse> => {
 		const { locationId, ...params } = data;
 
-		return apiFetch<LocationScheduleSlotsResponse>(
+		return storefrontApiFetch<LocationScheduleSlotsResponse>(
 			`${apiUrl(locationId)}/slots`,
 			{
-				authenticated: false,
-				face: "portal",
 				method: "GET",
 				params,
 			},

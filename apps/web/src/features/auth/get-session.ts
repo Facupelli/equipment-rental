@@ -19,23 +19,21 @@ const REFRESH_BUFFER_MS = 30 * 1000; // 30 seconds
 // session — they just read it directly via getAppSession() or apiFetch().
 
 export const ensureValidSession = createServerFn({ method: "GET" })
-	.inputValidator((face: "admin" | "portal") => face)
-	.handler(async ({ data: face }) => {
+	.inputValidator((redirectTo: string) => redirectTo)
+	.handler(async ({ data: redirectTo }) => {
 		const session = await getAppSession();
 		const { accessToken, refreshToken, accessTokenExpiresAt } =
 			session.data ?? {};
 
-		const loginRoute = face === "admin" ? "/admin/login" : "/login";
-
 		if (!accessToken || !refreshToken) {
-			throw redirect({ to: loginRoute });
+			throw redirect({ to: redirectTo });
 		}
 
 		const expiresAt = accessTokenExpiresAt ?? 0;
 		const isExpiringSoon = expiresAt - Date.now() < REFRESH_BUFFER_MS;
 
 		if (isExpiringSoon) {
-			await refreshSession(face);
+			await refreshSession(redirectTo);
 		}
 
 		// Re-read after potential refresh so the returned token is always fresh.

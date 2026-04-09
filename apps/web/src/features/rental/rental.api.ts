@@ -14,7 +14,10 @@ import {
 	type RentalProductResponse,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
-import { apiFetch, apiFetchPaginated } from "@/lib/api";
+import {
+	storefrontApiFetch,
+	storefrontApiFetchPaginated,
+} from "@/lib/storefront-api";
 
 const apiUrl = "/rental";
 
@@ -27,11 +30,9 @@ export const getRentalProducts = createServerFn({ method: "GET" })
 		getRentalProductQuerySchema.parse(data),
 	)
 	.handler(async ({ data }): Promise<PaginatedDto<RentalProductResponse>> => {
-		const result = await apiFetchPaginated<RentalProductResponse>(
+		const result = await storefrontApiFetchPaginated<RentalProductResponse>(
 			`${apiUrl}/product-types`,
 			{
-				authenticated: false,
-				face: "portal",
 				method: "GET",
 				params: data,
 			},
@@ -45,23 +46,25 @@ export const getNewArrivals = createServerFn({ method: "GET" })
 		getNewArrivalsParamsSchema.parse(data),
 	)
 	.handler(async ({ data }): Promise<NewArrivalListResponseDto> => {
-		return await apiFetch<NewArrivalListResponseDto>(`${apiUrl}/new-arrivals`, {
-			authenticated: false,
-			face: "portal",
-			method: "GET",
-			params: data,
-		});
+		return await storefrontApiFetch<NewArrivalListResponseDto>(
+			`${apiUrl}/new-arrivals`,
+			{
+				method: "GET",
+				params: data,
+			},
+		);
 	});
 
 export const getRentalBundles = createServerFn({ method: "GET" })
 	.inputValidator((data: GetCombosParams) => getBundleParamsSchema.parse(data))
 	.handler(async ({ data }): Promise<BundleListResponseDto> => {
-		return await apiFetch<BundleListResponseDto>(`${apiUrl}/bundles`, {
-			authenticated: false,
-			face: "portal",
-			method: "GET",
-			params: data,
-		});
+		return await storefrontApiFetch<BundleListResponseDto>(
+			`${apiUrl}/bundles`,
+			{
+				method: "GET",
+				params: data,
+			},
+		);
 	});
 
 export const getCartPricePreview = createServerFn({ method: "POST" })
@@ -69,12 +72,13 @@ export const getCartPricePreview = createServerFn({ method: "POST" })
 		calculateCartPricesRequestSchema.parse(data),
 	)
 	.handler(async ({ data }): Promise<CartPriceResult> => {
-		const result = await apiFetch<CartPriceResult>("/pricing/cart/preview", {
-			authenticated: false,
-			face: "portal",
-			method: "POST",
-			body: data,
-		});
+		const result = await storefrontApiFetch<CartPriceResult>(
+			"/pricing/cart/preview",
+			{
+				method: "POST",
+				body: data,
+			},
+		);
 
 		return result;
 	});

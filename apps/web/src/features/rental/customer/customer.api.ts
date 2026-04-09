@@ -16,7 +16,7 @@ export const getMeCustomer = createServerFn({ method: "GET" }).handler(
 		const result = await apiFetch<MeCustomerResponseDto>(`${apiUrl}/me`, {
 			method: "GET",
 			params: data,
-			face: "portal",
+			auth: { redirectTo: "/login" },
 		});
 
 		return result;
@@ -28,7 +28,7 @@ export const getCurrentCustomerProfile = createServerFn({
 }).handler(async (): Promise<CustomerProfileResponseDto> => {
 	return apiFetch<CustomerProfileResponseDto>("/customer-profile", {
 		method: "GET",
-		face: "portal",
+		auth: { redirectTo: "/login" },
 	});
 });
 
@@ -39,7 +39,7 @@ export const submitCustomerProfile = createServerFn({ method: "POST" })
 			await apiFetch<void>("/customer-profile", {
 				method: "POST",
 				body: data,
-				face: "portal",
+				auth: { redirectTo: "/login" },
 			});
 		} catch (error) {
 			if (error instanceof ProblemDetailsError) {
@@ -57,7 +57,7 @@ export const resubmitCustomerProfile = createServerFn({ method: "POST" })
 			await apiFetch<void>("/customer-profile", {
 				method: "PUT",
 				body: data,
-				face: "portal",
+				auth: { redirectTo: "/login" },
 			});
 		} catch (error) {
 			if (error instanceof ProblemDetailsError) {

@@ -8,6 +8,7 @@ import {
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 import { apiFetch } from "@/lib/api";
+import { storefrontApiFetch } from "@/lib/storefront-api";
 
 const apiUrl = "/locations";
 
@@ -54,11 +55,9 @@ export const getLocations = createServerFn({ method: "GET" }).handler(
 
 export const getRentalLocations = createServerFn({ method: "GET" }).handler(
 	async (): Promise<RentalLocationsResponse> => {
-		const result = await apiFetch<RentalLocationsResponse>(
+		const result = await storefrontApiFetch<RentalLocationsResponse>(
 			"/rental/locations",
 			{
-				authenticated: false,
-				face: "portal",
 				method: "GET",
 			},
 		);
