@@ -55,6 +55,24 @@ const uploadRouter: Router = {
 				};
 			},
 		}),
+		userSignature: route({
+			fileTypes: ["image/webp"],
+			maxFileSize: 1024 * 1024 * 3,
+			onBeforeUpload: async () => {
+				const tenant = await getCurrentTenant();
+
+				if (!tenant) {
+					throw new RejectUpload("Unauthorized");
+				}
+
+				const key = `${tenant.id}/signatures/${crypto.randomUUID()}.webp`;
+
+				return {
+					objectInfo: { key },
+					metadata: { key },
+				};
+			},
+		}),
 	},
 };
 

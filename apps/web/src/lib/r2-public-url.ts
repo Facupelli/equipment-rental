@@ -15,5 +15,9 @@ export function buildR2PublicUrl(
 		return null;
 	}
 
+	if (path.startsWith("http://") || path.startsWith("https://")) {
+		return path;
+	}
+
 	return `${R2_PUBLIC_URLS[bucket]}/${path}`;
 }

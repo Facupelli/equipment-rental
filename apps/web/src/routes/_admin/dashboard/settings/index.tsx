@@ -19,11 +19,13 @@ import { TenantBrandingSection } from "@/features/tenant/components/tenant-brand
 import { TenantConfigForm } from "@/features/tenant/components/tenant-config-form";
 import { CustomDomainSection } from "@/features/tenant/custom-domain/components/custom-domain-section";
 import { tenantQueries } from "@/features/tenant/tenant.queries";
+import { UserProfileSettingsSection } from "@/features/user-profile/components/user-profile-settings-section";
 import { cn } from "@/lib/utils";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 const SETTINGS_SECTIONS = [
 	"branding",
+	"owner-profile",
 	"domain",
 	"general",
 	"billing-units",
@@ -53,6 +55,11 @@ const settingsNavGroups: Array<{
 				key: "branding",
 				label: "Marca",
 				description: "Visual identity and tenant presentation.",
+			},
+			{
+				key: "owner-profile",
+				label: "Titular",
+				description: "Datos legales y firma del titular del rental.",
 			},
 			{
 				key: "domain",
@@ -230,6 +237,8 @@ function SettingsPanel({ section }: { section: SettingsSection }) {
 	switch (section) {
 		case "branding":
 			return <TenantBrandingSection />;
+		case "owner-profile":
+			return <UserProfileSettingsSection />;
 		case "domain":
 			return <CustomDomainSection />;
 		case "general":
