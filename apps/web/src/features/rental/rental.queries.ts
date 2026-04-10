@@ -15,6 +15,7 @@ import {
 	type UseQueryOptions,
 	useQuery,
 } from "@tanstack/react-query";
+import { usePortalTenantId } from "@/features/tenant-context/use-portal-tenant-id";
 import type { ProblemDetailsError } from "@/shared/errors";
 import {
 	getCartPricePreview,
@@ -30,12 +31,13 @@ type PaginatedRentalProducts = PaginatedDto<RentalProductResponse>;
 // -----------------------------------------------------
 
 export const rentalKeys = {
-	all: () => ["rental"] as const,
-	products: () => [...rentalKeys.all(), "products"] as const,
-	product: (params: GetRentalProductTypesQuery) => {
+	all: (tenantId: string) => ["rental", tenantId] as const,
+	products: (tenantId: string) =>
+		[...rentalKeys.all(tenantId), "products"] as const,
+	product: (tenantId: string, params: GetRentalProductTypesQuery) => {
 		const hasDateRange = !!params.pickupDate && !!params.returnDate;
 		return [
-			...rentalKeys.products(),
+			...rentalKeys.products(tenantId),
 			{
 				...params,
 				pickupDate: hasDateRange ? params.pickupDate : undefined,
@@ -43,14 +45,16 @@ export const rentalKeys = {
 			},
 		] as const;
 	},
-	newArrivals: () => [...rentalKeys.all(), "new-arrivals"] as const,
-	newArrival: (params: GetNewArrivalsParams) =>
-		[...rentalKeys.newArrivals(), params] as const,
-	bundles: () => [...rentalKeys.all(), "bundles"] as const,
-	bundle: (params: GetCombosParams) => {
+	newArrivals: (tenantId: string) =>
+		[...rentalKeys.all(tenantId), "new-arrivals"] as const,
+	newArrival: (tenantId: string, params: GetNewArrivalsParams) =>
+		[...rentalKeys.newArrivals(tenantId), params] as const,
+	bundles: (tenantId: string) =>
+		[...rentalKeys.all(tenantId), "bundles"] as const,
+	bundle: (tenantId: string, params: GetCombosParams) => {
 		const hasDateRange = !!params.pickupDate && !!params.returnDate;
 		return [
-			...rentalKeys.bundles(),
+			...rentalKeys.bundles(tenantId),
 			{
 				...params,
 				pickupDate: hasDateRange ? params.pickupDate : undefined,
@@ -58,13 +62,14 @@ export const rentalKeys = {
 			},
 		] as const;
 	},
-	cartPreviews: () => [...rentalKeys.all(), "cart-preview"] as const,
-	cartPreview: (params: CalculateCartPricesRequest) =>
-		[...rentalKeys.cartPreviews(), params] as const,
+	cartPreviews: (tenantId: string) =>
+		[...rentalKeys.all(tenantId), "cart-preview"] as const,
+	cartPreview: (tenantId: string, params: CalculateCartPricesRequest) =>
+		[...rentalKeys.cartPreviews(tenantId), params] as const,
 };
 
 export const rentalQueries = {
-	products: (params: GetRentalProductTypesQuery) => {
+	products: (tenantId: string, params: GetRentalProductTypesQuery) => {
 		const normalizedParams =
 			params.pickupDate && params.returnDate
 				? params
@@ -75,17 +80,17 @@ export const rentalQueries = {
 					};
 
 		return queryOptions<PaginatedRentalProducts, ProblemDetailsError>({
-			queryKey: rentalKeys.product(params),
+			queryKey: rentalKeys.product(tenantId, params),
 			queryFn: () => getRentalProducts({ data: normalizedParams }),
 			placeholderData: keepPreviousData,
 		});
 	},
-	newArrivals: (params: GetNewArrivalsParams) =>
+	newArrivals: (tenantId: string, params: GetNewArrivalsParams) =>
 		queryOptions<NewArrivalListResponseDto, ProblemDetailsError>({
-			queryKey: rentalKeys.newArrival(params),
+			queryKey: rentalKeys.newArrival(tenantId, params),
 			queryFn: () => getNewArrivals({ data: params }),
 		}),
-	bundles: (params: GetCombosParams) => {
+	bundles: (tenantId: string, params: GetCombosParams) => {
 		const normalizedParams =
 			params.pickupDate && params.returnDate
 				? params
@@ -96,7 +101,7 @@ export const rentalQueries = {
 					};
 
 		return queryOptions<BundleListResponseDto, ProblemDetailsError>({
-			queryKey: rentalKeys.bundle(params),
+			queryKey: rentalKeys.bundle(tenantId, params),
 			queryFn: () => getRentalBundles({ data: normalizedParams }),
 			placeholderData: keepPreviousData,
 		});
@@ -135,7 +140,8 @@ export function useRentalProducts<TData = PaginatedRentalProducts>(
 	params: GetRentalProductTypesQuery,
 	options?: RentalProductsQueryOptions<TData>,
 ) {
-	const { queryKey, queryFn } = rentalQueries.products(params);
+	const tenantId = usePortalTenantId();
+	const { queryKey, queryFn } = rentalQueries.products(tenantId, params);
 
 	return useQuery({
 		...options,
@@ -149,7 +155,8 @@ export function useNewArrivals<TData = NewArrivalListResponseDto>(
 	params: GetNewArrivalsParams,
 	options?: NewArrivalsQueryOptions<TData>,
 ) {
-	const { queryKey, queryFn } = rentalQueries.newArrivals(params);
+	const tenantId = usePortalTenantId();
+	const { queryKey, queryFn } = rentalQueries.newArrivals(tenantId, params);
 
 	return useQuery({
 		...options,
@@ -163,7 +170,8 @@ export function useRentalBundles<TData = BundleListResponseDto>(
 	params: GetCombosParams,
 	options?: RentalBundlesQueryOptions<TData>,
 ) {
-	const { queryKey, queryFn } = rentalQueries.bundles(params);
+	const tenantId = usePortalTenantId();
+	const { queryKey, queryFn } = rentalQueries.bundles(tenantId, params);
 
 	return useQuery({
 		...options,
@@ -177,9 +185,11 @@ export function useCartPricePreview<TData = CartPriceResult>(
 	params: CalculateCartPricesRequest,
 	options?: CartPricePreviewQueryOptions<TData>,
 ) {
+	const tenantId = usePortalTenantId();
+
 	return useQuery({
 		...options,
-		queryKey: rentalKeys.cartPreview(params),
+		queryKey: rentalKeys.cartPreview(tenantId, params),
 		queryFn: () => getCartPricePreview({ data: params }),
 		placeholderData: keepPreviousData,
 	});

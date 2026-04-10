@@ -1,4 +1,5 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { usePortalTenantId } from "@/features/tenant-context/use-portal-tenant-id";
 import { getTenantPricingConfig } from "./tenant.api";
 
 // -------------------------------------------------------
@@ -6,14 +7,14 @@ import { getTenantPricingConfig } from "./tenant.api";
 // -------------------------------------------------------
 
 export const rentalTenantKeys = {
-	all: () => ["tenant-pricing-config"] as const,
-	me: () => [...rentalTenantKeys.all(), "me"] as const,
+	all: (tenantId: string) => ["tenant-pricing-config", tenantId] as const,
+	me: (tenantId: string) => [...rentalTenantKeys.all(tenantId), "me"] as const,
 };
 
 export const rentalTenantQueries = {
-	me: () =>
+	me: (tenantId: string) =>
 		queryOptions({
-			queryKey: rentalTenantKeys.me(),
+			queryKey: rentalTenantKeys.me(tenantId),
 			queryFn: () => getTenantPricingConfig(),
 			staleTime: 5 * 60 * 1000,
 		}),
@@ -24,5 +25,7 @@ export const rentalTenantQueries = {
 // -------------------------------------------------------
 
 export function useTenantPricingConfig() {
-	return useSuspenseQuery(rentalTenantQueries.me());
+	const tenantId = usePortalTenantId();
+
+	return useSuspenseQuery(rentalTenantQueries.me(tenantId));
 }

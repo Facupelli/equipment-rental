@@ -7,6 +7,7 @@ import {
 	updateLocationSchema,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
+import { portalTenantMiddleware } from "@/features/tenant-context/portal-tenant.middleware";
 import { authenticatedApiFetch as apiFetch } from "@/lib/api-auth";
 import { storefrontApiFetch } from "@/lib/storefront-api";
 
@@ -53,9 +54,11 @@ export const getLocations = createServerFn({ method: "GET" }).handler(
 	},
 );
 
-export const getRentalLocations = createServerFn({ method: "GET" }).handler(
-	async (): Promise<RentalLocationsResponse> => {
+export const getRentalLocations = createServerFn({ method: "GET" })
+	.middleware([portalTenantMiddleware])
+	.handler(async ({ context }): Promise<RentalLocationsResponse> => {
 		const result = await storefrontApiFetch<RentalLocationsResponse>(
+			context.tenantId,
 			"/rental/locations",
 			{
 				method: "GET",
@@ -63,5 +66,4 @@ export const getRentalLocations = createServerFn({ method: "GET" }).handler(
 		);
 
 		return result;
-	},
-);
+	});

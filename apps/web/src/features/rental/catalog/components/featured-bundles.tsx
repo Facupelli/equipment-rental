@@ -10,6 +10,7 @@ import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { groupBundleComponents } from "@/features/catalog/bundles/bundles.utils";
 import { rentalQueries } from "@/features/rental/rental.queries";
+import { usePortalTenantId } from "@/features/tenant-context/use-portal-tenant-id";
 import { formatCurrency } from "@/shared/utils/price.utils";
 import { useBundleCardState } from "../../cart/hooks/use-bundle-card-state";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
@@ -63,8 +64,9 @@ export function FeaturedBundles({ search }: FeaturedBundlesProps) {
 }
 
 function FeaturedBundlesResults({ search }: FeaturedBundlesResultsProps) {
+	const tenantId = usePortalTenantId();
 	const { data: bundles } = useSuspenseQuery(
-		rentalQueries.bundles({
+		rentalQueries.bundles(tenantId, {
 			locationId: search.locationId,
 			pickupDate: search.pickupDate,
 			returnDate: search.returnDate,

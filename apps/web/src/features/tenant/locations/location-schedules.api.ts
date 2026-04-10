@@ -9,6 +9,7 @@ import {
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
+import { portalTenantMiddleware } from "@/features/tenant-context/portal-tenant.middleware";
 import { authenticatedApiFetch as apiFetch } from "@/lib/api-auth";
 import { storefrontApiFetch } from "@/lib/storefront-api";
 
@@ -29,38 +30,46 @@ export const getLocationSchedules = createServerFn({ method: "GET" })
 	});
 
 export const getRentalLocationSchedules = createServerFn({ method: "GET" })
+	.middleware([portalTenantMiddleware])
 	.inputValidator((data: { locationId: string }) => data)
-	.handler(async ({ data }): Promise<LocationScheduleResponseDto[]> => {
-		const result = await storefrontApiFetch<unknown>(
-			rentalApiUrl(data.locationId),
-			{
-				method: "GET",
-			},
-		);
+	.handler(
+		async ({ context, data }): Promise<LocationScheduleResponseDto[]> => {
+			const result = await storefrontApiFetch<unknown>(
+				context.tenantId,
+				rentalApiUrl(data.locationId),
+				{
+					method: "GET",
+				},
+			);
 
-		return z.array(LocationScheduleResponseSchema).parse(result);
-	});
+			return z.array(LocationScheduleResponseSchema).parse(result);
+		},
+	);
 
 const locationSlotsSchema = getLocationScheduleSlotsQuerySchema.extend({
 	locationId: z.string(),
 });
 
 export const getLocationScheduleSlots = createServerFn({ method: "GET" })
+	.middleware([portalTenantMiddleware])
 	.inputValidator(
 		(data: GetLocationScheduleSlotsQueryDto & { locationId: string }) =>
 			locationSlotsSchema.parse(data),
 	)
-	.handler(async ({ data }): Promise<LocationScheduleSlotsResponse> => {
-		const { locationId, ...params } = data;
+	.handler(
+		async ({ context, data }): Promise<LocationScheduleSlotsResponse> => {
+			const { locationId, ...params } = data;
 
-		return storefrontApiFetch<LocationScheduleSlotsResponse>(
-			`${apiUrl(locationId)}/slots`,
-			{
-				method: "GET",
-				params,
-			},
-		);
-	});
+			return storefrontApiFetch<LocationScheduleSlotsResponse>(
+				context.tenantId,
+				`${apiUrl(locationId)}/slots`,
+				{
+					method: "GET",
+					params,
+				},
+			);
+		},
+	);
 
 // ---------------------------------------------------------------------------
 

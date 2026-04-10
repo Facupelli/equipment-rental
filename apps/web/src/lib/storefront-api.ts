@@ -1,30 +1,22 @@
 import type { PaginatedDto } from "@repo/schemas";
 import { serverEnv } from "@/config/server-env";
-import { resolveTenantContextByHostname } from "@/features/tenant-context/tenant-context.service";
 import { requestJson, type ApiRequestOptions } from "./api";
 
 type StorefrontApiRequestOptions = ApiRequestOptions;
 
-async function getStorefrontHeaders(): Promise<Record<string, string>> {
-	const tenantContext = await resolveTenantContextByHostname();
-
-	if (tenantContext.face !== "portal") {
-		throw new Error(
-			"Storefront API requests are only available on tenant portal domains.",
-		);
-	}
-
+function getStorefrontHeaders(tenantId: string): Record<string, string> {
 	return {
 		"x-internal-token": serverEnv.INTERNAL_API_TOKEN,
-		"x-tenant-id": tenantContext.tenant.id,
+		"x-tenant-id": tenantId,
 	};
 }
 
 async function storefrontApiFetchRaw<T>(
+	tenantId: string,
 	path: string,
 	options: StorefrontApiRequestOptions,
 ): Promise<T> {
-	const storefrontHeaders = await getStorefrontHeaders();
+	const storefrontHeaders = getStorefrontHeaders(tenantId);
 
 	return requestJson<T>(path, {
 		...options,
@@ -36,16 +28,22 @@ async function storefrontApiFetchRaw<T>(
 }
 
 export async function storefrontApiFetch<T>(
+	tenantId: string,
 	path: string,
 	options: StorefrontApiRequestOptions,
 ): Promise<T> {
-	const body = await storefrontApiFetchRaw<{ data: T }>(path, options);
+	const body = await storefrontApiFetchRaw<{ data: T }>(
+		tenantId,
+		path,
+		options,
+	);
 	return body?.data;
 }
 
 export async function storefrontApiFetchPaginated<T>(
+	tenantId: string,
 	path: string,
 	options: StorefrontApiRequestOptions,
 ): Promise<PaginatedDto<T>> {
-	return storefrontApiFetchRaw<PaginatedDto<T>>(path, options);
+	return storefrontApiFetchRaw<PaginatedDto<T>>(tenantId, path, options);
 }

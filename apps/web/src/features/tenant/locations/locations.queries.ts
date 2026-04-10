@@ -11,6 +11,7 @@ import {
 	useMutation,
 	useQuery,
 } from "@tanstack/react-query";
+import { usePortalTenantId } from "@/features/tenant-context/use-portal-tenant-id";
 import type { ProblemDetailsError } from "@/shared/errors";
 import {
 	createLocation,
@@ -38,14 +39,15 @@ export const locationQueries = {
 };
 
 export const rentalLocationKeys = {
-	all: () => ["rental-locations"] as const,
-	lists: () => [...rentalLocationKeys.all(), "list"] as const,
+	all: (tenantId: string) => ["rental-locations", tenantId] as const,
+	lists: (tenantId: string) =>
+		[...rentalLocationKeys.all(tenantId), "list"] as const,
 };
 
 export const rentalLocationQueries = {
-	list: () =>
+	list: (tenantId: string) =>
 		queryOptions<RentalLocationsResponse, ProblemDetailsError>({
-			queryKey: rentalLocationKeys.lists(),
+			queryKey: rentalLocationKeys.lists(tenantId),
 			queryFn: () => getRentalLocations(),
 		}),
 };
@@ -102,7 +104,8 @@ export function useLocations<TData = LocationListResponse>(
 export function useRentalLocations<TData = RentalLocationsResponse>(
 	options?: RentalLocationQueryOptions<TData>,
 ) {
-	const { queryKey, queryFn } = rentalLocationQueries.list();
+	const tenantId = usePortalTenantId();
+	const { queryKey, queryFn } = rentalLocationQueries.list(tenantId);
 
 	return useQuery({
 		...options,

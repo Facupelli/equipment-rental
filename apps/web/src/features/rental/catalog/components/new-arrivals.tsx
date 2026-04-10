@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { rentalQueries } from "@/features/rental/rental.queries";
+import { usePortalTenantId } from "@/features/tenant-context/use-portal-tenant-id";
 import { formatCurrency } from "@/shared/utils/price.utils";
 import type {
 	NewArrivalItemResponseDto,
@@ -15,8 +16,9 @@ interface NewArrivalsProps {
 }
 
 export function NewArrivals({ locationId }: NewArrivalsProps) {
+	const tenantId = usePortalTenantId();
 	const { data: items, isError } = useSuspenseQuery(
-		rentalQueries.newArrivals({ locationId }),
+		rentalQueries.newArrivals(tenantId, { locationId }),
 	);
 	const { data: tenantPriceConfig } = useTenantPricingConfig();
 
@@ -46,6 +48,7 @@ export function NewArrivals({ locationId }: NewArrivalsProps) {
 	return (
 		<div className="relative">
 			<button
+				type="button"
 				onClick={() => scroll("left")}
 				className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white border rounded-full p-1.5 shadow-sm hover:bg-gray-50 transition-colors"
 				aria-label="Scroll left"
@@ -53,6 +56,7 @@ export function NewArrivals({ locationId }: NewArrivalsProps) {
 				<ChevronLeft className="h-4 w-4" />
 			</button>
 			<button
+				type="button"
 				onClick={() => scroll("right")}
 				className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white border rounded-full p-1.5 shadow-sm hover:bg-gray-50 transition-colors"
 				aria-label="Scroll right"
@@ -133,8 +137,11 @@ function NewArrivalCard({
 export function NewArrivalsSkeleton() {
 	return (
 		<div className="flex gap-4 overflow-hidden pb-2">
-			{Array.from({ length: 5 }).map((_, i) => (
-				<div key={i} className="shrink-0 w-44">
+			{Array.from(
+				{ length: 5 },
+				(_, index) => `new-arrival-skeleton-${index}`,
+			).map((key) => (
+				<div key={key} className="shrink-0 w-44">
 					<Skeleton className="aspect-square rounded-xs mb-2" />
 					<Skeleton className="h-2.5 w-16 mb-1" />
 					<Skeleton className="h-4 w-full mb-1" />

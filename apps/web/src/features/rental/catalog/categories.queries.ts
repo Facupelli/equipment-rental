@@ -4,20 +4,22 @@ import {
 	type UseQueryOptions,
 	useQuery,
 } from "@tanstack/react-query";
+import { usePortalTenantId } from "@/features/tenant-context/use-portal-tenant-id";
 
 import { ProblemDetailsError } from "@/shared/errors";
 
 import { getRentalCategories } from "./categories.api";
 
 export const rentalCategoryKeys = {
-	all: () => ["rental-categories"] as const,
-	lists: () => [...rentalCategoryKeys.all(), "list"] as const,
+	all: (tenantId: string) => ["rental-categories", tenantId] as const,
+	lists: (tenantId: string) =>
+		[...rentalCategoryKeys.all(tenantId), "list"] as const,
 };
 
 export const rentalCategoryQueries = {
-	list: () =>
+	list: (tenantId: string) =>
 		queryOptions<ProductCategoryListResponse, ProblemDetailsError>({
-			queryKey: rentalCategoryKeys.lists(),
+			queryKey: rentalCategoryKeys.lists(tenantId),
 			queryFn: () => getRentalCategories(),
 		}),
 };
@@ -30,7 +32,8 @@ type RentalCategoryQueryOptions<TData = ProductCategoryListResponse> = Omit<
 export function useRentalCategories<TData = ProductCategoryListResponse>(
 	options?: RentalCategoryQueryOptions<TData>,
 ) {
-	const { queryKey, queryFn } = rentalCategoryQueries.list();
+	const tenantId = usePortalTenantId();
+	const { queryKey, queryFn } = rentalCategoryQueries.list(tenantId);
 
 	return useQuery({
 		...options,

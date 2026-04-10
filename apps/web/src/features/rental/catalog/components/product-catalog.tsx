@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { rentalQueries } from "@/features/rental/rental.queries";
+import { usePortalTenantId } from "@/features/tenant-context/use-portal-tenant-id";
 import { formatCurrency } from "@/shared/utils/price.utils";
 import { useProductCardState } from "../../cart/hooks/use-product-card-state";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
@@ -53,8 +54,9 @@ function ProductCatalogResults({
 	search,
 	onPageChange,
 }: ProductCatalogResultsProps) {
+	const tenantId = usePortalTenantId();
 	const { data: products, isFetching } = useSuspenseQuery(
-		rentalQueries.products(search),
+		rentalQueries.products(tenantId, search),
 	);
 	const { data: tenantPriceConfig } = useTenantPricingConfig();
 
