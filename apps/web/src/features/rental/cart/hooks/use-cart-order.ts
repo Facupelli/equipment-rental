@@ -8,8 +8,9 @@ import {
 	useCartItems,
 } from "@/features/rental/cart/cart.hooks";
 import { useCurrentPortalSession } from "@/features/rental/auth/portal-auth.queries";
+import { getCurrentRelativeRedirect } from "@/features/auth/auth-redirect";
 import type { CartPageContextValue } from "@/features/rental/cart/cart-page.context.types";
-import { PORTAL_AUTH_REDIRECT_ROUTES } from "../../auth/portal-auth.redirect";
+import { getPortalAuthRedirectSearch } from "../../auth/portal-auth.redirect";
 import type { ConflictGroup } from "../cart.types";
 import { formatSlot } from "../cart.utils";
 import {
@@ -91,12 +92,9 @@ export function useCartOrder({
 		if (!sessionUser) {
 			navigate({
 				to: "/login",
-				search: {
-					redirectTo: PORTAL_AUTH_REDIRECT_ROUTES[1],
-					locationId: location.id,
-					pickupDate,
-					returnDate,
-				},
+				search: getPortalAuthRedirectSearch(
+					getCurrentRelativeRedirect("/cart"),
+				),
 			});
 			return;
 		}
@@ -149,12 +147,9 @@ export function useCartOrder({
 			if (isAuthError(error)) {
 				navigate({
 					to: "/login",
-					search: {
-						redirectTo: PORTAL_AUTH_REDIRECT_ROUTES[1],
-						locationId: location.id,
-						pickupDate,
-						returnDate,
-					},
+					search: getPortalAuthRedirectSearch(
+						getCurrentRelativeRedirect("/cart"),
+					),
 				});
 				return;
 			}

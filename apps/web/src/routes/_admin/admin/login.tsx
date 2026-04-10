@@ -1,4 +1,9 @@
 import { useLogin } from "@/features/auth/auth-actions.queries";
+import {
+	authRedirectSearchSchema,
+	normalizeSafeRedirectTo,
+} from "@/features/auth/auth-redirect";
+import { getOptionalPrincipalFn } from "@/features/auth/auth-guards.api";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -16,12 +21,31 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useForm } from "@tanstack/react-form";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	redirect,
+	useRouter,
+} from "@tanstack/react-router";
 import { useState } from "react";
 import { loginSchema } from "@/features/auth/schemas/login-form.schema";
 import { isAuthError, ProblemDetailsError } from "@/shared/errors";
 
 export const Route = createFileRoute("/_admin/admin/login")({
+	validateSearch: authRedirectSearchSchema,
+	beforeLoad: async ({ search }) => {
+		const principal = await getOptionalPrincipalFn();
+
+		if (principal.kind === "adminUser") {
+			throw redirect({
+				href: normalizeSafeRedirectTo(search.redirectTo, "/dashboard"),
+			});
+		}
+
+		if (principal.kind === "customerAccount") {
+			throw redirect({ to: "/rental" });
+		}
+	},
 	component: LoginPage,
 });
 
@@ -29,6 +53,7 @@ const formId = "login-user";
 
 function LoginPage() {
 	const router = useRouter();
+	const search = Route.useSearch();
 	const { mutateAsync: login, isPending } = useLogin();
 
 	const form = useForm({
@@ -44,7 +69,9 @@ function LoginPage() {
 
 			try {
 				await login(value);
-				router.navigate({ to: "/dashboard" });
+				router.navigate({
+					href: normalizeSafeRedirectTo(search.redirectTo, "/dashboard"),
+				});
 			} catch (error) {
 				if (isAuthError(error)) {
 					setServerError("Invalid email or password");

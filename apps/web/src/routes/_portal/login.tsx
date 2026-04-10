@@ -1,4 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	Link,
+	createFileRoute,
+	redirect,
+	useNavigate,
+} from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,8 +22,8 @@ import {
 	getPortalAuthRedirectTarget,
 	portalAuthRedirectSchema,
 } from "@/features/rental/auth/portal-auth.redirect";
+import { getOptionalPrincipalFn } from "@/features/auth/auth-guards.api";
 import { useCustomerLogin } from "@/features/rental/auth/portal-auth.queries";
-import { Link } from "@tanstack/react-router";
 import { getTenantBranding } from "@/features/tenant-branding/tenant-branding";
 import { PoweredByFooter } from "@/shared/components/powered-by-footer";
 import { isAuthError, ProblemDetailsError } from "@/shared/errors";
@@ -26,6 +31,17 @@ import { useState } from "react";
 
 export const Route = createFileRoute("/_portal/login")({
 	validateSearch: portalAuthRedirectSchema,
+	beforeLoad: async ({ search }) => {
+		const principal = await getOptionalPrincipalFn();
+
+		if (principal.kind === "customerAccount") {
+			throw redirect(getPortalAuthRedirectTarget(search));
+		}
+
+		if (principal.kind === "adminUser") {
+			throw redirect({ to: "/dashboard" });
+		}
+	},
 	component: LoginPage,
 });
 

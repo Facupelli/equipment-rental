@@ -7,8 +7,8 @@ import {
 import { cloudflare } from "@better-upload/server/clients";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { requireCustomerSessionUser } from "@/features/auth/auth-guards.server";
 import { serverEnv } from "@/config/server-env";
-import { getAppSession } from "@/lib/session.server";
 
 const s3 = cloudflare({
 	accountId: serverEnv.CLOUDFLARE_ACCOUNT_ID,
@@ -32,10 +32,11 @@ const uploadRouter: Router = {
 			clientMetadataSchema,
 
 			onBeforeUpload: async ({ req: _, file, clientMetadata }) => {
-				const session = await getAppSession();
-				const customerId = session.data.userId;
+				let customerId: string;
 
-				if (!customerId) {
+				try {
+					customerId = (await requireCustomerSessionUser()).userId;
+				} catch {
 					throw new RejectUpload("Unauthorized");
 				}
 

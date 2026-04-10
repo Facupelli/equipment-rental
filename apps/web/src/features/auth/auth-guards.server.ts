@@ -1,10 +1,11 @@
 import { ActorType } from "@repo/types";
-import { redirect } from "@tanstack/react-router";
 import { getAppSession } from "@/lib/session.server";
 import {
 	hasActiveSession,
+	toSessionPrincipal,
 	toSessionUser,
 	type SessionData,
+	type SessionPrincipal,
 	type SessionUser,
 } from "@/lib/session";
 import {
@@ -12,7 +13,6 @@ import {
 	SessionExpiredError,
 	WrongActorError,
 } from "@/shared/errors";
-import type { AuthRedirectTarget } from "./auth-redirect";
 import { refreshSession } from "./auth-refresh.server";
 
 const REFRESH_BUFFER_MS = 30 * 1000;
@@ -30,150 +30,118 @@ async function clearSession(): Promise<void> {
 	await session.clear();
 }
 
-async function readRequiredSession(
-	options: RequireSessionOptions,
-): Promise<SessionData> {
+async function readActiveSession(): Promise<SessionData | null> {
 	const session = await getAppSession();
 
 	if (!hasActiveSession(session.data)) {
-		throw new AuthRequiredError();
-	}
-
-	if (options.actorType && session.data.actorType !== options.actorType) {
-		throw new WrongActorError();
+		return null;
 	}
 
 	return session.data;
 }
 
-export async function getOptionalSessionUser(): Promise<SessionUser | null> {
-	const session = await getAppSession();
+async function ensureFreshOptionalSession(): Promise<SessionData | null> {
+	let session = await readActiveSession();
 
-	if (!hasActiveSession(session.data)) {
+	if (!session) {
 		return null;
 	}
-
-	return toSessionUser(session.data);
-}
-
-export async function getOptionalCustomerSession(): Promise<SessionUser | null> {
-	const session = await getAppSession();
-
-	if (!hasActiveSession(session.data)) {
-		return null;
-	}
-
-	if (session.data.actorType !== ActorType.CUSTOMER) {
-		await session.clear();
-		return null;
-	}
-
-	if (!isAccessTokenExpiring(session.data.accessTokenExpiresAt)) {
-		return toSessionUser(session.data);
-	}
-
-	const refreshed = await refreshSession().catch(async () => {
-		await session.clear();
-		return false;
-	});
-
-	if (!refreshed) {
-		const latestSession = await getAppSession();
-
-		if (!hasActiveSession(latestSession.data)) {
-			return null;
-		}
-
-		if (
-			latestSession.data.actorType !== ActorType.CUSTOMER ||
-			latestSession.data.accessTokenExpiresAt <= Date.now()
-		) {
-			await latestSession.clear();
-			return null;
-		}
-
-		return toSessionUser(latestSession.data);
-	}
-
-	const latestSession = await getAppSession();
-
-	if (!hasActiveSession(latestSession.data)) {
-		return null;
-	}
-
-	if (latestSession.data.actorType !== ActorType.CUSTOMER) {
-		await latestSession.clear();
-		return null;
-	}
-
-	return toSessionUser(latestSession.data);
-}
-
-export async function requireSession(
-	options: RequireSessionOptions,
-): Promise<SessionData> {
-	let session = await readRequiredSession(options);
 
 	if (!isAccessTokenExpiring(session.accessTokenExpiresAt)) {
 		return session;
 	}
 
-	const refreshed = await refreshSession();
+	try {
+		const refreshed = await refreshSession();
 
-	if (!refreshed) {
-		session = await readRequiredSession(options);
+		if (!refreshed) {
+			session = await readActiveSession();
 
-		if (session.accessTokenExpiresAt <= Date.now()) {
+			if (!session || session.accessTokenExpiresAt <= Date.now()) {
+				await clearSession();
+				return null;
+			}
+
+			return session;
+		}
+	} catch (error) {
+		if (
+			error instanceof AuthRequiredError ||
+			error instanceof SessionExpiredError
+		) {
 			await clearSession();
-			throw new SessionExpiredError();
+			return null;
 		}
 
-		return session;
+		throw error;
 	}
 
-	return readRequiredSession(options);
+	return readActiveSession();
 }
 
-export async function requireAdminSession(options: {
-	redirectTo: AuthRedirectTarget;
-}): Promise<SessionUser> {
-	try {
-		const session = await requireSession({
+async function readRequiredSession(
+	options: RequireSessionOptions,
+): Promise<SessionData> {
+	const session = await ensureFreshOptionalSession();
+
+	if (!session) {
+		throw new AuthRequiredError();
+	}
+
+	if (options.actorType && session.actorType !== options.actorType) {
+		throw new WrongActorError();
+	}
+
+	return session;
+}
+
+export async function getOptionalPrincipal(): Promise<SessionPrincipal> {
+	const session = await ensureFreshOptionalSession();
+
+	return toSessionPrincipal(session ?? undefined);
+}
+
+export async function getOptionalSessionUser(): Promise<SessionUser | null> {
+	const principal = await getOptionalPrincipal();
+
+	return principal.kind === "anonymous" ? null : principal;
+}
+
+export async function getOptionalCustomerSession(): Promise<SessionUser | null> {
+	const principal = await getOptionalPrincipal();
+
+	return principal.kind === "customerAccount" ? principal : null;
+}
+
+export async function requireSession(
+	options: RequireSessionOptions,
+): Promise<SessionData> {
+	const session = await readRequiredSession(options);
+
+	if (session.accessTokenExpiresAt <= Date.now()) {
+		await clearSession();
+		throw new SessionExpiredError();
+	}
+
+	return session;
+}
+
+export async function requireAdminSessionUser(): Promise<
+	Extract<SessionUser, { kind: "adminUser" }>
+> {
+	return toSessionUser(
+		await requireSession({
 			actorType: ActorType.USER,
-		});
-
-		return toSessionUser(session);
-	} catch (error) {
-		if (
-			error instanceof AuthRequiredError ||
-			error instanceof SessionExpiredError ||
-			error instanceof WrongActorError
-		) {
-			throw redirect(options.redirectTo);
-		}
-
-		throw error;
-	}
+		}),
+	) as Extract<SessionUser, { kind: "adminUser" }>;
 }
 
-export async function requireCustomerSession(options: {
-	redirectTo: AuthRedirectTarget;
-}): Promise<SessionUser> {
-	try {
-		const session = await requireSession({
+export async function requireCustomerSessionUser(): Promise<
+	Extract<SessionUser, { kind: "customerAccount" }>
+> {
+	return toSessionUser(
+		await requireSession({
 			actorType: ActorType.CUSTOMER,
-		});
-
-		return toSessionUser(session);
-	} catch (error) {
-		if (
-			error instanceof AuthRequiredError ||
-			error instanceof SessionExpiredError ||
-			error instanceof WrongActorError
-		) {
-			throw redirect(options.redirectTo);
-		}
-
-		throw error;
-	}
+		}),
+	) as Extract<SessionUser, { kind: "customerAccount" }>;
 }

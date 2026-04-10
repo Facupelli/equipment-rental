@@ -11,73 +11,74 @@ import { loginCustomerFn, registerCustomerFn } from "./portal-auth.api";
 import type { RegisterCustomerInput } from "./register/customer-register-form.schema";
 
 export const portalAuthKeys = {
-	all: () => ["portal-auth"] as const,
-	currentSession: () => [...portalAuthKeys.all(), "current-session"] as const,
+  all: () => ["portal-auth"] as const,
+  currentSession: () => [...portalAuthKeys.all(), "current-session"] as const,
 };
 
 export const portalAuthQueries = {
-	currentSession: () =>
-		queryOptions<SessionUser | null, ProblemDetailsError>({
-			queryKey: portalAuthKeys.currentSession(),
-			queryFn: () => getOptionalCustomerSessionFn(),
-			staleTime: 5 * 60 * 1000,
-		}),
+  currentSession: () =>
+    queryOptions<SessionUser | null, ProblemDetailsError>({
+      queryKey: portalAuthKeys.currentSession(),
+      queryFn: () => getOptionalCustomerSessionFn(),
+      staleTime: 5 * 60 * 1000,
+    }),
 };
 
 export function useCurrentPortalSession() {
-	return useQuery({
-		...portalAuthQueries.currentSession(),
-	});
+  return useQuery({
+    ...portalAuthQueries.currentSession(),
+  });
 }
 
 export function useCustomerLogin() {
-	const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
-	return useMutation<SessionUser, ProblemDetailsError, LoginCustomerInput>({
-		mutationFn: (data) => loginCustomerFn({ data }),
-		meta: {
-			invalidates: portalCustomerKeys.all(),
-		},
-		onSuccess: async (result) => {
-			if (result.userId) {
-				queryClient.removeQueries({ queryKey: portalAuthKeys.all() });
-			}
-		},
-		onError: (error) => {
-			console.error(
-				`[${error.problemDetails.status}] ${error.problemDetails.detail}`,
-			);
-		},
-	});
+  return useMutation<SessionUser, ProblemDetailsError, LoginCustomerInput>({
+    mutationFn: (data) => loginCustomerFn({ data }),
+    meta: {
+      invalidates: portalCustomerKeys.all(),
+    },
+    onSuccess: async () => {
+      queryClient.removeQueries({ queryKey: portalAuthKeys.all() });
+      await router.invalidate();
+    },
+    onError: (error) => {
+      console.error(
+        `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
+      );
+    },
+  });
 }
 
 export function useCustomerRegister() {
-	return useMutation<string, ProblemDetailsError, RegisterCustomerInput>({
-		mutationFn: (data) => registerCustomerFn({ data }),
-		onError: (error) => {
-			console.error(
-				`[${error.problemDetails.status}] ${error.problemDetails.detail}`,
-			);
-		},
-	});
+  return useMutation<string, ProblemDetailsError, RegisterCustomerInput>({
+    mutationFn: (data) => registerCustomerFn({ data }),
+    onError: (error) => {
+      console.error(
+        `[${error.problemDetails.status}] ${error.problemDetails.detail}`,
+      );
+    },
+  });
 }
 
 export function useCustomerLogout() {
-	const queryClient = useQueryClient();
-	const router = useRouter();
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
-	return useMutation<void, ProblemDetailsError>({
-		mutationFn: () => logoutFn(),
-		meta: {
-			invalidates: portalCustomerKeys.all(),
-		},
-		onSuccess: async () => {
-			queryClient.removeQueries({ queryKey: portalAuthKeys.all() });
-			queryClient.removeQueries({ queryKey: portalCustomerKeys.all() });
-			await router.navigate({
-				to: "/login",
-				search: { redirectTo: "/rental" },
-			});
-		},
-	});
+  return useMutation<void, ProblemDetailsError>({
+    mutationFn: () => logoutFn(),
+    meta: {
+      invalidates: portalCustomerKeys.all(),
+    },
+    onSuccess: async () => {
+      queryClient.removeQueries({ queryKey: portalAuthKeys.all() });
+      queryClient.removeQueries({ queryKey: portalCustomerKeys.all() });
+      await router.invalidate();
+      await router.navigate({
+        to: "/login",
+        search: { redirectTo: "/rental" },
+      });
+    },
+  });
 }

@@ -1,4 +1,4 @@
-import type { ActorType } from "@repo/types";
+import { ActorType } from "@repo/types";
 
 /**
  * Data stored inside the encrypted session cookie.
@@ -23,12 +23,25 @@ export interface SessionData {
  * The safe subset of session data that is returned to the client.
  * Contains no tokens, no expiry internals.
  */
-export interface SessionUser {
+export interface AdminSessionUser {
+	kind: "adminUser";
 	userId: string;
 	email: string;
 	tenantId: string;
-	actorType: ActorType;
+	actorType: ActorType.USER;
 }
+
+export interface CustomerSessionUser {
+	kind: "customerAccount";
+	userId: string;
+	email: string;
+	tenantId: string;
+	actorType: ActorType.CUSTOMER;
+}
+
+export type SessionUser = AdminSessionUser | CustomerSessionUser;
+
+export type SessionPrincipal = SessionUser | { kind: "anonymous" };
 
 type JwtPayload = {
 	exp?: number;
@@ -72,10 +85,35 @@ export function toSessionUser(data: Partial<SessionData>): SessionUser {
 		throw new Error("Session data is incomplete");
 	}
 
-	return {
-		userId: data.userId,
-		email: data.email,
-		tenantId: data.tenantId,
-		actorType: data.actorType,
-	};
+	if (data.actorType === ActorType.USER) {
+		return {
+			kind: "adminUser",
+			userId: data.userId,
+			email: data.email,
+			tenantId: data.tenantId,
+			actorType: data.actorType,
+		};
+	}
+
+	if (data.actorType === ActorType.CUSTOMER) {
+		return {
+			kind: "customerAccount",
+			userId: data.userId,
+			email: data.email,
+			tenantId: data.tenantId,
+			actorType: data.actorType,
+		};
+	}
+
+	throw new Error("Unsupported actor type");
+}
+
+export function toSessionPrincipal(
+	data: Partial<SessionData> | undefined,
+): SessionPrincipal {
+	if (!hasActiveSession(data)) {
+		return { kind: "anonymous" };
+	}
+
+	return toSessionUser(data);
 }

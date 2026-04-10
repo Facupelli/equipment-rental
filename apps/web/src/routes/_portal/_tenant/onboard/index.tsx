@@ -21,13 +21,13 @@ interface OnboardLoaderData {
 }
 
 export const Route = createFileRoute("/_portal/_tenant/onboard/")({
-	beforeLoad: async () => {
+	beforeLoad: async ({ location }) => {
+		const redirectTo = `${location.pathname}${location.searchStr ?? ""}${location.hash ?? ""}`;
+
 		await requireCustomerSessionFn({
 			data: {
-				to: "/login",
-				search: {
-					redirectTo: "/onboard",
-				},
+				loginPath: "/login",
+				redirectTo,
 			},
 		});
 	},

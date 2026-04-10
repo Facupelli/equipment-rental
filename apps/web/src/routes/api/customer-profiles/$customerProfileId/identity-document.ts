@@ -1,8 +1,8 @@
-import { ActorType } from "@repo/types";
 import { createFileRoute } from "@tanstack/react-router";
 import { env } from "cloudflare:workers";
 import { z } from "zod";
-import { getAppSession } from "@/lib/session.server";
+import { requireAdminSessionUser } from "@/features/auth/auth-guards.server";
+import { WrongActorError } from "@/shared/errors";
 
 const customerProfileParamsSchema = z.object({
 	customerProfileId: z.uuid(),
@@ -39,14 +39,14 @@ export const Route = createFileRoute(
 					return new Response("Invalid object path", { status: 400 });
 				}
 
-				const session = await getAppSession();
+				try {
+					await requireAdminSessionUser();
+				} catch (error) {
+					if (error instanceof WrongActorError) {
+						return new Response("Forbidden", { status: 403 });
+					}
 
-				if (!session.data?.accessToken) {
 					return new Response("Unauthorized", { status: 401 });
-				}
-
-				if (session.data.actorType !== ActorType.USER) {
-					return new Response("Forbidden", { status: 403 });
 				}
 
 				const object = await customersBucket.get(parsedSearch.data.objectPath);

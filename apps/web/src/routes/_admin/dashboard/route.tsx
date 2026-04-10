@@ -31,13 +31,21 @@ import {
 import { ChevronsUpDown, LogOut, User } from "lucide-react";
 
 export const Route = createFileRoute("/_admin/dashboard")({
-	beforeLoad: async ({ context }) => {
+	beforeLoad: async ({ context, location }) => {
+		const redirectTo = `${location.pathname}${location.searchStr ?? ""}${location.hash ?? ""}`;
+
 		if (context.tenantContext.face !== "admin") {
-			throw redirect({ to: "/admin/login" });
+			throw redirect({
+				to: "/admin/login",
+				search: { redirectTo },
+			});
 		}
 
 		await requireAdminSessionFn({
-			data: { to: "/admin/login" },
+			data: {
+				loginPath: "/admin/login",
+				redirectTo,
+			},
 		});
 	},
 	loader: async ({ context: { queryClient } }) => {

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { Mail, Lock, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
 	getPortalAuthRedirectTarget,
 	portalAuthRedirectSchema,
 } from "@/features/rental/auth/portal-auth.redirect";
+import { getOptionalPrincipalFn } from "@/features/auth/auth-guards.api";
 import {
 	useCustomerLogin,
 	useCustomerRegister,
@@ -29,6 +30,17 @@ import { PoweredByFooter } from "@/shared/components/powered-by-footer";
 
 export const Route = createFileRoute("/_portal/register")({
 	validateSearch: portalAuthRedirectSchema,
+	beforeLoad: async ({ search }) => {
+		const principal = await getOptionalPrincipalFn();
+
+		if (principal.kind === "customerAccount") {
+			throw redirect(getPortalAuthRedirectTarget(search));
+		}
+
+		if (principal.kind === "adminUser") {
+			throw redirect({ to: "/dashboard" });
+		}
+	},
 	component: RegisterPage,
 });
 

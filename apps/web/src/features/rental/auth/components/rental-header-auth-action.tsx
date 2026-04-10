@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -7,23 +7,33 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { getCurrentRelativeRedirect } from "@/features/auth/auth-redirect";
 import {
 	useCurrentPortalSession,
 	useCustomerLogout,
 } from "../portal-auth.queries";
+import { getPortalAuthRedirectSearch } from "../portal-auth.redirect";
 
 export function RentalHeaderAuthAction() {
+	const navigate = useNavigate();
 	const { data: sessionUser } = useCurrentPortalSession();
 
 	if (!sessionUser) {
 		return (
-			<Link
-				to="/login"
-				search={{ redirectTo: "/rental" }}
+			<button
+				type="button"
+				onClick={() => {
+					navigate({
+						to: "/login",
+						search: getPortalAuthRedirectSearch(
+							getCurrentRelativeRedirect("/rental"),
+						),
+					});
+				}}
 				className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
 			>
 				Iniciar Sesión
-			</Link>
+			</button>
 		);
 	}
 
