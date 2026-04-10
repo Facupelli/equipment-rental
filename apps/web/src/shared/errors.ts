@@ -10,6 +10,33 @@ export class ProblemDetailsError extends Error {
 	}
 }
 
+export class AuthRequiredError extends Error {
+	public readonly status = 401;
+
+	constructor(message = "Authentication is required") {
+		super(message);
+		this.name = "AuthRequiredError";
+	}
+}
+
+export class SessionExpiredError extends Error {
+	public readonly status = 401;
+
+	constructor(message = "Your session has expired") {
+		super(message);
+		this.name = "SessionExpiredError";
+	}
+}
+
+export class WrongActorError extends Error {
+	public readonly status = 403;
+
+	constructor(message = "Authenticated session does not match this resource") {
+		super(message);
+		this.name = "WrongActorError";
+	}
+}
+
 type ProblemDetailsLike = {
 	problemDetails?: Partial<ProblemDetails>;
 	status?: number;
@@ -18,8 +45,11 @@ type ProblemDetailsLike = {
 };
 
 const EXCEPTION_STATUS_MAP: Record<string, number> = {
+	AuthRequiredError: 401,
 	ForbiddenException: 403,
+	SessionExpiredError: 401,
 	UnauthorizedException: 401,
+	WrongActorError: 403,
 };
 
 export function getProblemDetailsStatus(error: unknown): number | undefined {

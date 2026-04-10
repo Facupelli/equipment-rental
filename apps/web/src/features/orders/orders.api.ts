@@ -73,7 +73,6 @@ export const createOrder = createServerFn({ method: "POST" })
 			const result = await apiFetch<string>(apiUrl, {
 				method: "POST",
 				body: data,
-				redirectTo: "/login",
 				actorType: ActorType.CUSTOMER,
 			});
 

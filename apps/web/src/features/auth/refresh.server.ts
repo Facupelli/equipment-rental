@@ -1,19 +1,16 @@
-import { redirect } from "@tanstack/react-router";
 import { getAppSession } from "@/lib/session.server";
-import type { AuthRedirectTarget } from "./auth-redirect";
+import { AuthRequiredError, SessionExpiredError } from "@/shared/errors";
 import { writeSessionFromTokens } from "./session.server";
 
 const inflightRefreshes = new Map<string, Promise<boolean>>();
 
-export async function refreshSession(
-	redirectTo: AuthRedirectTarget,
-): Promise<boolean> {
+export async function refreshSession(): Promise<boolean> {
 	const session = await getAppSession();
 	const refreshToken = session.data.refreshToken;
 
 	if (!refreshToken) {
 		await session.clear();
-		throw redirect(redirectTo);
+		throw new AuthRequiredError();
 	}
 
 	const inflightRefresh = inflightRefreshes.get(refreshToken);
@@ -22,21 +19,16 @@ export async function refreshSession(
 		return inflightRefresh;
 	}
 
-	const refreshPromise = attemptRefresh(redirectTo, refreshToken).finally(
-		() => {
-			inflightRefreshes.delete(refreshToken);
-		},
-	);
+	const refreshPromise = attemptRefresh(refreshToken).finally(() => {
+		inflightRefreshes.delete(refreshToken);
+	});
 
 	inflightRefreshes.set(refreshToken, refreshPromise);
 
 	return refreshPromise;
 }
 
-async function attemptRefresh(
-	redirectTo: AuthRedirectTarget,
-	refreshToken: string,
-): Promise<boolean> {
+async function attemptRefresh(refreshToken: string): Promise<boolean> {
 	const session = await getAppSession();
 
 	if (session.data.refreshToken !== refreshToken) {
@@ -45,7 +37,7 @@ async function attemptRefresh(
 
 	if (!session.data.refreshToken) {
 		await session.clear();
-		throw redirect(redirectTo);
+		throw new AuthRequiredError();
 	}
 
 	let response: Response;
@@ -64,7 +56,7 @@ async function attemptRefresh(
 
 	if (!response.ok) {
 		await session.clear();
-		throw redirect(redirectTo);
+		throw new SessionExpiredError();
 	}
 
 	const body = (await response.json()) as {

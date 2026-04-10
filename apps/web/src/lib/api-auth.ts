@@ -1,35 +1,26 @@
 import type { PaginatedDto } from "@repo/schemas";
 import type { ActorType } from "@repo/types";
 import { createServerOnlyFn } from "@tanstack/react-start";
-import {
-	normalizeAuthRedirectTarget,
-	type AuthRedirectTarget,
-} from "@/features/auth/auth-redirect";
 import { requireSession } from "@/features/auth/guards.server";
 import { refreshSession } from "@/features/auth/refresh.server";
 import { ProblemDetailsError } from "@/shared/errors";
 import { apiFetch, apiFetchPaginated, type ApiFetchOptions } from "./api";
 
 type AuthenticatedApiFetchOptions = ApiFetchOptions & {
-	redirectTo?: AuthRedirectTarget | string;
 	actorType?: ActorType;
 };
 
-async function resolveAccessToken(
-	redirectTo: AuthRedirectTarget,
-	actorType?: ActorType,
-): Promise<string> {
-	const session = await requireSession({ redirectTo, actorType });
+async function resolveAccessToken(actorType?: ActorType): Promise<string> {
+	const session = await requireSession({ actorType });
 
 	return session.accessToken;
 }
 
 async function withSessionRetry<T>(
 	request: (accessToken: string) => Promise<T>,
-	redirectTo: AuthRedirectTarget,
 	actorType?: ActorType,
 ): Promise<T> {
-	let accessToken = await resolveAccessToken(redirectTo, actorType);
+	let accessToken = await resolveAccessToken(actorType);
 	let hasRetried = false;
 
 	while (true) {
@@ -41,10 +32,10 @@ async function withSessionRetry<T>(
 				error.problemDetails.status === 401 &&
 				!hasRetried
 			) {
-				const refreshed = await refreshSession(redirectTo);
+				const refreshed = await refreshSession();
 
 				if (refreshed) {
-					accessToken = await resolveAccessToken(redirectTo, actorType);
+					accessToken = await resolveAccessToken(actorType);
 					hasRetried = true;
 					continue;
 				}
@@ -60,15 +51,10 @@ export const authenticatedApiFetch = createServerOnlyFn(
 		path: string,
 		options: AuthenticatedApiFetchOptions = {},
 	): Promise<T> => {
-		const {
-			redirectTo = "/admin/login",
-			actorType,
-			...requestOptions
-		} = options;
+		const { actorType, ...requestOptions } = options;
 
 		return withSessionRetry(
 			(accessToken) => apiFetch<T>(path, { ...requestOptions, accessToken }),
-			normalizeAuthRedirectTarget(redirectTo),
 			actorType,
 		);
 	},
@@ -79,16 +65,11 @@ export const authenticatedApiFetchPaginated = createServerOnlyFn(
 		path: string,
 		options: AuthenticatedApiFetchOptions = {},
 	): Promise<PaginatedDto<T>> => {
-		const {
-			redirectTo = "/admin/login",
-			actorType,
-			...requestOptions
-		} = options;
+		const { actorType, ...requestOptions } = options;
 
 		return withSessionRetry(
 			(accessToken) =>
 				apiFetchPaginated<T>(path, { ...requestOptions, accessToken }),
-			normalizeAuthRedirectTarget(redirectTo),
 			actorType,
 		);
 	},

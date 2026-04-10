@@ -17,6 +17,7 @@ import {
 	isDeliveryNotSupportedError,
 	isDeliveryRequestComplete,
 } from "../cart-order.utils";
+import { getProblemDetailsStatus } from "@/shared/errors";
 import { useCartOrderDelivery } from "./use-cart-order-delivery";
 import { useCartOrderPricing } from "./use-cart-order-pricing";
 import { useCartOrderTimes } from "./use-cart-order-times";
@@ -142,6 +143,19 @@ export function useCartOrder({
 			if (conflicts) {
 				setUnavailableIds(conflicts.unavailableIds);
 				setConflictGroups(conflicts.conflictGroups);
+				return;
+			}
+
+			if (getProblemDetailsStatus(error) === 401) {
+				navigate({
+					to: "/login",
+					search: {
+						redirectTo: PORTAL_AUTH_REDIRECT_ROUTES[1],
+						locationId: location.id,
+						pickupDate,
+						returnDate,
+					},
+				});
 				return;
 			}
 

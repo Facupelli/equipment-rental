@@ -31,7 +31,7 @@ export function useCurrentPortalSession() {
 }
 
 export function useCustomerLogin() {
-	// const queryClient = useQueryClient();
+	const queryClient = useQueryClient();
 
 	return useMutation<SessionUser, ProblemDetailsError, LoginCustomerInput>({
 		mutationFn: (data) => loginCustomerFn({ data }),
@@ -40,9 +40,7 @@ export function useCustomerLogin() {
 		},
 		onSuccess: async (result) => {
 			if (result.userId) {
-				// await queryClient.invalidateQueries({
-				//   queryKey: authQueryKey.currentUser,
-				// });
+				queryClient.removeQueries({ queryKey: portalAuthKeys.all() });
 			}
 		},
 		onError: (error) => {
