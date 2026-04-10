@@ -2,7 +2,7 @@ import { ActorType } from "@repo/types";
 import { createFileRoute } from "@tanstack/react-router";
 import { env } from "cloudflare:workers";
 import { z } from "zod";
-import { getAppSession } from "@/lib/session";
+import { getAppSession } from "@/lib/session.server";
 
 const customerProfileParamsSchema = z.object({
 	customerProfileId: z.uuid(),

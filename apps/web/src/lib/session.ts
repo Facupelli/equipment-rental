@@ -1,5 +1,4 @@
 import type { ActorType } from "@repo/types";
-import { useSession } from "@tanstack/react-start/server";
 
 /**
  * Data stored inside the encrypted session cookie.
@@ -15,7 +14,7 @@ export interface SessionData {
 	refreshToken: string;
 	/**
 	 * Unix timestamp in milliseconds of when the access token expires.
-	 * Set as Date.now() + ACCESS_TOKEN_TTL_MS on login and refresh.
+	 * Derived from the access token exp claim on login and refresh.
 	 */
 	accessTokenExpiresAt: number;
 }
@@ -31,33 +30,34 @@ export interface SessionUser {
 	actorType: ActorType;
 }
 
-// ---------------------------------------------------------------------------
-// Session
-// ---------------------------------------------------------------------------
+type JwtPayload = {
+	exp?: number;
+};
 
-export type AppSession = Awaited<ReturnType<typeof useSession<SessionData>>>;
+export function getTokenExpirationTimestamp(token: string): number {
+	const payload = JSON.parse(
+		Buffer.from(token.split(".")[1], "base64url").toString("utf-8"),
+	) as JwtPayload;
 
-/**
- * Central session accessor. Import and call this inside any server function
- * that needs to read or write auth state.
- *
- * The cookie is HttpOnly, Secure, and SameSite=Lax — the browser can store
- * and transmit it but cannot read its contents. The payload is AES-GCM
- * encrypted by TanStack Start using SESSION_SECRET.
- */
-export function getAppSession(): Promise<AppSession> {
-	return useSession<SessionData>({
-		name: "app_session",
-		password: process.env.SESSION_SECRET!,
-		cookie: {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "lax",
-			path: "/",
-			// Align with your JWT_REFRESH_EXPIRATION_TIME_SECONDS.
-			maxAge: 60 * 60 * 24 * 7, // 7 days
-		},
-	});
+	if (typeof payload.exp !== "number") {
+		throw new Error("Access token is missing exp claim");
+	}
+
+	return payload.exp * 1000;
+}
+
+export function hasActiveSession(
+	data: Partial<SessionData> | undefined,
+): data is SessionData {
+	return Boolean(
+		data?.userId &&
+			data.email &&
+			data.tenantId &&
+			data.actorType &&
+			data.accessToken &&
+			data.refreshToken &&
+			typeof data.accessTokenExpiresAt === "number",
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -65,8 +65,7 @@ export function getAppSession(): Promise<AppSession> {
 // ---------------------------------------------------------------------------
 
 /**
- * Converts a full SessionData into the safe SessionUser shape
- * that is safe to send to the browser.
+ * Converts a full SessionData into the safe SessionUser shape.
  */
 export function toSessionUser(data: Partial<SessionData>): SessionUser {
 	if (!data.userId || !data.email || !data.tenantId || !data.actorType) {

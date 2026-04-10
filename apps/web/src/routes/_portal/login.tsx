@@ -21,6 +21,8 @@ import { useCustomerLogin } from "@/features/rental/auth/portal-auth.queries";
 import { Link } from "@tanstack/react-router";
 import { getTenantBranding } from "@/features/tenant-branding/tenant-branding";
 import { PoweredByFooter } from "@/shared/components/powered-by-footer";
+import { getProblemDetailsStatus, ProblemDetailsError } from "@/shared/errors";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_portal/login")({
 	validateSearch: portalAuthRedirectSchema,
@@ -35,6 +37,7 @@ function LoginPage() {
 
 	const navigate = useNavigate();
 	const { mutateAsync: customerLogin, isPending } = useCustomerLogin();
+	const [serverError, setServerError] = useState<string | null>(null);
 
 	const form = useForm({
 		defaultValues: loginCustomerFormDefaults,
@@ -42,11 +45,20 @@ function LoginPage() {
 			onSubmit: customerLoginSchema,
 		},
 		onSubmit: async ({ value }) => {
+			setServerError(null);
+
 			try {
 				await customerLogin(value);
 				navigate(getPortalAuthRedirectTarget(redirectSearch));
 			} catch (error) {
-				console.log({ error });
+				if (getProblemDetailsStatus(error) === 401) {
+					setServerError("Email o contraseña inválidos.");
+					return;
+				}
+
+				if (error instanceof ProblemDetailsError || error instanceof Error) {
+					setServerError(error.message);
+				}
 			}
 		},
 	});
@@ -89,9 +101,8 @@ function LoginPage() {
 					>
 						<FieldGroup>
 							{/* ── Email ── */}
-							<form.Field
-								name="email"
-								children={(field) => {
+							<form.Field name="email">
+								{(field) => {
 									const isInvalid =
 										field.state.meta.isTouched && !field.state.meta.isValid;
 
@@ -120,12 +131,11 @@ function LoginPage() {
 										</Field>
 									);
 								}}
-							/>
+							</form.Field>
 
 							{/* ── Password ── */}
-							<form.Field
-								name="password"
-								children={(field) => {
+							<form.Field name="password">
+								{(field) => {
 									const isInvalid =
 										field.state.meta.isTouched && !field.state.meta.isValid;
 
@@ -160,22 +170,31 @@ function LoginPage() {
 										</Field>
 									);
 								}}
-							/>
+							</form.Field>
 
 							{/* ── Submit ── */}
 							<form.Subscribe
 								selector={(state) => [state.canSubmit, state.isSubmitting]}
-								children={([canSubmit, isSubmitting]) => (
-									<Button
-										className="w-full py-5"
-										type="submit"
-										form={formId}
-										disabled={!canSubmit || isPending}
-									>
-										{isSubmitting ? "Iniciando..." : "Iniciar Sesión"}
-									</Button>
+							>
+								{([canSubmit, isSubmitting]) => (
+									<Field data-invalid={!!serverError} className="grid gap-y-2">
+										<Button
+											className="w-full py-5"
+											type="submit"
+											form={formId}
+											disabled={!canSubmit || isPending}
+										>
+											{isSubmitting || isPending
+												? "Iniciando..."
+												: "Iniciar Sesión"}
+										</Button>
+
+										{serverError ? (
+											<FieldError errors={[{ message: serverError }]} />
+										) : null}
+									</Field>
 								)}
-							/>
+							</form.Subscribe>
 						</FieldGroup>
 					</form>
 

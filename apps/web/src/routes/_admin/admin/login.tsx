@@ -19,7 +19,7 @@ import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { loginSchema } from "@/features/auth/schemas/login-form.schema";
-import { ProblemDetailsError } from "@/shared/errors";
+import { getProblemDetailsStatus, ProblemDetailsError } from "@/shared/errors";
 
 export const Route = createFileRoute("/_admin/admin/login")({
 	component: LoginPage,
@@ -40,16 +40,18 @@ function LoginPage() {
 			onSubmit: loginSchema,
 		},
 		onSubmit: async ({ value }) => {
+			setServerError(null);
+
 			try {
 				await login(value);
 				router.navigate({ to: "/dashboard" });
 			} catch (error) {
-				console.log({ error });
+				if (getProblemDetailsStatus(error) === 401) {
+					setServerError("Invalid email or password");
+					return;
+				}
+
 				if (error instanceof ProblemDetailsError || error instanceof Error) {
-					if (error.message === "UnauthorizedException") {
-						setServerError("Invalid email or password");
-						return;
-					}
 					setServerError(error.message);
 				}
 			}
@@ -80,9 +82,8 @@ function LoginPage() {
 							className="space-y-10"
 						>
 							<FieldGroup>
-								<form.Field
-									name="email"
-									children={(field) => {
+								<form.Field name="email">
+									{(field) => {
 										const isInvalid =
 											field.state.meta.isTouched && !field.state.meta.isValid;
 
@@ -105,10 +106,9 @@ function LoginPage() {
 											</Field>
 										);
 									}}
-								/>
-								<form.Field
-									name="password"
-									children={(field) => {
+								</form.Field>
+								<form.Field name="password">
+									{(field) => {
 										const isInvalid =
 											field.state.meta.isTouched && !field.state.meta.isValid;
 
@@ -131,14 +131,15 @@ function LoginPage() {
 											</Field>
 										);
 									}}
-								/>
+								</form.Field>
 							</FieldGroup>
 						</form>
 					</CardContent>
 					<CardFooter className="grid gap-y-4">
 						<form.Subscribe
 							selector={(state) => [state.canSubmit, state.isSubmitting]}
-							children={([canSubmit, isSubmitting]) => (
+						>
+							{([canSubmit, isSubmitting]) => (
 								<Field
 									orientation="horizontal"
 									data-invalid={!!serverError}
@@ -158,7 +159,7 @@ function LoginPage() {
 									)}
 								</Field>
 							)}
-						/>
+						</form.Subscribe>
 
 						<div>
 							<p className="text-center text-sm text-muted-foreground">

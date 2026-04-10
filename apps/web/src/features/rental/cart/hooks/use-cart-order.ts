@@ -7,9 +7,9 @@ import {
 	useCartActions,
 	useCartItems,
 } from "@/features/rental/cart/cart.hooks";
+import { useCurrentPortalSession } from "@/features/rental/auth/portal-auth.queries";
 import type { CartPageContextValue } from "@/features/rental/cart/cart-page.context.types";
 import { PORTAL_AUTH_REDIRECT_ROUTES } from "../../auth/portal-auth.redirect";
-import { useCurrentCustomer } from "../../customer/customer.queries";
 import type { ConflictGroup } from "../cart.types";
 import { formatSlot } from "../cart.utils";
 import {
@@ -52,7 +52,7 @@ export function useCartOrder({
 	returnDate,
 }: UseCartOrderParams) {
 	const navigate = useNavigate();
-	const { data: customer } = useCurrentCustomer();
+	const { data: sessionUser } = useCurrentPortalSession();
 	const cartItems = useCartItems();
 	const { clearCart } = useCartActions();
 
@@ -87,7 +87,7 @@ export function useCartOrder({
 		setConflictGroups([]);
 		setBookingErrorMessage(null);
 
-		if (!customer) {
+		if (!sessionUser) {
 			navigate({
 				to: "/login",
 				search: {
@@ -196,7 +196,7 @@ export function useCartOrder({
 			onDeliveryRequestFieldChange: delivery.onDeliveryRequestFieldChange,
 		},
 		booking: {
-			isAuthenticated: Boolean(customer),
+			isAuthenticated: Boolean(sessionUser),
 			isBookingError: Boolean(bookingErrorMessage),
 			bookingErrorMessage,
 			unavailableIds,

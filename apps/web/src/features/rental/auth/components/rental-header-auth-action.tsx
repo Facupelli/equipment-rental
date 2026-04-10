@@ -6,14 +6,16 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { useCurrentCustomer } from "@/features/rental/customer/customer.queries";
 import { cn } from "@/lib/utils";
-import { useCustomerLogout } from "../portal-auth.queries";
+import {
+	useCurrentPortalSession,
+	useCustomerLogout,
+} from "../portal-auth.queries";
 
 export function RentalHeaderAuthAction() {
-	const { data: customer } = useCurrentCustomer();
+	const { data: sessionUser } = useCurrentPortalSession();
 
-	if (!customer) {
+	if (!sessionUser) {
 		return (
 			<Link
 				to="/login"
@@ -25,23 +27,14 @@ export function RentalHeaderAuthAction() {
 		);
 	}
 
-	return (
-		<RentalHeaderUserPopover
-			fullName={customer.fullName}
-			email={customer.email}
-		/>
-	);
+	return <RentalHeaderUserPopover email={sessionUser.email} />;
 }
 
 type RentalHeaderUserPopoverProps = {
-	fullName: string;
 	email: string;
 };
 
-function RentalHeaderUserPopover({
-	fullName,
-	email,
-}: RentalHeaderUserPopoverProps) {
+function RentalHeaderUserPopover({ email }: RentalHeaderUserPopoverProps) {
 	const { mutate: logOut, isPending } = useCustomerLogout();
 
 	return (
@@ -64,9 +57,6 @@ function RentalHeaderUserPopover({
 				className="w-72 gap-3 rounded-lg border border-neutral-200 bg-white "
 			>
 				<div>
-					<p className="truncate text-sm font-semibold text-foreground">
-						{fullName}
-					</p>
 					<p className="truncate text-xs text-muted-foreground">{email}</p>
 				</div>
 				<div>

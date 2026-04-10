@@ -14,6 +14,7 @@ import {
 	type OrderDetailResponseDto,
 	type ProblemDetails,
 } from "@repo/schemas";
+import { ActorType } from "@repo/types";
 import { createServerFn } from "@tanstack/react-start";
 
 const apiUrl = "/orders";
@@ -72,6 +73,8 @@ export const createOrder = createServerFn({ method: "POST" })
 			const result = await apiFetch<string>(apiUrl, {
 				method: "POST",
 				body: data,
+				redirectTo: "/login",
+				actorType: ActorType.CUSTOMER,
 			});
 
 			return result;

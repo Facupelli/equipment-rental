@@ -11,7 +11,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useLogout } from "@/features/auth/auth.queries";
-import { ensureValidSession } from "@/features/auth/get-session";
+import { requireAdminSessionFn } from "@/features/auth/guards.api";
 import { locationQueries } from "@/features/tenant/locations/locations.queries";
 import { tenantQueries } from "@/features/tenant/tenant.queries";
 import { userQueries } from "@/features/user/user.queries";
@@ -36,8 +36,8 @@ export const Route = createFileRoute("/_admin/dashboard")({
 			throw redirect({ to: "/admin/login" });
 		}
 
-		await ensureValidSession({
-			data: "/admin/login",
+		await requireAdminSessionFn({
+			data: { to: "/admin/login" },
 		});
 	},
 	loader: async ({ context: { queryClient } }) => {

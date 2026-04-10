@@ -1,13 +1,13 @@
 import { loginCustomerSchema, registerCustomerSchema } from "@repo/schemas";
-import type { ActorType } from "@repo/types";
 import { createServerFn } from "@tanstack/react-start";
-import { writeSession } from "@/features/auth/auth.api";
 import type { LoginResponseDto } from "@/features/auth/schemas/login-form.schema";
 import { resolveTenantContextByHostname } from "@/features/tenant-context/tenant-context.service";
 import { apiFetch } from "@/lib/api";
-import { getAppSession, type SessionUser, toSessionUser } from "@/lib/session";
+import type { SessionUser } from "@/lib/session";
+import { getAppSession } from "@/lib/session.server";
 import type { LoginCustomerInput } from "./login/customer-login-form.schema";
 import type { RegisterCustomerInput } from "./register/customer-register-form.schema";
+import { writeSessionFromTokens } from "@/features/auth/session.server";
 
 async function getPortalTenantId(): Promise<string> {
 	const tenantContext = await resolveTenantContextByHostname();
@@ -52,31 +52,10 @@ export const loginCustomerFn = createServerFn({ method: "POST" })
 			body: dto,
 		});
 
-		const jwtPayload = JSON.parse(
-			Buffer.from(response.access_token.split(".")[1], "base64url").toString(
-				"utf-8",
-			),
-		) as {
-			sub: string;
-			email: string;
-			tenantId: string;
-			actorType: ActorType;
-		};
-
 		const session = await getAppSession();
-		await writeSession(
-			session,
-			{
-				userId: jwtPayload.sub,
-				email: jwtPayload.email,
-				tenantId: jwtPayload.tenantId,
-				actorType: jwtPayload.actorType,
-			},
-			{
-				accessToken: response.access_token,
-				refreshToken: response.refresh_token,
-			},
-		);
 
-		return toSessionUser(session.data);
+		return writeSessionFromTokens(session, {
+			accessToken: response.access_token,
+			refreshToken: response.refresh_token,
+		});
 	});

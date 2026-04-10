@@ -13,8 +13,8 @@ import { userKeys } from "../user/user.queries";
 // -----------------------------------------------------
 
 type OwnerMutationOptions = Omit<
-	UseMutationOptions<RegisterResponse, ProblemDetailsError, RegisterDto>,
-	"mutationFn"
+  UseMutationOptions<RegisterResponse, ProblemDetailsError, RegisterDto>,
+  "mutationFn"
 >;
 
 // -----------------------------------------------------
@@ -22,33 +22,33 @@ type OwnerMutationOptions = Omit<
 // -----------------------------------------------------
 
 export function useLogin() {
-	const login = useServerFn(loginUserFn);
+  const login = useServerFn(loginUserFn);
 
-	return useMutation<SessionUser, ProblemDetailsError, LoginDto>({
-		mutationFn: (data) => login({ data }),
-		meta: {
-			invalidates: userKeys.all(),
-		},
-	});
+  return useMutation<SessionUser, ProblemDetailsError, LoginDto>({
+    mutationFn: (data) => login({ data }),
+    meta: {
+      invalidates: userKeys.all(),
+    },
+  });
 }
 
 export function useLogout() {
-	const router = useRouter();
+  const router = useRouter();
 
-	return useMutation<void, ProblemDetailsError>({
-		mutationFn: () => logoutFn(),
-		meta: {
-			invalidates: userKeys.all(),
-		},
-		onSuccess: async () => {
-			await router.navigate({ to: "/login" });
-		},
-	});
+  return useMutation<void, ProblemDetailsError>({
+    mutationFn: () => logoutFn(),
+    meta: {
+      invalidates: userKeys.all(),
+    },
+    onSuccess: async () => {
+      await router.navigate({ to: "/login" });
+    },
+  });
 }
 
 export function useCreateTenantUser(options?: OwnerMutationOptions) {
-	return useMutation<RegisterResponse, ProblemDetailsError, RegisterDto>({
-		...options,
-		mutationFn: (data) => registerTenantUserFn({ data }),
-	});
+  return useMutation<RegisterResponse, ProblemDetailsError, RegisterDto>({
+    ...options,
+    mutationFn: (data) => registerTenantUserFn({ data }),
+  });
 }

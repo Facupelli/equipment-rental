@@ -8,7 +8,7 @@ import { cloudflare } from "@better-upload/server/clients";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { serverEnv } from "@/config/server-env";
-import { getAppSession } from "@/lib/session";
+import { getAppSession } from "@/lib/session.server";
 
 const s3 = cloudflare({
 	accountId: serverEnv.CLOUDFLARE_ACCOUNT_ID,

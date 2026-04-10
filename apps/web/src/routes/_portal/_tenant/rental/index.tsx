@@ -93,17 +93,17 @@ function RentalPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* <RentalHeader /> */}
+      <RentalHeader />
 
       <main className="container mx-auto px-4">
-        {/* <RentalFilters
+        <RentalFilters
           search={search}
           onLocationChange={handleLocationChange}
           setUrlParam={setUrlParam}
           onCategorySelect={handleCategorySelect}
-        /> */}
+        />
 
-        {/* <section className="mt-10">
+        <section className="mt-10">
           <SectionHeading
             title="Combos Destacados"
             subtitle="Combos de equipo destacados a un precio menor diario."
@@ -113,18 +113,18 @@ function RentalPage() {
               <FeaturedBundles search={search} />
             </Suspense>
           </SectionErrorBoundary>
-        </section> */}
+        </section>
 
-        {/* <section className="mt-12">
+        <section className="mt-12">
           <SectionHeading title="Nuevos Productos" />
           <SectionErrorBoundary message="No se pudieron cargar los nuevos productos.">
             <Suspense fallback={<NewArrivalsSkeleton />}>
               <NewArrivals locationId={search.locationId} />
             </Suspense>
           </SectionErrorBoundary>
-        </section> */}
+        </section>
 
-        {/* <section className="mt-12">
+        <section className="mt-12">
           <SectionHeading title="Todos los Equipos" />
           <CategoryFilter
             activeCategory={search.categoryId}
@@ -146,7 +146,7 @@ function RentalPage() {
               />
             </Suspense>
           </SectionErrorBoundary>
-        </section> */}
+        </section>
       </main>
 
       <PoweredByFooter />

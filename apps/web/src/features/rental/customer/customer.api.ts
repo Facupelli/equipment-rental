@@ -5,6 +5,7 @@ import {
 	type MeCustomerResponseDto,
 	type ProblemDetails,
 } from "@repo/schemas";
+import { ActorType } from "@repo/types";
 import { createServerFn } from "@tanstack/react-start";
 import { authenticatedApiFetch as apiFetch } from "@/lib/api-auth";
 import { ProblemDetailsError } from "@/shared/errors";
@@ -17,6 +18,7 @@ export const getMeCustomer = createServerFn({ method: "GET" }).handler(
 			method: "GET",
 			params: data,
 			redirectTo: "/login",
+			actorType: ActorType.CUSTOMER,
 		});
 
 		return result;
@@ -29,6 +31,7 @@ export const getCurrentCustomerProfile = createServerFn({
 	return apiFetch<CustomerProfileResponseDto>("/customer-profile", {
 		method: "GET",
 		redirectTo: "/login",
+		actorType: ActorType.CUSTOMER,
 	});
 });
 
@@ -40,6 +43,7 @@ export const submitCustomerProfile = createServerFn({ method: "POST" })
 				method: "POST",
 				body: data,
 				redirectTo: "/login",
+				actorType: ActorType.CUSTOMER,
 			});
 		} catch (error) {
 			if (error instanceof ProblemDetailsError) {
@@ -58,6 +62,7 @@ export const resubmitCustomerProfile = createServerFn({ method: "POST" })
 				method: "PUT",
 				body: data,
 				redirectTo: "/login",
+				actorType: ActorType.CUSTOMER,
 			});
 		} catch (error) {
 			if (error instanceof ProblemDetailsError) {
