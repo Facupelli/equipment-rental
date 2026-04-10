@@ -7,7 +7,7 @@ import type { SessionUser } from "@/lib/session";
 import { getAppSession } from "@/lib/session.server";
 import type { LoginCustomerInput } from "./login/customer-login-form.schema";
 import type { RegisterCustomerInput } from "./register/customer-register-form.schema";
-import { writeSessionFromTokens } from "@/features/auth/session.server";
+import { writeSessionFromTokens } from "@/features/auth/auth-session.server";
 
 async function getPortalTenantId(): Promise<string> {
 	const tenantContext = await resolveTenantContextByHostname();

@@ -10,8 +10,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useLogout } from "@/features/auth/auth.queries";
-import { requireAdminSessionFn } from "@/features/auth/guards.api";
+import { useLogout } from "@/features/auth/auth-actions.queries";
+import { requireAdminSessionFn } from "@/features/auth/auth-guards.api";
 import { locationQueries } from "@/features/tenant/locations/locations.queries";
 import { tenantQueries } from "@/features/tenant/tenant.queries";
 import { userQueries } from "@/features/user/user.queries";

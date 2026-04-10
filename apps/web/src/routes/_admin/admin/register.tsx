@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useCreateTenantUser } from "@/features/auth/auth.queries";
+import { useCreateTenantUser } from "@/features/auth/auth-actions.queries";
 import {
 	registerFormDefaults,
 	registerFormSchema,

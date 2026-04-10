@@ -13,7 +13,7 @@ import {
 	WrongActorError,
 } from "@/shared/errors";
 import type { AuthRedirectTarget } from "./auth-redirect";
-import { refreshSession } from "./refresh.server";
+import { refreshSession } from "./auth-refresh.server";
 
 const REFRESH_BUFFER_MS = 30 * 1000;
 

@@ -37,6 +37,22 @@ export class WrongActorError extends Error {
 	}
 }
 
+export function isAuthRequiredError(
+	error: unknown,
+): error is AuthRequiredError {
+	return error instanceof AuthRequiredError;
+}
+
+export function isSessionExpiredError(
+	error: unknown,
+): error is SessionExpiredError {
+	return error instanceof SessionExpiredError;
+}
+
+export function isWrongActorError(error: unknown): error is WrongActorError {
+	return error instanceof WrongActorError;
+}
+
 type ProblemDetailsLike = {
 	problemDetails?: Partial<ProblemDetails>;
 	status?: number;
@@ -84,6 +100,14 @@ export function getProblemDetailsStatus(error: unknown): number | undefined {
 	}
 
 	return undefined;
+}
+
+export function isAuthError(error: unknown): boolean {
+	return (
+		isAuthRequiredError(error) ||
+		isSessionExpiredError(error) ||
+		getProblemDetailsStatus(error) === 401
+	);
 }
 
 export function isForbiddenError(error: unknown): boolean {

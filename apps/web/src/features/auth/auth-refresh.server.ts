@@ -1,6 +1,6 @@
 import { getAppSession } from "@/lib/session.server";
 import { AuthRequiredError, SessionExpiredError } from "@/shared/errors";
-import { writeSessionFromTokens } from "./session.server";
+import { writeSessionFromTokens } from "./auth-session.server";
 
 const inflightRefreshes = new Map<string, Promise<boolean>>();
 

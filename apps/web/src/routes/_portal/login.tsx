@@ -21,7 +21,7 @@ import { useCustomerLogin } from "@/features/rental/auth/portal-auth.queries";
 import { Link } from "@tanstack/react-router";
 import { getTenantBranding } from "@/features/tenant-branding/tenant-branding";
 import { PoweredByFooter } from "@/shared/components/powered-by-footer";
-import { getProblemDetailsStatus, ProblemDetailsError } from "@/shared/errors";
+import { isAuthError, ProblemDetailsError } from "@/shared/errors";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_portal/login")({
@@ -51,7 +51,7 @@ function LoginPage() {
 				await customerLogin(value);
 				navigate(getPortalAuthRedirectTarget(redirectSearch));
 			} catch (error) {
-				if (getProblemDetailsStatus(error) === 401) {
+				if (isAuthError(error)) {
 					setServerError("Email o contraseña inválidos.");
 					return;
 				}

@@ -5,7 +5,7 @@ import {
 	getOptionalCustomerSession,
 	requireAdminSession,
 	requireCustomerSession,
-} from "./guards.server";
+} from "./auth-guards.server";
 
 const guardInputSchema = authRedirectTargetSchema.transform((redirectTo) => ({
 	redirectTo,

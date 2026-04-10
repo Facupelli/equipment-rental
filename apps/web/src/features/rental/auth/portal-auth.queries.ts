@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { logoutFn } from "@/features/auth/auth.api";
-import { getOptionalCustomerSessionFn } from "@/features/auth/guards.api";
+import { logoutFn } from "@/features/auth/auth-actions.api";
+import { getOptionalCustomerSessionFn } from "@/features/auth/auth-guards.api";
 import type { SessionUser } from "@/lib/session";
 import type { ProblemDetailsError } from "@/shared/errors";
 import { portalCustomerKeys } from "../customer/customer.queries";

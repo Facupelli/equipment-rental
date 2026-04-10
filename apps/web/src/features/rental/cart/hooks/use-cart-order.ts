@@ -17,7 +17,7 @@ import {
 	isDeliveryNotSupportedError,
 	isDeliveryRequestComplete,
 } from "../cart-order.utils";
-import { getProblemDetailsStatus } from "@/shared/errors";
+import { isAuthError } from "@/shared/errors";
 import { useCartOrderDelivery } from "./use-cart-order-delivery";
 import { useCartOrderPricing } from "./use-cart-order-pricing";
 import { useCartOrderTimes } from "./use-cart-order-times";
@@ -146,7 +146,7 @@ export function useCartOrder({
 				return;
 			}
 
-			if (getProblemDetailsStatus(error) === 401) {
+			if (isAuthError(error)) {
 				navigate({
 					to: "/login",
 					search: {

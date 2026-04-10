@@ -1,6 +1,10 @@
 import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { loginUserFn, logoutFn, registerTenantUserFn } from "./auth.api";
+import {
+	loginUserFn,
+	logoutFn,
+	registerTenantUserFn,
+} from "./auth-actions.api";
 import type { LoginDto } from "./schemas/login-form.schema";
 import type { ProblemDetailsError } from "@/shared/errors";
 import { useRouter } from "@tanstack/react-router";

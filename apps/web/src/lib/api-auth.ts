@@ -1,8 +1,8 @@
 import type { PaginatedDto } from "@repo/schemas";
 import type { ActorType } from "@repo/types";
 import { createServerOnlyFn } from "@tanstack/react-start";
-import { requireSession } from "@/features/auth/guards.server";
-import { refreshSession } from "@/features/auth/refresh.server";
+import { requireSession } from "@/features/auth/auth-guards.server";
+import { refreshSession } from "@/features/auth/auth-refresh.server";
 import { ProblemDetailsError } from "@/shared/errors";
 import { apiFetch, apiFetchPaginated, type ApiFetchOptions } from "./api";
 

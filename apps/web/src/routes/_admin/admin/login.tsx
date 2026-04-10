@@ -1,4 +1,4 @@
-import { useLogin } from "@/features/auth/auth.queries";
+import { useLogin } from "@/features/auth/auth-actions.queries";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -19,7 +19,7 @@ import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { loginSchema } from "@/features/auth/schemas/login-form.schema";
-import { getProblemDetailsStatus, ProblemDetailsError } from "@/shared/errors";
+import { isAuthError, ProblemDetailsError } from "@/shared/errors";
 
 export const Route = createFileRoute("/_admin/admin/login")({
 	component: LoginPage,
@@ -46,7 +46,7 @@ function LoginPage() {
 				await login(value);
 				router.navigate({ to: "/dashboard" });
 			} catch (error) {
-				if (getProblemDetailsStatus(error) === 401) {
+				if (isAuthError(error)) {
 					setServerError("Invalid email or password");
 					return;
 				}

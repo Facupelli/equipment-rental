@@ -13,8 +13,8 @@ import {
 	type RegisterResponse,
 } from "@repo/schemas";
 import type { SessionUser } from "@/lib/session";
-import { getOptionalSessionUser } from "./guards.server";
-import { writeSessionFromTokens } from "./session.server";
+import { getOptionalSessionUser } from "./auth-guards.server";
+import { writeSessionFromTokens } from "./auth-session.server";
 
 // ---------------------------------------------------------------------------
 // Server Functions

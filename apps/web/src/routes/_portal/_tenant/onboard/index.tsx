@@ -1,6 +1,6 @@
 import { OnboardingStatus } from "@repo/types";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { requireCustomerSessionFn } from "@/features/auth/guards.api";
+import { requireCustomerSessionFn } from "@/features/auth/auth-guards.api";
 import { CustomerForm } from "@/features/customer/components/onboard-form/onboard-form";
 import {
 	createOnboardPrefillValues,
