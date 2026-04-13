@@ -33,12 +33,16 @@ export function buildCartPricePreviewRequest({
 	returnDate,
 	itemPayload,
 	insuranceSelected,
+	customerId,
+	couponCode,
 }: {
 	locationId: string;
 	pickupDate: string;
 	returnDate: string;
 	itemPayload: ReturnType<typeof buildCartOrderItemPayload>;
 	insuranceSelected: boolean;
+	customerId?: string;
+	couponCode?: string;
 }): CalculateCartPricesRequest {
 	return {
 		currency: "USD",
@@ -47,6 +51,8 @@ export function buildCartPricePreviewRequest({
 		returnDate,
 		items: itemPayload,
 		insuranceSelected,
+		customerId,
+		couponCode: couponCode?.trim() || undefined,
 	};
 }
 

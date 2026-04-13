@@ -34,6 +34,13 @@ export const calculateCartPricesRequestSchema = z.object({
 // ── Response schemas ───────────────────────────────────────────────────────
 
 export const cartDiscountLineItemSchema = z.object({
+  sourceKind: z.enum([
+    "LEGACY_PRICING_RULE",
+    "LONG_RENTAL_DISCOUNT",
+    "PROMOTION",
+  ]),
+  sourceId: z.string(),
+  label: z.string(),
   ruleId: z.string(),
   ruleLabel: z.string(),
   type: z.enum(["PERCENTAGE", "FLAT"]),

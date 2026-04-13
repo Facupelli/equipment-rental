@@ -25,6 +25,8 @@ export type PricingSlice = {
 	joinedLineItems: JoinedLineItem[] | undefined;
 	insuranceSelected: boolean;
 	onInsuranceSelectedChange: (value: boolean) => void;
+	couponCode: string;
+	onCouponCodeChange: (value: string) => void;
 	isPriceLoading: boolean;
 	isPriceError: boolean;
 };

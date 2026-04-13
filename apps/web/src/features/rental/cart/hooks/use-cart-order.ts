@@ -59,6 +59,7 @@ export function useCartOrder({
 	const { clearCart } = useCartActions();
 
 	const [insuranceSelected, setInsuranceSelected] = useState(true);
+	const [couponCode, setCouponCode] = useState("");
 	const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
 	const [conflictGroups, setConflictGroups] = useState<ConflictGroup[]>([]);
 	const [bookingErrorMessage, setBookingErrorMessage] = useState<string | null>(
@@ -67,6 +68,10 @@ export function useCartOrder({
 
 	const onInsuranceSelectedChange = (value: boolean) => {
 		setInsuranceSelected(value);
+	};
+
+	const onCouponCodeChange = (value: string) => {
+		setCouponCode(value);
 	};
 
 	const times = useCartOrderTimes();
@@ -79,6 +84,9 @@ export function useCartOrder({
 		pickupDate,
 		returnDate,
 		insuranceSelected,
+		customerId:
+			sessionUser?.kind === "customerAccount" ? sessionUser.userId : undefined,
+		couponCode,
 		cartItems,
 	});
 
@@ -186,6 +194,8 @@ export function useCartOrder({
 			joinedLineItems: pricing.joinedLineItems,
 			insuranceSelected,
 			onInsuranceSelectedChange,
+			couponCode,
+			onCouponCodeChange,
 			isPriceLoading: pricing.isPriceLoading,
 			isPriceError: pricing.isPriceError,
 		},

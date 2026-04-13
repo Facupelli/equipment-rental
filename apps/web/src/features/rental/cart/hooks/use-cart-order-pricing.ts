@@ -15,6 +15,8 @@ type UseCartOrderPricingParams = {
 	pickupDate: string;
 	returnDate: string;
 	insuranceSelected: boolean;
+	customerId?: string;
+	couponCode?: string;
 	cartItems: CartItem[];
 };
 
@@ -23,6 +25,8 @@ export function useCartOrderPricing({
 	pickupDate,
 	returnDate,
 	insuranceSelected,
+	customerId,
+	couponCode,
 	cartItems,
 }: UseCartOrderPricingParams) {
 	const period: CartOrderPeriod = useMemo(
@@ -46,8 +50,18 @@ export function useCartOrderPricing({
 				returnDate,
 				itemPayload,
 				insuranceSelected,
+				customerId,
+				couponCode,
 			}),
-		[pickupDate, returnDate, insuranceSelected, itemPayload, locationId],
+		[
+			pickupDate,
+			returnDate,
+			insuranceSelected,
+			itemPayload,
+			locationId,
+			customerId,
+			couponCode,
+		],
 	);
 
 	const {

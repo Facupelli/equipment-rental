@@ -28,6 +28,9 @@ import { TenantConfig } from '@repo/schemas';
 import { NewPricingResult } from '../../../domain/services/new-pricing-calculator.service';
 
 export type CartDiscountLineItem = {
+  sourceKind: 'LEGACY_PRICING_RULE' | 'LONG_RENTAL_DISCOUNT' | 'PROMOTION';
+  sourceId: string;
+  label: string;
   ruleId: string;
   ruleLabel: string;
   type: 'PERCENTAGE' | 'FLAT';
@@ -246,6 +249,9 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       // Units share the same inputs so they produce identical discount sets —
       // we take index 0 as canonical and multiply amounts by quantity.
       const discounts: CartDiscountLineItem[] = unitPrices[0].appliedAdjustments.map((d) => ({
+        sourceKind: d.sourceKind,
+        sourceId: d.sourceId,
+        label: d.label,
         ruleId: d.sourceId,
         ruleLabel: d.label,
         type: d.effectType,
