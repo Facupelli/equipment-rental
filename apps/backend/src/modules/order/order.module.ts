@@ -28,6 +28,10 @@ import { GetOrdersScheduleHttpController } from './application/queries/get-order
 import { GetCalendarDotsHttpController } from './application/queries/get-calendar-dots/get-calendar-dots.http.controller';
 import { GetOrderByIdHttpController } from './application/queries/get-order-by-id/get-order-by-id.http.controller';
 import { GetPendingReviewOrdersHttpController } from './application/queries/get-pending-review-orders/get-pending-review-orders.http.controller';
+import { GenerateOrderContractHttpController } from './application/queries/generate-order-contract/generate-order-contract.http.controller';
+import { GenerateOrderContractService } from './application/queries/generate-order-contract/generate-order-contract.service';
+import { ContractRendererAdapter } from './infrastructure/pdf/contract-renderer.adapter';
+import { ContractRendererPort } from './domain/ports/contract-render.port';
 
 @Module({
   imports: [PricingModule, InventoryModule, CatalogModule, TenantModule],
@@ -42,6 +46,7 @@ import { GetPendingReviewOrdersHttpController } from './application/queries/get-
     GetOrdersScheduleHttpController,
     GetCalendarDotsHttpController,
     GetOrderByIdHttpController,
+    GenerateOrderContractHttpController,
   ],
   providers: [
     OrderRepository,
@@ -59,6 +64,11 @@ import { GetPendingReviewOrdersHttpController } from './application/queries/get-
     GetCalendarDotsQueryHandler,
     GetOrderByIdQueryHandler,
     GetPendingReviewOrdersQueryHandler,
+    GenerateOrderContractService,
+    {
+      provide: ContractRendererPort,
+      useClass: ContractRendererAdapter,
+    },
   ],
 })
 export class OrderModule {}
