@@ -1,11 +1,7 @@
 import { Prisma } from 'src/generated/prisma/client';
 import { Promotion } from '../../../domain/entities/promotion.entity';
-import {
-  PromotionCondition,
-  PromotionEffect,
-  PromotionTarget,
-  PromotionType,
-} from '../../../domain/types/promotion.types';
+import { PromotionCondition, PromotionEffect, PromotionTarget } from '../../../domain/types/promotion.types';
+import { PromotionType } from '@repo/types';
 
 type PrismaPromotionWithExclusions = Prisma.PromotionGetPayload<{
   include: { exclusions: true };

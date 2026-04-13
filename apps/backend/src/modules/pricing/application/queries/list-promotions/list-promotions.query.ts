@@ -1,4 +1,4 @@
-import { PromotionType } from '../../../domain/types/promotion.types';
+import { PromotionType } from '@repo/types';
 
 export class ListPromotionsQuery {
   constructor(

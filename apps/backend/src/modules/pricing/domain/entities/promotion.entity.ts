@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
-import { PromotionCondition, PromotionEffect, PromotionTarget, PromotionType } from '../types/promotion.types';
+import { PromotionCondition, PromotionEffect, PromotionTarget } from '../types/promotion.types';
 import { PricingTargetContext } from '../types/pricing-adjustment.types';
+import { PromotionType } from '@repo/types';
 
 export interface CreatePromotionProps {
   tenantId: string;

@@ -1,3 +1,3 @@
-import { PromotionView } from '../list-promotions/list-promotions.response.dto';
+import type { PromotionView } from '@repo/schemas';
 
 export type GetPromotionByIdResponseDto = PromotionView;

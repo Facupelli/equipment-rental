@@ -1,10 +1,4 @@
-import { PricingRuleEffectType } from '@repo/types';
-
-export enum PromotionType {
-  COUPON = 'COUPON',
-  SEASONAL = 'SEASONAL',
-  CUSTOMER_SPECIFIC = 'CUSTOMER_SPECIFIC',
-}
+import { PricingRuleEffectType, PromotionType } from '@repo/types';
 
 export type SeasonalPromotionCondition = {
   type: PromotionType.SEASONAL;

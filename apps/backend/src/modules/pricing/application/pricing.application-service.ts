@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { PricingRuleType } from '@repo/types';
+import { PricingRuleType, PromotionType } from '@repo/types';
 import { TenantConfig } from '@repo/schemas';
 import { Result, err, ok } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
@@ -31,7 +31,6 @@ import { ResolveCouponForPricingService } from './services/resolve-coupon-for-pr
 import { RedeemCouponService } from './services/redeem-coupon.service';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { BillingUnitResolverService } from '../domain/services/billing-unit-resolver.service';
-import { PromotionType } from '../domain/types/promotion.types';
 
 @Injectable()
 export class PricingApplicationService implements PricingPublicApi {

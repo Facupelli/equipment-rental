@@ -1,6 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { Permission } from '@repo/types';
+import { Permission, PromotionType } from '@repo/types';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
@@ -22,7 +22,13 @@ export class ListPromotionsHttpController {
     @Query() query: ListPromotionsRequestDto,
   ): Promise<ListPromotionsResponseDto> {
     return this.queryBus.execute(
-      new ListPromotionsQuery(user.tenantId, query.page, query.limit, query.search, query.type),
+      new ListPromotionsQuery(
+        user.tenantId,
+        query.page,
+        query.limit,
+        query.search,
+        query.type as PromotionType | undefined,
+      ),
     );
   }
 }

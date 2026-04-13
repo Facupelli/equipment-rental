@@ -1,6 +1,5 @@
 import Decimal from 'decimal.js';
 import { Promotion } from '../entities/promotion.entity';
-import { PromotionType } from '../types/promotion.types';
 import { NewPricingContext } from '../types/new-pricing.types';
 import {
   PricingAdjustment,
@@ -8,7 +7,7 @@ import {
   PricingTargetContext,
 } from '../types/pricing-adjustment.types';
 import { Money } from 'src/core/domain/value-objects/money.value-object';
-import { PricingRuleEffectType } from '@repo/types';
+import { PricingRuleEffectType, PromotionType } from '@repo/types';
 
 export class PromotionEvaluatorService {
   selectApplicablePromotions(

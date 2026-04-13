@@ -1,9 +1,5 @@
-import {
-  PromotionCondition,
-  PromotionEffect,
-  PromotionTarget,
-  PromotionType,
-} from '../../../domain/types/promotion.types';
+import { PromotionType } from '@repo/types';
+import { PromotionCondition, PromotionEffect, PromotionTarget } from '../../../domain/types/promotion.types';
 
 export class CreatePromotionCommand {
   constructor(
