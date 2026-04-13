@@ -24,6 +24,8 @@ export interface ContractData {
     agreedPrice: string;
     /** Tenant brand logo used in the PDF header */
     logoUrl: string | null;
+    /** Tenant admin signer signature image used in the rental signature block */
+    rentalSignatureUrl: string | null;
     /** Customer full name */
     customerName: string;
     /** Customer national document number */

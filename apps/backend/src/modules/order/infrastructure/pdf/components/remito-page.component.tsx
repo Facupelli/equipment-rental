@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Image, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 import { ContractData, EquipmentLine } from 'src/modules/order/domain/ports/contract-render.port';
 
 const A4_PAGE_SIZE = { width: 595.28, height: 841.89 } as const;
@@ -156,10 +156,29 @@ const s = StyleSheet.create({
   signatureBlock: {
     width: '38%',
   },
+  signatureVisual: {
+    position: 'relative',
+    height: 40,
+    marginBottom: 10,
+    justifyContent: 'flex-end',
+  },
   signatureLine: {
     borderBottom: '1pt solid #111111',
-    marginBottom: 8,
-    height: 30,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  signatureImageFrame: {
+    alignSelf: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 6,
+    marginBottom: 4,
+  },
+  signatureImage: {
+    width: 200,
+    height: 200,
+    objectFit: 'contain',
   },
   signatureLabel: {
     fontSize: 7.8,
@@ -301,11 +320,20 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
 
           <View style={s.signatureRow}>
             <View style={s.signatureBlock}>
-              <View style={s.signatureLine} />
+              <View style={s.signatureVisual}>
+                <View style={s.signatureLine} />
+              </View>
               <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DE PRODUCCIÓN</Text>
             </View>
             <View style={s.signatureBlock}>
-              <View style={s.signatureLine} />
+              <View style={s.signatureVisual}>
+                <View style={s.signatureLine} />
+                {remito.rentalSignatureUrl && (
+                  <View style={s.signatureImageFrame}>
+                    <Image src={remito.rentalSignatureUrl} style={s.signatureImage} />
+                  </View>
+                )}
+              </View>
               <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DEL RENTAL</Text>
             </View>
           </View>
@@ -313,7 +341,7 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
       </View>
 
       <View style={s.pageFooter} fixed>
-        <Text style={s.footerText}>2026. GUARIDA RENTAL. SAN JUAN, ARGENTINA.</Text>
+        <Text style={s.footerText}>2026. GUARIDA RENTAL. MADRID, ESPAÑA.</Text>
         <Text style={s.footerText}>Telefono de contacto: 680 870 274</Text>
         <Text style={s.footerText}>www.guaridarental.com - guaridarental@gmail.com</Text>
       </View>

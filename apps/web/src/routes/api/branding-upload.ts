@@ -56,7 +56,7 @@ const uploadRouter: Router = {
 			},
 		}),
 		userSignature: route({
-			fileTypes: ["image/webp"],
+			fileTypes: ["image/png"],
 			maxFileSize: 1024 * 1024 * 3,
 			onBeforeUpload: async () => {
 				const tenant = await getCurrentTenantServer();
@@ -65,7 +65,7 @@ const uploadRouter: Router = {
 					throw new RejectUpload("Unauthorized");
 				}
 
-				const key = `${tenant.id}/signatures/${crypto.randomUUID()}.webp`;
+				const key = `${tenant.id}/signatures/${crypto.randomUUID()}.png`;
 
 				return {
 					objectInfo: { key },

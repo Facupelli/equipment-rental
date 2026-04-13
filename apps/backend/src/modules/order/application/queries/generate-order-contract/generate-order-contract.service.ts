@@ -1,9 +1,10 @@
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { tenantConfigSchema } from '@repo/schemas';
 import { err, ok, Result } from 'neverthrow';
 import { ContractCustomerProfileMissingError } from 'src/modules/order/domain/errors/contract.errors';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
+import { GetTenantAdminSignerProfileQuery } from 'src/modules/users/public/queries/get-tenant-admin-signer-profile.query';
 import { GenerateOrderContractQuery, GenerateOrderContractResult } from './generate-order-contract.query';
 import {
   ContractData,
@@ -23,6 +24,7 @@ export class GenerateOrderContractService implements IQueryHandler<
 > {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly queryBus: QueryBus,
     private readonly contractRenderer: ContractRendererPort,
   ) {}
 
@@ -95,6 +97,8 @@ export class GenerateOrderContractService implements IQueryHandler<
       return err(new ContractCustomerProfileMissingError(order.customer?.id ?? query.orderId));
     }
 
+    const signerProfile = await this.queryBus.execute(new GetTenantAdminSignerProfileQuery(query.tenantId));
+
     // ── Jornadas ─────────────────────────────────────────────────────────────
     // All items in an order share the same rental period, so totalUnits is
     // consistent across items. We read it from the first item's price snapshot.
@@ -153,6 +157,7 @@ export class GenerateOrderContractService implements IQueryHandler<
         jornadas,
         agreedPrice,
         logoUrl: tenant.logoUrl,
+        rentalSignatureUrl: buildBrandingAssetUrl(signerProfile?.signUrl ?? null),
         customerName: customerFullName,
         documentNumber: order.customer.profile.documentNumber,
       },
@@ -224,4 +229,22 @@ function buildContractDownloadFileName(customerFullName: string, paddedOrderNumb
     .replace(/-{2,}/g, '-');
 
   return normalizedName.length > 0 ? `${normalizedName}-${paddedOrderNumber}` : paddedOrderNumber;
+}
+
+function buildBrandingAssetUrl(path: string | null | undefined): string | null {
+  if (!path) {
+    return null;
+  }
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  const brandingPublicUrl = process.env.VITE_BRANDING_R2_PUBLIC_URL;
+
+  if (!brandingPublicUrl) {
+    return null;
+  }
+
+  return `${brandingPublicUrl.replace(/\/$/, '')}/${path.replace(/^\/+/, '')}`;
 }

@@ -207,12 +207,12 @@ async function compressSignatureFile(file: File): Promise<File> {
 
 	const compressed = await imageCompression(file, {
 		maxWidthOrHeight: 1200,
-		fileType: "image/webp",
+		fileType: "image/png",
 		initialQuality: 0.82,
 		maxSizeMB: 3,
 	});
 
-	return new File([compressed], file.name.replace(/\.[^.]+$/, ".webp"), {
-		type: "image/webp",
+	return new File([compressed], file.name.replace(/\.[^.]+$/, ".png"), {
+		type: "image/png",
 	});
 }

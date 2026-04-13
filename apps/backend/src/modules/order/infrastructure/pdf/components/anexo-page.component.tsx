@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Image, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 
 const A4_PAGE_SIZE = { width: 595.28, height: 841.89 } as const;
 
@@ -76,10 +76,29 @@ const s = StyleSheet.create({
   signatureBlock: {
     width: '45%',
   },
+  signatureVisual: {
+    position: 'relative',
+    height: 40,
+    marginBottom: 10,
+    justifyContent: 'flex-end',
+  },
   signatureLine: {
-    borderBottom: '0.5pt solid #1a1a1a',
+    borderBottom: '1pt solid #1a1a1a',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  signatureImageFrame: {
+    alignSelf: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 6,
     marginBottom: 4,
-    height: 24,
+  },
+  signatureImage: {
+    width: 200,
+    height: 200,
+    objectFit: 'contain',
   },
   signatureLabel: {
     fontSize: 7.5,
@@ -135,9 +154,10 @@ const CLAUSES = [
 
 interface AnexoPageProps {
   logoUrl: string | null;
+  rentalSignatureUrl: string | null;
 }
 
-export function AnexoPage({ logoUrl: _logoUrl }: AnexoPageProps) {
+export function AnexoPage({ logoUrl: _logoUrl, rentalSignatureUrl }: AnexoPageProps) {
   return (
     <Page size={A4_PAGE_SIZE} style={s.page} wrap={false}>
       <View style={s.headerRow}>
@@ -168,11 +188,20 @@ export function AnexoPage({ logoUrl: _logoUrl }: AnexoPageProps) {
 
           <View style={s.signatureRow}>
             <View style={s.signatureBlock}>
-              <View style={s.signatureLine} />
+              <View style={s.signatureVisual}>
+                <View style={s.signatureLine} />
+              </View>
               <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DE PRODUCCIÓN</Text>
             </View>
             <View style={s.signatureBlock}>
-              <View style={s.signatureLine} />
+              <View style={s.signatureVisual}>
+                <View style={s.signatureLine} />
+                {rentalSignatureUrl && (
+                  <View style={s.signatureImageFrame}>
+                    <Image src={rentalSignatureUrl} style={s.signatureImage} />
+                  </View>
+                )}
+              </View>
               <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DEL RENTAL</Text>
             </View>
           </View>
@@ -180,7 +209,7 @@ export function AnexoPage({ logoUrl: _logoUrl }: AnexoPageProps) {
       </View>
 
       <View style={s.pageFooter}>
-        <Text style={s.footerText}>2026. GUARIDA RENTAL. SAN JUAN, ARGENTINA.</Text>
+        <Text style={s.footerText}>2026. GUARIDA RENTAL. MADRID, ESPAÑA.</Text>
         <Text style={s.footerText}>Telefono de contacto: 680 870 274</Text>
         <Text style={s.footerText}>www.guaridarental.com - guaridarental@gmail.com</Text>
       </View>
