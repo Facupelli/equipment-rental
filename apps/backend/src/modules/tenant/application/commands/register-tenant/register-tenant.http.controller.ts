@@ -1,10 +1,14 @@
-import { Body, ConflictException, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 
 import { Public } from 'src/core/decorators/public.decorator';
 
 import { RegisterTenantCommand } from './register-tenant.command';
-import { CompanyNameAlreadyInUseError, EmailAlreadyInUseError } from '../../../domain/errors/tenant.errors';
+import {
+  CompanyNameAlreadyInUseError,
+  EmailAlreadyInUseError,
+  ReservedTenantSlugError,
+} from '../../../domain/errors/tenant.errors';
 import { RegisterTenantRequestDto } from './register-tenant.request.dto';
 import { RegisterTenantResponseDto } from './register-tenant.response.dto';
 
@@ -21,6 +25,10 @@ export class RegisterTenantHttpController {
 
     if (result.isErr()) {
       const error = result.error;
+
+      if (error instanceof ReservedTenantSlugError) {
+        throw new BadRequestException(error.message);
+      }
 
       if (error instanceof EmailAlreadyInUseError || error instanceof CompanyNameAlreadyInUseError) {
         throw new ConflictException(error.message);

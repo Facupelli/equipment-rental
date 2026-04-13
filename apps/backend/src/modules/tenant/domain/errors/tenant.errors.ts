@@ -14,6 +14,12 @@ export class CompanyNameAlreadyInUseError extends TenantError {
   }
 }
 
+export class ReservedTenantSlugError extends TenantError {
+  constructor(slug: string) {
+    super(`Tenant slug '${slug}' is reserved and cannot be used`);
+  }
+}
+
 export class TenantNotFoundError extends TenantError {
   constructor(tenantId: string) {
     super(`Tenant '${tenantId}' was not found`);

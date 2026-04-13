@@ -174,13 +174,6 @@ function BundleCard({
     ? previewRows
     : previewRows.slice(0, MAX_PREVIEW_ROWS);
 
-  const imageBaseUrl =
-    (
-      import.meta as ImportMeta & {
-        env?: { VITE_R2_PUBLIC_URL?: string };
-      }
-    ).env?.VITE_R2_PUBLIC_URL ?? "";
-
   function openDetails() {
     setIsOpen(true);
   }
@@ -374,7 +367,7 @@ function BundleCard({
         isUnavailable={isUnavailable}
         onAdd={handleAdd}
         onRemove={handleRemove}
-        imageBaseUrl={imageBaseUrl}
+        imageBaseUrl={bundleImage}
       />
     </>
   );

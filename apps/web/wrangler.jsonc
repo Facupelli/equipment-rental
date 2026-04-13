@@ -26,10 +26,6 @@
   },
   "routes": [
     {
-      "pattern": "*/*",
-      "zone_name": "depiqo.com",
-    },
-    {
       "pattern": "depiqo.com",
       "zone_name": "depiqo.com",
       "custom_domain": true,
@@ -38,6 +34,18 @@
       "pattern": "app.depiqo.com",
       "zone_name": "depiqo.com",
       "custom_domain": true,
+    },
+    {
+      "pattern": "equipment.depiqo.com/*",
+      "zone_name": "depiqo.com",
+    },
+    {
+      "pattern": "branding.depiqo.com/*",
+      "zone_name": "depiqo.com",
+    },
+    {
+      "pattern": "*/*",
+      "zone_name": "depiqo.com",
     },
   ],
   "workers_dev": true,

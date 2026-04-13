@@ -7,7 +7,11 @@ import { UsersPublicApi } from 'src/modules/users/users.public-api';
 import { TenantRepository } from 'src/modules/tenant/infrastructure/persistence/repositories/tenant.repository';
 
 import { Tenant } from '../../../domain/entities/tenant.entity';
-import { CompanyNameAlreadyInUseError, EmailAlreadyInUseError } from '../../../domain/errors/tenant.errors';
+import {
+  CompanyNameAlreadyInUseError,
+  EmailAlreadyInUseError,
+  ReservedTenantSlugError,
+} from '../../../domain/errors/tenant.errors';
 import { TenantSlugService } from '../../../domain/services/tenant-slug.service';
 import { IsSlugTakenQuery } from '../../queries/is-slug-taken/is-slug-taken.query';
 import { RegisterTenantCommand } from './register-tenant.command';
@@ -17,7 +21,7 @@ export interface RegisterTenantResponse {
   tenantId: string;
 }
 
-type RegisterTenantError = EmailAlreadyInUseError | CompanyNameAlreadyInUseError;
+type RegisterTenantError = EmailAlreadyInUseError | CompanyNameAlreadyInUseError | ReservedTenantSlugError;
 
 @CommandHandler(RegisterTenantCommand)
 export class RegisterTenantService implements ICommandHandler<RegisterTenantCommand> {
@@ -35,7 +39,12 @@ export class RegisterTenantService implements ICommandHandler<RegisterTenantComm
       return err(new EmailAlreadyInUseError());
     }
 
-    const slug = TenantSlugService.createFromName(tenant.name);
+    const slugResult = TenantSlugService.createFromName(tenant.name);
+    if (slugResult.isErr()) {
+      return err(slugResult.error);
+    }
+
+    const slug = slugResult.value;
     const isSlugTaken = await this.queryBus.execute<IsSlugTakenQuery, boolean>(new IsSlugTakenQuery(slug));
     if (isSlugTaken) {
       return err(new CompanyNameAlreadyInUseError());
