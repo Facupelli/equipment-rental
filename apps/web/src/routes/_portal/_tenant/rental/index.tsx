@@ -29,6 +29,7 @@ import { rentalLocationQueries } from "@/features/tenant/locations/locations.que
 import { getTenantBranding } from "@/features/tenant-branding/tenant-branding";
 import { cn } from "@/lib/utils";
 import { PoweredByFooter } from "@/shared/components/powered-by-footer";
+import WhatsAppFloat from "@/features/rental/catalog/components/whatsapp-floating-button";
 
 export const Route = createFileRoute("/_portal/_tenant/rental/")({
   validateSearch: rentalPageSearchSchema,
@@ -140,6 +141,8 @@ function RentalPage() {
           </SectionErrorBoundary>
         </section>
       </main>
+
+      <WhatsAppFloat />
 
       <PoweredByFooter />
     </div>
