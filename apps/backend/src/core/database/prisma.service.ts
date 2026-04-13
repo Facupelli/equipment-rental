@@ -24,6 +24,8 @@ const TENANT_EXCLUDED_MODELS = new Set([
   'UserRole', // scoped through User
   'LocationSchedule', // scoped through Location
   'CouponRedemption', // scoped through Coupon / Order
+  'LongRentalDiscountExclusion', // scoped through LongRentalDiscount
+  'PromotionExclusion', // scoped through Promotion
   'OrderDeliveryRequest',
   'CustomerProfile',
 ]);

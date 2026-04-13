@@ -40,6 +40,8 @@ export class CalculateCartPricesHttpController {
       dto.returnDate,
       dto.items,
       dto.insuranceSelected,
+      dto.customerId,
+      dto.couponCode,
     );
 
     const result = await this.queryBus.execute<

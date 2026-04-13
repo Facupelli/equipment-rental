@@ -25,22 +25,20 @@ export class CreateOrderItemResolver {
     resolvedCoupon: ResolvedCouponDto | undefined,
   ): Promise<ResolvedItem[]> {
     const metadata = await this.loadItemMetadata(command);
-    const orderItemCountByCategory = this.buildCategoryCountMap(command, metadata);
-    const applicableCouponRuleIds = resolvedCoupon ? [resolvedCoupon.ruleId] : undefined;
+    const applicablePromotionIds = resolvedCoupon ? [resolvedCoupon.ruleId] : undefined;
 
     return Promise.all(
       command.items.map((item): Promise<ResolvedItem> => {
         if (item.type === 'PRODUCT') {
           return this.pricingApi
-            .calculateProductPrice({
+            .calculateProductPriceV2({
               tenantId: command.tenantId,
               locationId: command.locationId,
               productTypeId: item.productTypeId,
               period,
               currency: command.currency,
-              orderItemCountByCategory,
-              applicableCouponRuleIds,
               customerId: command.customerId,
+              applicablePromotionIds,
             })
             .then((price) => ({
               type: 'PRODUCT' as const,
@@ -57,15 +55,14 @@ export class CreateOrderItemResolver {
         const bundle = metadata.bundles.get(item.bundleId)!;
 
         return Promise.all([
-          this.pricingApi.calculateBundlePrice({
+          this.pricingApi.calculateBundlePriceV2({
             tenantId: command.tenantId,
             locationId: command.locationId,
             bundleId: item.bundleId,
             period,
             currency: command.currency,
-            orderItemCountByCategory,
-            applicableCouponRuleIds,
             customerId: command.customerId,
+            applicablePromotionIds,
           }),
           this.pricingApi.getComponentStandalonePrices({
             tenantId: command.tenantId,
@@ -125,27 +122,5 @@ export class CreateOrderItemResolver {
       ),
       bundles: new Map<string, BundleBookingEligibilityDto>(bundleIds.map((id, index) => [id, bundleMetas[index]!])),
     };
-  }
-
-  private buildCategoryCountMap(
-    command: CreateOrderCommand,
-    metadata: Awaited<ReturnType<CreateOrderItemResolver['loadItemMetadata']>>,
-  ): Record<string, number> {
-    const counts: Record<string, number> = {};
-
-    for (const item of command.items) {
-      if (item.type !== 'PRODUCT') {
-        continue;
-      }
-
-      const meta = metadata.products.get(item.productTypeId);
-      if (!meta?.categoryId) {
-        continue;
-      }
-
-      counts[meta.categoryId] = (counts[meta.categoryId] ?? 0) + (item.quantity ?? 1);
-    }
-
-    return counts;
   }
 }

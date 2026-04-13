@@ -25,6 +25,7 @@ import {
   PricingProductTypeNotFoundError,
 } from '../../../domain/errors/pricing.errors';
 import { TenantConfig } from '@repo/schemas';
+import { NewPricingResult } from '../../../domain/services/new-pricing-calculator.service';
 
 export type CartDiscountLineItem = {
   ruleId: string;
@@ -134,8 +135,6 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
     const uniqueProductTypeIds = [...new Set(productItems.map((i) => i.productTypeId))];
     const uniqueBundleIds = [...new Set(bundleItems.map((i) => i.bundleId))];
 
-    let productEligibility = new Map<string, { categoryId: string | null }>();
-
     try {
       const [productMetaList, bundleMetaList] = await Promise.all([
         Promise.all(
@@ -149,10 +148,6 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
           ),
         ),
       ]);
-
-      productEligibility = new Map(
-        uniqueProductTypeIds.map((id, index) => [id, { categoryId: productMetaList[index]?.categoryId ?? null }]),
-      );
 
       for (const [index, id] of uniqueProductTypeIds.entries()) {
         if (!productMetaList[index]) {
@@ -178,49 +173,22 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       throw error;
     }
 
-    // Verify all requested product types exist
-    for (const id of uniqueProductTypeIds) {
-      if (!productEligibility.has(id)) {
-        return err(new PricingProductTypeNotFoundError(id));
+    let applicablePromotionIds: string[] | undefined;
+    let couponApplied = false;
+
+    if (query.couponCode) {
+      const resolvedCoupon = await this.pricingApp.resolveCouponForPricing({
+        tenantId: query.tenantId,
+        code: query.couponCode,
+        customerId: query.customerId,
+        now: new Date(),
+      });
+
+      if (resolvedCoupon.isOk()) {
+        applicablePromotionIds = [resolvedCoupon.value.ruleId];
+        couponApplied = true;
       }
     }
-
-    // ── Step 4: Build orderItemCountByCategory ─────────────────────────────
-    // Reflects total unit count per category across the full cart.
-    // Product types with no categoryId are excluded — they have no category
-    // context for VOLUME rule evaluation.
-    const orderItemCountByCategory: Record<string, number> = {};
-
-    for (const item of productItems) {
-      const meta = productEligibility.get(item.productTypeId)!;
-      if (meta.categoryId) {
-        orderItemCountByCategory[meta.categoryId] = (orderItemCountByCategory[meta.categoryId] ?? 0) + item.quantity;
-      }
-    }
-
-    // ── Step 5: Resolve coupon (NEW) ─────────────────────────────────────────
-    // Read-only resolution — no redemption recorded, no transaction needed.
-    // Failure is silent in the cart: if the code is invalid, we still return
-    // prices but with couponApplied: false. The API layer should validate the
-    // code explicitly on a dedicated endpoint if you want inline error messages.
-    // let applicableCouponRuleIds: string[] | undefined;
-    const couponApplied = false;
-
-    // if (query.couponCode) {
-    //   try {
-    //     const resolved = await this.couponService.resolveCouponForPricing({
-    //       tenantId: query.tenantId,
-    //       code: query.couponCode,
-    //       customerId: query.customerId,
-    //       now: new Date(),
-    //     });
-    //     applicableCouponRuleIds = [resolved.ruleId];
-    //     couponApplied = true;
-    //   } catch {
-    //     // Invalid or expired coupon — prices return without discount.
-    //     // couponApplied stays false.
-    //   }
-    // }
 
     // ── Step 6: Fire all pricing calls in parallel ─────────────────────────
     // Each unit is priced independently — this matches how CreateOrderHandler
@@ -230,26 +198,28 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
     const pricingTasks = query.items.flatMap((item) =>
       Array.from({ length: item.quantity }, () =>
         item.type === 'PRODUCT'
-          ? this.pricingApp.calculateProductPrice({
+          ? this.pricingApp.calculateProductPriceV2({
               tenantId,
               locationId,
               currency,
               period,
               productTypeId: item.productTypeId,
-              orderItemCountByCategory,
+              customerId: query.customerId,
+              applicablePromotionIds,
             })
-          : this.pricingApp.calculateBundlePrice({
+          : this.pricingApp.calculateBundlePriceV2({
               tenantId,
               locationId,
               currency,
               period,
               bundleId: item.bundleId,
-              orderItemCountByCategory,
+              customerId: query.customerId,
+              applicablePromotionIds,
             }),
       ),
     );
 
-    let allPrices;
+    let allPrices: NewPricingResult[];
 
     try {
       allPrices = await Promise.all(pricingTasks);
@@ -275,11 +245,11 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       // Merge discounts across units of the same line item.
       // Units share the same inputs so they produce identical discount sets —
       // we take index 0 as canonical and multiply amounts by quantity.
-      const discounts: CartDiscountLineItem[] = unitPrices[0].appliedDiscounts.map((d) => ({
-        ruleId: d.ruleId,
-        ruleLabel: d.ruleLabel,
-        type: d.type,
-        value: d.value,
+      const discounts: CartDiscountLineItem[] = unitPrices[0].appliedAdjustments.map((d) => ({
+        ruleId: d.sourceId,
+        ruleLabel: d.label,
+        type: d.effectType,
+        value: d.configuredValue,
         discountAmount: d.discountAmount.multiply(new Decimal(item.quantity)).toDecimal().toNumber(),
       }));
 
@@ -302,7 +272,10 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       .toNumber();
 
     const totalDiscount = allPrices
-      .reduce((acc, r) => r.appliedDiscounts.reduce((s, d) => s.add(d.discountAmount), acc), Money.zero(query.currency))
+      .reduce(
+        (acc, r) => r.appliedAdjustments.reduce((s, d) => s.add(d.discountAmount), acc),
+        Money.zero(query.currency),
+      )
       .toDecimal()
       .toNumber();
 

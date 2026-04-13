@@ -2,6 +2,7 @@ import Decimal from 'decimal.js';
 import { Result } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
+import { NewPricingResult } from './domain/services/new-pricing-calculator.service';
 import { PricingResult } from './domain/services/pricing-calculator.service';
 import { CouponNotFoundError, CouponValidationError } from './domain/errors/pricing.errors';
 
@@ -29,6 +30,26 @@ export type CalculateBundlePriceDto = {
   orderItemCountByCategory: Record<string, number>;
   applicableCouponRuleIds?: string[];
   customerId?: string;
+};
+
+export type CalculateProductPriceV2Dto = {
+  tenantId: string;
+  locationId: string;
+  productTypeId: string;
+  period: { start: Date; end: Date };
+  currency: string;
+  customerId?: string;
+  applicablePromotionIds?: string[];
+};
+
+export type CalculateBundlePriceV2Dto = {
+  tenantId: string;
+  locationId: string;
+  bundleId: string;
+  period: { start: Date; end: Date };
+  currency: string;
+  customerId?: string;
+  applicablePromotionIds?: string[];
 };
 
 export type GetComponentStandalonePricesDto = {
@@ -74,6 +95,8 @@ export { CouponNotFoundError, CouponValidationError };
 export abstract class PricingPublicApi {
   abstract calculateProductPrice(dto: CalculateProductPriceDto): Promise<PricingResult>;
   abstract calculateBundlePrice(dto: CalculateBundlePriceDto): Promise<PricingResult>;
+  abstract calculateProductPriceV2(dto: CalculateProductPriceV2Dto): Promise<NewPricingResult>;
+  abstract calculateBundlePriceV2(dto: CalculateBundlePriceV2Dto): Promise<NewPricingResult>;
   abstract getComponentStandalonePrices(dto: GetComponentStandalonePricesDto): Promise<Map<string, Decimal>>;
   abstract resolveCouponForPricing(
     dto: ResolveCouponForPricingDto,

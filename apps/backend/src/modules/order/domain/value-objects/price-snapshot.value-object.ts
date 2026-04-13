@@ -1,5 +1,6 @@
 import { PricingRuleEffectType } from '@repo/types';
 import Decimal from 'decimal.js';
+import { PricingAdjustmentSourceKind } from 'src/modules/pricing/domain/types/pricing-adjustment.types';
 
 // ---------------------------------------------------------------------------
 // PriceSnapshot — Value Object
@@ -13,8 +14,9 @@ import Decimal from 'decimal.js';
 // ---------------------------------------------------------------------------
 
 export type DiscountLineItem = {
-  ruleId: string;
-  ruleLabel: string;
+  sourceKind: PricingAdjustmentSourceKind;
+  sourceId: string;
+  label: string;
   type: PricingRuleEffectType;
   value: number; // configured rule value — e.g. 10 for 10%, 20 for $20 flat
   discountAmount: Decimal; // actual money deducted for this rule
@@ -61,7 +63,9 @@ export class PriceSnapshot {
       totalUnits: this.totalUnits,
       pricePerBillingUnit: this.pricePerBillingUnit.toString(),
       discounts: this.discounts.map((d) => ({
-        ruleId: d.ruleId,
+        sourceKind: d.sourceKind,
+        sourceId: d.sourceId,
+        label: d.label,
         type: d.type,
         value: d.value,
         discountAmount: d.discountAmount.toString(),
@@ -83,8 +87,10 @@ export class PriceSnapshot {
       totalUnits: data.totalUnits as number,
       pricePerBillingUnit: new Decimal(data.pricePerBillingUnit as string),
       discounts: (data.discounts as Array<Record<string, unknown>>).map((d) => ({
-        ruleId: d.ruleId as string,
-        ruleLabel: d.ruleLabel as string,
+        sourceKind:
+          (d.sourceKind as PricingAdjustmentSourceKind | undefined) ?? PricingAdjustmentSourceKind.LEGACY_PRICING_RULE,
+        sourceId: (d.sourceId as string | undefined) ?? (d.ruleId as string),
+        label: (d.label as string | undefined) ?? (d.ruleLabel as string),
         type: d.type as PricingRuleEffectType,
         value: d.value as number,
         discountAmount: new Decimal(d.discountAmount as string),

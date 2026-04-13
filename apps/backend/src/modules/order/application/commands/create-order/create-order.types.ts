@@ -7,7 +7,7 @@ import {
   ProductTypeInactiveForBookingError,
   ProductTypeNotBookableAtLocationError,
 } from 'src/modules/catalog/catalog.public-api';
-import { CouponNotFoundError, CouponValidationError, PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
+import { CouponNotFoundError, CouponValidationError } from 'src/modules/pricing/pricing.public-api';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import {
   DeliveryNotSupportedForLocationError,
@@ -22,6 +22,7 @@ import {
   ProductTypeNotFoundError,
   UnavailableItem,
 } from '../../../domain/errors/order.errors';
+import { NewPricingResult } from 'src/modules/pricing/domain/services/new-pricing-calculator.service';
 
 export type ResolvedProductItem = {
   type: 'PRODUCT';
@@ -31,7 +32,7 @@ export type ResolvedProductItem = {
   locationId: string;
   period: DateRange;
   currency: string;
-  price: Awaited<ReturnType<typeof PricingPublicApi.prototype.calculateProductPrice>>;
+  price: NewPricingResult;
 };
 
 export type ResolvedBundleItem = {
@@ -41,7 +42,7 @@ export type ResolvedBundleItem = {
   locationId: string;
   period: DateRange;
   currency: string;
-  price: Awaited<ReturnType<typeof PricingPublicApi.prototype.calculateBundlePrice>>;
+  price: NewPricingResult;
   componentStandalonePrices: Map<string, Decimal>;
 };
 

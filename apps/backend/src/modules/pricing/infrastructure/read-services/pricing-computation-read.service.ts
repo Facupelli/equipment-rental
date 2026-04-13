@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
+import { LongRentalDiscount } from '../../domain/entities/long-rental-discount.entity';
 import { PricingRule } from '../../domain/entities/pricing-rule.entity';
+import { Promotion } from '../../domain/entities/promotion.entity';
 import { PricingTier } from '../../domain/entities/pricing-tier.entity';
+import { LongRentalDiscountMapper } from '../persistence/mappers/long-rental-discount.mapper';
+import { PromotionMapper } from '../persistence/mappers/promotion.mapper';
 import { PricingRuleMapper } from '../persistence/mappers/pricing-rule.mapper';
 import { PricingTierMapper } from '../persistence/mappers/pricing-tier.mapper';
 
@@ -141,6 +145,26 @@ export class PricingComputationReadService {
     });
 
     return rows.map(PricingRuleMapper.toDomain);
+  }
+
+  async loadActiveLongRentalDiscountsForTenant(tenantId: string): Promise<LongRentalDiscount[]> {
+    const rows = await this.prisma.client.longRentalDiscount.findMany({
+      where: { tenantId, isActive: true },
+      include: { exclusions: true },
+      orderBy: { priority: 'asc' },
+    });
+
+    return rows.map(LongRentalDiscountMapper.toDomain);
+  }
+
+  async loadActivePromotionsForTenant(tenantId: string): Promise<Promotion[]> {
+    const rows = await this.prisma.client.promotion.findMany({
+      where: { tenantId, isActive: true },
+      include: { exclusions: true },
+      orderBy: { priority: 'asc' },
+    });
+
+    return rows.map(PromotionMapper.toDomain);
   }
 
   private resolveLocationTiers(tiers: PricingTier[], locationId: string): PricingTier[] {

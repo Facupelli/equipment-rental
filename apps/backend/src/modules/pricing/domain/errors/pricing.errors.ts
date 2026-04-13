@@ -33,6 +33,18 @@ export class PricingRuleNotFoundError extends PricingError {
   }
 }
 
+export class LongRentalDiscountNotFoundError extends PricingError {
+  constructor(id: string) {
+    super(`Long rental discount "${id}" was not found.`);
+  }
+}
+
+export class PromotionNotFoundError extends PricingError {
+  constructor(id: string) {
+    super(`Promotion "${id}" was not found.`);
+  }
+}
+
 export class PricingRuleHasCouponsError extends PricingError {
   constructor(id: string) {
     super(`Pricing rule "${id}" cannot be deleted because it has coupons.`);

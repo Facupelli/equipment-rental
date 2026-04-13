@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
+import { PricingRuleType } from '@repo/types';
 import { TenantConfig } from '@repo/schemas';
 import { Result, err, ok } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
+import { LongRentalDiscount } from '../domain/entities/long-rental-discount.entity';
+import { PricingRule } from '../domain/entities/pricing-rule.entity';
+import { Promotion } from '../domain/entities/promotion.entity';
 import { RuleApplicationContext } from '../domain/types/pricing-rule.types';
 import {
   CalculateBundlePriceDto,
+  CalculateBundlePriceV2Dto,
   CalculateProductPriceDto,
+  CalculateProductPriceV2Dto,
   GetComponentStandalonePricesDto,
   PricingPublicApi,
   RedeemCouponDto,
@@ -16,6 +22,7 @@ import {
   ResolveCouponForPricingDto,
   ResolveCouponForPricingError,
 } from '../pricing.public-api';
+import { NewPricingCalculatorService, NewPricingResult } from '../domain/services/new-pricing-calculator.service';
 import { PricingCalculator, PricingResult } from '../domain/services/pricing-calculator.service';
 import { PricingComputationReadService } from '../infrastructure/read-services/pricing-computation-read.service';
 import Decimal from 'decimal.js';
@@ -24,10 +31,12 @@ import { ResolveCouponForPricingService } from './services/resolve-coupon-for-pr
 import { RedeemCouponService } from './services/redeem-coupon.service';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { BillingUnitResolverService } from '../domain/services/billing-unit-resolver.service';
+import { PromotionType } from '../domain/types/promotion.types';
 
 @Injectable()
 export class PricingApplicationService implements PricingPublicApi {
   private readonly calculator = new PricingCalculator();
+  private readonly newCalculator = new NewPricingCalculatorService();
   private readonly billingUnitResolver = new BillingUnitResolverService();
 
   constructor(
@@ -103,6 +112,82 @@ export class PricingApplicationService implements PricingPublicApi {
       tiers,
       rules,
       context,
+      currency: dto.currency,
+      entityId: dto.bundleId,
+    });
+  }
+
+  async calculateProductPriceV2(dto: CalculateProductPriceV2Dto): Promise<NewPricingResult> {
+    const [meta, longRentalDiscounts, promotions, legacyRules, tenantPricingContext, tiers] = await Promise.all([
+      this.pricingRead.loadProductTypeMeta(dto.productTypeId),
+      this.pricingRead.loadActiveLongRentalDiscountsForTenant(dto.tenantId),
+      this.pricingRead.loadActivePromotionsForTenant(dto.tenantId),
+      this.pricingRead.loadActiveRulesForTenant(dto.tenantId),
+      this.loadTenantPricingContext(dto.tenantId),
+      this.pricingRead.loadTiersForProduct(dto.productTypeId, dto.locationId),
+    ]);
+
+    if (!meta) {
+      throw new PricingProductTypeNotFoundError(dto.productTypeId);
+    }
+
+    const period = DateRange.create(dto.period.start, dto.period.end);
+
+    const effectiveLongRentalDiscounts = [...this.mapLegacyLongRentalDiscounts(legacyRules), ...longRentalDiscounts];
+    const effectivePromotions = [...this.mapLegacyPromotions(legacyRules), ...promotions];
+
+    return this.newCalculator.calculate({
+      period,
+      billingUnitDurationMinutes: meta.billingUnitDurationMinutes,
+      tenantTimezone: tenantPricingContext.timezone,
+      weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
+      tiers,
+      longRentalDiscounts: effectiveLongRentalDiscounts,
+      promotions: effectivePromotions,
+      context: {
+        period,
+        productTypeId: dto.productTypeId,
+        customerId: dto.customerId,
+        applicablePromotionIds: dto.applicablePromotionIds,
+      },
+      currency: dto.currency,
+      entityId: dto.productTypeId,
+    });
+  }
+
+  async calculateBundlePriceV2(dto: CalculateBundlePriceV2Dto): Promise<NewPricingResult> {
+    const [meta, longRentalDiscounts, promotions, legacyRules, tenantPricingContext, tiers] = await Promise.all([
+      this.pricingRead.loadBundleMeta(dto.bundleId),
+      this.pricingRead.loadActiveLongRentalDiscountsForTenant(dto.tenantId),
+      this.pricingRead.loadActivePromotionsForTenant(dto.tenantId),
+      this.pricingRead.loadActiveRulesForTenant(dto.tenantId),
+      this.loadTenantPricingContext(dto.tenantId),
+      this.pricingRead.loadTiersForBundle(dto.bundleId, dto.locationId),
+    ]);
+
+    if (!meta) {
+      throw new PricingBundleNotFoundError(dto.bundleId);
+    }
+
+    const period = DateRange.create(dto.period.start, dto.period.end);
+
+    const effectiveLongRentalDiscounts = [...this.mapLegacyLongRentalDiscounts(legacyRules), ...longRentalDiscounts];
+    const effectivePromotions = [...this.mapLegacyPromotions(legacyRules), ...promotions];
+
+    return this.newCalculator.calculate({
+      period,
+      billingUnitDurationMinutes: meta.billingUnitDurationMinutes,
+      tenantTimezone: tenantPricingContext.timezone,
+      weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
+      tiers,
+      longRentalDiscounts: effectiveLongRentalDiscounts,
+      promotions: effectivePromotions,
+      context: {
+        period,
+        bundleId: dto.bundleId,
+        customerId: dto.customerId,
+        applicablePromotionIds: dto.applicablePromotionIds,
+      },
       currency: dto.currency,
       entityId: dto.bundleId,
     });
@@ -184,5 +269,56 @@ export class PricingApplicationService implements PricingPublicApi {
     }
 
     return ok(undefined);
+  }
+
+  private mapLegacyLongRentalDiscounts(rules: PricingRule[]): LongRentalDiscount[] {
+    return rules
+      .filter((rule) => rule.type === PricingRuleType.DURATION)
+      .map((rule) => {
+        const condition = rule.condition as {
+          tiers: Array<{ fromDays: number; toDays: number | null; discountPct: number }>;
+        };
+
+        return LongRentalDiscount.reconstitute({
+          id: rule.id,
+          tenantId: rule.tenantId,
+          name: rule.name,
+          priority: rule.priority,
+          isActive: rule.active,
+          tiers: condition.tiers.map((tier) => ({
+            fromUnits: tier.fromDays,
+            toUnits: tier.toDays,
+            discountPct: tier.discountPct,
+          })),
+          target: {
+            excludedProductTypeIds: [],
+            excludedBundleIds: [],
+          },
+        });
+      });
+  }
+
+  private mapLegacyPromotions(rules: PricingRule[]): Promotion[] {
+    return rules
+      .filter((rule) =>
+        [PricingRuleType.COUPON, PricingRuleType.SEASONAL, PricingRuleType.CUSTOMER_SPECIFIC].includes(rule.type),
+      )
+      .map((rule) =>
+        Promotion.reconstitute({
+          id: rule.id,
+          tenantId: rule.tenantId,
+          name: rule.name,
+          type: rule.type as unknown as PromotionType,
+          priority: rule.priority,
+          stackable: rule.stackable,
+          isActive: rule.active,
+          condition: rule.condition as unknown as Promotion['condition'],
+          effect: rule.effect as unknown as Promotion['effect'],
+          target: {
+            excludedProductTypeIds: [],
+            excludedBundleIds: [],
+          },
+        }),
+      );
   }
 }

@@ -68,6 +68,12 @@ enum PricingRuleScope {
   BUNDLE
 }
 
+enum PromotionType {
+  COUPON
+  SEASONAL
+  CUSTOMER_SPECIFIC
+}
+
 enum CustomDomainStatus {
   PENDING
   ACTIVE
@@ -257,6 +263,8 @@ model Tenant {
   productCategories   ProductCategory[]
   bundles             Bundle[]
   pricingRules        PricingRule[]
+  longRentalDiscounts LongRentalDiscount[]
+  promotions          Promotion[]
   billingUnits        TenantBillingUnit[]
   managedCustomDomain CustomDomain?
   owners              Owner[]
@@ -473,6 +481,8 @@ model ProductType {
   billingUnit        BillingUnit               @relation(fields: [billingUnitId], references: [id])
   assets             Asset[]
   pricingTiers       PricingTier[]
+  longRentalDiscountExclusions LongRentalDiscountExclusion[]
+  promotionExclusions PromotionExclusion[]
   bundleComponents   BundleComponent[]
   snapshotComponents BundleSnapshotComponent[]
   orderItems         OrderItem[]
@@ -698,6 +708,8 @@ model Bundle {
   billingUnit  BillingUnit       @relation(fields: [billingUnitId], references: [id])
   components   BundleComponent[]
   pricingTiers PricingTier[]
+  longRentalDiscountExclusions LongRentalDiscountExclusion[]
+  promotionExclusions PromotionExclusion[]
   orderItems   OrderItem[]
 
 
@@ -841,6 +853,81 @@ model CouponRedemption {
   @@index([couponId, voidedAt])
   @@index([couponId, customerId, voidedAt])
   @@map("coupon_redemptions")
+}
+
+// ---------------------------------------------------------------------------
+// NEW DISCOUNT ENGINE
+// ---------------------------------------------------------------------------
+
+model LongRentalDiscount {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  priority  Int
+  isActive  Boolean  @default(true) @map("is_active")
+  tiers     Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant                        @relation(fields: [tenantId], references: [id])
+  exclusions  LongRentalDiscountExclusion[]
+
+  @@index([tenantId, isActive, priority])
+  @@map("long_rental_discounts")
+}
+
+model LongRentalDiscountExclusion {
+  id                   String   @id @default(uuid())
+  longRentalDiscountId String   @map("long_rental_discount_id")
+  productTypeId        String?  @map("product_type_id")
+  bundleId             String?  @map("bundle_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  longRentalDiscount LongRentalDiscount @relation(fields: [longRentalDiscountId], references: [id])
+  productType        ProductType?       @relation(fields: [productTypeId], references: [id])
+  bundle             Bundle?            @relation(fields: [bundleId], references: [id])
+
+  @@index([longRentalDiscountId])
+  @@unique([longRentalDiscountId, productTypeId])
+  @@unique([longRentalDiscountId, bundleId])
+  @@map("long_rental_discount_exclusions")
+}
+
+model Promotion {
+  id        String        @id @default(uuid())
+  tenantId  String        @map("tenant_id")
+  name      String
+  type      PromotionType
+  priority  Int
+  stackable Boolean       @default(false)
+  isActive  Boolean       @default(true) @map("is_active")
+  condition Json
+  effect    Json
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  tenant      Tenant                @relation(fields: [tenantId], references: [id])
+  exclusions  PromotionExclusion[]
+
+  @@index([tenantId, isActive, type, priority])
+  @@map("promotions")
+}
+
+model PromotionExclusion {
+  id           String   @id @default(uuid())
+  promotionId  String   @map("promotion_id")
+  productTypeId String? @map("product_type_id")
+  bundleId      String? @map("bundle_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  promotion   Promotion    @relation(fields: [promotionId], references: [id])
+  productType ProductType? @relation(fields: [productTypeId], references: [id])
+  bundle      Bundle?      @relation(fields: [bundleId], references: [id])
+
+  @@index([promotionId])
+  @@unique([promotionId, productTypeId])
+  @@unique([promotionId, bundleId])
+  @@map("promotion_exclusions")
 }
 
 // ---------------------------------------------------------------------------
