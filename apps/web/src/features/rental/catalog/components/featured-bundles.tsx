@@ -221,7 +221,7 @@ function BundleCard({
             <img
               src={bundleImage}
               alt={bundle.name}
-              loading="lazy"
+              loading={index === 0 ? "eager" : "lazy"}
               decoding="async"
               className="object-contain w-full h-full transition-transform duration-300 group-hover:scale-[1.02]"
               fetchPriority={index === 0 ? "high" : "auto"}

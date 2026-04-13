@@ -70,7 +70,10 @@ export function RentalFilters({
 									value: location.id,
 								}))}
 							>
-								<SelectTrigger className="h-10! w-72 rounded-xl border-border bg-muted! hover:bg-muted/80! text-foreground">
+								<SelectTrigger
+									className="h-10! w-72 rounded-xl border-border bg-muted! hover:bg-muted/80! text-foreground"
+									aria-label="Ubicacion del rental"
+								>
 									<SelectValue placeholder="Seleccionar ubicación" />
 								</SelectTrigger>
 								<SelectContent>
@@ -123,7 +126,10 @@ export function RentalFilters({
 						value: location.id,
 					}))}
 				>
-					<SelectTrigger className="h-11 min-w-0 flex-1">
+					<SelectTrigger
+						className="h-11 min-w-0 flex-1"
+						aria-label="Ubicacion del rental"
+					>
 						<SelectValue placeholder="Seleccionar ubicacion" />
 					</SelectTrigger>
 					<SelectContent>

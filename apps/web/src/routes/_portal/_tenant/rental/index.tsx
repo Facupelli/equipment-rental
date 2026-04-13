@@ -58,6 +58,18 @@ export const Route = createFileRoute("/_portal/_tenant/rental/")({
           : "Depiqo | Alquiler de Equipos",
       },
     ],
+    links: [
+      {
+        rel: "preconnect",
+        href: "https://branding.depiqo.com",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "preconnect",
+        href: "https://equipment.depiqo.com",
+        crossOrigin: "anonymous",
+      },
+    ],
   }),
   component: RentalPage,
 });
