@@ -20,8 +20,8 @@
   ],
   "vars": {
     "CLOUDFLARE_R2_BUCKET_NAME": "equipment",
-    "VITE_R2_PUBLIC_URL": "https://pub-9b6b356e58d64ff980802ae8b0ed250e.r2.dev",
-    "VITE_BRANDING_R2_PUBLIC_URL": "https://pub-0b2b4063e857486dbe1c3ce140b91502.r2.dev",
+    "VITE_R2_PUBLIC_URL": "https://equipment.depiqo.com",
+    "VITE_BRANDING_R2_PUBLIC_URL": "https://branding.depiqo.com",
     "NODE_ENV": "production",
   },
   "routes": [

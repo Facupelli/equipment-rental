@@ -16,4 +16,6 @@ export const BANNED_TENANT_SLUGS: readonly string[] = [
   'internal',
   'mail',
   'static',
+  'equipment',
+  'branding',
 ] as const;
