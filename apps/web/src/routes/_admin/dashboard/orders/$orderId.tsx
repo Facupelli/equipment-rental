@@ -13,6 +13,15 @@ import {
 	User2Icon,
 } from "lucide-react";
 import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -105,12 +114,12 @@ function OrderHeader() {
 				<div>
 					<div className="flex items-center gap-3 mb-1.5">
 						<h1 className="text-3xl font-bold tracking-tight leading-none">
-							Order <span>#{formatOrderNumber(order.number)}</span>
+							Pedido <span>#{formatOrderNumber(order.number)}</span>
 						</h1>
 						<OrderStatusBadge status={order.status} />
 					</div>
 					<p className="text-sm text-neutral-400 mt-2">
-						Created on {order.createdAt.format("MMM DD, YYYY")} ·{" "}
+						Creado el {order.createdAt.format("MMM DD, YYYY")} ·{" "}
 						{order.createdAt.format("HH:mm A")}
 					</p>
 				</div>
@@ -121,21 +130,72 @@ function OrderHeader() {
 						variant="outline"
 						size="sm"
 						className="text-sm text-neutral-700 border-neutral-300 hover:bg-neutral-100 rounded-md h-9 px-4"
-						onClick={actions.handlePrintPdf}
+						onClick={actions.handleOpenContract}
+						disabled={actions.isOpeningContract}
 					>
 						<FileText className="w-4 h-4 mr-1.5" />
-						Print PDF
+						{actions.isOpeningContract ? "Abriendo..." : "Ver remito"}
 					</Button>
 					<Button
 						size="sm"
 						className="text-sm rounded-md bg-neutral-950 text-white hover:bg-neutral-800 h-9 px-4"
 						onClick={actions.handleEditOrder}
+						disabled
 					>
 						<Pencil className="w-4 h-4 mr-1.5" />
-						Edit Order
+						Editar pedido
 					</Button>
 				</div>
 			</div>
+
+			<AlertDialog
+				open={actions.isContractBusinessErrorOpen}
+				onOpenChange={actions.setIsContractBusinessErrorOpen}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>No se pudo generar el remito</AlertDialogTitle>
+						<AlertDialogDescription>
+							No se puede generar el remito porque el cliente no tiene
+							DNI/documento configurado en su perfil.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogAction
+							onClick={() => actions.setIsContractBusinessErrorOpen(false)}
+						>
+							Entendido
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<AlertDialog
+				open={Boolean(actions.contractError)}
+				onOpenChange={(open) => {
+					if (!open) {
+						actions.setContractError(null);
+					}
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							{actions.contractError?.status === 404
+								? "Pedido no encontrado"
+								: "No se pudo abrir el remito"}
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							{actions.contractError?.message}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogAction onClick={() => actions.setContractError(null)}>
+							Cerrar
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</header>
 	);
 }
@@ -148,9 +208,9 @@ function OrderTabs() {
 			<TabsList>
 				{(
 					[
-						{ value: "equipment", label: "Equipment & Bundles" },
-						{ value: "documents", label: "Documents" },
-						{ value: "notes", label: "Internal Notes" },
+						{ value: "equipment", label: "Equipos y combos" },
+						{ value: "documents", label: "Documentos" },
+						{ value: "notes", label: "Notas internas" },
 					] as const
 				).map((tab) => (
 					<TabsTrigger key={tab.value} value={tab.value}>
@@ -165,11 +225,11 @@ function OrderTabs() {
 			</TabsContent>
 
 			<TabsContent value="documents">
-				<TabPlaceholder label="No documents attached." />
+				<TabPlaceholder label="No hay documentos adjuntos." />
 			</TabsContent>
 
 			<TabsContent value="notes">
-				<TabPlaceholder label="No internal notes yet." />
+				<TabPlaceholder label="Todavia no hay notas internas." />
 			</TabsContent>
 		</Tabs>
 	);
