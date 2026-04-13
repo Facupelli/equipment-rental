@@ -1,11 +1,8 @@
-import type { LocationScheduleResponseDto } from "@repo/schemas";
-import { ScheduleSlotType } from "@repo/types";
-import { es } from "date-fns/locale";
 import { CalendarIcon, SlidersHorizontal } from "lucide-react";
 import type { DateRange } from "react-day-picker";
+import { lazy, Suspense, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
 	Popover,
 	PopoverContent,
@@ -25,13 +22,19 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRentalCategories } from "@/features/rental/catalog/categories.queries";
-import { useRentalLocationSchedules } from "@/features/tenant/locations/location-schedules.queries";
 import { useRentalLocations } from "@/features/tenant/locations/locations.queries";
 import dayjs from "@/lib/dates/dayjs";
 import { dateParamToLocalDate, localDateToDateParam } from "@/lib/dates/parse";
 import { cn } from "@/lib/utils";
 import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
+
+const LazyDateRangePickerContent = lazy(() =>
+	import("./date-range-picker-content").then((module) => ({
+		default: module.DateRangePickerContent,
+	})),
+);
 
 interface RentalFiltersProps {
 	search: RentalPageSearch;
@@ -282,15 +285,12 @@ function DateRangePicker({
 	| "buttonClassName"
 	| "datesButtonClassName"
 >) {
+	const [open, setOpen] = useState(false);
+	const [hasOpened, setHasOpened] = useState(false);
 	const value = {
 		from: pickupDate ? dateParamToLocalDate(pickupDate) : undefined,
 		to: returnDate ? dateParamToLocalDate(returnDate) : undefined,
 	};
-	const { data: schedules } = useRentalLocationSchedules(locationId ?? "", {
-		enabled: Boolean(locationId),
-	});
-	const boundaryType =
-		value.from && !value.to ? ScheduleSlotType.RETURN : ScheduleSlotType.PICKUP;
 
 	const fromLabel = value.from
 		? dayjs(value.from).format("DD MMM YYYY")
@@ -300,8 +300,15 @@ function DateRangePicker({
 		? dayjs(value.to).format("DD MMM YYYY")
 		: "Seleccionar";
 
+	function handleOpenChange(nextOpen: boolean) {
+		setOpen(nextOpen);
+		if (nextOpen) {
+			setHasOpened(true);
+		}
+	}
+
 	return (
-		<Popover>
+		<Popover open={open} onOpenChange={handleOpenChange}>
 			<PopoverTrigger
 				render={
 					<Button
@@ -351,58 +358,55 @@ function DateRangePicker({
 				}
 			/>
 			<PopoverContent className="w-auto p-0" align="start">
-				<Calendar
-					locale={es}
-					mode="range"
-					defaultMonth={value?.from}
-					selected={value}
-					onSelect={onChange}
-					numberOfMonths={numberOfMonths}
-					disabled={(date) =>
-						isScheduleBoundaryDisabled(date, boundaryType, schedules)
-					}
-				/>
+				{hasOpened ? (
+					<Suspense
+						fallback={
+							<DateRangePickerContentSkeleton numberOfMonths={numberOfMonths} />
+						}
+					>
+						<LazyDateRangePickerContent
+							locationId={locationId}
+							value={value}
+							onChange={onChange}
+							numberOfMonths={numberOfMonths}
+						/>
+					</Suspense>
+				) : null}
 			</PopoverContent>
 		</Popover>
 	);
 }
 
-function isScheduleBoundaryDisabled(
-	date: Date,
-	type: ScheduleSlotType,
-	schedules?: LocationScheduleResponseDto[],
-): boolean {
-	if (!schedules || schedules.length === 0) {
-		return false;
-	}
-
-	const typedSchedules = schedules.filter((schedule) => schedule.type === type);
-	const overrideSchedules = typedSchedules.filter((schedule) => {
-		if (!schedule.specificDate) {
-			return false;
-		}
-
-		return isSameCalendarDay(schedule.specificDate, date);
-	});
-
-	if (overrideSchedules.length > 0) {
-		return false;
-	}
-
-	return !typedSchedules.some(
-		(schedule) => schedule.dayOfWeek === date.getDay(),
-	);
-}
-
-function isSameCalendarDay(left: Date, right: Date): boolean {
-	const leftDate = new Date(left);
-	const rightDate = new Date(right);
-
+function DateRangePickerContentSkeleton({
+	numberOfMonths,
+}: {
+	numberOfMonths: number;
+}) {
 	return (
-		!Number.isNaN(leftDate.getTime()) &&
-		!Number.isNaN(rightDate.getTime()) &&
-		leftDate.getFullYear() === rightDate.getFullYear() &&
-		leftDate.getMonth() === rightDate.getMonth() &&
-		leftDate.getDate() === rightDate.getDate()
+		<div
+			className={cn(
+				"grid gap-3 p-3",
+				numberOfMonths > 1 ? "md:grid-cols-2" : "grid-cols-1",
+			)}
+		>
+			{Array.from({ length: numberOfMonths }, (_, index) => ({
+				monthKey: `date-range-skeleton-month-${index + 1}`,
+				dayKeys: Array.from({ length: 35 }, (_, dayIndex) => {
+					const week = Math.floor(dayIndex / 7) + 1;
+					const day = (dayIndex % 7) + 1;
+
+					return `date-range-skeleton-month-${index + 1}-week-${week}-day-${day}`;
+				}),
+			})).map((month) => (
+				<div key={month.monthKey} className="space-y-3">
+					<Skeleton className="h-8 w-32" />
+					<div className="grid grid-cols-7 gap-2">
+						{month.dayKeys.map((dayKey) => (
+							<Skeleton key={dayKey} className="h-8 w-8 rounded-md" />
+						))}
+					</div>
+				</div>
+			))}
+		</div>
 	);
 }

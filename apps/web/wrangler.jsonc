@@ -36,14 +36,6 @@
       "custom_domain": true,
     },
     {
-      "pattern": "equipment.depiqo.com/*",
-      "zone_name": "depiqo.com",
-    },
-    {
-      "pattern": "branding.depiqo.com/*",
-      "zone_name": "depiqo.com",
-    },
-    {
       "pattern": "*/*",
       "zone_name": "depiqo.com",
     },
