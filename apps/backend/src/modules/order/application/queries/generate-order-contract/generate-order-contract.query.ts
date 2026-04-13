@@ -8,4 +8,5 @@ export class GenerateOrderContractQuery {
 export interface GenerateOrderContractResult {
   buffer: Buffer;
   remitoNumber: string;
+  downloadFileName: string;
 }

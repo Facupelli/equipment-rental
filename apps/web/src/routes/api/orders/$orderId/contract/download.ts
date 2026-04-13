@@ -17,7 +17,7 @@ function jsonError(message: string, status: number) {
   return Response.json({ message }, { status });
 }
 
-export const Route = createFileRoute("/api/orders/$orderId/contract")({
+export const Route = createFileRoute("/api/orders/$orderId/contract/download")({
   server: {
     handlers: {
       GET: async ({ params }) => {
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/api/orders/$orderId/contract")({
         try {
           const session = await requireSession({ actorType: ActorType.USER });
           const response = await fetch(
-            `${process.env.BACKEND_URL}/orders/${parsedParams.data.orderId}/contract`,
+            `${process.env.BACKEND_URL}/orders/${parsedParams.data.orderId}/contract/download`,
             {
               method: "GET",
               headers: {

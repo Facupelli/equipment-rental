@@ -1,4 +1,5 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { tenantConfigSchema } from '@repo/schemas';
 import { err, ok, Result } from 'neverthrow';
 import { ContractCustomerProfileMissingError } from 'src/modules/order/domain/errors/contract.errors';
 import { PrismaService } from 'src/core/database/prisma.service';
@@ -74,6 +75,7 @@ export class GenerateOrderContractService implements IQueryHandler<
       select: {
         name: true,
         logoUrl: true,
+        config: true,
       },
     });
 
@@ -102,10 +104,13 @@ export class GenerateOrderContractService implements IQueryHandler<
 
     // ── Financial snapshot ────────────────────────────────────────────────────
 
+    const tenantConfig = tenantConfigSchema.parse(tenant.config);
     const financialSnapshot = order.financialSnapshot as { total?: string };
-    const agreedPrice = financialSnapshot.total
-      ? `$ ${Number(financialSnapshot.total).toLocaleString('es-AR')}`
-      : '$ 0';
+    const agreedPrice = formatCurrency(
+      Number(financialSnapshot.total ?? 0),
+      tenantConfig.pricing.currency,
+      tenantConfig.pricing.locale,
+    );
 
     // ── Equipment lines ───────────────────────────────────────────────────────
     // PRODUCT → one line with quantity 1
@@ -135,7 +140,10 @@ export class GenerateOrderContractService implements IQueryHandler<
     });
 
     // ── Assemble contract data ────────────────────────────────────────────────
-    const remitoNumber = `${tenant.name}-${String(order.orderNumber).padStart(4, '0')}`;
+    const paddedOrderNumber = String(order.orderNumber).padStart(4, '0');
+    const remitoNumber = `${tenant.name}-${paddedOrderNumber}`;
+    const customerFullName = `${order.customer.firstName} ${order.customer.lastName}`;
+    const downloadFileName = buildContractDownloadFileName(customerFullName, paddedOrderNumber);
 
     const contractData: ContractData = {
       remito: {
@@ -145,7 +153,7 @@ export class GenerateOrderContractService implements IQueryHandler<
         jornadas,
         agreedPrice,
         logoUrl: tenant.logoUrl,
-        customerName: `${order.customer.firstName} ${order.customer.lastName}`,
+        customerName: customerFullName,
         documentNumber: order.customer.profile.documentNumber,
       },
       equipmentLines,
@@ -153,7 +161,7 @@ export class GenerateOrderContractService implements IQueryHandler<
 
     const buffer = await this.contractRenderer.render(contractData);
 
-    return ok({ buffer, remitoNumber });
+    return ok({ buffer, remitoNumber, downloadFileName });
   }
 }
 
@@ -192,4 +200,28 @@ function parseIncludedItems(value: unknown): IncludedItem[] {
       },
     ];
   });
+}
+
+function formatCurrency(amount: number, currency: string, locale: string): string {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toFixed(2)}`;
+  }
+}
+
+function buildContractDownloadFileName(customerFullName: string, paddedOrderNumber: string): string {
+  const normalizedName = customerFullName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+
+  return normalizedName.length > 0 ? `${normalizedName}-${paddedOrderNumber}` : paddedOrderNumber;
 }

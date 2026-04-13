@@ -42,6 +42,7 @@ import { Route as AdminDashboardCustomersPendingProfilesIndexRouteImport } from 
 import { Route as AdminDashboardCatalogProductsIndexRouteImport } from './routes/_admin/dashboard/catalog/products/index'
 import { Route as AdminDashboardCatalogCategoriesIndexRouteImport } from './routes/_admin/dashboard/catalog/categories/index'
 import { Route as AdminDashboardCatalogBundlesIndexRouteImport } from './routes/_admin/dashboard/catalog/bundles/index'
+import { Route as ApiOrdersOrderIdContractDownloadRouteImport } from './routes/api/orders/$orderId/contract/download'
 import { Route as AdminDashboardCustomersPendingProfilesCustomerProfileIdRouteImport } from './routes/_admin/dashboard/customers/pending-profiles/$customerProfileId'
 import { Route as AdminDashboardCatalogProductsNewRouteImport } from './routes/_admin/dashboard/catalog/products/new'
 import { Route as AdminDashboardCatalogBundlesNewRouteImport } from './routes/_admin/dashboard/catalog/bundles/new'
@@ -232,6 +233,12 @@ const AdminDashboardCatalogBundlesIndexRoute =
     path: '/catalog/bundles/',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
+const ApiOrdersOrderIdContractDownloadRoute =
+  ApiOrdersOrderIdContractDownloadRouteImport.update({
+    id: '/download',
+    path: '/download',
+    getParentRoute: () => ApiOrdersOrderIdContractRoute,
+  } as any)
 const AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute =
   AdminDashboardCustomersPendingProfilesCustomerProfileIdRouteImport.update({
     id: '/customers/pending-profiles/$customerProfileId',
@@ -291,7 +298,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
-  '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRoute
+  '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/owners/': typeof AdminDashboardOwnersIndexRoute
@@ -305,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/dashboard/customers/pending-profiles/$customerProfileId': typeof AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute
+  '/api/orders/$orderId/contract/download': typeof ApiOrdersOrderIdContractDownloadRoute
   '/dashboard/catalog/bundles/': typeof AdminDashboardCatalogBundlesIndexRoute
   '/dashboard/catalog/categories/': typeof AdminDashboardCatalogCategoriesIndexRoute
   '/dashboard/catalog/products/': typeof AdminDashboardCatalogProductsIndexRoute
@@ -330,7 +338,7 @@ export interface FileRoutesByTo {
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
-  '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRoute
+  '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/dashboard/customers': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/owners': typeof AdminDashboardOwnersIndexRoute
@@ -344,6 +352,7 @@ export interface FileRoutesByTo {
   '/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/dashboard/customers/pending-profiles/$customerProfileId': typeof AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute
+  '/api/orders/$orderId/contract/download': typeof ApiOrdersOrderIdContractDownloadRoute
   '/dashboard/catalog/bundles': typeof AdminDashboardCatalogBundlesIndexRoute
   '/dashboard/catalog/categories': typeof AdminDashboardCatalogCategoriesIndexRoute
   '/dashboard/catalog/products': typeof AdminDashboardCatalogProductsIndexRoute
@@ -373,7 +382,7 @@ export interface FileRoutesById {
   '/_admin/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/_admin/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
-  '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRoute
+  '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/_admin/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/_admin/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/_admin/dashboard/owners/': typeof AdminDashboardOwnersIndexRoute
@@ -387,6 +396,7 @@ export interface FileRoutesById {
   '/_admin/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/_admin/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/_admin/dashboard/customers/pending-profiles/$customerProfileId': typeof AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute
+  '/api/orders/$orderId/contract/download': typeof ApiOrdersOrderIdContractDownloadRoute
   '/_admin/dashboard/catalog/bundles/': typeof AdminDashboardCatalogBundlesIndexRoute
   '/_admin/dashboard/catalog/categories/': typeof AdminDashboardCatalogCategoriesIndexRoute
   '/_admin/dashboard/catalog/products/': typeof AdminDashboardCatalogProductsIndexRoute
@@ -429,6 +439,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalog/bundles/new'
     | '/dashboard/catalog/products/new'
     | '/dashboard/customers/pending-profiles/$customerProfileId'
+    | '/api/orders/$orderId/contract/download'
     | '/dashboard/catalog/bundles/'
     | '/dashboard/catalog/categories/'
     | '/dashboard/catalog/products/'
@@ -468,6 +479,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalog/bundles/new'
     | '/dashboard/catalog/products/new'
     | '/dashboard/customers/pending-profiles/$customerProfileId'
+    | '/api/orders/$orderId/contract/download'
     | '/dashboard/catalog/bundles'
     | '/dashboard/catalog/categories'
     | '/dashboard/catalog/products'
@@ -510,6 +522,7 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/catalog/bundles/new'
     | '/_admin/dashboard/catalog/products/new'
     | '/_admin/dashboard/customers/pending-profiles/$customerProfileId'
+    | '/api/orders/$orderId/contract/download'
     | '/_admin/dashboard/catalog/bundles/'
     | '/_admin/dashboard/catalog/categories/'
     | '/_admin/dashboard/catalog/products/'
@@ -531,7 +544,7 @@ export interface RootRouteChildren {
   AdminAdminLoginRoute: typeof AdminAdminLoginRoute
   AdminAdminRegisterRoute: typeof AdminAdminRegisterRoute
   ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute: typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
-  ApiOrdersOrderIdContractRoute: typeof ApiOrdersOrderIdContractRoute
+  ApiOrdersOrderIdContractRoute: typeof ApiOrdersOrderIdContractRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -767,6 +780,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardCatalogBundlesIndexRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
+    '/api/orders/$orderId/contract/download': {
+      id: '/api/orders/$orderId/contract/download'
+      path: '/download'
+      fullPath: '/api/orders/$orderId/contract/download'
+      preLoaderRoute: typeof ApiOrdersOrderIdContractDownloadRouteImport
+      parentRoute: typeof ApiOrdersOrderIdContractRoute
+    }
     '/_admin/dashboard/customers/pending-profiles/$customerProfileId': {
       id: '/_admin/dashboard/customers/pending-profiles/$customerProfileId'
       path: '/customers/pending-profiles/$customerProfileId'
@@ -920,6 +940,21 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
 const AdminDashboardRouteRouteWithChildren =
   AdminDashboardRouteRoute._addFileChildren(AdminDashboardRouteRouteChildren)
 
+interface ApiOrdersOrderIdContractRouteChildren {
+  ApiOrdersOrderIdContractDownloadRoute: typeof ApiOrdersOrderIdContractDownloadRoute
+}
+
+const ApiOrdersOrderIdContractRouteChildren: ApiOrdersOrderIdContractRouteChildren =
+  {
+    ApiOrdersOrderIdContractDownloadRoute:
+      ApiOrdersOrderIdContractDownloadRoute,
+  }
+
+const ApiOrdersOrderIdContractRouteWithChildren =
+  ApiOrdersOrderIdContractRoute._addFileChildren(
+    ApiOrdersOrderIdContractRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PortalRouteRoute: PortalRouteRouteWithChildren,
@@ -931,7 +966,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAdminRegisterRoute: AdminAdminRegisterRoute,
   ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute:
     ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute,
-  ApiOrdersOrderIdContractRoute: ApiOrdersOrderIdContractRoute,
+  ApiOrdersOrderIdContractRoute: ApiOrdersOrderIdContractRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

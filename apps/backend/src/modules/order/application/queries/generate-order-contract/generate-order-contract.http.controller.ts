@@ -17,15 +17,38 @@ export class GenerateOrderContractHttpController {
   constructor(private readonly queryBus: QueryBus) {}
 
   @Get(':orderId/contract')
-  async generateContract(
+  async previewContract(
     @Param('orderId') orderId: string,
     @CurrentUser() user: AuthenticatedUser,
     @Res() res: Response,
   ): Promise<void> {
+    await this.sendContractResponse({ orderId, tenantId: user.tenantId, res, disposition: 'inline' });
+  }
+
+  @Get(':orderId/contract/download')
+  async downloadContract(
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() res: Response,
+  ): Promise<void> {
+    await this.sendContractResponse({ orderId, tenantId: user.tenantId, res, disposition: 'attachment' });
+  }
+
+  private async sendContractResponse({
+    orderId,
+    tenantId,
+    res,
+    disposition,
+  }: {
+    orderId: string;
+    tenantId: string;
+    res: Response;
+    disposition: 'inline' | 'attachment';
+  }): Promise<void> {
     let result: Result<GenerateOrderContractResult, ContractCustomerProfileMissingError>;
 
     try {
-      result = await this.queryBus.execute(new GenerateOrderContractQuery(user.tenantId, orderId));
+      result = await this.queryBus.execute(new GenerateOrderContractQuery(tenantId, orderId));
     } catch (error) {
       if (error instanceof OrderNotFoundException) {
         throw new NotFoundException(error.message);
@@ -44,11 +67,11 @@ export class GenerateOrderContractHttpController {
       throw error;
     }
 
-    const { buffer, remitoNumber } = result.value;
+    const { buffer, downloadFileName } = result.value;
 
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="remito-${remitoNumber}.pdf"`,
+      'Content-Disposition': `${disposition}; filename="remito-${downloadFileName}.pdf"`,
       'Content-Length': buffer.length,
     });
 

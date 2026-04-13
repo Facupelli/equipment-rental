@@ -1,5 +1,7 @@
 import React from 'react';
-import { Page, View, Text, StyleSheet, Image } from '@react-pdf/renderer';
+import { Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+
+const A4_PAGE_SIZE = { width: 595.28, height: 841.89 } as const;
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -7,9 +9,9 @@ import { Page, View, Text, StyleSheet, Image } from '@react-pdf/renderer';
 
 const s = StyleSheet.create({
   page: {
-    paddingTop: 40,
-    paddingBottom: 48,
-    paddingHorizontal: 48,
+    paddingTop: 8,
+    paddingBottom: 38,
+    paddingHorizontal: 26,
     fontSize: 8.5,
     fontFamily: 'Helvetica',
     color: '#1a1a1a',
@@ -18,27 +20,52 @@ const s = StyleSheet.create({
 
   headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: 2,
+    minHeight: 34,
   },
-  logo: {
-    width: 100,
-    height: 40,
-    objectFit: 'contain',
+  headerLine: {
+    flex: 1,
+    borderTop: '2pt solid #111111',
   },
   anexoLabel: {
-    fontSize: 9,
-    color: '#555',
+    fontSize: 10,
+    color: '#111',
     textAlign: 'right',
+    marginBottom: 2,
+  },
+  headerRight: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  headerRightContent: {
+    width: '100%',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+
+  frame: {
+    height: 690,
+    border: '2pt solid #111111',
+    borderRadius: 14,
+    paddingTop: 20,
+    paddingHorizontal: 18,
+    paddingBottom: 18,
+  },
+  frameContent: {
+    flex: 1,
+    justifyContent: 'space-between',
   },
 
   intro: {
     marginBottom: 12,
+    fontSize: 8.5,
   },
 
   clause: {
     marginBottom: 8,
+    fontSize: 8.5,
   },
 
   signatureRow: {
@@ -68,15 +95,19 @@ const s = StyleSheet.create({
 
   pageFooter: {
     position: 'absolute',
-    bottom: 20,
-    left: 48,
-    right: 48,
+    bottom: 12,
+    left: 54,
+    right: 54,
     flexDirection: 'row',
     justifyContent: 'space-between',
     fontSize: 7,
-    color: '#888',
-    borderTop: '0.5pt solid #ddd',
+    color: '#111',
     paddingTop: 4,
+  },
+  footerText: {
+    maxWidth: '33%',
+    textAlign: 'center',
+    color: '#737373',
   },
 });
 
@@ -106,48 +137,52 @@ interface AnexoPageProps {
   logoUrl: string | null;
 }
 
-export function AnexoPage({ logoUrl }: AnexoPageProps) {
+export function AnexoPage({ logoUrl: _logoUrl }: AnexoPageProps) {
   return (
-    <Page size="A4" style={s.page}>
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
+    <Page size={A4_PAGE_SIZE} style={s.page} wrap={false}>
       <View style={s.headerRow}>
-        {logoUrl ? <Image style={s.logo} src={logoUrl} /> : <View style={s.logo} />}
-        <Text style={s.anexoLabel}>ANEXO I</Text>
-      </View>
-
-      {/* ── Intro ────────────────────────────────────────────────────────────── */}
-      <Text style={s.intro}>
-        Este anexo tiene como fin establecer las condiciones de alquiler de equipos solicitados por el cliente, dejando
-        claras las responsabilidades de cada parte, y funcionando como contrato entre las partes abajo firmantes.
-      </Text>
-
-      {/* ── Clauses ──────────────────────────────────────────────────────────── */}
-      {CLAUSES.map((text, index) => (
-        <Text key={index} style={s.clause}>
-          {index + 1}. {text}
-        </Text>
-      ))}
-
-      {/* ── Conformity line ──────────────────────────────────────────────────── */}
-      <Text style={s.conformityLine}>SE FIRMA ESTE EJEMPLAR EXPRESANDO CONFORMIDAD DE AMBAS PARTES.</Text>
-
-      {/* ── Signatures ───────────────────────────────────────────────────────── */}
-      <View style={s.signatureRow}>
-        <View style={s.signatureBlock}>
-          <View style={s.signatureLine} />
-          <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DE PRODUCCIÓN</Text>
-        </View>
-        <View style={s.signatureBlock}>
-          <View style={s.signatureLine} />
-          <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DEL RENTAL</Text>
+        <View style={s.headerRight}>
+          <View style={s.headerRightContent}>
+            <Text style={s.anexoLabel}>ANEXO I</Text>
+          </View>
         </View>
       </View>
 
-      {/* ── Page footer ──────────────────────────────────────────────────────── */}
+      <View style={s.frame}>
+        <View style={s.frameContent}>
+          <View>
+            <Text style={s.intro}>
+              Este anexo tiene como fin establecer las condiciones de alquiler de equipos solicitados por el cliente,
+              dejando claras las responsabilidades de cada parte, y funcionando como contrato entre las partes abajo
+              firmantes.
+            </Text>
+
+            {CLAUSES.map((text, index) => (
+              <Text key={index} style={s.clause}>
+                {index + 1}. {text}
+              </Text>
+            ))}
+
+            <Text style={s.conformityLine}>SE FIRMA ESTE EJEMPLAR EXPRESANDO CONFORMIDAD DE AMBAS PARTES.</Text>
+          </View>
+
+          <View style={s.signatureRow}>
+            <View style={s.signatureBlock}>
+              <View style={s.signatureLine} />
+              <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DE PRODUCCIÓN</Text>
+            </View>
+            <View style={s.signatureBlock}>
+              <View style={s.signatureLine} />
+              <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DEL RENTAL</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
       <View style={s.pageFooter}>
-        <Text>2026. GUARIDA RENTAL. SAN JUAN, ARGENTINA.</Text>
-        <Text>Telefono de contacto: 680 870 274</Text>
-        <Text>www.guaridarental.com - guaridarental@gmail.com</Text>
+        <Text style={s.footerText}>2026. GUARIDA RENTAL. SAN JUAN, ARGENTINA.</Text>
+        <Text style={s.footerText}>Telefono de contacto: 680 870 274</Text>
+        <Text style={s.footerText}>www.guaridarental.com - guaridarental@gmail.com</Text>
       </View>
     </Page>
   );
