@@ -19,6 +19,8 @@ import {
 } from "../cart-page.context";
 import { buildR2PublicUrl } from "@/lib/r2-public-url";
 
+const CART_MONEY_FRACTION_DIGITS = 2;
+
 export function CartPageItemList() {
   const { data: tenantPriceConfig } = useTenantPricingConfig();
   const { cartItems } = useCartContext();
@@ -139,6 +141,7 @@ export function CartPageStandaloneItem({
                 line.pricePerBillingUnit,
                 priceConfig.currency,
                 priceConfig.locale,
+                CART_MONEY_FRACTION_DIGITS,
               )}{" "}
               <span className="uppercase text-xs tracking-wider font-semibold text-neutral-400">
                 / {item.billingUnitLabel}
@@ -208,6 +211,7 @@ function CartPageBundleItem({
                 line.subtotal,
                 priceConfig.currency,
                 priceConfig.locale,
+                CART_MONEY_FRACTION_DIGITS,
               )}
             </p>
           ) : null}

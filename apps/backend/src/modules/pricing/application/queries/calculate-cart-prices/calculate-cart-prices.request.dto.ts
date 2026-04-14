@@ -18,6 +18,8 @@ export const CalculateCartPricesRequestSchema = z.object({
   currency: z.string().length(3),
   pickupDate: z.string(),
   returnDate: z.string(),
+  pickupTime: z.number().int().min(0).max(1439).optional(),
+  returnTime: z.number().int().min(0).max(1439).optional(),
   items: z.array(z.discriminatedUnion('type', [CartProductItemSchema, CartBundleItemSchema])),
   insuranceSelected: z.boolean().default(false),
   customerId: z.string().uuid().optional(),

@@ -19,6 +19,8 @@ export class CalculateCartPricesQuery {
     public readonly currency: string,
     public readonly pickupDate: string,
     public readonly returnDate: string,
+    public readonly pickupTime: number | undefined,
+    public readonly returnTime: number | undefined,
     public readonly items: CartQueryItem[],
     public readonly insuranceSelected: boolean,
     public readonly customerId?: string,

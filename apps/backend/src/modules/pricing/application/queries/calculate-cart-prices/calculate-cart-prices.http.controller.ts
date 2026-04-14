@@ -38,6 +38,8 @@ export class CalculateCartPricesHttpController {
       dto.currency,
       dto.pickupDate,
       dto.returnDate,
+      dto.pickupTime,
+      dto.returnTime,
       dto.items,
       dto.insuranceSelected,
       dto.customerId,

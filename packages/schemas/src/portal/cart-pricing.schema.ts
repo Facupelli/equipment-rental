@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { localDateSchema } from "../shared/rental-temporal.schema";
+import {
+  localDateSchema,
+  minutesFromMidnightSchema,
+} from "../shared/rental-temporal.schema";
 
 // ── Request schemas ────────────────────────────────────────────────────────
 
@@ -25,6 +28,8 @@ export const calculateCartPricesRequestSchema = z.object({
   currency: z.string().length(3),
   pickupDate: localDateSchema,
   returnDate: localDateSchema,
+  pickupTime: minutesFromMidnightSchema.optional(),
+  returnTime: minutesFromMidnightSchema.optional(),
   items: z.array(cartItemSchema),
   insuranceSelected: z.boolean().default(false),
   customerId: z.uuid().optional(),

@@ -126,7 +126,16 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
     let period: DateRange;
 
     try {
-      period = DateRange.fromLocalDateKeys(query.pickupDate, query.returnDate, tenantConfig.timezone);
+      period =
+        query.pickupTime !== undefined && query.returnTime !== undefined
+          ? DateRange.fromLocalDateKeySlots(
+              query.pickupDate,
+              query.pickupTime,
+              query.returnDate,
+              query.returnTime,
+              tenantConfig.timezone,
+            )
+          : DateRange.fromLocalDateKeys(query.pickupDate, query.returnDate, tenantConfig.timezone);
     } catch {
       return err(new PricingPeriodInvalidError());
     }

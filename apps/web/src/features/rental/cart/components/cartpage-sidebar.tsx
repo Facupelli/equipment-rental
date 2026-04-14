@@ -56,6 +56,8 @@ import {
   useCartPricingContext,
 } from "../cart-page.context";
 
+const CART_MONEY_FRACTION_DIGITS = 2;
+
 export function CartPageSidebar() {
   const { data: tenantPriceConfig } = useTenantPricingConfig();
   const { cartItems } = useCartContext();
@@ -180,6 +182,7 @@ export function CartPageSidebar() {
                     breakdown.total,
                     tenantPriceConfig.currency,
                     tenantPriceConfig.locale,
+                    CART_MONEY_FRACTION_DIGITS,
                   )
                 : "—"}
             </p>
@@ -729,7 +732,12 @@ export function CartPagePriceBreakdown({
         ) : (
           <p className="text-xl font-black text-black">
             {total != null
-              ? formatCurrency(total, priceConfig.currency, priceConfig.locale)
+              ? formatCurrency(
+                  total,
+                  priceConfig.currency,
+                  priceConfig.locale,
+                  CART_MONEY_FRACTION_DIGITS,
+                )
               : "—"}
           </p>
         )}
@@ -937,7 +945,12 @@ function BreakdownRow({
       ) : (
         <p className={cn("text-sm", valueColor)}>
           {value != null
-            ? `${prefix ?? ""}${formatCurrency(value, priceConfig.currency, priceConfig.locale)}`
+            ? `${prefix ?? ""}${formatCurrency(
+                value,
+                priceConfig.currency,
+                priceConfig.locale,
+                CART_MONEY_FRACTION_DIGITS,
+              )}`
             : "—"}
         </p>
       )}
@@ -947,9 +960,10 @@ function BreakdownRow({
 
 type DiscountTagProps = {
   discount: CartDiscountLineItem;
+  priceConfig: TenantPricingConfig;
 };
 
-function DiscountTag({ discount }: DiscountTagProps) {
+function DiscountTag({ discount, priceConfig }: DiscountTagProps) {
   const label = discount.label;
   const sourceId = discount.sourceId;
 
@@ -964,7 +978,7 @@ function DiscountTag({ discount }: DiscountTagProps) {
         {label}
       </span>
       <span className="text-[10px] font-black text-green-700">
-        {formatDiscount(discount)}
+        {formatDiscount(discount, priceConfig.currency, priceConfig.locale)}
       </span>
     </div>
   );
@@ -996,6 +1010,7 @@ function LineItemRow({ item, priceConfig }: LineItemRowProps) {
               <DiscountTag
                 key={discount.sourceId || discount.ruleId}
                 discount={discount}
+                priceConfig={priceConfig}
               />
             ))}
           </div>
@@ -1009,6 +1024,7 @@ function LineItemRow({ item, priceConfig }: LineItemRowProps) {
               originalSubtotal,
               priceConfig.currency,
               priceConfig.locale,
+              CART_MONEY_FRACTION_DIGITS,
             )}
           </span>
         )}
@@ -1017,6 +1033,7 @@ function LineItemRow({ item, priceConfig }: LineItemRowProps) {
             item.subtotal,
             priceConfig.currency,
             priceConfig.locale,
+            CART_MONEY_FRACTION_DIGITS,
           )}
         </span>
       </div>
@@ -1044,6 +1061,7 @@ function SavingsBanner({ totalDiscount, priceConfig }: SavingsBannerProps) {
           totalDiscount,
           priceConfig.currency,
           priceConfig.locale,
+          CART_MONEY_FRACTION_DIGITS,
         )}
       </p>
     </div>

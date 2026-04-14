@@ -1,6 +1,8 @@
+import type { CartDiscountLineItem, CartPriceLineItem } from "@repo/schemas";
 import dayjs from "@/lib/dates/dayjs";
 import { formatCurrency } from "@/shared/utils/price.utils";
-import type { CartDiscountLineItem, CartPriceLineItem } from "@repo/schemas";
+
+const CART_MONEY_FRACTION_DIGITS = 2;
 
 export const formatSlot = (minutes: number): string =>
 	dayjs().startOf("day").add(minutes, "minute").format("h:mm A");
@@ -14,11 +16,20 @@ export const formatSlot = (minutes: number): string =>
  * The minus sign uses the proper unicode minus (U+2212) rather than a hyphen,
  * which renders more crisply at small sizes next to currency symbols.
  */
-export function formatDiscount(discount: CartDiscountLineItem): string {
+export function formatDiscount(
+	discount: CartDiscountLineItem,
+	currency: string,
+	locale: string,
+): string {
 	if (discount.type === "PERCENTAGE") {
 		return `\u2212${discount.value}%`;
 	}
-	return `\u2212${formatCurrency(discount.discountAmount)}`;
+	return `\u2212${formatCurrency(
+		discount.discountAmount,
+		currency,
+		locale,
+		CART_MONEY_FRACTION_DIGITS,
+	)}`;
 }
 
 /**
