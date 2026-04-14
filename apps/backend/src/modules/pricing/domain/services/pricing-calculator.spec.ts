@@ -5,7 +5,7 @@ import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.ex
 import { PricingRuleCondition, PricingRuleEffect, RuleApplicationContext } from '../types/pricing-rule.types';
 import { PricingCalculator, PricingCalculatorInput } from './pricing-calculator.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
-import { PricingRuleEffectType } from '@repo/types';
+import { PricingRuleEffectType, RoundingRule } from '@repo/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test Fixtures
@@ -104,6 +104,7 @@ function makeInput(overrides: Partial<PricingCalculatorInput> = {}): PricingCalc
     billingUnitDurationMinutes: 60,
     tenantTimezone: 'UTC',
     weekendCountsAsOne: false,
+    roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
     tiers: [makeTier(1, null, 10)],
     rules: [],
     context: makeContext(),
@@ -161,6 +162,7 @@ describe('PricingCalculator', () => {
           billingUnitDurationMinutes: 1440,
           tenantTimezone: 'America/Argentina/Buenos_Aires',
           weekendCountsAsOne: true,
+          roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
           tiers: [makeTier(1, 1, 100), makeTier(2, 2, 80), makeTier(3, null, 60)],
         }),
       );

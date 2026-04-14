@@ -10,7 +10,7 @@ import { PricingAdjustment } from '../types/pricing-adjustment.types';
 import { BillingUnitResolverService } from './billing-unit-resolver.service';
 import { LongRentalDiscountEvaluatorService } from './long-rental-discount-evaluator.service';
 import { PromotionEvaluatorService } from './promotion-evaluator.service';
-import { PricingRuleEffectType } from '@repo/types';
+import { PricingRuleEffectType, RoundingRule } from '@repo/types';
 
 export type NewPricingResult = {
   basePrice: Money;
@@ -25,6 +25,7 @@ export type NewPricingCalculatorInput = {
   billingUnitDurationMinutes: number;
   tenantTimezone: string;
   weekendCountsAsOne: boolean;
+  roundingRule: RoundingRule;
   tiers: PricingTier[];
   longRentalDiscounts: LongRentalDiscount[];
   promotions: Promotion[];
@@ -44,6 +45,7 @@ export class NewPricingCalculatorService {
       billingUnitDurationMinutes: input.billingUnitDurationMinutes,
       tenantTimezone: input.tenantTimezone,
       weekendCountsAsOne: input.weekendCountsAsOne,
+      roundingRule: input.roundingRule,
     });
 
     const tier = this.resolveTier(input.tiers, units, input.entityId);

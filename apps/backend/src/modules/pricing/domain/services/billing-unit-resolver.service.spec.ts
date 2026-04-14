@@ -1,3 +1,4 @@
+import { RoundingRule } from '@repo/types';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { BillingUnitResolverService } from './billing-unit-resolver.service';
 
@@ -14,6 +15,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 60,
       tenantTimezone: 'UTC',
       weekendCountsAsOne: true,
+      roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
     });
 
     expect(units).toBe(2);
@@ -25,6 +27,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       tenantTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: false,
+      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
     });
 
     expect(units).toBe(3);
@@ -36,6 +39,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       tenantTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
+      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
     });
 
     expect(units).toBe(2);
@@ -47,6 +51,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       tenantTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
+      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
     });
 
     expect(units).toBe(1);
@@ -58,6 +63,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       tenantTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
+      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
     });
 
     expect(units).toBe(1);
@@ -69,6 +75,43 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       tenantTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
+      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
+    });
+
+    expect(units).toBe(2);
+  });
+
+  it('ignores a partial extra day for daily rentals when configured', () => {
+    const units = resolver.resolveUnits({
+      period: DateRange.create(new Date('2025-05-11T08:00:00Z'), new Date('2025-05-13T09:00:00Z')),
+      billingUnitDurationMinutes: 1440,
+      tenantTimezone: 'UTC',
+      weekendCountsAsOne: false,
+      roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
+    });
+
+    expect(units).toBe(2);
+  });
+
+  it('bills a partial extra day as a new unit when configured', () => {
+    const units = resolver.resolveUnits({
+      period: DateRange.create(new Date('2025-05-11T08:00:00Z'), new Date('2025-05-13T09:00:00Z')),
+      billingUnitDurationMinutes: 1440,
+      tenantTimezone: 'UTC',
+      weekendCountsAsOne: false,
+      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
+    });
+
+    expect(units).toBe(3);
+  });
+
+  it('applies weekend collapse on top of ignored daily partials instead of replacing the base model', () => {
+    const units = resolver.resolveUnits({
+      period: DateRange.create(new Date('2025-01-03T13:00:00Z'), new Date('2025-01-06T14:00:00Z')),
+      billingUnitDurationMinutes: 1440,
+      tenantTimezone: 'America/Argentina/Buenos_Aires',
+      weekendCountsAsOne: true,
+      roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
     });
 
     expect(units).toBe(2);

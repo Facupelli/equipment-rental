@@ -1,13 +1,13 @@
 /**
- * How to handle a remainder that does not fill a complete billing unit.
+ * How to handle remaining partial time for daily rentals.
  *
- * SPLIT    → decompose the remainder into the next smaller unit(s).
- *            e.g. 36h with [full_day=24h, half_day=12h] → 1 full_day + 1 half_day
- *
- * ROUND_UP → round the last partial unit up to one full unit of the same type.
- *            e.g. 30h with [full_day=24h, half_day=12h] → 2 full_days (6h remainder rounded up)
+ * IGNORE_PARTIAL_UNIT        → bill only completed 24h units, while still
+ *                              enforcing a minimum of one billed day for any
+ *                              non-zero daily rental.
+ * BILL_PARTIAL_AS_FULL_UNIT → bill any remaining partial time as one
+ *                              additional day.
  */
 export enum RoundingRule {
-  SPLIT = "SPLIT",
-  ROUND_UP = "ROUND_UP",
+  IGNORE_PARTIAL_UNIT = "IGNORE_PARTIAL_UNIT",
+  BILL_PARTIAL_AS_FULL_UNIT = "BILL_PARTIAL_AS_FULL_UNIT",
 }

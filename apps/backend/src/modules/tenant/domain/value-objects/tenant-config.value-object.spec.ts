@@ -18,7 +18,7 @@ describe('TenantConfig', () => {
           overRentalEnabled: false,
           maxOverRentThreshold: 0,
           weekendCountsAsOne: false,
-          roundingRule: RoundingRule.ROUND_UP,
+          roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
           currency: 'ARS',
           locale: 'es-AR',
         },
@@ -35,7 +35,7 @@ describe('TenantConfig', () => {
         overRentalEnabled: false,
         maxOverRentThreshold: 0,
         weekendCountsAsOne: false,
-        roundingRule: RoundingRule.ROUND_UP,
+        roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
         currency: 'ARS',
         locale: 'es-AR',
       },
@@ -44,5 +44,22 @@ describe('TenantConfig', () => {
     });
 
     expect(config.bookingMode).toBe('instant-book');
+  });
+
+  it('maps legacy rounding rule values during reconstitution', () => {
+    const config = TenantConfig.reconstitute({
+      pricing: {
+        overRentalEnabled: false,
+        maxOverRentThreshold: 0,
+        weekendCountsAsOne: false,
+        roundingRule: 'SPLIT' as never,
+        currency: 'ARS',
+        locale: 'es-AR',
+      },
+      timezone: 'UTC',
+      newArrivalsWindowDays: 30,
+    });
+
+    expect(config.pricing.roundingRule).toBe(RoundingRule.IGNORE_PARTIAL_UNIT);
   });
 });

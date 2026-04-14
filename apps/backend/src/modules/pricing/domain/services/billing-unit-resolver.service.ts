@@ -1,3 +1,4 @@
+import { RoundingRule } from '@repo/types';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 
 export type ResolveBillingUnitsInput = {
@@ -5,6 +6,7 @@ export type ResolveBillingUnitsInput = {
   billingUnitDurationMinutes: number;
   tenantTimezone: string;
   weekendCountsAsOne: boolean;
+  roundingRule: RoundingRule;
 };
 
 const MINUTES_PER_DAY = 24 * 60;
@@ -15,35 +17,54 @@ export class BillingUnitResolverService {
       return Math.ceil(input.period.durationInMinutes() / input.billingUnitDurationMinutes);
     }
 
+    const baseUnits = this.resolveDailyUnits(input.period, input.roundingRule);
+
     if (!input.weekendCountsAsOne) {
-      return Math.ceil(input.period.durationInMinutes() / input.billingUnitDurationMinutes);
+      return baseUnits;
     }
 
-    return this.resolveDayUnitsWithWeekendCollapse(input.period, input.tenantTimezone);
+    return this.applyWeekendCollapse(baseUnits, input.period, input.tenantTimezone);
   }
 
-  private resolveDayUnitsWithWeekendCollapse(period: DateRange, timezone: string): number {
-    if (period.durationInMinutes() === 0) {
+  private resolveDailyUnits(period: DateRange, roundingRule: RoundingRule): number {
+    const durationInMinutes = period.durationInMinutes();
+    if (durationInMinutes === 0) {
+      return 0;
+    }
+
+    const fullUnits = Math.floor(durationInMinutes / MINUTES_PER_DAY);
+    const remainderMinutes = durationInMinutes % MINUTES_PER_DAY;
+
+    if (remainderMinutes === 0) {
+      return fullUnits;
+    }
+
+    if (roundingRule === RoundingRule.BILL_PARTIAL_AS_FULL_UNIT) {
+      return fullUnits + 1;
+    }
+
+    return Math.max(1, fullUnits);
+  }
+
+  private applyWeekendCollapse(baseUnits: number, period: DateRange, timezone: string): number {
+    if (baseUnits === 0) {
       return 0;
     }
 
     const occupiedDates = this.listOccupiedLocalDates(period, timezone);
-    let units = 0;
+    let collapsedWeekendPairs = 0;
 
     for (let index = 0; index < occupiedDates.length; index += 1) {
       const current = occupiedDates[index];
       const next = occupiedDates[index + 1];
 
       if (this.isSaturday(current) && next !== undefined && this.isSunday(next)) {
-        units += 1;
+        collapsedWeekendPairs += 1;
         index += 1;
-        continue;
       }
-
-      units += 1;
     }
 
-    return units;
+    return Math.max(1, baseUnits - collapsedWeekendPairs);
   }
 
   private listOccupiedLocalDates(period: DateRange, timezone: string): string[] {

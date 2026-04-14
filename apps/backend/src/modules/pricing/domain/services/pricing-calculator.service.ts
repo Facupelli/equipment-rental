@@ -5,7 +5,7 @@ import { PricingRule } from '../entities/pricing-rule.entity';
 import { DurationDiscountTier, RuleApplicationContext } from '../types/pricing-rule.types';
 import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exceptions';
 import { PricingTier } from '../entities/pricing-tier.entity';
-import { PricingRuleEffectType, PricingRuleType } from '@repo/types';
+import { PricingRuleEffectType, PricingRuleType, RoundingRule } from '@repo/types';
 import { BillingUnitResolverService } from './billing-unit-resolver.service';
 
 export type AppliedDiscount = {
@@ -29,6 +29,7 @@ export type PricingCalculatorInput = {
   billingUnitDurationMinutes: number;
   tenantTimezone: string;
   weekendCountsAsOne: boolean;
+  roundingRule: RoundingRule;
   tiers: PricingTier[];
   rules: PricingRule[];
   context: RuleApplicationContext;
@@ -56,6 +57,7 @@ export class PricingCalculator {
       billingUnitDurationMinutes: input.billingUnitDurationMinutes,
       tenantTimezone: input.tenantTimezone,
       weekendCountsAsOne: input.weekendCountsAsOne,
+      roundingRule: input.roundingRule,
     });
     const tier = this.resolveTier(input.tiers, units, input.entityId);
     const basePrice = this.computeBasePrice(tier, units, input.currency);

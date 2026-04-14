@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { PricingRuleType, PromotionType } from '@repo/types';
+import { PricingRuleType, PromotionType, RoundingRule } from '@repo/types';
 import { TenantConfig } from '@repo/schemas';
 import { Result, err, ok } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
@@ -73,6 +73,7 @@ export class PricingApplicationService implements PricingPublicApi {
       billingUnitDurationMinutes: meta.billingUnitDurationMinutes,
       tenantTimezone: tenantPricingContext.timezone,
       weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
+      roundingRule: tenantPricingContext.roundingRule,
       tiers,
       rules,
       context,
@@ -108,6 +109,7 @@ export class PricingApplicationService implements PricingPublicApi {
       billingUnitDurationMinutes: meta.billingUnitDurationMinutes,
       tenantTimezone: tenantPricingContext.timezone,
       weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
+      roundingRule: tenantPricingContext.roundingRule,
       tiers,
       rules,
       context,
@@ -140,6 +142,7 @@ export class PricingApplicationService implements PricingPublicApi {
       billingUnitDurationMinutes: meta.billingUnitDurationMinutes,
       tenantTimezone: tenantPricingContext.timezone,
       weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
+      roundingRule: tenantPricingContext.roundingRule,
       tiers,
       longRentalDiscounts: effectiveLongRentalDiscounts,
       promotions: effectivePromotions,
@@ -178,6 +181,7 @@ export class PricingApplicationService implements PricingPublicApi {
       billingUnitDurationMinutes: meta.billingUnitDurationMinutes,
       tenantTimezone: tenantPricingContext.timezone,
       weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
+      roundingRule: tenantPricingContext.roundingRule,
       tiers,
       longRentalDiscounts: effectiveLongRentalDiscounts,
       promotions: effectivePromotions,
@@ -208,6 +212,7 @@ export class PricingApplicationService implements PricingPublicApi {
         billingUnitDurationMinutes,
         tenantTimezone: tenantPricingContext.timezone,
         weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
+        roundingRule: tenantPricingContext.roundingRule,
       });
 
       // Find the tier that covers this unit count.
@@ -230,7 +235,9 @@ export class PricingApplicationService implements PricingPublicApi {
     return result;
   }
 
-  private async loadTenantPricingContext(tenantId: string): Promise<{ timezone: string; weekendCountsAsOne: boolean }> {
+  private async loadTenantPricingContext(
+    tenantId: string,
+  ): Promise<{ timezone: string; weekendCountsAsOne: boolean; roundingRule: RoundingRule }> {
     const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
       new GetTenantConfigQuery(tenantId),
     );
@@ -242,6 +249,7 @@ export class PricingApplicationService implements PricingPublicApi {
     return {
       timezone: tenantConfig.timezone,
       weekendCountsAsOne: tenantConfig.pricing.weekendCountsAsOne,
+      roundingRule: tenantConfig.pricing.roundingRule,
     };
   }
 
