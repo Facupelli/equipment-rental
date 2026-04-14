@@ -6,6 +6,7 @@ import {
 	type GetBundlesQueryDto,
 	GetBundlesQuerySchema,
 	type PaginatedDto,
+	type ProblemDetails,
 	type UpdateBundleDto,
 	UpdateBundleSchema,
 } from "@repo/schemas";
@@ -15,6 +16,7 @@ import {
 	authenticatedApiFetch as apiFetch,
 	authenticatedApiFetchPaginated as apiFetchPaginated,
 } from "@/lib/api-auth";
+import { ProblemDetailsError } from "@/shared/errors";
 
 const apiUrl = "/bundles";
 
@@ -84,10 +86,17 @@ export const getBundles = createServerFn({ method: "GET" })
 
 export const publishBundle = createServerFn({ method: "POST" })
 	.inputValidator((data: { bundleId: string }) => data)
-	.handler(async ({ data }): Promise<void> => {
-		await apiFetch<void>(`${apiUrl}/${data.bundleId}/publish`, {
-			method: "PATCH",
-		});
+	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+		try {
+			await apiFetch<void>(`${apiUrl}/${data.bundleId}/publish`, {
+				method: "PATCH",
+			});
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+			throw error;
+		}
 	});
 
 export const retireBundle = createServerFn({ method: "POST" })

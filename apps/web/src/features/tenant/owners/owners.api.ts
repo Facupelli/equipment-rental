@@ -1,13 +1,13 @@
-import { authenticatedApiFetch as apiFetch } from "@/lib/api-auth";
 import {
-	createOwnerContractSchema,
-	createOwnerSchema,
 	type CreateOwnerContractDto,
 	type CreateOwnerDto,
+	createOwnerContractSchema,
+	createOwnerSchema,
 	type GetOwnerResponseDto,
 	type OwnerListResponse,
 } from "@repo/schemas";
 import { createServerFn } from "@tanstack/react-start";
+import { authenticatedApiFetch as apiFetch } from "@/lib/api-auth";
 
 const apiUrl = "/owners";
 

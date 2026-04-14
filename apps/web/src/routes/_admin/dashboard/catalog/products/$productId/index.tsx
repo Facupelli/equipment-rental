@@ -211,6 +211,8 @@ function ProductHeader() {
 		usePublishProductType();
 
 	const handlePublish = async (productId: string) => {
+		setServerError(null);
+
 		try {
 			await publish({ productTypeId: productId });
 		} catch (error) {

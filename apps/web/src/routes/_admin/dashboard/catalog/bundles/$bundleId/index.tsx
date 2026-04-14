@@ -30,6 +30,7 @@ import {
 	type PricingTierFormValues,
 	toAddPricingTiersDto,
 } from "@/features/catalog/pricing-tier/schemas/pricing-tier-form.schema";
+import { ProblemDetailsError } from "@/shared/errors";
 
 const r2PublicUrl = (
 	import.meta as unknown as {
@@ -173,9 +174,22 @@ function BundleHeader({
 	isSaving,
 	onSave,
 }: BundleHeaderProps) {
+	const [serverError, setServerError] = useState<string | null>(null);
 	const isPublished = bundle.publishedAt !== null;
 	const isRetired = bundle.retiredAt !== null;
-	const { mutate: publish, isPending: isPublishing } = usePublishBundle();
+	const { mutateAsync: publish, isPending: isPublishing } = usePublishBundle();
+
+	const handlePublish = async (bundleId: string) => {
+		setServerError(null);
+
+		try {
+			await publish({ bundleId });
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				setServerError(error.problemDetails.detail);
+			}
+		}
+	};
 
 	return (
 		<div className="flex items-start justify-between gap-4">
@@ -190,7 +204,7 @@ function BundleHeader({
 				<div className="flex items-center gap-2">
 					{!isPublished && !isRetired && (
 						<Button
-							onClick={() => publish({ bundleId: bundle.id })}
+							onClick={() => handlePublish(bundle.id)}
 							disabled={isPublishing}
 						>
 							{isPublishing ? "Publicando..." : "Publicar"}
@@ -219,6 +233,10 @@ function BundleHeader({
 						</Button>
 					)}
 				</div>
+
+				{serverError && (
+					<p className="text-destructive pt-2 text-sm">{serverError}</p>
+				)}
 			</div>
 
 			{bundle.imageUrl ? (

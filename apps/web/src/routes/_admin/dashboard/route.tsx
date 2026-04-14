@@ -1,3 +1,12 @@
+import type { LocationListResponse } from "@repo/schemas";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import {
+	createFileRoute,
+	Link,
+	Outlet,
+	redirect,
+} from "@tanstack/react-router";
+import { ChevronsUpDown, LogOut, User } from "lucide-react";
 import {
 	Popover,
 	PopoverContent,
@@ -20,15 +29,6 @@ import {
 	useLocationActions,
 	useLocationId,
 } from "@/shared/contexts/location/location.hooks";
-import type { LocationListResponse } from "@repo/schemas";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import {
-	createFileRoute,
-	Link,
-	Outlet,
-	redirect,
-} from "@tanstack/react-router";
-import { ChevronsUpDown, LogOut, User } from "lucide-react";
 
 export const Route = createFileRoute("/_admin/dashboard")({
 	beforeLoad: async ({ context, location }) => {

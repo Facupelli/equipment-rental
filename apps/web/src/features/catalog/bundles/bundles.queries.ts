@@ -16,7 +16,7 @@ import {
 	useQuery,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import type { ProblemDetailsError } from "@/shared/errors";
+import { ProblemDetailsError } from "@/shared/errors";
 import {
 	createBundle,
 	getBundleDetail,
@@ -144,7 +144,12 @@ export function useUpdateBundle(options?: UpdateBundleMutationOptions) {
 export function usePublishBundle(options?: BundleLifecycleMutationOptions) {
 	return useMutation<void, ProblemDetailsError, { bundleId: string }>({
 		...options,
-		mutationFn: (data) => publishBundle({ data }),
+		mutationFn: async (data) => {
+			const result = await publishBundle({ data });
+			if (typeof result === "object" && result !== null && "error" in result) {
+				throw new ProblemDetailsError(result.error);
+			}
+		},
 		meta: {
 			invalidates: bundleKeys.all(),
 		},

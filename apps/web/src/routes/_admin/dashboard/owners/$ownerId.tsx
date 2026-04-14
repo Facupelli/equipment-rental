@@ -1,18 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CalendarRange } from "lucide-react";
 import type { GetOwnerResponseDto } from "@repo/schemas";
-import { Mail, Phone, StickyNote } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ContractHistoryTable } from "@/features/tenant/owners/components/contract-history-table";
-import { ownerQueries } from "@/features/tenant/owners/owners.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { createFileRoute } from "@tanstack/react-router";
+import {
+	AlertTriangle,
+	CalendarRange,
+	Mail,
+	Phone,
+	StickyNote,
+} from "lucide-react";
 import { Suspense } from "react";
-import { NewOwnerContractDialog } from "@/features/tenant/owners/components/owner-contract-dialog-form";
+import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ContractHistoryTable } from "@/features/tenant/owners/components/contract-history-table";
+import { NewOwnerContractDialog } from "@/features/tenant/owners/components/owner-contract-dialog-form";
+import { ownerQueries } from "@/features/tenant/owners/owners.queries";
 
 export const Route = createFileRoute("/_admin/dashboard/owners/$ownerId")({
 	loader: ({ context: { queryClient }, params: { ownerId } }) =>
@@ -25,9 +30,9 @@ function RouteComponent() {
 	const { ownerId } = Route.useParams();
 	const { data: owner } = useSuspenseQuery(ownerQueries.detail(ownerId));
 
-	const activeContract = owner!.contracts.find((c) => c.isActive) ?? null;
+	const activeContract = owner.contracts.find((c) => c.isActive) ?? null;
 
-	const pastContracts = owner!.contracts
+	const pastContracts = owner.contracts
 		.filter((c) => !c.isActive)
 		.sort(
 			(a, b) =>
