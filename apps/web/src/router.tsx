@@ -4,6 +4,33 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { routeTree } from "./routeTree.gen";
 
+type QueryKey = readonly unknown[];
+
+type InvalidateTarget =
+	| QueryKey
+	| QueryKey[]
+	| ((variables: unknown) => QueryKey | QueryKey[]);
+
+function resolveInvalidateTargets(
+	invalidates: InvalidateTarget | undefined,
+	variables: unknown,
+): QueryKey[] {
+	if (!invalidates) {
+		return [];
+	}
+
+	const resolved =
+		typeof invalidates === "function" ? invalidates(variables) : invalidates;
+
+	if (resolved.length === 0) {
+		return [];
+	}
+
+	return Array.isArray(resolved[0])
+		? (resolved as QueryKey[])
+		: [resolved as QueryKey];
+}
+
 export function getRouter() {
 	// Fresh QueryClient per call — critical for Cloudflare Workers.
 	// A singleton here would leak data between requests in the same isolate.
@@ -17,12 +44,17 @@ export function getRouter() {
 			},
 		},
 		mutationCache: new MutationCache({
-			onSettled: (_data, _error, _variables, _context, mutation) => {
-				if (mutation.meta?.invalidates) {
-					queryClient.invalidateQueries({
-						queryKey: mutation.meta.invalidates as readonly unknown[],
-					});
-				}
+			onSuccess: async (_data, variables, _context, mutation) => {
+				const invalidateTargets = resolveInvalidateTargets(
+					mutation.meta?.invalidates as InvalidateTarget | undefined,
+					variables,
+				);
+
+				await Promise.all(
+					invalidateTargets.map((queryKey) =>
+						queryClient.invalidateQueries({ queryKey }),
+					),
+				);
 			},
 		}),
 	});
