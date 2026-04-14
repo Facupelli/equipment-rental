@@ -43,6 +43,7 @@ import { GetRentalProductTypesHttpController } from './application/queries/get-r
 import { GetRentalBundlesHttpController } from './application/queries/get-rental-bundles/get-rental-bundles.http.controller';
 import { GetNewArrivalsHttpController } from './application/queries/get-rental-new-arrivals/get-rental-new-arrival.http.controller';
 import { GetRentalCategoriesHttpController } from './application/queries/get-rental-categories/get-rental-categories.http.controller';
+import { CatalogPublicationEligibilityService } from './application/services/catalog-publication-eligibility.service';
 
 const repositories = [ProductCategoryRepository, ProductTypeRepository, BundleRepository];
 
@@ -98,6 +99,7 @@ const rentalQueryHandlers = [GetRentalProductTypesQueryHandler, GetNewArrivalsQu
     ...commandhandlers,
     ...queryHandlers,
     ...rentalQueryHandlers,
+    CatalogPublicationEligibilityService,
     CatalogApplicationService,
     { provide: CatalogPublicApi, useClass: CatalogApplicationService },
   ],

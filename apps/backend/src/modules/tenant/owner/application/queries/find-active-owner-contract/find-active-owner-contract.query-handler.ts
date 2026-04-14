@@ -1,9 +1,12 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { ActiveContractDto, FindActiveContractForScopeQuery } from './find-active-owner-contract.query';
+import {
+  ActiveOwnerContractReadModel,
+  FindActiveOwnerContractForScopeQuery,
+} from 'src/modules/tenant/public/queries/find-active-owner-contract-for-scope.query';
 
-@QueryHandler(FindActiveContractForScopeQuery)
-export class FindActiveContractForScopeQueryHandler implements IQueryHandler<FindActiveContractForScopeQuery> {
+@QueryHandler(FindActiveOwnerContractForScopeQuery)
+export class FindActiveContractForScopeQueryHandler implements IQueryHandler<FindActiveOwnerContractForScopeQuery> {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -12,7 +15,7 @@ export class FindActiveContractForScopeQueryHandler implements IQueryHandler<Fin
    *
    * Called by the order module via QueryBus at asset assignment time.
    */
-  async execute(query: FindActiveContractForScopeQuery): Promise<ActiveContractDto | null> {
+  async execute(query: FindActiveOwnerContractForScopeQuery): Promise<ActiveOwnerContractReadModel | null> {
     const { tenantId, ownerId, assetId, date } = query;
 
     const candidates = await this.prisma.client.ownerContract.findMany({

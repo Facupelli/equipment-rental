@@ -15,6 +15,8 @@ import { PublishProductTypeCommand } from './publish-product-type.command';
 import {
   ProductTypeAlreadyPublishedError,
   ProductTypeAlreadyRetiredError,
+  ProductTypeCannotBePublishedWithoutActiveOwnerContractsError,
+  ProductTypeCannotBePublishedWithoutAssetsError,
   ProductTypeCannotBePublishedWithoutPricingTiersError,
   ProductTypeNotFoundError,
 } from '../../../domain/errors/catalog.errors';
@@ -39,7 +41,11 @@ export class PublishProductTypeHttpController {
         throw new ConflictException(error.message);
       }
 
-      if (error instanceof ProductTypeCannotBePublishedWithoutPricingTiersError) {
+      if (
+        error instanceof ProductTypeCannotBePublishedWithoutPricingTiersError ||
+        error instanceof ProductTypeCannotBePublishedWithoutAssetsError ||
+        error instanceof ProductTypeCannotBePublishedWithoutActiveOwnerContractsError
+      ) {
         throw new UnprocessableEntityException(error.message);
       }
 

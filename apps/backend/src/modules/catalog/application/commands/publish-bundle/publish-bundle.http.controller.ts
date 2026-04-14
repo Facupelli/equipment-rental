@@ -15,6 +15,8 @@ import { PublishBundleCommand } from './publish-bundle.command';
 import {
   BundleAlreadyPublishedError,
   BundleAlreadyRetiredError,
+  BundleCannotBePublishedBecauseAComponentHasNoAssetsError,
+  BundleCannotBePublishedBecauseAComponentLacksActiveOwnerContractsError,
   BundleCannotBePublishedWithoutPricingTiersError,
   BundleNotFoundError,
 } from '../../../domain/errors/catalog.errors';
@@ -39,7 +41,11 @@ export class PublishBundleHttpController {
         throw new ConflictException(error.message);
       }
 
-      if (error instanceof BundleCannotBePublishedWithoutPricingTiersError) {
+      if (
+        error instanceof BundleCannotBePublishedWithoutPricingTiersError ||
+        error instanceof BundleCannotBePublishedBecauseAComponentHasNoAssetsError ||
+        error instanceof BundleCannotBePublishedBecauseAComponentLacksActiveOwnerContractsError
+      ) {
         throw new UnprocessableEntityException(error.message);
       }
 

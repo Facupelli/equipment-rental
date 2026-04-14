@@ -5,28 +5,44 @@ import { PublishProductTypeCommand } from './publish-product-type.command';
 import {
   ProductTypeAlreadyPublishedError,
   ProductTypeAlreadyRetiredError,
+  ProductTypeCannotBePublishedWithoutActiveOwnerContractsError,
+  ProductTypeCannotBePublishedWithoutAssetsError,
   ProductTypeCannotBePublishedWithoutPricingTiersError,
   ProductTypeNotFoundError,
 } from 'src/modules/catalog/domain/errors/catalog.errors';
 import { ProductTypeRepository } from 'src/modules/catalog/infrastructure/repositories/product-type.repository';
+import { CatalogPublicationEligibilityService } from '../../services/catalog-publication-eligibility.service';
 
 type PublishProductTypeResult = Result<
   void,
   | ProductTypeNotFoundError
   | ProductTypeAlreadyPublishedError
   | ProductTypeAlreadyRetiredError
+  | ProductTypeCannotBePublishedWithoutAssetsError
+  | ProductTypeCannotBePublishedWithoutActiveOwnerContractsError
   | ProductTypeCannotBePublishedWithoutPricingTiersError
 >;
 
 @Injectable()
 @CommandHandler(PublishProductTypeCommand)
 export class PublishProductTypeService implements ICommandHandler<PublishProductTypeCommand, PublishProductTypeResult> {
-  constructor(private readonly productTypeRepo: ProductTypeRepository) {}
+  constructor(
+    private readonly productTypeRepo: ProductTypeRepository,
+    private readonly publicationEligibility: CatalogPublicationEligibilityService,
+  ) {}
 
   async execute(command: PublishProductTypeCommand): Promise<PublishProductTypeResult> {
     const productType = await this.productTypeRepo.load(command.productTypeId, command.tenantId);
     if (!productType) {
       return err(new ProductTypeNotFoundError(command.productTypeId));
+    }
+
+    const eligibilityResult = await this.publicationEligibility.ensureProductTypeCanBePublished(
+      command.tenantId,
+      command.productTypeId,
+    );
+    if (eligibilityResult.isErr()) {
+      return err(eligibilityResult.error);
     }
 
     const publishResult = productType.publish();

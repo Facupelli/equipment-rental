@@ -20,6 +20,8 @@ import { AssetSerialNumberService } from './infrastructure/read-services/asset-s
 import { GetAssetsHttpController } from './application/queries/get-assets/get-assets.http.controller';
 import { GetAssetByIdHttpController } from './application/queries/get-asset-by-id/get-asset-by-id.http.controller';
 import { GetAvailableAssetCountsQueryHandler } from './application/queries/get-available-asset-counts/get-available-asset-counts.query-handler';
+import { GetProductTypeAssetOwnershipQueryHandler } from './application/queries/get-product-type-asset-ownership/get-product-type-asset-ownership.query-handler';
+import { GetProductTypesAssetOwnershipQueryHandler } from './application/queries/get-product-types-asset-ownership/get-product-types-asset-ownership.query-handler';
 
 const repositories = [AssetRepository, AssetAssignmentRepository];
 
@@ -30,6 +32,8 @@ const queryHandlers = [
   GetAssetByIdQueryHandler,
   GetAssetsQueryHandler,
   GetAvailableAssetCountsQueryHandler,
+  GetProductTypeAssetOwnershipQueryHandler,
+  GetProductTypesAssetOwnershipQueryHandler,
 ];
 
 @Module({

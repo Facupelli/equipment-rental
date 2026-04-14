@@ -30,6 +30,7 @@ import { GetOwnerQueryHandler } from './owner/application/queries/get-owner/get-
 import { CreateOwnerContractCommandHandler } from './owner/application/commands/create-owner-contract/create-owner-contract.command-handler';
 import { OwnerContractRepository } from './owner/infrastructure/persistence/repositories/owner-contract.repository';
 import { FindActiveContractForScopeQueryHandler } from './owner/application/queries/find-active-owner-contract/find-active-owner-contract.query-handler';
+import { FindAssetsWithoutActiveOwnerContractsQueryHandler } from './owner/application/queries/find-assets-without-active-owner-contracts/find-assets-without-active-owner-contracts.query-handler';
 import { RegisterTenantService } from './application/commands/register-tenant/register-tenant.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { GetTenantConfigQueryHandler } from './application/queries/get-tenant-config/get-tenant-config.query-handler';
@@ -91,6 +92,7 @@ const queryHandlers = [
   GetOwnersQueryHandler,
   GetOwnerQueryHandler,
   FindActiveContractForScopeQueryHandler,
+  FindAssetsWithoutActiveOwnerContractsQueryHandler,
   // location
   GetLocationsQueryHandler,
   GetRentalLocationsQueryHandler,

@@ -56,6 +56,20 @@ export class ProductTypeCannotBePublishedWithoutPricingTiersError extends Catalo
   }
 }
 
+export class ProductTypeCannotBePublishedWithoutAssetsError extends CatalogError {
+  constructor(productTypeId: string) {
+    super(`Product type '${productTypeId}' cannot be published without active assets.`);
+  }
+}
+
+export class ProductTypeCannotBePublishedWithoutActiveOwnerContractsError extends CatalogError {
+  constructor(productTypeId: string, assetId: string, ownerId: string) {
+    super(
+      `Product type '${productTypeId}' cannot be published because asset '${assetId}' from owner '${ownerId}' has no active owner contract.`,
+    );
+  }
+}
+
 export class InvalidProductCategoryNameError extends CatalogError {
   constructor() {
     super('Product category name cannot be empty.');
@@ -101,5 +115,21 @@ export class BundleAlreadyPublishedError extends CatalogError {
 export class BundleCannotBePublishedWithoutPricingTiersError extends CatalogError {
   constructor(bundleId: string) {
     super(`Bundle '${bundleId}' cannot be published without at least one pricing tier.`);
+  }
+}
+
+export class BundleCannotBePublishedBecauseAComponentHasNoAssetsError extends CatalogError {
+  constructor(bundleId: string, productTypeId: string) {
+    super(
+      `Bundle '${bundleId}' cannot be published because component product type '${productTypeId}' has no active assets.`,
+    );
+  }
+}
+
+export class BundleCannotBePublishedBecauseAComponentLacksActiveOwnerContractsError extends CatalogError {
+  constructor(bundleId: string, productTypeId: string) {
+    super(
+      `Bundle '${bundleId}' cannot be published because component product type '${productTypeId}' only has external assets without active owner contracts.`,
+    );
   }
 }
