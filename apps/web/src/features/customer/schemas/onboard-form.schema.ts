@@ -81,13 +81,21 @@ export const step4Schema = z
 		}
 	});
 
-// ---------------------------------------------------------------------------
-// Full form schema — union of all steps
-// ---------------------------------------------------------------------------
-export const customerFormSchema = step1Schema
+export const customerFormFieldSchema = step1Schema
 	.extend(step2Schema.shape)
 	.extend(step3Schema.shape)
-	.extend(step4Schema.shape)
+	.extend(step4Schema.shape);
+
+// ---------------------------------------------------------------------------
+// Full form submit schema — submit-only cross-field validations
+// ---------------------------------------------------------------------------
+export const customerFormSubmitSchema = z
+	.object({
+		identityDocumentFile: z.instanceof(File).nullable(),
+		currentIdentityDocumentPath: z.string().nullable(),
+		contact2Name: z.string().optional(),
+		contact2Relationship: z.string().optional(),
+	})
 	.superRefine((data, ctx) => {
 		const hasName = (data.contact2Name ?? "").trim().length > 0;
 		const hasRel = (data.contact2Relationship ?? "").trim().length > 0;
@@ -117,7 +125,7 @@ export const customerFormSchema = step1Schema
 		}
 	});
 
-export type OnboardFormValues = z.infer<typeof customerFormSchema>;
+export type OnboardFormValues = z.infer<typeof customerFormFieldSchema>;
 
 export interface OnboardPrefillValues {
 	fullName: string;

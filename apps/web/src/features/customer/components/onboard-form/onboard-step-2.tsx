@@ -11,13 +11,20 @@ import { ImageUploadField } from "@/shared/components/image-uploader";
 import { withForm } from "@/shared/contexts/form.context";
 import { customerFormValues } from "../../schemas/onboard-form.schema";
 
+type FieldErrorIssue = {
+	message: string;
+};
+
 export const Step2Document = withForm({
 	defaultValues: customerFormValues,
 	props: {
 		isUploading: false,
+		clearManualError: (_fieldName: string) => {},
+		getFieldErrors: (_fieldName: string, _fieldErrors: unknown[] | undefined) =>
+			[] as FieldErrorIssue[],
 		uploader: null as unknown as ReturnType<typeof useUploadFile>,
 	},
-	render: ({ form, uploader }) => {
+	render: ({ clearManualError, form, getFieldErrors, uploader }) => {
 		return (
 			<div className="space-y-5">
 				<div>
@@ -60,25 +67,43 @@ export const Step2Document = withForm({
 					</form.Field>
 
 					<form.Field name="identityDocumentFile">
-						{(field) => (
-							<ImageUploadField
-								uploader={uploader}
-								value={field.state.value}
-								onChange={field.handleChange}
-								id={field.name}
-								accept=".pdf,image/jpeg,image/png,image/webp"
-								description={{
-									fileTypes: "PDF, JPEG, PNG, WEBP",
-									maxFileSize: "3MB",
-								}}
-							/>
-						)}
+						{(field) => {
+							const errors = getFieldErrors(
+								field.name,
+								field.state.meta.errors,
+							);
+							const isInvalid = field.state.meta.isTouched && errors.length > 0;
+
+							return (
+								<Field data-invalid={isInvalid}>
+									<FieldLabel htmlFor={field.name}>Documento</FieldLabel>
+									<ImageUploadField
+										uploader={uploader}
+										value={field.state.value}
+										onChange={(file) => {
+											clearManualError(field.name);
+											field.handleChange(file);
+										}}
+										id={field.name}
+										accept=".pdf,image/jpeg,image/png,image/webp"
+										description={{
+											fileTypes: "PDF, JPEG, PNG, WEBP",
+											maxFileSize: "3MB",
+										}}
+									/>
+									{isInvalid ? <FieldError errors={errors} /> : null}
+								</Field>
+							);
+						}}
 					</form.Field>
 
 					<form.Field name="address">
 						{(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid;
+							const errors = getFieldErrors(
+								field.name,
+								field.state.meta.errors,
+							);
+							const isInvalid = field.state.meta.isTouched && errors.length > 0;
 							return (
 								<Field data-invalid={isInvalid}>
 									<FieldLabel htmlFor={field.name}>Domicilio real</FieldLabel>
@@ -88,10 +113,13 @@ export const Step2Document = withForm({
 										placeholder="Av. Corrientes 1234, Piso 2"
 										value={field.state.value}
 										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
+										onChange={(e) => {
+											clearManualError(field.name);
+											field.handleChange(e.target.value);
+										}}
 										aria-invalid={isInvalid}
 									/>
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+									{isInvalid ? <FieldError errors={errors} /> : null}
 								</Field>
 							);
 						}}
@@ -99,8 +127,11 @@ export const Step2Document = withForm({
 
 					<form.Field name="city">
 						{(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid;
+							const errors = getFieldErrors(
+								field.name,
+								field.state.meta.errors,
+							);
+							const isInvalid = field.state.meta.isTouched && errors.length > 0;
 							return (
 								<Field data-invalid={isInvalid}>
 									<FieldLabel htmlFor={field.name}>Localidad</FieldLabel>
@@ -110,10 +141,13 @@ export const Step2Document = withForm({
 										placeholder="Buenos Aires"
 										value={field.state.value}
 										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
+										onChange={(e) => {
+											clearManualError(field.name);
+											field.handleChange(e.target.value);
+										}}
 										aria-invalid={isInvalid}
 									/>
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+									{isInvalid ? <FieldError errors={errors} /> : null}
 								</Field>
 							);
 						}}
@@ -121,8 +155,11 @@ export const Step2Document = withForm({
 
 					<form.Field name="stateRegion">
 						{(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid;
+							const errors = getFieldErrors(
+								field.name,
+								field.state.meta.errors,
+							);
+							const isInvalid = field.state.meta.isTouched && errors.length > 0;
 							return (
 								<Field data-invalid={isInvalid}>
 									<FieldLabel htmlFor={field.name}>
@@ -134,10 +171,13 @@ export const Step2Document = withForm({
 										placeholder="Buenos Aires"
 										value={field.state.value}
 										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
+										onChange={(e) => {
+											clearManualError(field.name);
+											field.handleChange(e.target.value);
+										}}
 										aria-invalid={isInvalid}
 									/>
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+									{isInvalid ? <FieldError errors={errors} /> : null}
 								</Field>
 							);
 						}}
@@ -145,8 +185,11 @@ export const Step2Document = withForm({
 
 					<form.Field name="country">
 						{(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid;
+							const errors = getFieldErrors(
+								field.name,
+								field.state.meta.errors,
+							);
+							const isInvalid = field.state.meta.isTouched && errors.length > 0;
 							return (
 								<Field data-invalid={isInvalid}>
 									<FieldLabel htmlFor={field.name}>País</FieldLabel>
@@ -156,10 +199,13 @@ export const Step2Document = withForm({
 										placeholder="Argentina"
 										value={field.state.value}
 										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
+										onChange={(e) => {
+											clearManualError(field.name);
+											field.handleChange(e.target.value);
+										}}
 										aria-invalid={isInvalid}
 									/>
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+									{isInvalid ? <FieldError errors={errors} /> : null}
 								</Field>
 							);
 						}}

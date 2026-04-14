@@ -8,9 +8,18 @@ import { Input } from "@/components/ui/input";
 import { withForm } from "@/shared/contexts/form.context";
 import { customerFormValues } from "../../schemas/onboard-form.schema";
 
+type FieldErrorIssue = {
+	message: string;
+};
+
 export const Step4Contacts = withForm({
 	defaultValues: customerFormValues,
-	render: ({ form }) => (
+	props: {
+		clearManualError: (_fieldName: string) => {},
+		getFieldErrors: (_fieldName: string, _fieldErrors: unknown[] | undefined) =>
+			[] as FieldErrorIssue[],
+	},
+	render: ({ clearManualError, form, getFieldErrors }) => (
 		<div className="space-y-6">
 			<div>
 				<h2 className="text-xl font-semibold tracking-tight">
@@ -28,8 +37,11 @@ export const Step4Contacts = withForm({
 				<FieldGroup>
 					<form.Field name="contact1Name">
 						{(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid;
+							const errors = getFieldErrors(
+								field.name,
+								field.state.meta.errors,
+							);
+							const isInvalid = field.state.meta.isTouched && errors.length > 0;
 							return (
 								<Field data-invalid={isInvalid}>
 									<FieldLabel htmlFor={field.name}>Nombre completo</FieldLabel>
@@ -39,10 +51,13 @@ export const Step4Contacts = withForm({
 										placeholder="María García"
 										value={field.state.value}
 										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
+										onChange={(e) => {
+											clearManualError(field.name);
+											field.handleChange(e.target.value);
+										}}
 										aria-invalid={isInvalid}
 									/>
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+									{isInvalid ? <FieldError errors={errors} /> : null}
 								</Field>
 							);
 						}}
@@ -50,8 +65,11 @@ export const Step4Contacts = withForm({
 
 					<form.Field name="contact1Relationship">
 						{(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid;
+							const errors = getFieldErrors(
+								field.name,
+								field.state.meta.errors,
+							);
+							const isInvalid = field.state.meta.isTouched && errors.length > 0;
 							return (
 								<Field data-invalid={isInvalid}>
 									<FieldLabel htmlFor={field.name}>Vínculo</FieldLabel>
@@ -61,10 +79,13 @@ export const Step4Contacts = withForm({
 										placeholder="Cónyuge, hermano/a, amigo/a..."
 										value={field.state.value}
 										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
+										onChange={(e) => {
+											clearManualError(field.name);
+											field.handleChange(e.target.value);
+										}}
 										aria-invalid={isInvalid}
 									/>
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+									{isInvalid ? <FieldError errors={errors} /> : null}
 								</Field>
 							);
 						}}
@@ -82,8 +103,11 @@ export const Step4Contacts = withForm({
 				<FieldGroup>
 					<form.Field name="contact2Name">
 						{(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid;
+							const errors = getFieldErrors(
+								field.name,
+								field.state.meta.errors,
+							);
+							const isInvalid = field.state.meta.isTouched && errors.length > 0;
 							return (
 								<Field data-invalid={isInvalid}>
 									<FieldLabel htmlFor={field.name}>Nombre completo</FieldLabel>
@@ -93,10 +117,13 @@ export const Step4Contacts = withForm({
 										placeholder="Carlos López"
 										value={field.state.value ?? ""}
 										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
+										onChange={(e) => {
+											clearManualError(field.name);
+											field.handleChange(e.target.value);
+										}}
 										aria-invalid={isInvalid}
 									/>
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+									{isInvalid ? <FieldError errors={errors} /> : null}
 								</Field>
 							);
 						}}
@@ -104,8 +131,11 @@ export const Step4Contacts = withForm({
 
 					<form.Field name="contact2Relationship">
 						{(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid;
+							const errors = getFieldErrors(
+								field.name,
+								field.state.meta.errors,
+							);
+							const isInvalid = field.state.meta.isTouched && errors.length > 0;
 							return (
 								<Field data-invalid={isInvalid}>
 									<FieldLabel htmlFor={field.name}>Vínculo</FieldLabel>
@@ -115,10 +145,13 @@ export const Step4Contacts = withForm({
 										placeholder="Cónyuge, hermano/a, amigo/a..."
 										value={field.state.value ?? ""}
 										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
+										onChange={(e) => {
+											clearManualError(field.name);
+											field.handleChange(e.target.value);
+										}}
 										aria-invalid={isInvalid}
 									/>
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+									{isInvalid ? <FieldError errors={errors} /> : null}
 								</Field>
 							);
 						}}

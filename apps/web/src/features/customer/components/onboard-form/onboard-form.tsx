@@ -16,10 +16,15 @@ import { cn } from "@/lib/utils";
 import { useAppForm } from "@/shared/contexts/form.context";
 import { ProblemDetailsError } from "@/shared/errors";
 import {
-	customerFormSchema,
+	customerFormFieldSchema,
+	customerFormSubmitSchema,
 	customerFormValues,
 	type OnboardFormValues,
 	type StepNumber,
+	step1Schema,
+	step2Schema,
+	step3Schema,
+	step4Schema,
 	stepFields,
 	toCustomerProfileDto,
 } from "../../schemas/onboard-form.schema";
@@ -34,6 +39,16 @@ interface CustomerFormProps {
 	mode?: "submit" | "resubmit";
 }
 
+type FieldErrorIssue = {
+	message: string;
+};
+
+type ManualFieldErrors = Partial<
+	Record<keyof OnboardFormValues, FieldErrorIssue[]>
+>;
+
+const STEP_NUMBERS = [1, 2, 3, 4] as const satisfies readonly StepNumber[];
+
 export function CustomerForm({
 	customerId,
 	defaultValues,
@@ -44,6 +59,7 @@ export function CustomerForm({
 	const [currentStep, setCurrentStep] = useState<StepNumber>(1);
 	const [isSubmitted, setIsSubmitted] = useState(false);
 	const [submitError, setSubmitError] = useState<string | null>(null);
+	const [manualErrors, setManualErrors] = useState<ManualFieldErrors>({});
 
 	const uploader = useUploadFile({
 		api: "/api/customer-upload",
@@ -56,7 +72,7 @@ export function CustomerForm({
 			...defaultValues,
 		},
 		validators: {
-			onSubmit: customerFormSchema,
+			onChange: customerFormFieldSchema,
 		},
 		onSubmit: async ({ value }) => {
 			setSubmitError(null);
@@ -93,8 +109,6 @@ export function CustomerForm({
 
 				setIsSubmitted(true);
 			} catch (error) {
-				console.log({ error });
-
 				if (error instanceof ProblemDetailsError) {
 					setSubmitError(error.problemDetails.detail);
 					return;
@@ -114,12 +128,99 @@ export function CustomerForm({
 		},
 	});
 
+	const stepSchemas = {
+		1: step1Schema,
+		2: step2Schema,
+		3: step3Schema,
+		4: step4Schema,
+	} as const;
+
+	const setStepTouched = (step: StepNumber) => {
+		stepFields[step].forEach((name) => {
+			form.setFieldMeta(name as keyof OnboardFormValues, (prev) => ({
+				...prev,
+				isTouched: true,
+			}));
+		});
+	};
+
+	const clearManualError = (fieldName: keyof OnboardFormValues | string) => {
+		setManualErrors((prev) => {
+			if (!(fieldName in prev)) {
+				return prev;
+			}
+
+			const next = { ...prev };
+			delete next[fieldName as keyof OnboardFormValues];
+			return next;
+		});
+	};
+
+	const getFieldIssues = (
+		fieldName: keyof OnboardFormValues | string,
+		fieldErrors: unknown[] | undefined,
+	) => {
+		const nextErrors = [
+			...normalizeFieldErrors(fieldErrors),
+			...(manualErrors[fieldName as keyof OnboardFormValues] ?? []),
+		];
+
+		return dedupeIssues(nextErrors);
+	};
+
+	const applyManualErrors = (
+		issues: { message: string; path: PropertyKey[] }[],
+	) => {
+		setManualErrors((prev) => {
+			const next = { ...prev };
+
+			for (const issue of issues) {
+				const fieldName = getFieldName(issue.path);
+				if (!fieldName) {
+					continue;
+				}
+
+				next[fieldName] = dedupeIssues([
+					...(next[fieldName] ?? []),
+					{ message: issue.message },
+				]);
+			}
+
+			return next;
+		});
+	};
+
+	const goToIssueStep = (issues: { path: PropertyKey[] }[]) => {
+		const invalidField = issues
+			.map((issue) => getFieldName(issue.path))
+			.find((fieldName): fieldName is keyof OnboardFormValues =>
+				Boolean(fieldName),
+			);
+
+		if (!invalidField) {
+			return;
+		}
+
+		const step = getStepForField(invalidField);
+		if (!step) {
+			return;
+		}
+
+		setCurrentStep(step);
+		setStepTouched(step);
+	};
+
 	// ---------------------------------------------------------------------------
 	// Per-step validation — validates only the active step's fields, then touches
 	// them so errors become visible in the UI.
 	// ---------------------------------------------------------------------------
 	const validateCurrentStep = async (): Promise<boolean> => {
 		const fields = stepFields[currentStep];
+		const stepSchema = stepSchemas[currentStep];
+
+		fields.forEach((fieldName) => {
+			clearManualError(fieldName);
+		});
 
 		const results = await Promise.all(
 			fields.map((name) =>
@@ -127,17 +228,74 @@ export function CustomerForm({
 			),
 		);
 
-		fields.forEach((name) => {
-			form.setFieldMeta(name as keyof OnboardFormValues, (prev) => ({
-				...prev,
-				isTouched: true,
-			}));
+		setStepTouched(currentStep);
+
+		const stepValidation = stepSchema.safeParse(
+			pickStepValues(form.state.values, currentStep),
+		);
+		const stepIssues = stepValidation.success
+			? []
+			: normalizeIssues(stepValidation.error.issues);
+
+		if (stepIssues.length > 0) {
+			applyManualErrors(stepIssues);
+		}
+
+		return (
+			results.every((errors) => !errors || errors.length === 0) &&
+			stepIssues.length === 0
+		);
+	};
+
+	const findFirstInvalidStep = async () => {
+		for (const step of STEP_NUMBERS) {
+			const fields = stepFields[step];
+			const results = await Promise.all(
+				fields.map((name) =>
+					form.validateField(name as keyof OnboardFormValues, "change"),
+				),
+			);
+
+			if (results.some((errors) => errors && errors.length > 0)) {
+				setCurrentStep(step);
+				setStepTouched(step);
+				return true;
+			}
+		}
+
+		return false;
+	};
+
+	const handleFinalSubmit = async () => {
+		setSubmitError(null);
+
+		const submitValidation = customerFormSubmitSchema.safeParse({
+			identityDocumentFile: form.state.values.identityDocumentFile,
+			currentIdentityDocumentPath:
+				form.state.values.currentIdentityDocumentPath,
+			contact2Name: form.state.values.contact2Name,
+			contact2Relationship: form.state.values.contact2Relationship,
 		});
 
-		return results.every((errors) => !errors || errors.length === 0);
+		if (!submitValidation.success) {
+			const issues = normalizeIssues(submitValidation.error.issues);
+			applyManualErrors(issues);
+			goToIssueStep(issues);
+			setSubmitError("Revisá los campos marcados.");
+			return;
+		}
+
+		const hasInvalidStep = await findFirstInvalidStep();
+		if (hasInvalidStep) {
+			setSubmitError("Revisá los campos marcados.");
+			return;
+		}
+
+		await form.handleSubmit();
 	};
 
 	const handleNext = async () => {
+		setSubmitError(null);
 		const valid = await validateCurrentStep();
 		if (!valid) {
 			return;
@@ -163,7 +321,7 @@ export function CustomerForm({
 		<form
 			onSubmit={(event) => {
 				event.preventDefault();
-				form.handleSubmit();
+				void handleFinalSubmit();
 			}}
 		>
 			<div className="w-full max-w-lg mx-auto">
@@ -173,13 +331,21 @@ export function CustomerForm({
 					{currentStep === 1 && <Step1Personal form={form} />}
 					{currentStep === 2 && (
 						<Step2Document
+							clearManualError={clearManualError}
 							form={form}
+							getFieldErrors={getFieldIssues}
 							uploader={uploader}
 							isUploading={uploader.isPending}
 						/>
 					)}
 					{currentStep === 3 && <Step3WorkFinance form={form} />}
-					{currentStep === 4 && <Step4Contacts form={form} />}
+					{currentStep === 4 && (
+						<Step4Contacts
+							clearManualError={clearManualError}
+							form={form}
+							getFieldErrors={getFieldIssues}
+						/>
+					)}
 				</div>
 
 				{submitError ? (
@@ -226,6 +392,83 @@ export function CustomerForm({
 			</div>
 		</form>
 	);
+}
+
+function normalizeIssues(issues: { message: string; path: PropertyKey[] }[]) {
+	return issues.map((issue) => ({
+		message: issue.message,
+		path: issue.path,
+	}));
+}
+
+function normalizeFieldErrors(
+	fieldErrors: unknown[] | undefined,
+): FieldErrorIssue[] {
+	if (!fieldErrors) {
+		return [];
+	}
+
+	return fieldErrors.flatMap((error) => {
+		if (typeof error === "string") {
+			return [{ message: error }];
+		}
+
+		if (
+			typeof error === "object" &&
+			error !== null &&
+			"message" in error &&
+			typeof error.message === "string"
+		) {
+			return [{ message: error.message }];
+		}
+
+		return [];
+	});
+}
+
+function dedupeIssues(issues: FieldErrorIssue[]) {
+	const seen = new Set<string>();
+
+	return issues.filter((issue) => {
+		if (seen.has(issue.message)) {
+			return false;
+		}
+
+		seen.add(issue.message);
+		return true;
+	});
+}
+
+function getFieldName(path: PropertyKey[]) {
+	const fieldName = path[0];
+
+	if (typeof fieldName !== "string") {
+		return null;
+	}
+
+	return fieldName in customerFormValues
+		? (fieldName as keyof OnboardFormValues)
+		: null;
+}
+
+function getStepForField(fieldName: keyof OnboardFormValues) {
+	for (const step of STEP_NUMBERS) {
+		if (stepFields[step].includes(fieldName)) {
+			return step;
+		}
+	}
+
+	return null;
+}
+
+function pickStepValues(values: OnboardFormValues, step: StepNumber) {
+	const stepValues: Partial<OnboardFormValues> = {};
+
+	for (const fieldName of stepFields[step]) {
+		stepValues[fieldName] = values[fieldName];
+	}
+
+	return stepValues;
 }
 
 const STEPS = [
