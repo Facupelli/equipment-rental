@@ -1,0 +1,9 @@
+{
+  "folders": [
+    { "path": "apps/backend", "name": "Backend" },
+    { "path": "apps/web", "name": "Frontend" },
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+  },
+}
