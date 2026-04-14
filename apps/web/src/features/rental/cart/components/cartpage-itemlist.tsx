@@ -206,13 +206,16 @@ function CartPageBundleItem({
           {isLoading ? (
             <Skeleton className="ml-auto h-6 w-24" />
           ) : line ? (
-            <p className="text-lg font-black text-black">
+            <p className="text-base font-black text-black">
               {formatCurrency(
-                line.subtotal,
+                line.pricePerBillingUnit,
                 priceConfig.currency,
                 priceConfig.locale,
                 CART_MONEY_FRACTION_DIGITS,
-              )}
+              )}{" "}
+              <span className="uppercase text-xs tracking-wider font-semibold text-neutral-400">
+                / {item.billingUnitLabel}
+              </span>
             </p>
           ) : null}
           {item.quantity > 1 && (
