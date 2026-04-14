@@ -103,16 +103,13 @@ export const Step3WorkFinance = withForm({
 									<Input
 										id={field.name}
 										name={field.name}
-										placeholder="CUIT / NIF / CIF / otro"
+										placeholder="NIF / CIF"
 										value={field.state.value ?? ""}
 										onBlur={field.handleBlur}
 										onChange={(e) => field.handleChange(e.target.value)}
 										aria-invalid={isInvalid}
 									/>
-									<FieldDescription>
-										Argentina: CUIT (ej: 20-12345678-9). España: NIF o CIF.
-										Otros: número de identificación fiscal correspondiente.
-									</FieldDescription>
+									<FieldDescription>Ingresá tu NIF o CIF.</FieldDescription>
 									{isInvalid && <FieldError errors={field.state.meta.errors} />}
 								</Field>
 							);
@@ -168,7 +165,7 @@ export const Step3WorkFinance = withForm({
 									<Input
 										id={field.name}
 										name={field.name}
-										placeholder="Banco Nación, Santander, BBVA..."
+										placeholder="Santander, BBVA, CaixaBank..."
 										value={field.state.value ?? ""}
 										onBlur={field.handleBlur}
 										onChange={(e) => field.handleChange(e.target.value)}
@@ -195,15 +192,14 @@ export const Step3WorkFinance = withForm({
 									<Input
 										id={field.name}
 										name={field.name}
-										placeholder="CBU / CVU / IBAN / número de cuenta"
+										placeholder="IBAN / número de cuenta"
 										value={field.state.value ?? ""}
 										onBlur={field.handleBlur}
 										onChange={(e) => field.handleChange(e.target.value)}
 										aria-invalid={isInvalid}
 									/>
 									<FieldDescription>
-										Argentina: CBU o CVU. España: IBAN. Otros: número de cuenta
-										bancaria.
+										Ingresá tu IBAN o número de cuenta bancaria.
 									</FieldDescription>
 									{isInvalid && <FieldError errors={field.state.meta.errors} />}
 								</Field>

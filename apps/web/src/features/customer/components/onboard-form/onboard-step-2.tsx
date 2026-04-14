@@ -138,7 +138,7 @@ export const Step2Document = withForm({
 									<Input
 										id={field.name}
 										name={field.name}
-										placeholder="Buenos Aires"
+										placeholder="Madrid"
 										value={field.state.value}
 										onBlur={field.handleBlur}
 										onChange={(e) => {
@@ -168,7 +168,7 @@ export const Step2Document = withForm({
 									<Input
 										id={field.name}
 										name={field.name}
-										placeholder="Buenos Aires"
+										placeholder="Comunidad de Madrid"
 										value={field.state.value}
 										onBlur={field.handleBlur}
 										onChange={(e) => {
@@ -196,7 +196,7 @@ export const Step2Document = withForm({
 									<Input
 										id={field.name}
 										name={field.name}
-										placeholder="Argentina"
+										placeholder="España"
 										value={field.state.value}
 										onBlur={field.handleBlur}
 										onChange={(e) => {

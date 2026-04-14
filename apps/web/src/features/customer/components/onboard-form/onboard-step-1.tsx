@@ -51,20 +51,19 @@ export const Step1Personal = withForm({
 							field.state.meta.isTouched && !field.state.meta.isValid;
 						return (
 							<Field data-invalid={isInvalid}>
-								<FieldLabel htmlFor={field.name}>Número de celular</FieldLabel>
+								<FieldLabel htmlFor={field.name}>Número de teléfono</FieldLabel>
 								<Input
 									id={field.name}
 									name={field.name}
 									type="tel"
-									placeholder="+54 9 11 1234-5678"
+									placeholder="+34 612 345 678"
 									value={field.state.value}
 									onBlur={field.handleBlur}
 									onChange={(e) => field.handleChange(e.target.value)}
 									aria-invalid={isInvalid}
 								/>
 								<FieldDescription>
-									Incluí el código de país y área. Ej: +54 9 11 para Buenos
-									Aires.
+									Incluí el código de país y el prefijo. Ej: +34 612 345 678.
 								</FieldDescription>
 								{isInvalid && <FieldError errors={field.state.meta.errors} />}
 							</Field>
@@ -102,22 +101,18 @@ export const Step1Personal = withForm({
 							field.state.meta.isTouched && !field.state.meta.isValid;
 						return (
 							<Field data-invalid={isInvalid}>
-								<FieldLabel htmlFor={field.name}>
-									Número de documento
-								</FieldLabel>
+								<FieldLabel htmlFor={field.name}>DNI o NIE</FieldLabel>
 								<Input
 									id={field.name}
 									name={field.name}
-									placeholder="12345678"
-									inputMode="numeric"
+									placeholder="12345678Z"
 									value={field.state.value}
 									onBlur={field.handleBlur}
 									onChange={(e) => field.handleChange(e.target.value)}
 									aria-invalid={isInvalid}
 								/>
 								<FieldDescription>
-									Argentina: DNI sin puntos. España: NIF/NIE. Otros: pasaporte u
-									otro documento oficial.
+									Ingresá tu documento sin espacios.
 								</FieldDescription>
 								{isInvalid && <FieldError errors={field.state.meta.errors} />}
 							</Field>

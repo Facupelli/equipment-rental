@@ -18,8 +18,8 @@ export const step1Schema = z.object({
 	birthDate: z.string().min(1, "Ingresá tu fecha de nacimiento"),
 	documentNumber: z
 		.string()
-		.min(5, "Ingresá tu número de documento")
-		.regex(/^\d+$/, "Solo números, sin puntos ni espacios"),
+		.min(5, "Ingresá tu DNI o NIE")
+		.regex(/^[A-Za-z0-9]+$/, "Usá solo letras y números, sin espacios"),
 });
 
 export const step2Schema = z
