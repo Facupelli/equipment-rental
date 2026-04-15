@@ -1,163 +1,197 @@
 import {
-	Field,
-	FieldError,
-	FieldGroup,
-	FieldLabel,
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { withForm } from "@/shared/contexts/form.context";
-import { customerFormValues } from "../../schemas/onboard-form.schema";
+import {
+  CUSTOMER_PROFILE_LEAD_SOURCE_LABELS,
+  CUSTOMER_PROFILE_LEAD_SOURCE_OPTIONS,
+  customerFormValues,
+} from "../../schemas/onboard-form.schema";
 
-type FieldErrorIssue = {
-	message: string;
-};
+export const Step4Acquisition = withForm({
+  defaultValues: customerFormValues,
+  props: {
+    tenantName: "",
+  },
+  render: ({ form, tenantName }) => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight">
+          Redes y referencia
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Queremos entender mejor cómo llegaste a nosotros.
+        </p>
+      </div>
 
-export const Step4Contacts = withForm({
-	defaultValues: customerFormValues,
-	props: {
-		clearManualError: (_fieldName: string) => {},
-		getFieldErrors: (_fieldName: string, _fieldErrors: unknown[] | undefined) =>
-			[] as FieldErrorIssue[],
-	},
-	render: ({ clearManualError, form, getFieldErrors }) => (
-		<div className="space-y-6">
-			<div>
-				<h2 className="text-xl font-semibold tracking-tight">
-					Contactos de referencia
-				</h2>
-				<p className="text-sm text-muted-foreground mt-1">
-					Necesitamos al menos un contacto de referencia.
-				</p>
-			</div>
+      <FieldGroup>
+        <form.Field name="instagram">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid;
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Instagram</FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  placeholder="tuusuario"
+                  value={field.state.value ?? ""}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  aria-invalid={isInvalid}
+                />
+                <FieldDescription>
+                  Ingresá tu usuario o el link a tu perfil. Lo guardamos como
+                  usuario.
+                </FieldDescription>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            );
+          }}
+        </form.Field>
 
-			<div className="space-y-4">
-				<p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-					Contacto 1
-				</p>
-				<FieldGroup>
-					<form.Field name="contact1Name">
-						{(field) => {
-							const errors = getFieldErrors(
-								field.name,
-								field.state.meta.errors,
-							);
-							const isInvalid = field.state.meta.isTouched && errors.length > 0;
-							return (
-								<Field data-invalid={isInvalid}>
-									<FieldLabel htmlFor={field.name}>Nombre completo</FieldLabel>
-									<Input
-										id={field.name}
-										name={field.name}
-										placeholder="María García"
-										value={field.state.value}
-										onBlur={field.handleBlur}
-										onChange={(e) => {
-											clearManualError(field.name);
-											field.handleChange(e.target.value);
-										}}
-										aria-invalid={isInvalid}
-									/>
-									{isInvalid ? <FieldError errors={errors} /> : null}
-								</Field>
-							);
-						}}
-					</form.Field>
+        <form.Field name="knowsExistingCustomer">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid;
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel>
+                  ¿Conocés a algún cliente de {tenantName}?
+                </FieldLabel>
+                <Select
+                  value={field.state.value ? "yes" : "no"}
+                  onValueChange={(value) => field.handleChange(value === "yes")}
+                >
+                  <SelectTrigger aria-invalid={isInvalid}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">No</SelectItem>
+                    <SelectItem value="yes">Sí</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            );
+          }}
+        </form.Field>
 
-					<form.Field name="contact1Relationship">
-						{(field) => {
-							const errors = getFieldErrors(
-								field.name,
-								field.state.meta.errors,
-							);
-							const isInvalid = field.state.meta.isTouched && errors.length > 0;
-							return (
-								<Field data-invalid={isInvalid}>
-									<FieldLabel htmlFor={field.name}>Vínculo</FieldLabel>
-									<Input
-										id={field.name}
-										name={field.name}
-										placeholder="Cónyuge, hermano/a, amigo/a..."
-										value={field.state.value}
-										onBlur={field.handleBlur}
-										onChange={(e) => {
-											clearManualError(field.name);
-											field.handleChange(e.target.value);
-										}}
-										aria-invalid={isInvalid}
-									/>
-									{isInvalid ? <FieldError errors={errors} /> : null}
-								</Field>
-							);
-						}}
-					</form.Field>
-				</FieldGroup>
-			</div>
+        <form.Subscribe
+          selector={(state) => state.values.knowsExistingCustomer}
+        >
+          {(knowsExistingCustomer) =>
+            knowsExistingCustomer ? (
+              <form.Field name="knownCustomerName">
+                {(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>
+                        Nombre del cliente
+                      </FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        placeholder="Nombre y apellido"
+                        value={field.state.value ?? ""}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+            ) : null
+          }
+        </form.Subscribe>
 
-			<div className="space-y-4">
-				<p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-					Contacto 2{" "}
-					<span className="normal-case font-normal text-muted-foreground/70">
-						(opcional)
-					</span>
-				</p>
-				<FieldGroup>
-					<form.Field name="contact2Name">
-						{(field) => {
-							const errors = getFieldErrors(
-								field.name,
-								field.state.meta.errors,
-							);
-							const isInvalid = field.state.meta.isTouched && errors.length > 0;
-							return (
-								<Field data-invalid={isInvalid}>
-									<FieldLabel htmlFor={field.name}>Nombre completo</FieldLabel>
-									<Input
-										id={field.name}
-										name={field.name}
-										placeholder="Carlos López"
-										value={field.state.value ?? ""}
-										onBlur={field.handleBlur}
-										onChange={(e) => {
-											clearManualError(field.name);
-											field.handleChange(e.target.value);
-										}}
-										aria-invalid={isInvalid}
-									/>
-									{isInvalid ? <FieldError errors={errors} /> : null}
-								</Field>
-							);
-						}}
-					</form.Field>
+        <form.Field name="heardAboutUs">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid;
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel>¿Dónde nos conociste?</FieldLabel>
+                <Select
+                  value={field.state.value}
+                  onValueChange={(value) =>
+                    field.handleChange(value as typeof field.state.value)
+                  }
+									items={
+										CUSTOMER_PROFILE_LEAD_SOURCE_OPTIONS.map((option) => ({
+											value: option,
+											label: CUSTOMER_PROFILE_LEAD_SOURCE_LABELS[option],
+										}))
+									}
+                >
+                  <SelectTrigger aria-invalid={isInvalid}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CUSTOMER_PROFILE_LEAD_SOURCE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {CUSTOMER_PROFILE_LEAD_SOURCE_LABELS[option]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            );
+          }}
+        </form.Field>
 
-					<form.Field name="contact2Relationship">
-						{(field) => {
-							const errors = getFieldErrors(
-								field.name,
-								field.state.meta.errors,
-							);
-							const isInvalid = field.state.meta.isTouched && errors.length > 0;
-							return (
-								<Field data-invalid={isInvalid}>
-									<FieldLabel htmlFor={field.name}>Vínculo</FieldLabel>
-									<Input
-										id={field.name}
-										name={field.name}
-										placeholder="Cónyuge, hermano/a, amigo/a..."
-										value={field.state.value ?? ""}
-										onBlur={field.handleBlur}
-										onChange={(e) => {
-											clearManualError(field.name);
-											field.handleChange(e.target.value);
-										}}
-										aria-invalid={isInvalid}
-									/>
-									{isInvalid ? <FieldError errors={errors} /> : null}
-								</Field>
-							);
-						}}
-					</form.Field>
-				</FieldGroup>
-			</div>
-		</div>
-	),
+        <form.Subscribe selector={(state) => state.values.heardAboutUs}>
+          {(heardAboutUs) =>
+            heardAboutUs === "OTHER" ? (
+              <form.Field name="heardAboutUsOther">
+                {(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>
+                        Contanos dónde
+                      </FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        placeholder="Ej: una recomendación, una feria..."
+                        value={field.state.value ?? ""}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+            ) : null
+          }
+        </form.Subscribe>
+      </FieldGroup>
+    </div>
+  ),
 });

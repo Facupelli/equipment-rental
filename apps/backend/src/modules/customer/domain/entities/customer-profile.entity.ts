@@ -12,6 +12,17 @@ export enum ProfileSubmissionStatus {
   REJECTED = 'REJECTED',
 }
 
+export enum CustomerProfileLeadSource {
+  INSTAGRAM = 'INSTAGRAM',
+  FACEBOOK = 'FACEBOOK',
+  GOOGLE = 'GOOGLE',
+  TIKTOK = 'TIKTOK',
+  REFERRAL = 'REFERRAL',
+  EVENT = 'EVENT',
+  REPEAT_CUSTOMER = 'REPEAT_CUSTOMER',
+  OTHER = 'OTHER',
+}
+
 export interface CreateCustomerProfileProps {
   customerId: string;
   fullName: string;
@@ -29,9 +40,16 @@ export interface CreateCustomerProfileProps {
   businessName: string | null;
   bankName: string;
   accountNumber: string;
+  instagram: string | null;
+  knowsExistingCustomer: boolean;
+  knownCustomerName: string | null;
+  heardAboutUs: CustomerProfileLeadSource;
+  heardAboutUsOther: string | null;
   contact1Name: string;
+  contact1Phone: string;
   contact1Relationship: string;
   contact2Name: string;
+  contact2Phone: string;
   contact2Relationship: string;
 }
 
@@ -63,9 +81,16 @@ export class CustomerProfile {
     public businessName: string | null,
     public bankName: string,
     public accountNumber: string,
+    public instagram: string | null,
+    public knowsExistingCustomer: boolean,
+    public knownCustomerName: string | null,
+    public heardAboutUs: CustomerProfileLeadSource,
+    public heardAboutUsOther: string | null,
     public contact1Name: string,
+    public contact1Phone: string,
     public contact1Relationship: string,
     public contact2Name: string,
+    public contact2Phone: string,
     public contact2Relationship: string,
     private rejectionReason: string | null,
     private reviewedAt: Date | null,
@@ -94,9 +119,16 @@ export class CustomerProfile {
       props.businessName,
       props.bankName,
       props.accountNumber,
+      props.instagram,
+      props.knowsExistingCustomer,
+      props.knownCustomerName,
+      props.heardAboutUs,
+      props.heardAboutUsOther,
       props.contact1Name,
+      props.contact1Phone,
       props.contact1Relationship,
       props.contact2Name,
+      props.contact2Phone,
       props.contact2Relationship,
       null,
       null,
@@ -124,9 +156,16 @@ export class CustomerProfile {
       props.businessName,
       props.bankName,
       props.accountNumber,
+      props.instagram,
+      props.knowsExistingCustomer,
+      props.knownCustomerName,
+      props.heardAboutUs,
+      props.heardAboutUsOther,
       props.contact1Name,
+      props.contact1Phone,
       props.contact1Relationship,
       props.contact2Name,
+      props.contact2Phone,
       props.contact2Relationship,
       props.rejectionReason,
       props.reviewedAt,
@@ -200,9 +239,16 @@ export class CustomerProfile {
     this.businessName = props.businessName;
     this.bankName = props.bankName;
     this.accountNumber = props.accountNumber;
+    this.instagram = props.instagram;
+    this.knowsExistingCustomer = props.knowsExistingCustomer;
+    this.knownCustomerName = props.knownCustomerName;
+    this.heardAboutUs = props.heardAboutUs;
+    this.heardAboutUsOther = props.heardAboutUsOther;
     this.contact1Name = props.contact1Name;
+    this.contact1Phone = props.contact1Phone;
     this.contact1Relationship = props.contact1Relationship;
     this.contact2Name = props.contact2Name;
+    this.contact2Phone = props.contact2Phone;
     this.contact2Relationship = props.contact2Relationship;
 
     return ok(undefined);

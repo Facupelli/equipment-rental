@@ -18,9 +18,16 @@ export interface GetCustomerProfileResult {
   businessName: string | null;
   bankName: string;
   accountNumber: string;
+  instagram: string | null;
+  knowsExistingCustomer: boolean;
+  knownCustomerName: string | null;
+  heardAboutUs: 'INSTAGRAM' | 'FACEBOOK' | 'GOOGLE' | 'TIKTOK' | 'REFERRAL' | 'EVENT' | 'REPEAT_CUSTOMER' | 'OTHER';
+  heardAboutUsOther: string | null;
   contact1Name: string;
+  contact1Phone: string;
   contact1Relationship: string;
   contact2Name: string;
+  contact2Phone: string;
   contact2Relationship: string;
   rejectionReason: string | null;
   reviewedAt: Date | null;

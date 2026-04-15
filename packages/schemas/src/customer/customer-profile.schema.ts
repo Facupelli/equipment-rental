@@ -1,6 +1,20 @@
 import { z } from "zod";
 
 const customerProfileStatusSchema = z.enum(["PENDING", "APPROVED", "REJECTED"]);
+export const customerProfileLeadSourceSchema = z.enum([
+  "INSTAGRAM",
+  "FACEBOOK",
+  "GOOGLE",
+  "TIKTOK",
+  "REFERRAL",
+  "EVENT",
+  "REPEAT_CUSTOMER",
+  "OTHER",
+]);
+
+export type CustomerProfileLeadSource = z.infer<
+  typeof customerProfileLeadSourceSchema
+>;
 
 export const approveCustomerProfileSchema = z.object({});
 
@@ -31,9 +45,16 @@ export const customerProfileSchema = z.object({
   businessName: z.string().nullable(),
   bankName: z.string(),
   accountNumber: z.string(),
+  instagram: z.string().nullable(),
+  knowsExistingCustomer: z.boolean(),
+  knownCustomerName: z.string().nullable(),
+  heardAboutUs: customerProfileLeadSourceSchema,
+  heardAboutUsOther: z.string().nullable(),
   contact1Name: z.string().min(1),
+  contact1Phone: z.string().min(1),
   contact1Relationship: z.string().min(1),
   contact2Name: z.string(),
+  contact2Phone: z.string(),
   contact2Relationship: z.string(),
 });
 
@@ -95,10 +116,19 @@ export const CustomerProfileResponseSchema = z.object({
   bankName: z.string(),
   accountNumber: z.string(),
 
+  // Acquisition
+  instagram: z.string().nullable(),
+  knowsExistingCustomer: z.boolean(),
+  knownCustomerName: z.string().nullable(),
+  heardAboutUs: customerProfileLeadSourceSchema,
+  heardAboutUsOther: z.string().nullable(),
+
   // Reference contacts
   contact1Name: z.string(),
+  contact1Phone: z.string(),
   contact1Relationship: z.string(),
   contact2Name: z.string(),
+  contact2Phone: z.string(),
   contact2Relationship: z.string(),
 
   // Review

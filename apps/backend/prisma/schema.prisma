@@ -169,6 +169,17 @@ enum ProfileSubmissionStatus {
   REJECTED
 }
 
+enum CustomerProfileLeadSource {
+  INSTAGRAM
+  FACEBOOK
+  GOOGLE
+  TIKTOK
+  REFERRAL
+  EVENT
+  REPEAT_CUSTOMER
+  OTHER
+}
+
 model CustomerProfile {
   id         String                 @id @default(uuid())
   customerId String                 @unique @map("customer_id")
@@ -197,10 +208,19 @@ model CustomerProfile {
   bankName      String @map("bank_name")
   accountNumber String @map("account_number")
 
+  // Acquisition
+  instagram            String?                   
+  knowsExistingCustomer Boolean                  @default(false) @map("knows_existing_customer")
+  knownCustomerName    String?                   @map("known_customer_name")
+  heardAboutUs         CustomerProfileLeadSource @default(OTHER) @map("heard_about_us")       
+  heardAboutUsOther    String?                   @map("heard_about_us_other")
+
   // Reference contacts
   contact1Name         String  @map("contact1_name")
+  contact1Phone        String  @map("contact1_phone") @default("migration")
   contact1Relationship String  @map("contact1_relationship")
   contact2Name         String  @map("contact2_name")
+  contact2Phone        String  @map("contact2_phone") @default("migration")
   contact2Relationship String  @map("contact2_relationship")
 
   // Review

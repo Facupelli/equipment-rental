@@ -42,10 +42,17 @@ export class GetCustomerProfileQueryHandler implements IQueryHandler<GetCustomer
 
       bankName: profile.bankName,
       accountNumber: profile.accountNumber,
+      instagram: profile.instagram ?? null,
+      knowsExistingCustomer: profile.knowsExistingCustomer,
+      knownCustomerName: profile.knownCustomerName ?? null,
+      heardAboutUs: profile.heardAboutUs,
+      heardAboutUsOther: profile.heardAboutUsOther ?? null,
 
       contact1Name: profile.contact1Name,
+      contact1Phone: profile.contact1Phone,
       contact1Relationship: profile.contact1Relationship,
       contact2Name: profile.contact2Name,
+      contact2Phone: profile.contact2Phone,
       contact2Relationship: profile.contact2Relationship,
 
       rejectionReason: profile.rejectionReason ?? null,

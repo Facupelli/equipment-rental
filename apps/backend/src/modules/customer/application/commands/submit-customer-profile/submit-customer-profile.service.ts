@@ -2,6 +2,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { err, ok, Result } from 'neverthrow';
 import { SubmitCustomerProfileCommand } from './submit-customer-profile.command';
 import { CustomerRepository } from '../../../infrastructure/repositories/customer.repository';
+import { CustomerProfileLeadSource } from '../../../domain/entities/customer-profile.entity';
 import {
   CustomerNotFoundError,
   CustomerProfileAlreadyExistsError,
@@ -37,9 +38,16 @@ export class SubmitCustomerProfileService implements ICommandHandler<SubmitCusto
       businessName: command.businessName,
       bankName: command.bankName,
       accountNumber: command.accountNumber,
+      instagram: command.instagram,
+      knowsExistingCustomer: command.knowsExistingCustomer,
+      knownCustomerName: command.knownCustomerName,
+      heardAboutUs: command.heardAboutUs as CustomerProfileLeadSource,
+      heardAboutUsOther: command.heardAboutUsOther,
       contact1Name: command.contact1Name,
+      contact1Phone: command.contact1Phone,
       contact1Relationship: command.contact1Relationship,
       contact2Name: command.contact2Name,
+      contact2Phone: command.contact2Phone,
       contact2Relationship: command.contact2Relationship,
     });
 

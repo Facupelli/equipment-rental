@@ -16,9 +16,16 @@ export class SubmitCustomerProfileCommand {
     public readonly businessName: string | null,
     public readonly bankName: string,
     public readonly accountNumber: string,
+    public readonly instagram: string | null,
+    public readonly knowsExistingCustomer: boolean,
+    public readonly knownCustomerName: string | null,
+    public readonly heardAboutUs: string,
+    public readonly heardAboutUsOther: string | null,
     public readonly contact1Name: string,
+    public readonly contact1Phone: string,
     public readonly contact1Relationship: string,
     public readonly contact2Name: string,
+    public readonly contact2Phone: string,
     public readonly contact2Relationship: string,
   ) {}
 }
