@@ -51,6 +51,7 @@ export class CreateOrderHttpController {
         items: dto.items,
         currency: dto.currency,
         insuranceSelected: dto.insuranceSelected,
+        couponCode: dto.couponCode,
         fulfillmentMethod: dto.fulfillmentMethod as FulfillmentMethod,
         deliveryRequest: dto.deliveryRequest ?? undefined,
       }),

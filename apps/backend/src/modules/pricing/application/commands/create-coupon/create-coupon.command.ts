@@ -1,7 +1,7 @@
 export class CreateCouponCommand {
   constructor(
     public readonly tenantId: string,
-    public readonly pricingRuleId: string,
+    public readonly promotionId: string,
     public readonly code: string,
     public readonly maxUses: number | undefined,
     public readonly maxUsesPerCustomer: number | undefined,

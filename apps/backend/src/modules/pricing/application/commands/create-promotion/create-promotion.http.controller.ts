@@ -23,12 +23,14 @@ export class CreatePromotionHttpController {
       new CreatePromotionCommand(
         user.tenantId,
         dto.name,
-        dto.type,
+        dto.activationType,
         dto.priority,
-        dto.stackable,
-        dto.condition,
+        dto.stackingType,
+        dto.validFrom,
+        dto.validUntil,
+        dto.conditions,
+        dto.applicability,
         dto.effect,
-        dto.target,
       ),
     );
 

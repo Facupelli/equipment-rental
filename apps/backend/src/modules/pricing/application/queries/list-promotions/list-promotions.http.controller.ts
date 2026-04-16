@@ -1,6 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { Permission, PromotionType } from '@repo/types';
+import { Permission, PromotionActivationType } from '@repo/types';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { Paginated } from 'src/core/decorators/paginated-response.decorator';
 import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
@@ -27,7 +27,7 @@ export class ListPromotionsHttpController {
         query.page,
         query.limit,
         query.search,
-        query.type as PromotionType | undefined,
+        query.activationType as PromotionActivationType | undefined,
       ),
     );
   }

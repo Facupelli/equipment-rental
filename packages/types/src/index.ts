@@ -15,3 +15,4 @@ export * from "./enums/location-schedule.enum";
 export * from "./enums/contract-basis.enum";
 export * from "./enums/custom-domain-status.enum";
 export * from "./enums/promotion-type.enum";
+export * from "./enums/promotion.enum";

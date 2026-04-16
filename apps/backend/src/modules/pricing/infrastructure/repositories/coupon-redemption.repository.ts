@@ -16,8 +16,10 @@ export class CouponRedemptionRepository {
    * Count of active (non-voided) redemptions for a coupon.
    * Used to enforce maxUses at validation time.
    */
-  async countActive(couponId: string): Promise<number> {
-    return this.prisma.client.couponRedemption.count({
+  async countActive(couponId: string, tx?: PrismaTransactionClient): Promise<number> {
+    const client = tx ?? this.prisma.client;
+
+    return client.couponRedemption.count({
       where: {
         couponId,
         voidedAt: null,
@@ -30,10 +32,16 @@ export class CouponRedemptionRepository {
    * Used to enforce maxUsesPerCustomer at validation time.
    * Returns 0 for guest (undefined) callers — no identity to count against.
    */
-  async countActiveForCustomer(couponId: string, customerId: string | undefined): Promise<number> {
+  async countActiveForCustomer(
+    couponId: string,
+    customerId: string | undefined,
+    tx?: PrismaTransactionClient,
+  ): Promise<number> {
     if (!customerId) return 0;
 
-    return this.prisma.client.couponRedemption.count({
+    const client = tx ?? this.prisma.client;
+
+    return client.couponRedemption.count({
       where: {
         couponId,
         customerId,

@@ -9,7 +9,7 @@ export type CouponValidationFailureReason =
   | 'MAX_USES_PER_CUSTOMER_REACHED';
 
 export type CouponValidationResult =
-  | { valid: true; ruleId: string }
+  | { valid: true; promotionId: string }
   | { valid: false; reason: CouponValidationFailureReason };
 
 export type CouponValidationInput = {
@@ -23,7 +23,7 @@ export type CouponValidationInput = {
 /**
  * Validates a coupon against all access control constraints in order
  * of cheapest-to-most-expensive check. Returns the first failure found
- * or a valid result carrying the pricingRuleId to inject into context.
+ * or a valid result carrying the promotionId to inject into context.
  */
 export class CouponValidationService {
   validate(input: CouponValidationInput): CouponValidationResult {
@@ -62,6 +62,6 @@ export class CouponValidationService {
       return { valid: false, reason: 'MAX_USES_PER_CUSTOMER_REACHED' };
     }
 
-    return { valid: true, ruleId: coupon.pricingRuleId };
+    return { valid: true, promotionId: coupon.promotionId };
   }
 }

@@ -35,8 +35,8 @@ export class RedeemCouponService {
     }
 
     const [totalActiveRedemptions, customerActiveRedemptions] = await Promise.all([
-      this.redemptionRepo.countActive(coupon.id),
-      this.redemptionRepo.countActiveForCustomer(coupon.id, input.customerId),
+      this.redemptionRepo.countActive(coupon.id, tx),
+      this.redemptionRepo.countActiveForCustomer(coupon.id, input.customerId, tx),
     ]);
 
     const result = this.validationService.validate({

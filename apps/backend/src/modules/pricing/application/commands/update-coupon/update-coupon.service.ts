@@ -1,31 +1,31 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { PricingRuleType } from '@repo/types';
+import { PromotionActivationType } from '@repo/types';
 import { Result, err, ok } from 'neverthrow';
 import { PrismaService } from 'src/core/database/prisma.service';
 
 import {
   CouponCodeAlreadyExistsError,
-  PricingRuleNotCouponTypeError,
-  PricingRuleNotFoundError,
+  PromotionNotCouponActivatedError,
+  PromotionNotFoundError,
   CouponNotFoundError,
 } from '../../../domain/errors/pricing.errors';
 import { CouponRepository } from '../../../infrastructure/repositories/coupon.repository';
-import { PricingRuleRepository } from '../../../infrastructure/repositories/pricing-rule.repository';
+import { PromotionRepository } from '../../../infrastructure/repositories/promotion.repository';
 
 import { UpdateCouponCommand } from './update-coupon.command';
 
 type UpdateCouponError =
   | CouponCodeAlreadyExistsError
   | CouponNotFoundError
-  | PricingRuleNotFoundError
-  | PricingRuleNotCouponTypeError;
+  | PromotionNotFoundError
+  | PromotionNotCouponActivatedError;
 
 @CommandHandler(UpdateCouponCommand)
 export class UpdateCouponService implements ICommandHandler<UpdateCouponCommand, Result<void, UpdateCouponError>> {
   constructor(
     private readonly prisma: PrismaService,
     private readonly couponRepository: CouponRepository,
-    private readonly pricingRuleRepository: PricingRuleRepository,
+    private readonly promotionRepository: PromotionRepository,
   ) {}
 
   async execute(command: UpdateCouponCommand): Promise<Result<void, UpdateCouponError>> {
@@ -37,7 +37,7 @@ export class UpdateCouponService implements ICommandHandler<UpdateCouponCommand,
           id: { not: command.couponId },
         },
       }),
-      this.pricingRuleRepository.load(command.pricingRuleId),
+      this.promotionRepository.load(command.promotionId),
     ]);
 
     if (!coupon) {
@@ -49,15 +49,15 @@ export class UpdateCouponService implements ICommandHandler<UpdateCouponCommand,
     }
 
     if (!rule) {
-      return err(new PricingRuleNotFoundError(command.pricingRuleId));
+      return err(new PromotionNotFoundError(command.promotionId));
     }
 
-    if (rule.type !== PricingRuleType.COUPON) {
-      return err(new PricingRuleNotCouponTypeError(command.pricingRuleId));
+    if (rule.activationType !== PromotionActivationType.COUPON) {
+      return err(new PromotionNotCouponActivatedError(command.promotionId));
     }
 
     coupon.update({
-      pricingRuleId: command.pricingRuleId,
+      promotionId: command.promotionId,
       code: command.code,
       maxUses: command.maxUses,
       maxUsesPerCustomer: command.maxUsesPerCustomer,

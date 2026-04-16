@@ -11,12 +11,14 @@ export class CreatePromotionService implements ICommandHandler<CreatePromotionCo
     const promotion = Promotion.create({
       tenantId: command.tenantId,
       name: command.name,
-      type: command.type,
+      activationType: command.activationType,
       priority: command.priority,
-      stackable: command.stackable,
-      condition: command.condition,
+      stackingType: command.stackingType,
+      validFrom: command.validFrom,
+      validUntil: command.validUntil,
+      conditions: command.conditions,
+      applicability: command.applicability,
       effect: command.effect,
-      target: command.target,
     });
 
     return this.repository.save(promotion);

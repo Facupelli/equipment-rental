@@ -25,12 +25,14 @@ export class UpdatePromotionHttpController {
         user.tenantId,
         id,
         dto.name,
-        dto.type,
+        dto.activationType,
         dto.priority,
-        dto.stackable,
-        dto.condition,
+        dto.stackingType,
+        dto.validFrom,
+        dto.validUntil,
+        dto.conditions,
+        dto.applicability,
         dto.effect,
-        dto.target,
       ),
     );
 

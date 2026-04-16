@@ -15,5 +15,4 @@ export enum PricingRuleScope {
 
 export enum PricingRuleEffectType {
   PERCENTAGE = "PERCENTAGE",
-  FLAT = "FLAT",
 }

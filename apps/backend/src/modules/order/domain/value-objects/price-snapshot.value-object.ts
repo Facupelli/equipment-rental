@@ -87,8 +87,7 @@ export class PriceSnapshot {
       totalUnits: data.totalUnits as number,
       pricePerBillingUnit: new Decimal(data.pricePerBillingUnit as string),
       discounts: (data.discounts as Array<Record<string, unknown>>).map((d) => ({
-        sourceKind:
-          (d.sourceKind as PricingAdjustmentSourceKind | undefined) ?? PricingAdjustmentSourceKind.LEGACY_PRICING_RULE,
+        sourceKind: (d.sourceKind as PricingAdjustmentSourceKind | undefined) ?? PricingAdjustmentSourceKind.PROMOTION,
         sourceId: (d.sourceId as string | undefined) ?? (d.ruleId as string),
         label: (d.label as string | undefined) ?? (d.ruleLabel as string),
         type: d.type as PricingRuleEffectType,

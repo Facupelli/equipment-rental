@@ -1,25 +1,25 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { err, ok, Result } from 'neverthrow';
-import { PricingRuleType } from '@repo/types';
+import { PromotionActivationType } from '@repo/types';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { Coupon } from '../../../domain/entities/coupon.entity';
 import {
   CouponCodeAlreadyExistsError,
-  PricingRuleNotCouponTypeError,
-  PricingRuleNotFoundError,
+  PromotionNotCouponActivatedError,
+  PromotionNotFoundError,
 } from '../../../domain/errors/pricing.errors';
 import { CouponRepository } from '../../../infrastructure/repositories/coupon.repository';
-import { PricingRuleRepository } from '../../../infrastructure/repositories/pricing-rule.repository';
+import { PromotionRepository } from '../../../infrastructure/repositories/promotion.repository';
 import { CreateCouponCommand } from './create-coupon.command';
 
-type CreateCouponError = CouponCodeAlreadyExistsError | PricingRuleNotFoundError | PricingRuleNotCouponTypeError;
+type CreateCouponError = CouponCodeAlreadyExistsError | PromotionNotFoundError | PromotionNotCouponActivatedError;
 
 @CommandHandler(CreateCouponCommand)
 export class CreateCouponService implements ICommandHandler<CreateCouponCommand, Result<string, CreateCouponError>> {
   constructor(
     private readonly prisma: PrismaService,
     private readonly couponRepository: CouponRepository,
-    private readonly pricingRuleRepository: PricingRuleRepository,
+    private readonly promotionRepository: PromotionRepository,
   ) {}
 
   async execute(command: CreateCouponCommand): Promise<Result<string, CreateCouponError>> {
@@ -29,7 +29,7 @@ export class CreateCouponService implements ICommandHandler<CreateCouponCommand,
           code: command.code.trim().toUpperCase(),
         },
       }),
-      this.pricingRuleRepository.load(command.pricingRuleId),
+      this.promotionRepository.load(command.promotionId),
     ]);
 
     if (existing) {
@@ -37,16 +37,16 @@ export class CreateCouponService implements ICommandHandler<CreateCouponCommand,
     }
 
     if (!rule) {
-      return err(new PricingRuleNotFoundError(command.pricingRuleId));
+      return err(new PromotionNotFoundError(command.promotionId));
     }
 
-    if (rule.type !== PricingRuleType.COUPON) {
-      return err(new PricingRuleNotCouponTypeError(command.pricingRuleId));
+    if (rule.activationType !== PromotionActivationType.COUPON) {
+      return err(new PromotionNotCouponActivatedError(command.promotionId));
     }
 
     const coupon = Coupon.create({
       tenantId: command.tenantId,
-      pricingRuleId: command.pricingRuleId,
+      promotionId: command.promotionId,
       code: command.code,
       maxUses: command.maxUses,
       maxUsesPerCustomer: command.maxUsesPerCustomer,

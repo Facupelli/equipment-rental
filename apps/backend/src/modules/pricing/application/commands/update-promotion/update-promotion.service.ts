@@ -18,12 +18,14 @@ export class UpdatePromotionService implements ICommandHandler<UpdatePromotionCo
 
     promotion.update({
       name: command.name,
-      type: command.type,
+      activationType: command.activationType,
       priority: command.priority,
-      stackable: command.stackable,
-      condition: command.condition,
+      stackingType: command.stackingType,
+      validFrom: command.validFrom,
+      validUntil: command.validUntil,
+      conditions: command.conditions,
+      applicability: command.applicability,
       effect: command.effect,
-      target: command.target,
     });
 
     await this.repository.save(promotion);

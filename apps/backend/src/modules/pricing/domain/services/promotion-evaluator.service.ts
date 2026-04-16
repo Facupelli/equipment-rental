@@ -1,4 +1,12 @@
 import Decimal from 'decimal.js';
+import {
+  PromotionActivationType,
+  PromotionConditionType,
+  PromotionEffectType,
+  PromotionStackingType,
+  PricingRuleEffectType,
+} from '@repo/types';
+import { Money } from 'src/core/domain/value-objects/money.value-object';
 import { Promotion } from '../entities/promotion.entity';
 import { NewPricingContext } from '../types/new-pricing.types';
 import {
@@ -6,72 +14,145 @@ import {
   PricingAdjustmentSourceKind,
   PricingTargetContext,
 } from '../types/pricing-adjustment.types';
-import { Money } from 'src/core/domain/value-objects/money.value-object';
-import { PricingRuleEffectType, PromotionType } from '@repo/types';
+
+type PromotionCandidate = {
+  promotion: Promotion;
+  adjustment: PricingAdjustment;
+};
 
 export class PromotionEvaluatorService {
-  selectApplicablePromotions(
+  selectAdjustments(
+    basePrice: Money,
     promotions: Promotion[],
     context: NewPricingContext,
     target: PricingTargetContext,
-  ): Promotion[] {
-    const applicable = promotions.filter((promotion) => this.isApplicable(promotion, context, target));
+    units: number,
+  ): PricingAdjustment[] {
+    const applicableCandidates = promotions
+      .filter((promotion) => this.isApplicable(promotion, context, target, units))
+      .map((promotion) => ({ promotion, adjustment: this.buildAdjustment(basePrice, promotion, units) }))
+      .filter((candidate) => candidate.adjustment.discountAmount.toDecimal().greaterThan(0));
 
-    const nonStackable = applicable.filter((promotion) => !promotion.stackable).sort((a, b) => a.priority - b.priority);
-    const stackable = applicable.filter((promotion) => promotion.stackable).sort((a, b) => a.priority - b.priority);
+    const combinable = applicableCandidates.filter(
+      (candidate) => candidate.promotion.stackingType === PromotionStackingType.COMBINABLE,
+    );
+    const exclusive = applicableCandidates.filter(
+      (candidate) => candidate.promotion.stackingType === PromotionStackingType.EXCLUSIVE,
+    );
 
-    return [...(nonStackable.length > 0 ? [nonStackable[0]] : []), ...stackable];
-  }
+    const combinableSavings = combinable.reduce(
+      (sum, candidate) => sum.add(candidate.adjustment.discountAmount.toDecimal()),
+      new Decimal(0),
+    );
+    const bestExclusive = exclusive.sort((a, b) => this.compareCandidates(a, b))[0];
 
-  buildAdjustments(basePrice: Money, promotions: Promotion): PricingAdjustment;
-  buildAdjustments(basePrice: Money, promotions: Promotion[]): PricingAdjustment[];
-  buildAdjustments(basePrice: Money, promotions: Promotion | Promotion[]): PricingAdjustment | PricingAdjustment[] {
-    if (!Array.isArray(promotions)) {
-      return this.buildSingleAdjustment(basePrice, promotions);
+    if (!bestExclusive) {
+      return combinable.map((candidate) => candidate.adjustment);
     }
 
-    return promotions.map((promotion) => this.buildSingleAdjustment(basePrice, promotion));
+    if (combinableSavings.greaterThan(bestExclusive.adjustment.discountAmount.toDecimal())) {
+      return combinable.map((candidate) => candidate.adjustment);
+    }
+
+    if (combinableSavings.equals(bestExclusive.adjustment.discountAmount.toDecimal()) && combinable.length > 0) {
+      const highestPriorityCombinable = [...combinable].sort((a, b) => this.compareCandidates(a, b))[0];
+      if (
+        highestPriorityCombinable &&
+        highestPriorityCombinable.promotion.priority < bestExclusive.promotion.priority
+      ) {
+        return combinable.map((candidate) => candidate.adjustment);
+      }
+    }
+
+    return [bestExclusive.adjustment];
   }
 
-  private buildSingleAdjustment(basePrice: Money, promotion: Promotion): PricingAdjustment {
-    if (promotion.effect.type === PricingRuleEffectType.PERCENTAGE) {
-      return {
-        sourceKind: PricingAdjustmentSourceKind.PROMOTION,
-        sourceId: promotion.id,
-        label: promotion.name,
-        effectType: PricingRuleEffectType.PERCENTAGE,
-        configuredValue: promotion.effect.value,
-        discountAmount: basePrice.multiply(new Decimal(promotion.effect.value).div(100)),
-      };
-    }
+  private buildAdjustment(basePrice: Money, promotion: Promotion, units: number): PricingAdjustment {
+    const configuredPercentage = this.resolvePercentage(promotion, units);
 
     return {
       sourceKind: PricingAdjustmentSourceKind.PROMOTION,
       sourceId: promotion.id,
       label: promotion.name,
-      effectType: PricingRuleEffectType.FLAT,
-      configuredValue: promotion.effect.value,
-      discountAmount: Money.of(promotion.effect.value, basePrice.currency),
+      effectType: PricingRuleEffectType.PERCENTAGE,
+      configuredValue: configuredPercentage,
+      discountAmount: basePrice.multiply(new Decimal(configuredPercentage).div(100)),
     };
   }
 
-  private isApplicable(promotion: Promotion, context: NewPricingContext, target: PricingTargetContext): boolean {
-    if (!promotion.isActive || promotion.excludes(target)) {
+  private resolvePercentage(promotion: Promotion, units: number): number {
+    if (promotion.effect.type === PromotionEffectType.PERCENT_OFF) {
+      return promotion.effect.percentage;
+    }
+
+    const matchedTier = promotion.effect.tiers.find(
+      (tier) => units >= tier.fromUnits && (tier.toUnits === null || units <= tier.toUnits),
+    );
+    return matchedTier?.percentage ?? 0;
+  }
+
+  private isApplicable(
+    promotion: Promotion,
+    context: NewPricingContext,
+    target: PricingTargetContext,
+    units: number,
+  ): boolean {
+    if (!promotion.isAvailableAt(context.bookingCreatedAt)) {
       return false;
     }
 
-    switch (promotion.condition.type) {
-      case PromotionType.SEASONAL: {
-        const from = new Date(promotion.condition.dateFrom);
-        const to = new Date(promotion.condition.dateTo);
-        return context.period.start >= from && context.period.start <= to;
+    if (promotion.activationType === PromotionActivationType.COUPON) {
+      if (!(context.applicablePromotionIds?.includes(promotion.id) ?? false)) {
+        return false;
       }
-
-      case PromotionType.COUPON:
-        return context.applicablePromotionIds?.includes(promotion.id) ?? false;
-
-      case PromotionType.CUSTOMER_SPECIFIC:
-        return context.customerId === promotion.condition.customerId;
     }
+
+    if (!promotion.appliesToTarget(target)) {
+      return false;
+    }
+
+    return promotion.conditions.every((condition) => {
+      switch (condition.type) {
+        case PromotionConditionType.BOOKING_WINDOW:
+          return (
+            context.bookingCreatedAt >= new Date(condition.from) && context.bookingCreatedAt <= new Date(condition.to)
+          );
+        case PromotionConditionType.RENTAL_WINDOW:
+          return context.period.start >= new Date(condition.from) && context.period.end <= new Date(condition.to);
+        case PromotionConditionType.CUSTOMER_ID_IN:
+          return context.customerId ? condition.customerIds.includes(context.customerId) : false;
+        case PromotionConditionType.MIN_SUBTOTAL:
+          return (
+            context.orderCurrency === condition.currency &&
+            (context.orderSubtotalBeforePromotions ?? 0) >= condition.amount
+          );
+        case PromotionConditionType.RENTAL_DURATION_MIN:
+          return units >= condition.minUnits;
+        case PromotionConditionType.CATEGORY_ITEM_QUANTITY:
+          return (context.standaloneProductQuantityByCategory[condition.categoryId] ?? 0) >= condition.minQuantity;
+        case PromotionConditionType.DISTINCT_CATEGORIES_WITH_MIN_QUANTITY:
+          return (
+            condition.categoryIds.filter(
+              (categoryId) =>
+                (context.standaloneProductQuantityByCategory[categoryId] ?? 0) >= condition.minQuantityPerCategory,
+            ).length >= condition.minCategoriesMatched
+          );
+      }
+    });
+  }
+
+  private compareCandidates(left: PromotionCandidate, right: PromotionCandidate): number {
+    const savingsDifference = right.adjustment.discountAmount
+      .toDecimal()
+      .comparedTo(left.adjustment.discountAmount.toDecimal());
+    if (savingsDifference !== 0) {
+      return savingsDifference;
+    }
+
+    if (left.promotion.priority !== right.promotion.priority) {
+      return left.promotion.priority - right.promotion.priority;
+    }
+
+    return left.promotion.id.localeCompare(right.promotion.id);
   }
 }

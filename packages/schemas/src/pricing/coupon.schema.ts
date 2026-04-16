@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const createCouponSchema = z
   .object({
-    pricingRuleId: z.uuid(),
+    promotionId: z.uuid(),
     code: z.string().min(1).trim().toUpperCase(),
     maxUses: z.number().int().positive().optional(),
     maxUsesPerCustomer: z.number().int().positive().optional(),

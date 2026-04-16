@@ -91,7 +91,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
 
     let resolvedItems: ResolvedItem[];
     try {
-      resolvedItems = await this.itemResolver.resolve(command, period, resolvedCoupon.value);
+      resolvedItems = await this.itemResolver.resolve(command, period, now, resolvedCoupon.value);
     } catch (error) {
       if (
         error instanceof ProductTypeNotFoundError ||

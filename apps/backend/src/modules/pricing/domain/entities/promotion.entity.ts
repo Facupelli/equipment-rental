@@ -1,40 +1,52 @@
 import { randomUUID } from 'crypto';
-import { PromotionCondition, PromotionEffect, PromotionTarget } from '../types/promotion.types';
+import {
+  PromotionActivationType,
+  PromotionApplicability,
+  PromotionApplicabilityTarget,
+  PromotionCondition,
+  PromotionEffect,
+  PromotionStackingType,
+} from '../types/promotion.types';
 import { PricingTargetContext } from '../types/pricing-adjustment.types';
-import { PromotionType } from '@repo/types';
 
 export interface CreatePromotionProps {
   tenantId: string;
   name: string;
-  type: PromotionType;
+  activationType: PromotionActivationType;
   priority: number;
-  stackable: boolean;
-  condition: PromotionCondition;
+  stackingType: PromotionStackingType;
+  validFrom?: Date;
+  validUntil?: Date;
+  conditions: PromotionCondition[];
+  applicability: PromotionApplicability;
   effect: PromotionEffect;
-  target?: Partial<PromotionTarget>;
 }
 
 export interface ReconstitutePromotionProps {
   id: string;
   tenantId: string;
   name: string;
-  type: PromotionType;
+  activationType: PromotionActivationType;
   priority: number;
-  stackable: boolean;
+  stackingType: PromotionStackingType;
+  validFrom: Date | null;
+  validUntil: Date | null;
   isActive: boolean;
-  condition: PromotionCondition;
+  conditions: PromotionCondition[];
+  applicability: PromotionApplicability;
   effect: PromotionEffect;
-  target: PromotionTarget;
 }
 
 export interface UpdatePromotionProps {
   name: string;
-  type: PromotionType;
+  activationType: PromotionActivationType;
   priority: number;
-  stackable: boolean;
-  condition: PromotionCondition;
+  stackingType: PromotionStackingType;
+  validFrom?: Date;
+  validUntil?: Date;
+  conditions: PromotionCondition[];
+  applicability: PromotionApplicability;
   effect: PromotionEffect;
-  target?: Partial<PromotionTarget>;
 }
 
 export class Promotion {
@@ -42,30 +54,34 @@ export class Promotion {
     public readonly id: string,
     public readonly tenantId: string,
     private _name: string,
-    private _type: PromotionType,
+    private _activationType: PromotionActivationType,
     private _priority: number,
-    private _stackable: boolean,
+    private _stackingType: PromotionStackingType,
+    private _validFrom: Date | null,
+    private _validUntil: Date | null,
     private _isActive: boolean,
-    private _condition: PromotionCondition,
+    private _conditions: PromotionCondition[],
+    private _applicability: PromotionApplicability,
     private _effect: PromotionEffect,
-    private _target: PromotionTarget,
   ) {}
 
   static create(props: CreatePromotionProps): Promotion {
+    assertValidWindow(props.validFrom, props.validUntil);
     assertValidPriority(props.priority);
-    assertConditionMatchesType(props.type, props.condition);
 
     return new Promotion(
       randomUUID(),
       props.tenantId,
       props.name,
-      props.type,
+      props.activationType,
       props.priority,
-      props.stackable,
+      props.stackingType,
+      props.validFrom ?? null,
+      props.validUntil ?? null,
       true,
-      props.condition,
+      [...props.conditions],
+      normalizeApplicability(props.applicability),
       props.effect,
-      normalizeTarget(props.target),
     );
   }
 
@@ -74,13 +90,15 @@ export class Promotion {
       props.id,
       props.tenantId,
       props.name,
-      props.type,
+      props.activationType,
       props.priority,
-      props.stackable,
+      props.stackingType,
+      props.validFrom,
+      props.validUntil,
       props.isActive,
-      props.condition,
+      [...props.conditions],
+      normalizeApplicability(props.applicability),
       props.effect,
-      normalizeTarget(props.target),
     );
   }
 
@@ -88,45 +106,55 @@ export class Promotion {
     return this._name;
   }
 
-  get type(): PromotionType {
-    return this._type;
+  get activationType(): PromotionActivationType {
+    return this._activationType;
   }
 
   get priority(): number {
     return this._priority;
   }
 
-  get stackable(): boolean {
-    return this._stackable;
+  get stackingType(): PromotionStackingType {
+    return this._stackingType;
+  }
+
+  get validFrom(): Date | null {
+    return this._validFrom;
+  }
+
+  get validUntil(): Date | null {
+    return this._validUntil;
   }
 
   get isActive(): boolean {
     return this._isActive;
   }
 
-  get condition(): PromotionCondition {
-    return this._condition;
+  get conditions(): PromotionCondition[] {
+    return [...this._conditions];
+  }
+
+  get applicability(): PromotionApplicability {
+    return this._applicability;
   }
 
   get effect(): PromotionEffect {
     return this._effect;
   }
 
-  get target(): PromotionTarget {
-    return this._target;
-  }
-
   update(props: UpdatePromotionProps): void {
+    assertValidWindow(props.validFrom, props.validUntil);
     assertValidPriority(props.priority);
-    assertConditionMatchesType(props.type, props.condition);
 
     this._name = props.name;
-    this._type = props.type;
+    this._activationType = props.activationType;
     this._priority = props.priority;
-    this._stackable = props.stackable;
-    this._condition = props.condition;
+    this._stackingType = props.stackingType;
+    this._validFrom = props.validFrom ?? null;
+    this._validUntil = props.validUntil ?? null;
+    this._conditions = [...props.conditions];
+    this._applicability = normalizeApplicability(props.applicability);
     this._effect = props.effect;
-    this._target = normalizeTarget(props.target);
   }
 
   activate(): void {
@@ -137,23 +165,46 @@ export class Promotion {
     this._isActive = false;
   }
 
-  excludes(context: PricingTargetContext): boolean {
-    if (context.productTypeId && this._target.excludedProductTypeIds.includes(context.productTypeId)) {
-      return true;
+  isAvailableAt(now: Date): boolean {
+    if (!this._isActive) {
+      return false;
     }
 
-    if (context.bundleId && this._target.excludedBundleIds.includes(context.bundleId)) {
-      return true;
+    if (this._validFrom && now < this._validFrom) {
+      return false;
+    }
+
+    if (this._validUntil && now > this._validUntil) {
+      return false;
+    }
+
+    return true;
+  }
+
+  appliesToTarget(context: PricingTargetContext): boolean {
+    if (context.productTypeId) {
+      return (
+        this._applicability.appliesTo.includes(PromotionApplicabilityTarget.PRODUCT) &&
+        !this._applicability.excludedProductTypeIds.includes(context.productTypeId)
+      );
+    }
+
+    if (context.bundleId) {
+      return (
+        this._applicability.appliesTo.includes(PromotionApplicabilityTarget.BUNDLE) &&
+        !this._applicability.excludedBundleIds.includes(context.bundleId)
+      );
     }
 
     return false;
   }
 }
 
-function normalizeTarget(target?: Partial<PromotionTarget>): PromotionTarget {
+function normalizeApplicability(applicability: PromotionApplicability): PromotionApplicability {
   return {
-    excludedProductTypeIds: target?.excludedProductTypeIds ?? [],
-    excludedBundleIds: target?.excludedBundleIds ?? [],
+    appliesTo: [...new Set(applicability.appliesTo)],
+    excludedProductTypeIds: applicability.excludedProductTypeIds ?? [],
+    excludedBundleIds: applicability.excludedBundleIds ?? [],
   };
 }
 
@@ -163,8 +214,8 @@ function assertValidPriority(priority: number): void {
   }
 }
 
-function assertConditionMatchesType(type: PromotionType, condition: PromotionCondition): void {
-  if (condition.type !== type) {
-    throw new Error(`Promotion condition type "${condition.type}" does not match promotion type "${type}".`);
+function assertValidWindow(validFrom?: Date | null, validUntil?: Date | null): void {
+  if (validFrom && validUntil && validFrom >= validUntil) {
+    throw new Error('Promotion validity window is invalid.');
   }
 }

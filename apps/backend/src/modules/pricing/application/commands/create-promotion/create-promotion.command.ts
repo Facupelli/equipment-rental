@@ -1,15 +1,22 @@
-import { PromotionType } from '@repo/types';
-import { PromotionCondition, PromotionEffect, PromotionTarget } from '../../../domain/types/promotion.types';
+import {
+  PromotionActivationType,
+  PromotionApplicability,
+  PromotionCondition,
+  PromotionEffect,
+  PromotionStackingType,
+} from '../../../domain/types/promotion.types';
 
 export class CreatePromotionCommand {
   constructor(
     public readonly tenantId: string,
     public readonly name: string,
-    public readonly type: PromotionType,
+    public readonly activationType: PromotionActivationType,
     public readonly priority: number,
-    public readonly stackable: boolean,
-    public readonly condition: PromotionCondition,
+    public readonly stackingType: PromotionStackingType,
+    public readonly validFrom: Date | undefined,
+    public readonly validUntil: Date | undefined,
+    public readonly conditions: PromotionCondition[],
+    public readonly applicability: PromotionApplicability,
     public readonly effect: PromotionEffect,
-    public readonly target: Partial<PromotionTarget> | undefined,
   ) {}
 }

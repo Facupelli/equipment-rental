@@ -8,13 +8,13 @@ export class ListPromotionsHandler implements IQueryHandler<ListPromotionsQuery,
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: ListPromotionsQuery): Promise<ListPromotionsResponseDto> {
-    const { tenantId, page, limit, search, type } = query;
+    const { tenantId, page, limit, search, activationType } = query;
     const skip = (page - 1) * limit;
 
     const where = {
       tenantId,
       ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
-      ...(type ? { type } : {}),
+      ...(activationType ? { type: activationType === 'COUPON' ? ('COUPON' as const) : ('SEASONAL' as const) } : {}),
     };
 
     const [rows, total] = await Promise.all([
@@ -31,16 +31,29 @@ export class ListPromotionsHandler implements IQueryHandler<ListPromotionsQuery,
     const data: PromotionView[] = rows.map((row) => ({
       id: row.id,
       name: row.name,
-      type: row.type as PromotionView['type'],
+      activationType: (row.type === 'COUPON' ? 'COUPON' : 'AUTOMATIC') as PromotionView['activationType'],
       priority: row.priority,
-      stackable: row.stackable,
+      stackingType: (row.stackable ? 'COMBINABLE' : 'EXCLUSIVE') as PromotionView['stackingType'],
+      validFrom: ((row.condition as { validFrom?: string | null }).validFrom
+        ? new Date((row.condition as { validFrom?: string | null }).validFrom!)
+        : null) as PromotionView['validFrom'],
+      validUntil: ((row.condition as { validUntil?: string | null }).validUntil
+        ? new Date((row.condition as { validUntil?: string | null }).validUntil!)
+        : null) as PromotionView['validUntil'],
       isActive: row.isActive,
-      condition: row.condition as PromotionView['condition'],
+      conditions: ((row.condition as { conditions?: PromotionView['conditions'] }).conditions ??
+        []) as PromotionView['conditions'],
+      applicability: {
+        appliesTo: ((row.condition as { appliesTo?: PromotionView['applicability']['appliesTo'] }).appliesTo ?? [
+          'PRODUCT',
+          'BUNDLE',
+        ]) as PromotionView['applicability']['appliesTo'],
+        excludedProductTypeIds: row.exclusions.flatMap((exclusion) =>
+          exclusion.productTypeId ? [exclusion.productTypeId] : [],
+        ),
+        excludedBundleIds: row.exclusions.flatMap((exclusion) => (exclusion.bundleId ? [exclusion.bundleId] : [])),
+      },
       effect: row.effect as PromotionView['effect'],
-      excludedProductTypeIds: row.exclusions.flatMap((exclusion) =>
-        exclusion.productTypeId ? [exclusion.productTypeId] : [],
-      ),
-      excludedBundleIds: row.exclusions.flatMap((exclusion) => (exclusion.bundleId ? [exclusion.bundleId] : [])),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     }));

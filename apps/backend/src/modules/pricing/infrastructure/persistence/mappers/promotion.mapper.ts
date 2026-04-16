@@ -1,30 +1,52 @@
 import { Prisma } from 'src/generated/prisma/client';
+import {
+  PromotionActivationType,
+  PromotionApplicability,
+  PromotionApplicabilityTarget,
+  PromotionCondition,
+  PromotionEffect,
+  PromotionStackingType,
+} from '../../../domain/types/promotion.types';
 import { Promotion } from '../../../domain/entities/promotion.entity';
-import { PromotionCondition, PromotionEffect, PromotionTarget } from '../../../domain/types/promotion.types';
-import { PromotionType } from '@repo/types';
 
 type PrismaPromotionWithExclusions = Prisma.PromotionGetPayload<{
   include: { exclusions: true };
 }>;
 
+type PersistedPromotionConditionEnvelope = {
+  validFrom?: string | null;
+  validUntil?: string | null;
+  conditions?: PromotionCondition[];
+  appliesTo?: PromotionApplicabilityTarget[];
+};
+
 export class PromotionMapper {
   static toDomain(raw: PrismaPromotionWithExclusions): Promotion {
+    const conditionEnvelope = (raw.condition ?? {}) as PersistedPromotionConditionEnvelope;
+    const applicability: PromotionApplicability = {
+      appliesTo: conditionEnvelope.appliesTo ?? [
+        PromotionApplicabilityTarget.PRODUCT,
+        PromotionApplicabilityTarget.BUNDLE,
+      ],
+      excludedProductTypeIds: raw.exclusions.flatMap((exclusion) =>
+        exclusion.productTypeId ? [exclusion.productTypeId] : [],
+      ),
+      excludedBundleIds: raw.exclusions.flatMap((exclusion) => (exclusion.bundleId ? [exclusion.bundleId] : [])),
+    };
+
     return Promotion.reconstitute({
       id: raw.id,
       tenantId: raw.tenantId,
       name: raw.name,
-      type: raw.type as PromotionType,
+      activationType: raw.type === 'COUPON' ? PromotionActivationType.COUPON : PromotionActivationType.AUTOMATIC,
       priority: raw.priority,
-      stackable: raw.stackable,
+      stackingType: raw.stackable ? PromotionStackingType.COMBINABLE : PromotionStackingType.EXCLUSIVE,
+      validFrom: conditionEnvelope.validFrom ? new Date(conditionEnvelope.validFrom) : null,
+      validUntil: conditionEnvelope.validUntil ? new Date(conditionEnvelope.validUntil) : null,
       isActive: raw.isActive,
-      condition: raw.condition as unknown as PromotionCondition,
+      conditions: conditionEnvelope.conditions ?? [],
+      applicability,
       effect: raw.effect as unknown as PromotionEffect,
-      target: {
-        excludedProductTypeIds: raw.exclusions.flatMap((exclusion) =>
-          exclusion.productTypeId ? [exclusion.productTypeId] : [],
-        ),
-        excludedBundleIds: raw.exclusions.flatMap((exclusion) => (exclusion.bundleId ? [exclusion.bundleId] : [])),
-      },
     });
   }
 
@@ -33,31 +55,33 @@ export class PromotionMapper {
       id: entity.id,
       tenantId: entity.tenantId,
       name: entity.name,
-      type: entity.type,
+      // Transitional persistence mapping until Prisma schema is regenerated.
+      type: (entity.activationType === PromotionActivationType.COUPON ? 'COUPON' : 'SEASONAL') as never,
       priority: entity.priority,
-      stackable: entity.stackable,
+      stackable: entity.stackingType === PromotionStackingType.COMBINABLE,
       isActive: entity.isActive,
-      condition: entity.condition as unknown as Prisma.InputJsonValue,
+      condition: {
+        validFrom: entity.validFrom?.toISOString() ?? null,
+        validUntil: entity.validUntil?.toISOString() ?? null,
+        conditions: entity.conditions,
+        appliesTo: entity.applicability.appliesTo,
+      } as unknown as Prisma.InputJsonValue,
       effect: entity.effect as unknown as Prisma.InputJsonValue,
     };
   }
 
   static toExclusionRows(entity: Promotion): Prisma.PromotionExclusionCreateManyInput[] {
-    return mapExclusionRows(entity.id, entity.target);
+    return [
+      ...entity.applicability.excludedProductTypeIds.map((productTypeId) => ({
+        promotionId: entity.id,
+        productTypeId,
+        bundleId: null,
+      })),
+      ...entity.applicability.excludedBundleIds.map((bundleId) => ({
+        promotionId: entity.id,
+        productTypeId: null,
+        bundleId,
+      })),
+    ];
   }
-}
-
-function mapExclusionRows(promotionId: string, target: PromotionTarget): Prisma.PromotionExclusionCreateManyInput[] {
-  return [
-    ...target.excludedProductTypeIds.map((productTypeId) => ({
-      promotionId,
-      productTypeId,
-      bundleId: null,
-    })),
-    ...target.excludedBundleIds.map((bundleId) => ({
-      promotionId,
-      productTypeId: null,
-      bundleId,
-    })),
-  ];
 }

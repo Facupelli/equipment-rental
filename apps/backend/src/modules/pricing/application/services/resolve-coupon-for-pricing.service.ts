@@ -8,7 +8,7 @@ import { CouponRedemptionRepository } from '../../infrastructure/repositories/co
 
 export type ResolveCouponResult = {
   couponId: string;
-  ruleId: string;
+  promotionId: string;
 };
 
 export type ResolveCouponInput = {
@@ -35,6 +35,7 @@ export class ResolveCouponForPricingService {
   ): Promise<Result<ResolveCouponResult, ResolveCouponForPricingError>> {
     const couponRecord = await this.prisma.client.coupon.findFirst({
       where: {
+        tenantId: input.tenantId,
         code: input.code.trim().toUpperCase(),
       },
       select: {
@@ -69,6 +70,6 @@ export class ResolveCouponForPricingService {
       return err(new CouponValidationError(result.reason));
     }
 
-    return ok({ couponId: coupon.id, ruleId: result.ruleId });
+    return ok({ couponId: coupon.id, promotionId: result.promotionId });
   }
 }

@@ -14,10 +14,7 @@ export class ListCouponsHandler implements IQueryHandler<ListCouponsQuery, Pagin
     const where = {
       tenantId,
       ...(search && {
-        OR: [
-          { code: { contains: search, mode: 'insensitive' as const } },
-          { pricingRule: { name: { contains: search, mode: 'insensitive' as const } } },
-        ],
+        code: { contains: search, mode: 'insensitive' as const },
       }),
     };
 
@@ -35,9 +32,7 @@ export class ListCouponsHandler implements IQueryHandler<ListCouponsQuery, Pagin
           validFrom: true,
           validUntil: true,
           isActive: true,
-          pricingRule: {
-            select: { name: true },
-          },
+          pricingRuleId: true,
           _count: {
             select: {
               redemptions: {
@@ -50,10 +45,17 @@ export class ListCouponsHandler implements IQueryHandler<ListCouponsQuery, Pagin
       this.prisma.client.coupon.count({ where }),
     ]);
 
+    const promotionIds = [...new Set(rows.map((row) => row.pricingRuleId))];
+    const promotions = await this.prisma.client.promotion.findMany({
+      where: { id: { in: promotionIds } },
+      select: { id: true, name: true },
+    });
+    const promotionNameById = new Map(promotions.map((promotion) => [promotion.id, promotion.name]));
+
     const data: CouponView[] = rows.map((row) => ({
       id: row.id,
       code: row.code,
-      pricingRuleName: row.pricingRule.name,
+      promotionName: promotionNameById.get(row.pricingRuleId) ?? 'Unknown promotion',
       maxUses: row.maxUses,
       maxUsesPerCustomer: row.maxUsesPerCustomer,
       totalRedemptions: row._count.redemptions,

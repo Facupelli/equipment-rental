@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import Decimal from 'decimal.js';
 
 import {
   BundleBookingEligibilityDto,
@@ -22,10 +23,60 @@ export class CreateOrderItemResolver {
   async resolve(
     command: CreateOrderCommand,
     period: DateRange,
+    bookingCreatedAt: Date,
     resolvedCoupon: ResolvedCouponDto | undefined,
   ): Promise<ResolvedItem[]> {
     const metadata = await this.loadItemMetadata(command);
-    const applicablePromotionIds = resolvedCoupon ? [resolvedCoupon.ruleId] : undefined;
+    const applicablePromotionIds = resolvedCoupon ? [resolvedCoupon.promotionId] : undefined;
+    const standaloneProductQuantityByCategory = command.items.reduce<Record<string, number>>((acc, item) => {
+      if (item.type !== 'PRODUCT') {
+        return acc;
+      }
+
+      const categoryId = metadata.products.get(item.productTypeId)?.categoryId;
+      if (categoryId) {
+        acc[categoryId] = (acc[categoryId] ?? 0) + (item.quantity ?? 1);
+      }
+
+      return acc;
+    }, {});
+
+    const basePrices = await Promise.all(
+      command.items.map((item) => {
+        if (item.type === 'PRODUCT') {
+          return this.pricingApi.calculateProductPriceV2({
+            tenantId: command.tenantId,
+            locationId: command.locationId,
+            productTypeId: item.productTypeId,
+            period,
+            currency: command.currency,
+            customerId: command.customerId,
+            bookingCreatedAt,
+            standaloneProductQuantityByCategory,
+            applyPromotions: false,
+          });
+        }
+
+        return this.pricingApi.calculateBundlePriceV2({
+          tenantId: command.tenantId,
+          locationId: command.locationId,
+          bundleId: item.bundleId,
+          period,
+          currency: command.currency,
+          customerId: command.customerId,
+          bookingCreatedAt,
+          standaloneProductQuantityByCategory,
+          applyPromotions: false,
+        });
+      }),
+    );
+
+    const orderSubtotalBeforePromotions = basePrices
+      .reduce((sum, price, index) => {
+        const quantity = command.items[index].type === 'PRODUCT' ? (command.items[index].quantity ?? 1) : 1;
+        return sum.add(price.finalPrice.toDecimal().mul(quantity));
+      }, new Decimal(0))
+      .toNumber();
 
     return Promise.all(
       command.items.map((item): Promise<ResolvedItem> => {
@@ -38,7 +89,10 @@ export class CreateOrderItemResolver {
               period,
               currency: command.currency,
               customerId: command.customerId,
+              bookingCreatedAt,
               applicablePromotionIds,
+              standaloneProductQuantityByCategory,
+              orderSubtotalBeforePromotions,
             })
             .then((price) => ({
               type: 'PRODUCT' as const,
@@ -62,7 +116,10 @@ export class CreateOrderItemResolver {
             period,
             currency: command.currency,
             customerId: command.customerId,
+            bookingCreatedAt,
             applicablePromotionIds,
+            standaloneProductQuantityByCategory,
+            orderSubtotalBeforePromotions,
           }),
           this.pricingApi.getComponentStandalonePrices({
             tenantId: command.tenantId,

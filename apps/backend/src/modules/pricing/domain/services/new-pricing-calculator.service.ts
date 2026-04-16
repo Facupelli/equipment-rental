@@ -1,16 +1,14 @@
 import Decimal from 'decimal.js';
+import { RoundingRule } from '@repo/types';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { Money } from 'src/core/domain/value-objects/money.value-object';
-import { LongRentalDiscount } from '../entities/long-rental-discount.entity';
 import { PricingTier } from '../entities/pricing-tier.entity';
 import { Promotion } from '../entities/promotion.entity';
 import { NoPricingTierFoundException } from '../exceptions/pricing-calculator.exceptions';
 import { NewPricingContext } from '../types/new-pricing.types';
 import { PricingAdjustment } from '../types/pricing-adjustment.types';
 import { BillingUnitResolverService } from './billing-unit-resolver.service';
-import { LongRentalDiscountEvaluatorService } from './long-rental-discount-evaluator.service';
 import { PromotionEvaluatorService } from './promotion-evaluator.service';
-import { PricingRuleEffectType, RoundingRule } from '@repo/types';
 
 export type NewPricingResult = {
   basePrice: Money;
@@ -27,16 +25,15 @@ export type NewPricingCalculatorInput = {
   weekendCountsAsOne: boolean;
   roundingRule: RoundingRule;
   tiers: PricingTier[];
-  longRentalDiscounts: LongRentalDiscount[];
   promotions: Promotion[];
   context: NewPricingContext;
   currency: string;
   entityId: string;
+  applyPromotions: boolean;
 };
 
 export class NewPricingCalculatorService {
   private readonly billingUnitResolver = new BillingUnitResolverService();
-  private readonly longRentalEvaluator = new LongRentalDiscountEvaluatorService();
   private readonly promotionEvaluator = new PromotionEvaluatorService();
 
   calculate(input: NewPricingCalculatorInput): NewPricingResult {
@@ -55,56 +52,18 @@ export class NewPricingCalculatorService {
       bundleId: input.context.bundleId,
     };
 
-    const appliedAdjustments: PricingAdjustment[] = [];
-    let runningPrice = basePrice;
+    const appliedAdjustments = input.applyPromotions
+      ? this.promotionEvaluator.selectAdjustments(basePrice, input.promotions, input.context, target, units)
+      : [];
 
-    const matchedLongRentalDiscount = this.longRentalEvaluator.selectApplicableDiscount(
-      input.longRentalDiscounts,
-      units,
-      target,
+    const totalDiscount = appliedAdjustments.reduce(
+      (sum, adjustment) => sum.add(adjustment.discountAmount.toDecimal()),
+      new Decimal(0),
     );
-
-    if (matchedLongRentalDiscount) {
-      const adjustment = this.longRentalEvaluator.buildAdjustment(basePrice, matchedLongRentalDiscount);
-      appliedAdjustments.push(adjustment);
-      runningPrice = runningPrice.subtract(adjustment.discountAmount);
-    }
-
-    const applicablePromotions = this.promotionEvaluator.selectApplicablePromotions(
-      input.promotions,
-      input.context,
-      target,
-    );
-    const promotionAdjustments = this.promotionEvaluator.buildAdjustments(runningPrice, applicablePromotions);
-
-    const percentagePromotionAdjustments = promotionAdjustments.filter(
-      (adjustment) => adjustment.effectType === PricingRuleEffectType.PERCENTAGE,
-    );
-    const flatPromotionAdjustments = promotionAdjustments.filter(
-      (adjustment) => adjustment.effectType === PricingRuleEffectType.FLAT,
-    );
-
-    if (percentagePromotionAdjustments.length > 0) {
-      const totalPercentage = percentagePromotionAdjustments.reduce(
-        (sum, adjustment) => sum + adjustment.configuredValue,
-        0,
-      );
-      const combinedDiscount = runningPrice.multiply(new Decimal(totalPercentage).div(100));
-
-      appliedAdjustments.push(...percentagePromotionAdjustments);
-      runningPrice = runningPrice.subtract(combinedDiscount);
-    }
-
-    if (flatPromotionAdjustments.length > 0) {
-      appliedAdjustments.push(...flatPromotionAdjustments);
-      for (const adjustment of flatPromotionAdjustments) {
-        runningPrice = runningPrice.subtract(adjustment.discountAmount);
-      }
-    }
 
     return {
       basePrice,
-      finalPrice: runningPrice.clampAbove(Money.zero(input.currency)),
+      finalPrice: basePrice.subtract(Money.of(totalDiscount, input.currency)).clampAbove(Money.zero(input.currency)),
       pricePerBillingUnit: Money.of(tier.pricePerUnit, input.currency),
       totalUnits: units,
       appliedAdjustments,

@@ -1,12 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { LongRentalDiscount } from '../../domain/entities/long-rental-discount.entity';
-import { PricingRule } from '../../domain/entities/pricing-rule.entity';
 import { Promotion } from '../../domain/entities/promotion.entity';
 import { PricingTier } from '../../domain/entities/pricing-tier.entity';
-import { LongRentalDiscountMapper } from '../persistence/mappers/long-rental-discount.mapper';
 import { PromotionMapper } from '../persistence/mappers/promotion.mapper';
-import { PricingRuleMapper } from '../persistence/mappers/pricing-rule.mapper';
 import { PricingTierMapper } from '../persistence/mappers/pricing-tier.mapper';
 
 export type ProductTypeMeta = {
@@ -122,12 +118,11 @@ export class PricingComputationReadService {
       }),
     ]);
 
-    const metaByProductTypeId = new Map(metaRows.map((r) => [r.id, r.billingUnit.durationMinutes]));
-
+    const metaByProductTypeId = new Map(metaRows.map((row) => [row.id, row.billingUnit.durationMinutes]));
     const result = new Map<string, ComponentTierData>();
 
     for (const productTypeId of productTypeIds) {
-      const rawTiers = tierRows.filter((r) => r.productTypeId === productTypeId).map(PricingTierMapper.toDomain);
+      const rawTiers = tierRows.filter((row) => row.productTypeId === productTypeId).map(PricingTierMapper.toDomain);
 
       result.set(productTypeId, {
         billingUnitDurationMinutes: metaByProductTypeId.get(productTypeId) ?? 60,
@@ -138,30 +133,11 @@ export class PricingComputationReadService {
     return result;
   }
 
-  async loadActiveRulesForTenant(tenantId: string): Promise<PricingRule[]> {
-    const rows = await this.prisma.client.pricingRule.findMany({
-      where: { tenantId, isActive: true },
-      orderBy: { priority: 'asc' },
-    });
-
-    return rows.map(PricingRuleMapper.toDomain);
-  }
-
-  async loadActiveLongRentalDiscountsForTenant(tenantId: string): Promise<LongRentalDiscount[]> {
-    const rows = await this.prisma.client.longRentalDiscount.findMany({
-      where: { tenantId, isActive: true },
-      include: { exclusions: true },
-      orderBy: { priority: 'asc' },
-    });
-
-    return rows.map(LongRentalDiscountMapper.toDomain);
-  }
-
   async loadActivePromotionsForTenant(tenantId: string): Promise<Promotion[]> {
     const rows = await this.prisma.client.promotion.findMany({
       where: { tenantId, isActive: true },
       include: { exclusions: true },
-      orderBy: { priority: 'asc' },
+      orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
     });
 
     return rows.map(PromotionMapper.toDomain);

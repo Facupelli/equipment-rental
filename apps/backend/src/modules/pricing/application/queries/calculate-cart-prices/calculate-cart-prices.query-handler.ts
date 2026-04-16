@@ -26,26 +26,7 @@ import {
 } from '../../../domain/errors/pricing.errors';
 import { TenantConfig } from '@repo/schemas';
 import { NewPricingResult } from '../../../domain/services/new-pricing-calculator.service';
-
-export type CartDiscountLineItem = {
-  sourceKind: 'LEGACY_PRICING_RULE' | 'LONG_RENTAL_DISCOUNT' | 'PROMOTION';
-  sourceId: string;
-  label: string;
-  ruleId: string;
-  ruleLabel: string;
-  type: 'PERCENTAGE' | 'FLAT';
-  value: number;
-  discountAmount: number;
-};
-
-export type CartPriceLineItem = {
-  type: 'PRODUCT' | 'BUNDLE';
-  id: string;
-  quantity: number;
-  pricePerBillingUnit: number;
-  subtotal: number;
-  discounts: CartDiscountLineItem[];
-};
+import { PricingRuleEffectType } from '@repo/types';
 
 export type CartPriceResult = {
   lineItems: CartPriceLineItem[];
@@ -57,6 +38,26 @@ export type CartPriceResult = {
   totalBeforeDiscounts: number;
   totalDiscount: number;
   couponApplied: boolean;
+};
+
+export type CartPriceLineItem = {
+  type: 'PRODUCT' | 'BUNDLE';
+  id: string;
+  quantity: number;
+  pricePerBillingUnit: number;
+  subtotal: number;
+  discounts: CartDiscountLineItem[];
+};
+
+export type CartDiscountLineItem = {
+  sourceKind: 'PROMOTION';
+  sourceId: string;
+  label: string;
+  ruleId: string;
+  ruleLabel: string;
+  type: PricingRuleEffectType;
+  value: number;
+  discountAmount: number;
 };
 
 const EQUIPMENT_INSURANCE_RATE = new Decimal('0.06');
@@ -146,9 +147,10 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
 
     const uniqueProductTypeIds = [...new Set(productItems.map((i) => i.productTypeId))];
     const uniqueBundleIds = [...new Set(bundleItems.map((i) => i.bundleId))];
+    let productMetaList: Array<Awaited<ReturnType<CatalogPublicApi['getProductTypeBookingEligibility']>>> = [];
 
     try {
-      const [productMetaList, bundleMetaList] = await Promise.all([
+      const [loadedProductMetaList, bundleMetaList] = await Promise.all([
         Promise.all(
           uniqueProductTypeIds.map((id) =>
             this.catalogApi.getProductTypeBookingEligibility(query.tenantId, query.locationId, id),
@@ -160,6 +162,8 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
           ),
         ),
       ]);
+
+      productMetaList = loadedProductMetaList;
 
       for (const [index, id] of uniqueProductTypeIds.entries()) {
         if (!productMetaList[index]) {
@@ -187,25 +191,69 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
 
     let applicablePromotionIds: string[] | undefined;
     let couponApplied = false;
+    const bookingCreatedAt = new Date();
 
     if (query.couponCode) {
       const resolvedCoupon = await this.pricingApp.resolveCouponForPricing({
         tenantId: query.tenantId,
         code: query.couponCode,
         customerId: query.customerId,
-        now: new Date(),
+        now: bookingCreatedAt,
       });
 
       if (resolvedCoupon.isOk()) {
-        applicablePromotionIds = [resolvedCoupon.value.ruleId];
+        applicablePromotionIds = [resolvedCoupon.value.promotionId];
         couponApplied = true;
       }
     }
+
+    const productMetaById = new Map(uniqueProductTypeIds.map((id, index) => [id, productMetaList[index]]));
+    const standaloneProductQuantityByCategory = productItems.reduce<Record<string, number>>((acc, item) => {
+      const categoryId = productMetaById.get(item.productTypeId)?.categoryId;
+      if (categoryId) {
+        acc[categoryId] = (acc[categoryId] ?? 0) + item.quantity;
+      }
+      return acc;
+    }, {});
 
     // ── Step 6: Fire all pricing calls in parallel ─────────────────────────
     // Each unit is priced independently — this matches how CreateOrderHandler
     // will price each OrderItem at order creation time.
     const { tenantId, locationId, currency } = query;
+
+    const basePricingTasks = query.items.flatMap((item) =>
+      Array.from({ length: item.quantity }, () =>
+        item.type === 'PRODUCT'
+          ? this.pricingApp.calculateProductPriceV2({
+              tenantId,
+              locationId,
+              currency,
+              period,
+              productTypeId: item.productTypeId,
+              customerId: query.customerId,
+              bookingCreatedAt,
+              standaloneProductQuantityByCategory,
+              applyPromotions: false,
+            })
+          : this.pricingApp.calculateBundlePriceV2({
+              tenantId,
+              locationId,
+              currency,
+              period,
+              bundleId: item.bundleId,
+              customerId: query.customerId,
+              bookingCreatedAt,
+              standaloneProductQuantityByCategory,
+              applyPromotions: false,
+            }),
+      ),
+    );
+
+    const basePrices = await Promise.all(basePricingTasks);
+    const orderSubtotalBeforePromotions = basePrices
+      .reduce((sum, price) => sum.add(price.finalPrice), Money.zero(query.currency))
+      .toDecimal()
+      .toNumber();
 
     const pricingTasks = query.items.flatMap((item) =>
       Array.from({ length: item.quantity }, () =>
@@ -217,7 +265,10 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
               period,
               productTypeId: item.productTypeId,
               customerId: query.customerId,
+              bookingCreatedAt,
               applicablePromotionIds,
+              standaloneProductQuantityByCategory,
+              orderSubtotalBeforePromotions,
             })
           : this.pricingApp.calculateBundlePriceV2({
               tenantId,
@@ -226,7 +277,10 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
               period,
               bundleId: item.bundleId,
               customerId: query.customerId,
+              bookingCreatedAt,
               applicablePromotionIds,
+              standaloneProductQuantityByCategory,
+              orderSubtotalBeforePromotions,
             }),
       ),
     );

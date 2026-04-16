@@ -15,8 +15,8 @@ import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import {
   CouponCodeAlreadyExistsError,
-  PricingRuleNotCouponTypeError,
-  PricingRuleNotFoundError,
+  PromotionNotCouponActivatedError,
+  PromotionNotFoundError,
 } from '../../../domain/errors/pricing.errors';
 import { CreateCouponCommand } from './create-coupon.command';
 import { CreateCouponRequestDto } from './create-coupon.request.dto';
@@ -36,7 +36,7 @@ export class CreateCouponHttpController {
     const result = await this.commandBus.execute(
       new CreateCouponCommand(
         user.tenantId,
-        dto.pricingRuleId,
+        dto.promotionId,
         dto.code,
         dto.maxUses,
         dto.maxUsesPerCustomer,
@@ -53,11 +53,11 @@ export class CreateCouponHttpController {
         throw new ConflictException(error.message);
       }
 
-      if (error instanceof PricingRuleNotFoundError) {
+      if (error instanceof PromotionNotFoundError) {
         throw new NotFoundException(error.message);
       }
 
-      if (error instanceof PricingRuleNotCouponTypeError) {
+      if (error instanceof PromotionNotCouponActivatedError) {
         throw new BadRequestException(error.message);
       }
 

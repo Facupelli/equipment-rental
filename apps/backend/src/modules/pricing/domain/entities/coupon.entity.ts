@@ -8,7 +8,7 @@ import {
 
 export interface CreateCouponProps {
   tenantId: string;
-  pricingRuleId: string;
+  promotionId: string;
   code: string;
   maxUses?: number;
   maxUsesPerCustomer?: number;
@@ -20,7 +20,7 @@ export interface CreateCouponProps {
 export interface ReconstituteCouponProps {
   id: string;
   tenantId: string;
-  pricingRuleId: string;
+  promotionId: string;
   code: string;
   maxUses: number | null;
   maxUsesPerCustomer: number | null;
@@ -31,7 +31,7 @@ export interface ReconstituteCouponProps {
 }
 
 export interface UpdateCouponProps {
-  pricingRuleId: string;
+  promotionId: string;
   code: string;
   maxUses?: number;
   maxUsesPerCustomer?: number;
@@ -44,7 +44,7 @@ export class Coupon {
   private constructor(
     public readonly id: string,
     public readonly tenantId: string,
-    private _pricingRuleId: string,
+    private _promotionId: string,
     private _code: string,
     private _maxUses: number | null,
     private _maxUsesPerCustomer: number | null,
@@ -70,7 +70,7 @@ export class Coupon {
     return new Coupon(
       randomUUID(),
       props.tenantId,
-      props.pricingRuleId,
+      props.promotionId,
       props.code.trim().toUpperCase(),
       props.maxUses ?? null,
       props.maxUsesPerCustomer ?? null,
@@ -85,7 +85,7 @@ export class Coupon {
     return new Coupon(
       props.id,
       props.tenantId,
-      props.pricingRuleId,
+      props.promotionId,
       props.code,
       props.maxUses,
       props.maxUsesPerCustomer,
@@ -100,8 +100,8 @@ export class Coupon {
     return this._isActive;
   }
 
-  get pricingRuleId(): string {
-    return this._pricingRuleId;
+  get promotionId(): string {
+    return this._promotionId;
   }
 
   get code(): string {
@@ -141,7 +141,7 @@ export class Coupon {
       throw new RestrictedCouponMissingPerCustomerLimitException();
     }
 
-    this._pricingRuleId = props.pricingRuleId;
+    this._promotionId = props.promotionId;
     this._code = props.code.trim().toUpperCase();
     this._maxUses = props.maxUses ?? null;
     this._maxUsesPerCustomer = props.maxUsesPerCustomer ?? null;

@@ -19,8 +19,8 @@ import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import {
   CouponCodeAlreadyExistsError,
   CouponNotFoundError,
-  PricingRuleNotCouponTypeError,
-  PricingRuleNotFoundError,
+  PromotionNotCouponActivatedError,
+  PromotionNotFoundError,
 } from '../../../domain/errors/pricing.errors';
 
 import { UpdateCouponCommand } from './update-coupon.command';
@@ -42,7 +42,7 @@ export class UpdateCouponHttpController {
       new UpdateCouponCommand(
         user.tenantId,
         id,
-        dto.pricingRuleId,
+        dto.promotionId,
         dto.code,
         dto.maxUses,
         dto.maxUsesPerCustomer,
@@ -55,7 +55,7 @@ export class UpdateCouponHttpController {
     if (result.isErr()) {
       const error = result.error;
 
-      if (error instanceof CouponNotFoundError || error instanceof PricingRuleNotFoundError) {
+      if (error instanceof CouponNotFoundError || error instanceof PromotionNotFoundError) {
         throw new NotFoundException(error.message);
       }
 
@@ -63,7 +63,7 @@ export class UpdateCouponHttpController {
         throw new ConflictException(error.message);
       }
 
-      if (error instanceof PricingRuleNotCouponTypeError) {
+      if (error instanceof PromotionNotCouponActivatedError) {
         throw new BadRequestException(error.message);
       }
 

@@ -23,16 +23,27 @@ export class GetPromotionByIdQueryHandler implements IQueryHandler<
     return {
       id: row.id,
       name: row.name,
-      type: row.type as GetPromotionByIdResponseDto['type'],
+      activationType: (row.type === 'COUPON' ? 'COUPON' : 'AUTOMATIC') as GetPromotionByIdResponseDto['activationType'],
       priority: row.priority,
-      stackable: row.stackable,
+      stackingType: (row.stackable ? 'COMBINABLE' : 'EXCLUSIVE') as GetPromotionByIdResponseDto['stackingType'],
+      validFrom: ((row.condition as { validFrom?: string | null }).validFrom
+        ? new Date((row.condition as { validFrom?: string | null }).validFrom!)
+        : null) as GetPromotionByIdResponseDto['validFrom'],
+      validUntil: ((row.condition as { validUntil?: string | null }).validUntil
+        ? new Date((row.condition as { validUntil?: string | null }).validUntil!)
+        : null) as GetPromotionByIdResponseDto['validUntil'],
       isActive: row.isActive,
-      condition: row.condition as GetPromotionByIdResponseDto['condition'],
+      conditions: ((row.condition as { conditions?: GetPromotionByIdResponseDto['conditions'] }).conditions ??
+        []) as GetPromotionByIdResponseDto['conditions'],
+      applicability: {
+        appliesTo: ((row.condition as { appliesTo?: GetPromotionByIdResponseDto['applicability']['appliesTo'] })
+          .appliesTo ?? ['PRODUCT', 'BUNDLE']) as GetPromotionByIdResponseDto['applicability']['appliesTo'],
+        excludedProductTypeIds: row.exclusions.flatMap((exclusion) =>
+          exclusion.productTypeId ? [exclusion.productTypeId] : [],
+        ),
+        excludedBundleIds: row.exclusions.flatMap((exclusion) => (exclusion.bundleId ? [exclusion.bundleId] : [])),
+      },
       effect: row.effect as GetPromotionByIdResponseDto['effect'],
-      excludedProductTypeIds: row.exclusions.flatMap((exclusion) =>
-        exclusion.productTypeId ? [exclusion.productTypeId] : [],
-      ),
-      excludedBundleIds: row.exclusions.flatMap((exclusion) => (exclusion.bundleId ? [exclusion.bundleId] : [])),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
