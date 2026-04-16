@@ -64,13 +64,13 @@ export class PricingPeriodInvalidError extends PricingError {
 }
 
 export class PricingProductTypeNotFoundError extends PricingError {
-  constructor(productTypeId: string) {
+  constructor(public readonly productTypeId: string) {
     super(`ProductType "${productTypeId}" was not found.`);
   }
 }
 
 export class PricingBundleNotFoundError extends PricingError {
-  constructor(bundleId: string) {
+  constructor(public readonly bundleId: string) {
     super(`Bundle "${bundleId}" was not found.`);
   }
 }

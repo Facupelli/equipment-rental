@@ -13,9 +13,7 @@ import { GetOrdersScheduleQueryHandler } from './application/queries/get-orders-
 import { GetOrderByIdQueryHandler } from './application/queries/get-order-by-id/get-order-by-id.query-handler';
 import { GetCalendarDotsQueryHandler } from './application/queries/get-calendar-dots/get-calendar-dots.query-handler';
 import { GetPendingReviewOrdersQueryHandler } from './application/queries/get-pending-review-orders/get-pending-review-orders.query-handler';
-import { CatalogModule } from '../catalog/catalog.module';
 import { TenantModule } from '../tenant/tenant.module';
-import { CreateOrderItemResolver } from './application/commands/create-order/create-order-item-resolver';
 import { CreateOrderAssetResolver } from './application/commands/create-order/create-order-asset-resolver';
 import { CreateOrderOwnerContractResolver } from './application/commands/create-order/create-order-owner-contract-resolver';
 import { CreateOrderHttpController } from './application/commands/create-order/create-order.http.controller';
@@ -34,7 +32,7 @@ import { ContractRendererAdapter } from './infrastructure/pdf/contract-renderer.
 import { ContractRendererPort } from './domain/ports/contract-render.port';
 
 @Module({
-  imports: [PricingModule, InventoryModule, CatalogModule, TenantModule],
+  imports: [PricingModule, InventoryModule, TenantModule],
   controllers: [
     CreateOrderHttpController,
     ConfirmOrderHttpController,
@@ -50,7 +48,6 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
   ],
   providers: [
     OrderRepository,
-    CreateOrderItemResolver,
     CreateOrderAssetResolver,
     CreateOrderOwnerContractResolver,
     CreateOrderService,

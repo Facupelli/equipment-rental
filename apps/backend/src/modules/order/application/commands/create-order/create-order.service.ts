@@ -20,7 +20,11 @@ import {
   LocationContextReadModel,
 } from 'src/modules/tenant/public/queries/get-location-context.query';
 import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
-import { PricingPublicApi, ResolvedCouponDto } from 'src/modules/pricing/pricing.public-api';
+import { CouponNotFoundError, CouponValidationError, PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
+import {
+  PricingBundleNotFoundError,
+  PricingProductTypeNotFoundError,
+} from 'src/modules/pricing/domain/errors/pricing.errors';
 import { OrderRepository } from 'src/modules/order/infrastructure/persistence/repositories/order.repository';
 import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
 import {
@@ -38,7 +42,6 @@ import { TenantConfig } from '@repo/schemas';
 import { CreateOrderCommand } from './create-order.command';
 import { CreateOrderAssetResolver, buildDemandUnits } from './create-order-asset-resolver';
 import { CreateOrderError, ResolvedItem } from './create-order.types';
-import { CreateOrderItemResolver } from './create-order-item-resolver';
 import { CreateOrderOwnerContractResolver } from './create-order-owner-contract-resolver';
 import { toPriceSnapshot } from './create-order-pricing-snapshot.mapper';
 import {
@@ -61,7 +64,6 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
     private readonly orderRepository: OrderRepository,
     private readonly pricingApi: PricingPublicApi,
     private readonly inventoryApi: InventoryPublicApi,
-    private readonly itemResolver: CreateOrderItemResolver,
     private readonly assetResolver: CreateOrderAssetResolver,
     private readonly ownerContractResolver: CreateOrderOwnerContractResolver,
   ) {}
@@ -81,21 +83,49 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
       return err(slotValidation.error);
     }
 
-    const now = new Date();
-    const resolvedCoupon = await this.resolveCoupon(command, now);
-    if (resolvedCoupon.isErr()) {
-      return err(resolvedCoupon.error);
-    }
-
     const { period, bookingMode } = await this.deriveBookingContext(command);
+    const now = new Date();
 
     let resolvedItems: ResolvedItem[];
+    let resolvedCouponId: string | undefined;
     try {
-      resolvedItems = await this.itemResolver.resolve(command, period, now, resolvedCoupon.value);
+      const pricedBasket = await this.pricingApi.priceBasket({
+        tenantId: command.tenantId,
+        locationId: command.locationId,
+        currency: command.currency,
+        customerId: command.customerId,
+        period,
+        bookingCreatedAt: now,
+        couponCode: command.couponCode,
+        items: command.items.map((item) =>
+          item.type === 'PRODUCT'
+            ? {
+                type: 'PRODUCT' as const,
+                productTypeId: item.productTypeId,
+                quantity: item.quantity,
+                assetId: item.assetId,
+              }
+            : {
+                type: 'BUNDLE' as const,
+                bundleId: item.bundleId,
+              },
+        ),
+      });
+
+      resolvedItems = this.toResolvedItems(pricedBasket.items);
+      resolvedCouponId = pricedBasket.resolvedCoupon?.couponId;
     } catch (error) {
+      if (error instanceof PricingProductTypeNotFoundError) {
+        return err(new ProductTypeNotFoundError(error.productTypeId));
+      }
+
+      if (error instanceof PricingBundleNotFoundError) {
+        return err(new BundleNotFoundError(error.bundleId));
+      }
+
       if (
-        error instanceof ProductTypeNotFoundError ||
-        error instanceof BundleNotFoundError ||
+        error instanceof CouponNotFoundError ||
+        error instanceof CouponValidationError ||
         error instanceof ProductTypeInactiveForBookingError ||
         error instanceof BundleInactiveForBookingError ||
         error instanceof ProductTypeNotBookableAtLocationError ||
@@ -142,10 +172,10 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
 
       await this.orderRepository.save(order, tx);
 
-      if (resolvedCoupon.value) {
+      if (resolvedCouponId) {
         const redeemCouponResult = await this.pricingApi.redeemCouponWithinTransaction(
           {
-            couponId: resolvedCoupon.value.couponId,
+            couponId: resolvedCouponId,
             orderId: order.id,
             customerId: command.customerId,
             now,
@@ -229,28 +259,6 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
     return ok(undefined);
   }
 
-  private async resolveCoupon(
-    command: CreateOrderCommand,
-    now: Date,
-  ): Promise<Result<ResolvedCouponDto | undefined, CreateOrderError>> {
-    if (!command.couponCode) {
-      return ok(undefined);
-    }
-
-    const resolvedCoupon = await this.pricingApi.resolveCouponForPricing({
-      tenantId: command.tenantId,
-      code: command.couponCode,
-      customerId: command.customerId,
-      now,
-    });
-
-    if (resolvedCoupon.isErr()) {
-      return err(resolvedCoupon.error);
-    }
-
-    return ok(resolvedCoupon.value);
-  }
-
   private async deriveBookingContext(
     command: CreateOrderCommand,
   ): Promise<{ period: DateRange; bookingMode: BookingMode }> {
@@ -272,6 +280,44 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
       ),
       bookingMode: tenantConfig.bookingMode,
     };
+  }
+
+  private toResolvedItems(pricedItems: Awaited<ReturnType<PricingPublicApi['priceBasket']>>['items']): ResolvedItem[] {
+    return pricedItems.map((item) => {
+      if (item.type === 'PRODUCT') {
+        return {
+          type: 'PRODUCT',
+          productTypeId: item.productTypeId,
+          quantity: item.quantity,
+          assetId: item.assetId,
+          locationId: item.locationId,
+          period: item.period,
+          currency: item.currency,
+          price: item.price,
+        };
+      }
+
+      return {
+        type: 'BUNDLE',
+        bundleId: item.bundleId,
+        bundle: {
+          id: item.bundleId,
+          name: item.bundleName,
+          components: item.components.map((component) => ({
+            productTypeId: component.productTypeId,
+            productTypeName: component.productTypeName,
+            quantity: component.quantity,
+          })),
+        },
+        locationId: item.locationId,
+        period: item.period,
+        currency: item.currency,
+        price: item.price,
+        componentStandalonePrices: new Map(
+          item.components.map((component) => [component.productTypeId, component.standalonePricePerUnit]),
+        ),
+      };
+    });
   }
 
   private attachResolvedItemsToOrder(

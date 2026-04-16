@@ -11,7 +11,6 @@ import { OrderRepository } from 'src/modules/order/infrastructure/persistence/re
 import { PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
 import { CreateOrderCommand } from './create-order.command';
 import { CreateOrderAssetResolver } from './create-order-asset-resolver';
-import { CreateOrderItemResolver } from './create-order-item-resolver';
 import { CreateOrderOwnerContractResolver } from './create-order-owner-contract-resolver';
 import { CreateOrderService } from './create-order.service';
 
@@ -24,7 +23,7 @@ describe('CreateOrderService', () => {
       finalPrice: Money.of(100, 'ARS'),
       pricePerBillingUnit: Money.of(100, 'ARS'),
       totalUnits: 1,
-      appliedDiscounts: [],
+      appliedAdjustments: [],
     };
   }
 
@@ -65,6 +64,24 @@ describe('CreateOrderService', () => {
     } as unknown as OrderRepository;
 
     const pricingApi = {
+      priceBasket: jest.fn(async () => ({
+        items: [
+          {
+            type: 'PRODUCT' as const,
+            productTypeId: 'product-1',
+            quantity: 1,
+            locationId: 'location-1',
+            period,
+            currency: 'ARS',
+            price: makePricingResult(),
+          },
+        ],
+        couponApplied: false,
+        orderSubtotalBeforePromotions: 100,
+        itemsSubtotal: 100,
+        totalBeforeDiscounts: 100,
+        totalDiscount: 0,
+      })),
       redeemCouponWithinTransaction: jest.fn(),
     } as unknown as PricingPublicApi;
 
@@ -74,20 +91,6 @@ describe('CreateOrderService', () => {
         return ok(undefined);
       }),
     } as unknown as InventoryPublicApi;
-
-    const itemResolver = {
-      resolve: jest.fn(async () => [
-        {
-          type: 'PRODUCT' as const,
-          productTypeId: 'product-1',
-          quantity: 1,
-          locationId: 'location-1',
-          period,
-          currency: 'ARS',
-          price: makePricingResult(),
-        },
-      ]),
-    } as unknown as CreateOrderItemResolver;
 
     const assetResolver = {
       resolveDemand: jest.fn(async (demandUnits) => {
@@ -118,7 +121,6 @@ describe('CreateOrderService', () => {
       orderRepository,
       pricingApi,
       inventoryApi,
-      itemResolver,
       assetResolver,
       ownerContractResolver,
     );

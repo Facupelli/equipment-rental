@@ -1,12 +1,13 @@
+import Decimal from 'decimal.js';
 import { Injectable } from '@nestjs/common';
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
+import { TenantConfig } from '@repo/schemas';
+import { PricingRuleEffectType } from '@repo/types';
 import { err, ok, Result } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
-import { Money } from 'src/core/domain/value-objects/money.value-object';
 import {
   BundleInactiveForBookingError,
   BundleNotBookableAtLocationError,
-  CatalogPublicApi,
   ProductTypeInactiveForBookingError,
   ProductTypeNotBookableAtLocationError,
 } from 'src/modules/catalog/catalog.public-api';
@@ -15,18 +16,14 @@ import {
   LocationContextReadModel,
 } from 'src/modules/tenant/public/queries/get-location-context.query';
 import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
-import { PricingPublicApi } from '../../../pricing.public-api';
-import { CalculateCartPricesQuery, CartQueryProductItem } from './calculate-cart-prices.query';
-import Decimal from 'decimal.js';
+import { CouponNotFoundError, CouponValidationError, PricingPublicApi } from '../../../pricing.public-api';
+import { CalculateCartPricesQuery } from './calculate-cart-prices.query';
 import {
   PricingBundleNotFoundError,
   PricingInvalidBookingLocationError,
   PricingPeriodInvalidError,
   PricingProductTypeNotFoundError,
 } from '../../../domain/errors/pricing.errors';
-import { TenantConfig } from '@repo/schemas';
-import { NewPricingResult } from '../../../domain/services/new-pricing-calculator.service';
-import { PricingRuleEffectType } from '@repo/types';
 
 export type CartPriceResult = {
   lineItems: CartPriceLineItem[];
@@ -67,19 +64,13 @@ export type CalculateCartPricesError =
   | PricingInvalidBookingLocationError
   | PricingProductTypeNotFoundError
   | PricingBundleNotFoundError
+  | CouponNotFoundError
+  | CouponValidationError
   | ProductTypeInactiveForBookingError
   | BundleInactiveForBookingError
   | ProductTypeNotBookableAtLocationError
   | BundleNotBookableAtLocationError;
 
-/**
- * Query handler for cart price preview.
- *
- * This handler is intentionally read-only and has no side effects.
- * It is the narrow pricing-query exception to the default Prisma-only read rule:
- * the handler still performs computation by calling the pricing facade because
- * cart preview must execute pure pricing domain logic with no side effects.
- */
 @Injectable()
 @QueryHandler(CalculateCartPricesQuery)
 export class CalculateCartPricesQueryHandler implements IQueryHandler<
@@ -88,12 +79,10 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
 > {
   constructor(
     private readonly pricingApp: PricingPublicApi,
-    private readonly catalogApi: CatalogPublicApi,
     private readonly queryBus: QueryBus,
   ) {}
 
   async execute(query: CalculateCartPricesQuery): Promise<Result<CartPriceResult, CalculateCartPricesError>> {
-    // ── Step 1: Guard empty cart ───────────────────────────────────────────
     if (query.items.length === 0) {
       return ok({
         lineItems: [],
@@ -141,43 +130,56 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       return err(new PricingPeriodInvalidError());
     }
 
-    // ── Step 3: Batch load product type meta ───────────────────────────────
-    const productItems = query.items.filter((item): item is CartQueryProductItem => item.type === 'PRODUCT');
-    const bundleItems = query.items.filter((item) => item.type === 'BUNDLE');
-
-    const uniqueProductTypeIds = [...new Set(productItems.map((i) => i.productTypeId))];
-    const uniqueBundleIds = [...new Set(bundleItems.map((i) => i.bundleId))];
-    let productMetaList: Array<Awaited<ReturnType<CatalogPublicApi['getProductTypeBookingEligibility']>>> = [];
-
     try {
-      const [loadedProductMetaList, bundleMetaList] = await Promise.all([
-        Promise.all(
-          uniqueProductTypeIds.map((id) =>
-            this.catalogApi.getProductTypeBookingEligibility(query.tenantId, query.locationId, id),
-          ),
-        ),
-        Promise.all(
-          uniqueBundleIds.map((id) =>
-            this.catalogApi.getBundleBookingEligibility(query.tenantId, query.locationId, id),
-          ),
-        ),
-      ]);
+      const pricedBasket = await this.pricingApp.priceBasket({
+        tenantId: query.tenantId,
+        locationId: query.locationId,
+        currency: query.currency,
+        period,
+        customerId: query.customerId,
+        couponCode: query.couponCode,
+        items: query.items,
+      });
 
-      productMetaList = loadedProductMetaList;
+      const lineItems: CartPriceLineItem[] = pricedBasket.items.map((item) => ({
+        type: item.type,
+        id: item.type === 'PRODUCT' ? item.productTypeId : item.bundleId,
+        quantity: item.quantity,
+        pricePerBillingUnit: item.price.pricePerBillingUnit.toDecimal().toNumber(),
+        subtotal: item.price.finalPrice.toDecimal().mul(item.quantity).toNumber(),
+        discounts: item.price.appliedAdjustments.map((adjustment) => ({
+          sourceKind: adjustment.sourceKind,
+          sourceId: adjustment.sourceId,
+          label: adjustment.label,
+          ruleId: adjustment.sourceId,
+          ruleLabel: adjustment.label,
+          type: adjustment.effectType,
+          value: adjustment.configuredValue,
+          discountAmount: adjustment.discountAmount.toDecimal().mul(item.quantity).toNumber(),
+        })),
+      }));
 
-      for (const [index, id] of uniqueProductTypeIds.entries()) {
-        if (!productMetaList[index]) {
-          return err(new PricingProductTypeNotFoundError(id));
-        }
-      }
+      const insuranceAmount = query.insuranceSelected
+        ? new Decimal(pricedBasket.totalBeforeDiscounts).mul(EQUIPMENT_INSURANCE_RATE).toNumber()
+        : 0;
 
-      for (const [index, id] of uniqueBundleIds.entries()) {
-        if (!bundleMetaList[index]) {
-          return err(new PricingBundleNotFoundError(id));
-        }
-      }
+      return ok({
+        lineItems,
+        totalUnits: pricedBasket.items[0]?.price.totalUnits ?? 0,
+        itemsSubtotal: pricedBasket.itemsSubtotal,
+        insuranceApplied: query.insuranceSelected,
+        insuranceAmount,
+        total: new Decimal(pricedBasket.itemsSubtotal).plus(insuranceAmount).toNumber(),
+        totalBeforeDiscounts: pricedBasket.totalBeforeDiscounts,
+        totalDiscount: pricedBasket.totalDiscount,
+        couponApplied: pricedBasket.couponApplied,
+      });
     } catch (error) {
       if (
+        error instanceof CouponNotFoundError ||
+        error instanceof CouponValidationError ||
+        error instanceof PricingProductTypeNotFoundError ||
+        error instanceof PricingBundleNotFoundError ||
         error instanceof ProductTypeInactiveForBookingError ||
         error instanceof BundleInactiveForBookingError ||
         error instanceof ProductTypeNotBookableAtLocationError ||
@@ -188,183 +190,5 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
 
       throw error;
     }
-
-    let applicablePromotionIds: string[] | undefined;
-    let couponApplied = false;
-    const bookingCreatedAt = new Date();
-
-    if (query.couponCode) {
-      const resolvedCoupon = await this.pricingApp.resolveCouponForPricing({
-        tenantId: query.tenantId,
-        code: query.couponCode,
-        customerId: query.customerId,
-        now: bookingCreatedAt,
-      });
-
-      if (resolvedCoupon.isOk()) {
-        applicablePromotionIds = [resolvedCoupon.value.promotionId];
-        couponApplied = true;
-      }
-    }
-
-    const productMetaById = new Map(uniqueProductTypeIds.map((id, index) => [id, productMetaList[index]]));
-    const standaloneProductQuantityByCategory = productItems.reduce<Record<string, number>>((acc, item) => {
-      const categoryId = productMetaById.get(item.productTypeId)?.categoryId;
-      if (categoryId) {
-        acc[categoryId] = (acc[categoryId] ?? 0) + item.quantity;
-      }
-      return acc;
-    }, {});
-
-    // ── Step 6: Fire all pricing calls in parallel ─────────────────────────
-    // Each unit is priced independently — this matches how CreateOrderHandler
-    // will price each OrderItem at order creation time.
-    const { tenantId, locationId, currency } = query;
-
-    const basePricingTasks = query.items.flatMap((item) =>
-      Array.from({ length: item.quantity }, () =>
-        item.type === 'PRODUCT'
-          ? this.pricingApp.calculateProductPriceV2({
-              tenantId,
-              locationId,
-              currency,
-              period,
-              productTypeId: item.productTypeId,
-              customerId: query.customerId,
-              bookingCreatedAt,
-              standaloneProductQuantityByCategory,
-              applyPromotions: false,
-            })
-          : this.pricingApp.calculateBundlePriceV2({
-              tenantId,
-              locationId,
-              currency,
-              period,
-              bundleId: item.bundleId,
-              customerId: query.customerId,
-              bookingCreatedAt,
-              standaloneProductQuantityByCategory,
-              applyPromotions: false,
-            }),
-      ),
-    );
-
-    const basePrices = await Promise.all(basePricingTasks);
-    const orderSubtotalBeforePromotions = basePrices
-      .reduce((sum, price) => sum.add(price.finalPrice), Money.zero(query.currency))
-      .toDecimal()
-      .toNumber();
-
-    const pricingTasks = query.items.flatMap((item) =>
-      Array.from({ length: item.quantity }, () =>
-        item.type === 'PRODUCT'
-          ? this.pricingApp.calculateProductPriceV2({
-              tenantId,
-              locationId,
-              currency,
-              period,
-              productTypeId: item.productTypeId,
-              customerId: query.customerId,
-              bookingCreatedAt,
-              applicablePromotionIds,
-              standaloneProductQuantityByCategory,
-              orderSubtotalBeforePromotions,
-            })
-          : this.pricingApp.calculateBundlePriceV2({
-              tenantId,
-              locationId,
-              currency,
-              period,
-              bundleId: item.bundleId,
-              customerId: query.customerId,
-              bookingCreatedAt,
-              applicablePromotionIds,
-              standaloneProductQuantityByCategory,
-              orderSubtotalBeforePromotions,
-            }),
-      ),
-    );
-
-    let allPrices: NewPricingResult[];
-
-    try {
-      allPrices = await Promise.all(pricingTasks);
-    } catch (error) {
-      if (error instanceof PricingProductTypeNotFoundError || error instanceof PricingBundleNotFoundError) {
-        return err(error);
-      }
-
-      throw error;
-    }
-
-    // ── Step 6: Reassemble line items ──────────────────────────────────────
-    // Walk items in order, slicing allPrices by quantity to group results
-    // back per line. Cursor tracks position across the flat prices array.
-    let cursor = 0;
-    const lineItems: CartPriceLineItem[] = query.items.map((item) => {
-      const unitPrices = allPrices.slice(cursor, cursor + item.quantity);
-      cursor += item.quantity;
-
-      const pricePerBillingUnit = unitPrices[0].pricePerBillingUnit;
-      const subtotal = unitPrices.reduce((acc, r) => acc.add(r.finalPrice), Money.zero(query.currency));
-
-      // Merge discounts across units of the same line item.
-      // Units share the same inputs so they produce identical discount sets —
-      // we take index 0 as canonical and multiply amounts by quantity.
-      const discounts: CartDiscountLineItem[] = unitPrices[0].appliedAdjustments.map((d) => ({
-        sourceKind: d.sourceKind,
-        sourceId: d.sourceId,
-        label: d.label,
-        ruleId: d.sourceId,
-        ruleLabel: d.label,
-        type: d.effectType,
-        value: d.configuredValue,
-        discountAmount: d.discountAmount.multiply(new Decimal(item.quantity)).toDecimal().toNumber(),
-      }));
-
-      return {
-        type: item.type,
-        id: item.type === 'PRODUCT' ? item.productTypeId : item.bundleId,
-        quantity: item.quantity,
-        pricePerBillingUnit: pricePerBillingUnit.toDecimal().toNumber(),
-        subtotal: subtotal.toDecimal().toNumber(),
-        discounts,
-      };
-    });
-
-    // ── Step 8: Compute total ──────────────────────────────────────────────
-    const itemsSubtotal = lineItems.reduce((acc, line) => acc + line.subtotal, 0);
-
-    const totalBeforeDiscounts = allPrices
-      .reduce((acc, r) => acc.add(r.basePrice), Money.zero(query.currency))
-      .toDecimal()
-      .toNumber();
-
-    const totalDiscount = allPrices
-      .reduce(
-        (acc, r) => r.appliedAdjustments.reduce((s, d) => s.add(d.discountAmount), acc),
-        Money.zero(query.currency),
-      )
-      .toDecimal()
-      .toNumber();
-
-    const insuranceAmount = query.insuranceSelected
-      ? new Decimal(totalBeforeDiscounts).mul(EQUIPMENT_INSURANCE_RATE).toNumber()
-      : 0;
-
-    const total = new Decimal(itemsSubtotal).plus(insuranceAmount).toNumber();
-    const totalUnits = allPrices[0]?.totalUnits ?? 0;
-
-    return ok({
-      lineItems,
-      totalUnits,
-      itemsSubtotal,
-      insuranceApplied: query.insuranceSelected,
-      insuranceAmount,
-      total,
-      totalBeforeDiscounts,
-      totalDiscount,
-      couponApplied,
-    });
   }
 }

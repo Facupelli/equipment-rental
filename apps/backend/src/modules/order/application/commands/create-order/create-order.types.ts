@@ -1,7 +1,6 @@
 import Decimal from 'decimal.js';
 
 import {
-  BundleBookingEligibilityDto,
   BundleInactiveForBookingError,
   BundleNotBookableAtLocationError,
   ProductTypeInactiveForBookingError,
@@ -38,7 +37,15 @@ export type ResolvedProductItem = {
 export type ResolvedBundleItem = {
   type: 'BUNDLE';
   bundleId: string;
-  bundle: BundleBookingEligibilityDto;
+  bundle: {
+    id: string;
+    name: string;
+    components: Array<{
+      productTypeId: string;
+      productTypeName: string;
+      quantity: number;
+    }>;
+  };
   locationId: string;
   period: DateRange;
   currency: string;

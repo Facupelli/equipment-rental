@@ -23,23 +23,6 @@ export type ComponentTierData = {
 export class PricingComputationReadService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async loadProductTypeMeta(productTypeId: string): Promise<ProductTypeMeta | null> {
-    const row = await this.prisma.client.productType.findUnique({
-      where: { id: productTypeId },
-      select: {
-        categoryId: true,
-        billingUnit: { select: { durationMinutes: true } },
-      },
-    });
-
-    if (!row) return null;
-
-    return {
-      billingUnitDurationMinutes: row.billingUnit.durationMinutes,
-      categoryId: row.categoryId,
-    };
-  }
-
   async loadProductTypeMetaBatch(productTypeIds: string[]): Promise<Map<string, ProductTypeMeta>> {
     const rows = await this.prisma.client.productType.findMany({
       where: { id: { in: productTypeIds } },
@@ -61,41 +44,45 @@ export class PricingComputationReadService {
     );
   }
 
-  async loadBundleMeta(bundleId: string): Promise<BundleMeta | null> {
-    const row = await this.prisma.client.bundle.findUnique({
-      where: { id: bundleId },
+  async loadBundleMetaBatch(bundleIds: string[]): Promise<Map<string, BundleMeta>> {
+    const rows = await this.prisma.client.bundle.findMany({
+      where: { id: { in: bundleIds } },
       select: {
+        id: true,
         billingUnit: { select: { durationMinutes: true } },
       },
     });
 
-    if (!row) return null;
-
-    return {
-      billingUnitDurationMinutes: row.billingUnit.durationMinutes,
-    };
+    return new Map(
+      rows.map((row) => [
+        row.id,
+        {
+          billingUnitDurationMinutes: row.billingUnit.durationMinutes,
+        },
+      ]),
+    );
   }
 
-  async loadTiersForProduct(productTypeId: string, locationId: string): Promise<PricingTier[]> {
+  async loadTiersForProducts(productTypeIds: string[], locationId: string): Promise<Map<string, PricingTier[]>> {
     const rows = await this.prisma.client.pricingTier.findMany({
       where: {
-        productTypeId,
+        productTypeId: { in: productTypeIds },
         OR: [{ locationId }, { locationId: null }],
       },
     });
 
-    return this.resolveLocationTiers(rows.map(PricingTierMapper.toDomain), locationId);
+    return this.groupResolvedTiersByKey(productTypeIds, rows, locationId, (row) => row.productTypeId);
   }
 
-  async loadTiersForBundle(bundleId: string, locationId: string): Promise<PricingTier[]> {
+  async loadTiersForBundles(bundleIds: string[], locationId: string): Promise<Map<string, PricingTier[]>> {
     const rows = await this.prisma.client.pricingTier.findMany({
       where: {
-        bundleId,
+        bundleId: { in: bundleIds },
         OR: [{ locationId }, { locationId: null }],
       },
     });
 
-    return this.resolveLocationTiers(rows.map(PricingTierMapper.toDomain), locationId);
+    return this.groupResolvedTiersByKey(bundleIds, rows, locationId, (row) => row.bundleId);
   }
 
   async loadTiersForBundleComponents(
@@ -118,7 +105,9 @@ export class PricingComputationReadService {
       }),
     ]);
 
-    const metaByProductTypeId = new Map(metaRows.map((row) => [row.id, row.billingUnit.durationMinutes]));
+    const metaByProductTypeId = new Map<string, number>(
+      metaRows.map((row) => [row.id, row.billingUnit.durationMinutes]),
+    );
     const result = new Map<string, ComponentTierData>();
 
     for (const productTypeId of productTypeIds) {
@@ -159,5 +148,24 @@ export class PricingComputationReadService {
     }
 
     return Array.from(byFromUnit.values()).sort((a, b) => a.fromUnit - b.fromUnit);
+  }
+
+  private groupResolvedTiersByKey(
+    keys: string[],
+    rows: any[],
+    locationId: string,
+    resolveKey: (row: any) => string | null,
+  ): Map<string, PricingTier[]> {
+    const tiers = rows.map(PricingTierMapper.toDomain);
+
+    return new Map(
+      keys.map((key) => [
+        key,
+        this.resolveLocationTiers(
+          tiers.filter((_, index) => resolveKey(rows[index]) === key),
+          locationId,
+        ),
+      ]),
+    );
   }
 }
