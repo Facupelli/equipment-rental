@@ -1,9 +1,8 @@
 import { PromotionActivationType } from "@repo/types";
 import z from "zod";
-import { createFileRoute } from "@tanstack/react-router";
-import { useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CreatePromotionDialogForm } from "@/features/pricing/promotions/components/create-promotion-dialog-form";
 import { PromotionsTab } from "@/features/pricing/promotions/components/promotions-tab";
 import { CouponsTab } from "@/features/pricing/coupons/components/coupons-tab";
 import { CreateCouponDialogForm } from "@/features/pricing/coupons/components/create-coupon-dialog-form";
@@ -58,7 +57,12 @@ function RouteComponent() {
 						de alquiler.
 					</p>
 				</div>
-				{tab === "promotions" && <CreatePromotionDialogForm />}
+				{tab === "promotions" && (
+					<Button
+						className="shrink-0 gap-2"
+						render={<Link to="/dashboard/pricing/new">Nueva promocion</Link>}
+					/>
+				)}
 				{tab === "coupons" && <CreateCouponDialogForm />}
 			</div>
 
