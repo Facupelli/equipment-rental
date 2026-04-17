@@ -1,8 +1,5 @@
 import type { CartDiscountLineItem, CartPriceLineItem } from "@repo/schemas";
 import dayjs from "@/lib/dates/dayjs";
-import { formatCurrency } from "@/shared/utils/price.utils";
-
-const CART_MONEY_FRACTION_DIGITS = 2;
 
 export const formatSlot = (minutes: number): string =>
 	dayjs().startOf("day").add(minutes, "minute").format("h:mm A");
@@ -10,26 +7,14 @@ export const formatSlot = (minutes: number): string =>
 /**
  * Formats a single discount for display in the cart.
  *
- * PERCENTAGE → "−10%"
- * FLAT       → "−$500"
- *
- * The minus sign uses the proper unicode minus (U+2212) rather than a hyphen,
- * which renders more crisply at small sizes next to currency symbols.
+ * Cart preview discounts are promotion-based percentages only.
  */
 export function formatDiscount(
 	discount: CartDiscountLineItem,
-	currency: string,
-	locale: string,
+	_currency: string,
+	_locale: string,
 ): string {
-	if (discount.type === "PERCENTAGE") {
-		return `\u2212${discount.value}%`;
-	}
-	return `\u2212${formatCurrency(
-		discount.discountAmount,
-		currency,
-		locale,
-		CART_MONEY_FRACTION_DIGITS,
-	)}`;
+	return `\u2212${discount.value}%`;
 }
 
 /**
