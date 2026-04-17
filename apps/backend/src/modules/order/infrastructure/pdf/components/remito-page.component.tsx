@@ -79,13 +79,36 @@ const s = StyleSheet.create({
     flexShrink: 0,
   },
   infoSection: {
-    paddingBottom: 14,
+    paddingBottom: 0,
+  },
+  partySection: {
+    paddingBottom: 9,
+  },
+  partyRowGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  partyCell: {
+    width: '47%',
+  },
+  partyTitle: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 11,
+    marginBottom: 6,
+  },
+  partyLine: {
+    fontSize: 11,
+    marginBottom: 3,
+  },
+  partyLineValue: {
+    fontFamily: 'Helvetica-Bold',
   },
   infoRowGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   infoCell: {
     width: '47%',
@@ -105,12 +128,16 @@ const s = StyleSheet.create({
   infoNote: {
     fontFamily: 'Helvetica-Bold',
     fontSize: 11,
-    marginTop: 4,
+  },
+  sectionDivider: {
+    borderTop: '2pt solid #111111',
+    marginHorizontal: -28,
+    marginVertical: 12,
   },
   divider: {
     borderTop: '2pt solid #111111',
     marginHorizontal: -28,
-    marginBottom: 14,
+    marginVertical: 12,
   },
 
   // ── Equipment list ────────────────────────────────────────────────────────
@@ -245,57 +272,53 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
           <View style={s.frameTopContent}>
             {!isContinuation && (
               <View style={s.infoSection}>
-                <View style={s.infoRowGrid}>
-                  <View style={s.infoCell}>
-                    <View style={s.infoInline}>
-                      <Text style={s.infoLabel}>FECHA DE RETIRO:</Text>
-                      <Text style={s.infoValue}>{remito.pickupDate}</Text>
-                    </View>
-                  </View>
-                  <View style={s.infoCell} />
-                </View>
-
-                <View style={s.infoRowGrid}>
-                  <View style={s.infoCell}>
-                    <View style={s.infoInline}>
-                      <Text style={s.infoLabel}>FECHA DE DEVOLUCIÓN:</Text>
-                      <Text style={s.infoValue}>{remito.returnDate}</Text>
-                    </View>
-                  </View>
-                  <View style={s.infoCell} />
-                </View>
-
-                <View style={s.infoRowGrid}>
-                  <View style={s.infoCell}>
-                    <View style={s.infoInline}>
-                      <Text style={s.infoLabel}>CANTIDAD DE JORNADAS:</Text>
-                      <Text style={s.infoValue}>{remito.jornadas}</Text>
-                    </View>
-                  </View>
-                  <View style={s.infoCell}>
-                    <View style={s.infoInline}>
-                      <Text style={s.infoLabel}>PRECIO ACORDADO:</Text>
-                      <Text style={s.infoValue}>{remito.agreedPrice}</Text>
-                    </View>
+                <View style={s.partySection}>
+                  <View style={s.partyRowGrid}>
+                    <PartyInfoBlock title="ARRENDADOR" party={remito.landlord} />
+                    <PartyInfoBlock title="ARRENDATARIO" party={remito.tenant} />
                   </View>
                 </View>
 
-                <View style={s.infoRowGrid}>
-                  <View style={s.infoCell}>
-                    <View style={s.infoInline}>
-                      <Text style={s.infoLabel}>RETIRA:</Text>
-                      <Text style={s.infoValue}>{remito.customerName}</Text>
+                <View style={s.sectionDivider} />
+
+                <View>
+                  <View style={s.infoRowGrid}>
+                    <View style={s.infoCell}>
+                      <View style={s.infoInline}>
+                        <Text style={s.infoLabel}>FECHA DE RETIRO:</Text>
+                        <Text style={s.infoValue}>{remito.pickupDate}</Text>
+                      </View>
+                    </View>
+                    <View style={s.infoCell}>
+                      <View style={s.infoInline}>
+                        <Text style={s.infoLabel}>PRECIO ACORDADO:</Text>
+                        <Text style={s.infoValue}>{remito.agreedPrice}</Text>
+                      </View>
                     </View>
                   </View>
-                  <View style={s.infoCell}>
-                    <View style={s.infoInline}>
-                      <Text style={s.infoLabel}>DNI:</Text>
-                      <Text style={s.infoValue}>{remito.documentNumber}</Text>
+
+                  <View style={s.infoRowGrid}>
+                    <View style={s.infoCell}>
+                      <View style={s.infoInline}>
+                        <Text style={s.infoLabel}>FECHA DE DEVOLUCIÓN:</Text>
+                        <Text style={s.infoValue}>{remito.returnDate}</Text>
+                      </View>
                     </View>
+                    <View style={s.infoCell}>
+                      <Text style={s.infoNote}>IMPORTANTE: VER CONDICIONES ANEXO I</Text>
+                    </View>
+                  </View>
+
+                  <View style={s.infoRowGrid}>
+                    <View style={s.infoCell}>
+                      <View style={s.infoInline}>
+                        <Text style={s.infoLabel}>CANTIDAD DE JORNADAS:</Text>
+                        <Text style={s.infoValue}>{remito.jornadas}</Text>
+                      </View>
+                    </View>
+                    <View style={s.infoCell} />
                   </View>
                 </View>
-
-                <Text style={s.infoNote}>IMPORTANTE: VER CONDICIONES ANEXO I</Text>
               </View>
             )}
 
@@ -367,6 +390,26 @@ function EquipmentLineItem({ line }: { line: EquipmentLine }) {
         x{line.quantity} {line.name}
       </Text>
       {accessoryText.length > 0 && <Text style={s.equipmentAccessories}>Con {accessoryText}</Text>}
+    </View>
+  );
+}
+
+function PartyInfoBlock({ title, party }: { title: string; party: ContractData['remito']['landlord'] }) {
+  return (
+    <View style={s.partyCell}>
+      <Text style={s.partyTitle}>{title}</Text>
+      <Text style={s.partyLine}>
+        <Text style={s.partyLineValue}>{party.fullName}</Text>
+      </Text>
+      <Text style={s.partyLine}>
+        <Text style={s.partyLineValue}>{party.documentNumber}</Text>
+      </Text>
+      <Text style={s.partyLine}>
+        <Text style={s.partyLineValue}>{party.address}</Text>
+      </Text>
+      <Text style={s.partyLine}>
+        <Text style={s.partyLineValue}>{party.phone}</Text>
+      </Text>
     </View>
   );
 }

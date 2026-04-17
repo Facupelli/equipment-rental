@@ -10,6 +10,13 @@ export interface EquipmentLine {
   includedItems: IncludedItem[];
 }
 
+export interface ContractPartyData {
+  fullName: string;
+  documentNumber: string;
+  address: string;
+  phone: string;
+}
+
 export interface ContractData {
   remito: {
     /** e.g. "Guarida-0001" — tenant name + order number */
@@ -26,10 +33,10 @@ export interface ContractData {
     logoUrl: string | null;
     /** Tenant admin signer signature image used in the rental signature block */
     rentalSignatureUrl: string | null;
-    /** Customer full name */
-    customerName: string;
-    /** Customer national document number */
-    documentNumber: string;
+    /** Landlord identity block shown on the remito header */
+    landlord: ContractPartyData;
+    /** Tenant identity block shown on the remito header */
+    tenant: ContractPartyData;
   };
   /** Flat list of equipment lines. PRODUCT items produce one line each.
    *  BUNDLE items are expanded into one line per component. */

@@ -4,8 +4,8 @@ import { ContractData, EquipmentLine } from 'src/modules/order/domain/ports/cont
 import { RemitoPage } from './remito-page.component';
 import { AnexoPage } from './anexo-page.component';
 
-const FIRST_PAGE_CONTENT_HEIGHT = 700;
-const CONTINUATION_PAGE_CONTENT_HEIGHT = 800;
+const FIRST_PAGE_CONTENT_HEIGHT = 600;
+const CONTINUATION_PAGE_CONTENT_HEIGHT = 700;
 const ITEM_BASE_HEIGHT = 18;
 const ITEM_NAME_LINE_HEIGHT = 14;
 const ITEM_ACCESSORY_LINE_HEIGHT = 12;

@@ -38,7 +38,11 @@ export class GenerateOrderContractService implements IQueryHandler<
             firstName: true,
             lastName: true,
             profile: {
-              select: { documentNumber: true },
+              select: {
+                documentNumber: true,
+                phone: true,
+                address: true,
+              },
             },
           },
         },
@@ -158,8 +162,18 @@ export class GenerateOrderContractService implements IQueryHandler<
         agreedPrice,
         logoUrl: tenant.logoUrl,
         rentalSignatureUrl: buildBrandingAssetUrl(signerProfile?.signUrl ?? null),
-        customerName: customerFullName,
-        documentNumber: order.customer.profile.documentNumber,
+        landlord: {
+          fullName: signerProfile?.fullName ?? '',
+          documentNumber: signerProfile?.documentNumber ?? '',
+          address: signerProfile?.address ?? '',
+          phone: signerProfile?.phone ?? '',
+        },
+        tenant: {
+          fullName: customerFullName,
+          documentNumber: order.customer.profile.documentNumber,
+          address: order.customer.profile.address,
+          phone: order.customer.profile.phone,
+        },
       },
       equipmentLines,
     };
