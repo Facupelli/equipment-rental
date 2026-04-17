@@ -1,5 +1,5 @@
 -- Coupons now belong to promotions directly.
-ALTER TABLE "coupons" DROP CONSTRAINT "coupons_pricing_rule_id_fkey";
+ALTER TABLE "coupons" DROP CONSTRAINT IF EXISTS "coupons_pricing_rule_id_fkey";
 
 ALTER TABLE "coupons" RENAME COLUMN "pricing_rule_id" TO "promotion_id";
 
