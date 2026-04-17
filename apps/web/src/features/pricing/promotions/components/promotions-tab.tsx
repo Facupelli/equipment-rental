@@ -1,6 +1,14 @@
+import { PromotionActivationType } from "@repo/types";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePromotionsTab } from "../hooks/use-promotions-tab";
 import { PromotionsTable } from "./promotions-table";
@@ -14,19 +22,60 @@ const TABLE_SKELETON_KEYS = [
 ] as const;
 
 export function PromotionsTab() {
-	const { inputValue, setInputValue, query, page, handlePageChange } =
-		usePromotionsTab();
+	const {
+		inputValue,
+		setInputValue,
+		query,
+		page,
+		activationType,
+		handleActivationTypeChange,
+		handlePageChange,
+	} = usePromotionsTab();
 
 	return (
 		<div className="space-y-4">
-			<div className="relative max-w-sm">
-				<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-				<Input
-					className="pl-9"
-					placeholder="Buscar promociones..."
-					value={inputValue}
-					onChange={(e) => setInputValue(e.target.value)}
-				/>
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+				<div className="relative max-w-sm flex-1">
+					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Input
+						className="pl-9"
+						placeholder="Buscar promociones..."
+						value={inputValue}
+						onChange={(e) => setInputValue(e.target.value)}
+					/>
+				</div>
+
+				<Select
+					value={activationType ?? "ALL"}
+					onValueChange={(value) =>
+						handleActivationTypeChange(
+							value === "ALL" ? undefined : (value as PromotionActivationType),
+						)
+					}
+					items={
+						[
+							{ value: "ALL", label: "Todas las activaciones" },
+							{
+								value: PromotionActivationType.AUTOMATIC,
+								label: "Automaticas",
+							},
+							{ value: PromotionActivationType.COUPON, label: "Con cupon" },
+						] as const
+					}
+				>
+					<SelectTrigger className="w-full sm:w-52">
+						<SelectValue placeholder="Todas las activaciones" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="ALL">Todas las activaciones</SelectItem>
+						<SelectItem value={PromotionActivationType.AUTOMATIC}>
+							Automaticas
+						</SelectItem>
+						<SelectItem value={PromotionActivationType.COUPON}>
+							Con cupon
+						</SelectItem>
+					</SelectContent>
+				</Select>
 			</div>
 
 			<div className="rounded-lg border bg-card">

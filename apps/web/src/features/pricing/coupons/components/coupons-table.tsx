@@ -29,7 +29,7 @@ export function CouponsTable({ coupons, onDelete }: CouponsTableProps) {
 			<TableHeader>
 				<TableRow>
 					<TableHead>Código</TableHead>
-					<TableHead>Regla Vinculada</TableHead>
+					<TableHead>Promocion Vinculada</TableHead>
 					<TableHead>Uso</TableHead>
 					<TableHead>Validez</TableHead>
 					<TableHead className="text-right">Estado</TableHead>
@@ -43,7 +43,7 @@ export function CouponsTable({ coupons, onDelete }: CouponsTableProps) {
 							<CodeCell code={coupon.code} />
 						</TableCell>
 						<TableCell>
-							<LinkedRuleCell name={coupon.pricingRuleName} />
+							<LinkedPromotionCell name={coupon.promotionName} />
 						</TableCell>
 						<TableCell>
 							<UsageCell coupon={coupon} />
@@ -98,7 +98,7 @@ function CodeCell({ code }: { code: string }) {
 	);
 }
 
-function LinkedRuleCell({ name }: { name: string }) {
+function LinkedPromotionCell({ name }: { name: string }) {
 	return <span className="text-sm text-foreground">{name}</span>;
 }
 

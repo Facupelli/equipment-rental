@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const couponFormSchema = z.object({
 	code: z.string().min(1, "El código es requerido"),
-	pricingRuleId: z.uuid("Selecciona una regla de precio"),
+	promotionId: z.uuid("Selecciona una promocion"),
 	maxUses: z.string().or(z.literal("")),
 	maxUsesPerCustomer: z.string().or(z.literal("")),
 	restrictedToCustomerId: z.string().or(z.literal("")),
@@ -15,7 +15,7 @@ export type CouponFormValues = z.infer<typeof couponFormSchema>;
 
 export const couponFormDefaults: CouponFormValues = {
 	code: "",
-	pricingRuleId: "",
+	promotionId: "",
 	maxUses: "",
 	maxUsesPerCustomer: "",
 	restrictedToCustomerId: "",
@@ -31,7 +31,7 @@ export function toCreateCouponDto(values: CouponFormValues): CreateCouponDto {
 
 	const dto = {
 		code: values.code.trim().toUpperCase(),
-		pricingRuleId: values.pricingRuleId,
+		promotionId: values.promotionId,
 		maxUses,
 		maxUsesPerCustomer,
 		restrictedToCustomerId: values.restrictedToCustomerId || undefined,

@@ -1,3 +1,4 @@
+import { PromotionActivationType } from "@repo/types";
 import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,9 +24,8 @@ import {
 	FieldGroup,
 	FieldLabel,
 } from "@/components/ui/field";
+import { usePromotions } from "../../promotions/promotions.queries";
 import { useCreateCoupon } from "../coupons.queries";
-import { usePricingRules } from "../../pricing-rules/pricing-rules.queries";
-import { PricingRuleType } from "@repo/types";
 import {
 	couponFormDefaults,
 	couponFormSchema,
@@ -41,8 +41,8 @@ export function CreateCouponDialogForm() {
 
 	const { mutateAsync: createCoupon, isPending } = useCreateCoupon();
 
-	const { data: couponRules } = usePricingRules({
-		type: PricingRuleType.COUPON,
+	const { data: couponPromotions } = usePromotions({
+		activationType: PromotionActivationType.COUPON,
 		limit: 100,
 		page: 1,
 	});
@@ -83,7 +83,7 @@ export function CreateCouponDialogForm() {
 				<DialogHeader>
 					<DialogTitle>Nuevo Cupón</DialogTitle>
 					<DialogDescription>
-						Configura las restricciones y validez del nuevo código promocional.
+						Configura un código para dar acceso a una promocion existente.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -98,9 +98,8 @@ export function CreateCouponDialogForm() {
 				>
 					{/* Code */}
 					<FieldGroup>
-						<form.Field
-							name="code"
-							children={(field) => {
+						<form.Field name="code">
+							{(field) => {
 								const isInvalid =
 									field.state.meta.isTouched && !field.state.meta.isValid;
 								return (
@@ -125,35 +124,34 @@ export function CreateCouponDialogForm() {
 									</Field>
 								);
 							}}
-						/>
+						</form.Field>
 					</FieldGroup>
 
-					{/* Pricing Rule */}
-					<form.Field
-						name="pricingRuleId"
-						children={(field) => {
+					{/* Promotion */}
+					<form.Field name="promotionId">
+						{(field) => {
 							const isInvalid =
 								field.state.meta.isTouched && !field.state.meta.isValid;
 							return (
 								<Field data-invalid={isInvalid}>
-									<FieldLabel>Regla de Precio</FieldLabel>
+									<FieldLabel>Promocion</FieldLabel>
 									<Select
 										value={field.state.value}
 										onValueChange={(value) => {
 											if (value) field.handleChange(value);
 										}}
-										items={couponRules?.data.map((rule) => ({
-											value: rule.id,
-											label: rule.name,
+										items={couponPromotions?.data.map((promotion) => ({
+											value: promotion.id,
+											label: promotion.name,
 										}))}
 									>
 										<SelectTrigger aria-invalid={isInvalid}>
-											<SelectValue placeholder="Selecciona una regla tipo COUPON..." />
+											<SelectValue placeholder="Selecciona una promocion con cupon..." />
 										</SelectTrigger>
 										<SelectContent>
-											{couponRules?.data.map((rule) => (
-												<SelectItem key={rule.id} value={rule.id}>
-													{rule.name}
+											{couponPromotions?.data.map((promotion) => (
+												<SelectItem key={promotion.id} value={promotion.id}>
+													{promotion.name}
 												</SelectItem>
 											))}
 										</SelectContent>
@@ -162,13 +160,12 @@ export function CreateCouponDialogForm() {
 								</Field>
 							);
 						}}
-					/>
+					</form.Field>
 
 					{/* Max uses */}
 					<div className="grid grid-cols-2 gap-4">
-						<form.Field
-							name="maxUses"
-							children={(field) => {
+						<form.Field name="maxUses">
+							{(field) => {
 								const isInvalid =
 									field.state.meta.isTouched && !field.state.meta.isValid;
 								return (
@@ -192,11 +189,10 @@ export function CreateCouponDialogForm() {
 									</Field>
 								);
 							}}
-						/>
+						</form.Field>
 
-						<form.Field
-							name="maxUsesPerCustomer"
-							children={(field) => {
+						<form.Field name="maxUsesPerCustomer">
+							{(field) => {
 								const isInvalid =
 									field.state.meta.isTouched && !field.state.meta.isValid;
 								return (
@@ -220,14 +216,13 @@ export function CreateCouponDialogForm() {
 									</Field>
 								);
 							}}
-						/>
+						</form.Field>
 					</div>
 
 					{/* Restricted to customer */}
 					<FieldGroup>
-						<form.Field
-							name="restrictedToCustomerId"
-							children={(field) => {
+						<form.Field name="restrictedToCustomerId">
+							{(field) => {
 								const isInvalid =
 									field.state.meta.isTouched && !field.state.meta.isValid;
 								return (
@@ -249,14 +244,13 @@ export function CreateCouponDialogForm() {
 									</Field>
 								);
 							}}
-						/>
+						</form.Field>
 					</FieldGroup>
 
 					{/* Validity range */}
 					<div className="grid grid-cols-2 gap-4">
-						<form.Field
-							name="validFrom"
-							children={(field) => {
+						<form.Field name="validFrom">
+							{(field) => {
 								const isInvalid =
 									field.state.meta.isTouched && !field.state.meta.isValid;
 								return (
@@ -276,11 +270,10 @@ export function CreateCouponDialogForm() {
 									</Field>
 								);
 							}}
-						/>
+						</form.Field>
 
-						<form.Field
-							name="validUntil"
-							children={(field) => {
+						<form.Field name="validUntil">
+							{(field) => {
 								const isInvalid =
 									field.state.meta.isTouched && !field.state.meta.isValid;
 								return (
@@ -300,14 +293,15 @@ export function CreateCouponDialogForm() {
 									</Field>
 								);
 							}}
-						/>
+						</form.Field>
 					</div>
 				</form>
 
 				<DialogFooter>
 					<form.Subscribe
 						selector={(state) => [state.canSubmit, state.isSubmitting]}
-						children={([canSubmit, isSubmitting]) => (
+					>
+						{([canSubmit, isSubmitting]) => (
 							<>
 								<Button
 									type="button"
@@ -325,7 +319,7 @@ export function CreateCouponDialogForm() {
 								</Button>
 							</>
 						)}
-					/>
+					</form.Subscribe>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

@@ -1,3 +1,4 @@
+import { PromotionActivationType } from "@repo/types";
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Route } from "@/routes/_admin/dashboard/pricing";
@@ -8,7 +9,7 @@ const DEBOUNCE_MS = 300;
 
 export function usePromotionsTab() {
 	const navigate = useNavigate({ from: Route.fullPath });
-	const { page, search: urlSearch } = Route.useSearch();
+	const { page, search: urlSearch, activationType } = Route.useSearch();
 
 	const [inputValue, setInputValue] = useState(urlSearch ?? "");
 	const debouncedSearch = useDebounce(inputValue, DEBOUNCE_MS);
@@ -24,6 +25,16 @@ export function usePromotionsTab() {
 		});
 	}, [debouncedSearch, navigate, urlSearch]);
 
+	function handleActivationTypeChange(next?: PromotionActivationType) {
+		navigate({
+			search: (prev) => ({
+				...prev,
+				activationType: next,
+				page: 1,
+			}),
+		});
+	}
+
 	function handlePageChange(next: number) {
 		navigate({ search: (prev) => ({ ...prev, page: next }) });
 	}
@@ -32,6 +43,7 @@ export function usePromotionsTab() {
 		page,
 		limit: 10,
 		search: urlSearch,
+		activationType,
 	});
 
 	return {
@@ -39,6 +51,8 @@ export function usePromotionsTab() {
 		setInputValue,
 		query,
 		page,
+		activationType,
+		handleActivationTypeChange,
 		handlePageChange,
 	};
 }
