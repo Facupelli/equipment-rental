@@ -6,7 +6,7 @@ export class CouponMapper {
     return Coupon.reconstitute({
       id: raw.id,
       tenantId: raw.tenantId,
-      promotionId: raw.pricingRuleId,
+      promotionId: raw.promotionId,
       code: raw.code,
       maxUses: raw.maxUses,
       maxUsesPerCustomer: raw.maxUsesPerCustomer,
@@ -21,8 +21,7 @@ export class CouponMapper {
     return {
       id: coupon.id,
       tenantId: coupon.tenantId,
-      // Transitional persistence mapping: the legacy column now stores promotion ids.
-      pricingRuleId: coupon.promotionId,
+      promotionId: coupon.promotionId,
       code: coupon.code,
       maxUses: coupon.maxUses,
       maxUsesPerCustomer: coupon.maxUsesPerCustomer,

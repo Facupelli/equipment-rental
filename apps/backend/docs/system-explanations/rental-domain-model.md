@@ -288,16 +288,15 @@ Important properties:
 
 The mental model is: once the system knows the billable unit count, it resolves the matching tier and gets the base price.
 
-### Pricing rules
+### Promotions
 
-`PricingRule` defines discounts or adjustments that apply on top of the base price.
+`Promotion` defines discounts or adjustments that apply on top of the base price.
 
 Key dimensions:
 
-- `type` - seasonal, volume, coupon, or customer-specific
-- `scope` - order, product type, category, or bundle
+- `type` - coupon, seasonal, or customer-specific
 - `priority`
-- `stackable`
+- `stackable` behavior
 - `condition` and `effect` stored as JSON
 
 Detailed coupon behavior is explained separately in `docs/system-explanations/coupon-discount-system.md`.
@@ -335,7 +334,7 @@ These live at the tenant level:
 - product categories
 - product types
 - bundles
-- pricing rules
+- promotions
 - tenant-enabled billing units
 - owners
 
@@ -376,5 +375,5 @@ Request-time tenant resolution is explained in `docs/system-explanations/tenant-
 | Physical reservation/block     | `AssetAssignment`                               | Source of truth for availability           |
 | Historical booked bundle state | `BundleSnapshot`, `BundleSnapshotComponent`     | Preserves booked bundle composition        |
 | Base pricing                   | `PricingTier`                                   | Duration-based price lookup                |
-| Discounting                    | `PricingRule`, `Coupon`, `CouponRedemption`     | Pricing adjustments and redemption control |
+| Discounting                    | `Promotion`, `Coupon`, `CouponRedemption`       | Pricing adjustments and redemption control |
 | Ownership economics            | `Owner`, `OwnerContract`, `OrderItemOwnerSplit` | Revenue sharing and payouts                |

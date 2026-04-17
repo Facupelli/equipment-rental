@@ -53,21 +53,6 @@ enum TrackingMode {
   POOLED
 }
 
-enum PricingRuleType {
-  SEASONAL
-  VOLUME
-  COUPON
-  CUSTOMER_SPECIFIC
-  DURATION
-}
-
-enum PricingRuleScope {
-  ORDER
-  PRODUCT_TYPE
-  CATEGORY
-  BUNDLE
-}
-
 enum PromotionType {
   COUPON
   SEASONAL
@@ -86,23 +71,23 @@ enum CustomDomainStatus {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           String    @id @default(uuid())
-  tenantId     String    @map("tenant_id")
+  id           String  @id @default(uuid())
+  tenantId     String  @map("tenant_id")
   email        String
-  passwordHash String    @map("password_hash")
-  firstName    String    @map("first_name")
-  lastName     String    @map("last_name")
-  isActive     Boolean   @default(true) @map("is_active")
+  passwordHash String  @map("password_hash")
+  firstName    String  @map("first_name")
+  lastName     String  @map("last_name")
+  isActive     Boolean @default(true) @map("is_active")
 
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
-  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
   userRoles        UserRole[]
   profile          UserProfile?
   reviewedProfiles CustomerProfile[]
-  
+
   @@unique([tenantId, email])
   @@index([tenantId, isActive, deletedAt])
   @@map("users")
@@ -129,26 +114,26 @@ model UserProfile {
 // ---------------------------------------------------------------------------
 
 model Customer {
-  id           String    @id @default(uuid())
-  tenantId     String    @map("tenant_id")
-  email        String
-  passwordHash String    @map("password_hash")
-  firstName    String    @map("first_name")
-  lastName     String    @map("last_name")
-  isCompany    Boolean   @default(false) @map("is_company")
-  companyName  String?   @map("company_name")
-  isActive     Boolean   @default(true) @map("is_active")
+  id               String           @id @default(uuid())
+  tenantId         String           @map("tenant_id")
+  email            String
+  passwordHash     String           @map("password_hash")
+  firstName        String           @map("first_name")
+  lastName         String           @map("last_name")
+  isCompany        Boolean          @default(false) @map("is_company")
+  companyName      String?          @map("company_name")
+  isActive         Boolean          @default(true) @map("is_active")
   onboardingStatus OnboardingStatus @default(NOT_STARTED) @map("onboarding_status")
 
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
-  profile            CustomerProfile?
-  tenant             Tenant                  @relation(fields: [tenantId], references: [id])
-  orders             Order[]
-  restrictedCoupons  Coupon[]
-  couponRedemptions  CouponRedemption[]
+  profile           CustomerProfile?
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  orders            Order[]
+  restrictedCoupons Coupon[]
+  couponRedemptions CouponRedemption[]
 
   @@unique([tenantId, email])
   @@index([tenantId, isActive, deletedAt])
@@ -181,16 +166,16 @@ enum CustomerProfileLeadSource {
 }
 
 model CustomerProfile {
-  id         String                 @id @default(uuid())
-  customerId String                 @unique @map("customer_id")
+  id         String                  @id @default(uuid())
+  customerId String                  @unique @map("customer_id")
   status     ProfileSubmissionStatus @default(PENDING)
 
   // Personal
-  fullName             String    @map("full_name")
+  fullName             String   @map("full_name")
   phone                String
-  birthDate            DateTime  @map("birth_date") @db.Date
-  documentNumber       String    @map("document_number")
-  identityDocumentPath String    @map("identity_document_path")
+  birthDate            DateTime @map("birth_date") @db.Date
+  documentNumber       String   @map("document_number")
+  identityDocumentPath String   @map("identity_document_path")
 
   // Address
   address     String
@@ -201,35 +186,35 @@ model CustomerProfile {
   // Professional
   occupation   String
   company      String?
-  taxId        String?  @map("tax_id")
-  businessName String?  @map("business_name")
+  taxId        String? @map("tax_id")
+  businessName String? @map("business_name")
 
   // Bank
   bankName      String @map("bank_name")
   accountNumber String @map("account_number")
 
   // Acquisition
-  instagram            String?                   
-  knowsExistingCustomer Boolean                  @default(false) @map("knows_existing_customer")
-  knownCustomerName    String?                   @map("known_customer_name")
-  heardAboutUs         CustomerProfileLeadSource @default(OTHER) @map("heard_about_us")       
-  heardAboutUsOther    String?                   @map("heard_about_us_other")
+  instagram             String?
+  knowsExistingCustomer Boolean                   @default(false) @map("knows_existing_customer")
+  knownCustomerName     String?                   @map("known_customer_name")
+  heardAboutUs          CustomerProfileLeadSource @default(OTHER) @map("heard_about_us")
+  heardAboutUsOther     String?                   @map("heard_about_us_other")
 
   // Reference contacts
-  contact1Name         String  @map("contact1_name")
-  contact1Phone        String  @map("contact1_phone") @default("migration")
-  contact1Relationship String  @map("contact1_relationship")
-  contact2Name         String  @map("contact2_name")
-  contact2Phone        String  @map("contact2_phone") @default("migration")
-  contact2Relationship String  @map("contact2_relationship")
+  contact1Name         String @map("contact1_name")
+  contact1Phone        String @default("migration") @map("contact1_phone")
+  contact1Relationship String @map("contact1_relationship")
+  contact2Name         String @map("contact2_name")
+  contact2Phone        String @default("migration") @map("contact2_phone")
+  contact2Relationship String @map("contact2_relationship")
 
   // Review
   rejectionReason String?   @map("rejection_reason")
   reviewedAt      DateTime? @map("reviewed_at")
   reviewedById    String?   @map("reviewed_by_id")
 
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   customer   Customer @relation(fields: [customerId], references: [id])
   reviewedBy User?    @relation(fields: [reviewedById], references: [id])
@@ -264,15 +249,15 @@ model RefreshToken {
 // ---------------------------------------------------------------------------
 
 model Tenant {
-  id        String   @id @default(uuid())
-  name      String
-  config    Json
+  id     String @id @default(uuid())
+  name   String
+  config Json
 
-  slug         String   @unique
-  customDomain String?  @unique @map("custom_domain")
-  logoUrl      String?  @map("logo_url")
-  faviconUrl   String?  @map("favicon_url")
-  primaryColor String?  @map("primary_color")
+  slug         String  @unique
+  customDomain String? @unique @map("custom_domain")
+  logoUrl      String? @map("logo_url")
+  faviconUrl   String? @map("favicon_url")
+  primaryColor String? @map("primary_color")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -282,7 +267,6 @@ model Tenant {
   productTypes        ProductType[]
   productCategories   ProductCategory[]
   bundles             Bundle[]
-  pricingRules        PricingRule[]
   longRentalDiscounts LongRentalDiscount[]
   promotions          Promotion[]
   billingUnits        TenantBillingUnit[]
@@ -293,7 +277,7 @@ model Tenant {
   roles               Role[]
   invitations         Invitation[]
   TenantOrderSequence TenantOrderSequence[]
-  ownerPayments       OwnerPayment[] 
+  ownerPayments       OwnerPayment[]
   ownerContracts      OwnerContract[]
   coupons             Coupon[]
 
@@ -321,22 +305,22 @@ model CustomDomain {
 // ---------------------------------------------------------------------------
 
 model Location {
-  id                         String   @id @default(uuid())
-  tenantId                   String   @map("tenant_id")
-  name                       String
-  address                    String?
-  isActive                   Boolean  @default(true) @map("is_active")
+  id       String  @id @default(uuid())
+  tenantId String  @map("tenant_id")
+  name     String
+  address  String?
+  isActive Boolean @default(true) @map("is_active")
 
-  supportsDelivery           Boolean  @default(false) @map("supports_delivery")
-  deliveryDefaultCountry     String?  @map("delivery_default_country")
-  deliveryDefaultStateRegion String?  @map("delivery_default_state_region")
-  deliveryDefaultCity        String?  @map("delivery_default_city")
-  deliveryDefaultPostalCode  String?  @map("delivery_default_postal_code")
-  
-  createdAt                  DateTime @default(now()) @map("created_at")
-  updatedAt                  DateTime @updatedAt @map("updated_at")
+  supportsDelivery           Boolean @default(false) @map("supports_delivery")
+  deliveryDefaultCountry     String? @map("delivery_default_country")
+  deliveryDefaultStateRegion String? @map("delivery_default_state_region")
+  deliveryDefaultCity        String? @map("delivery_default_city")
+  deliveryDefaultPostalCode  String? @map("delivery_default_postal_code")
 
-  tenant       Tenant  @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant       Tenant             @relation(fields: [tenantId], references: [id])
   schedules    LocationSchedule[]
   assets       Asset[]
   orders       Order[]
@@ -354,26 +338,24 @@ enum ScheduleSlotType {
 }
 
 model LocationSchedule {
-  id           String           @id @default(uuid())
-  locationId   String           @map("location_id")
-  type         ScheduleSlotType
+  id         String           @id @default(uuid())
+  locationId String           @map("location_id")
+  type       ScheduleSlotType
 
-  dayOfWeek    Int?             @map("day_of_week")
-  specificDate DateTime?        @map("specific_date") @db.Date
+  dayOfWeek    Int?      @map("day_of_week")
+  specificDate DateTime? @map("specific_date") @db.Date
 
-  openTime            Int       @map("open_time")
-  closeTime           Int       @map("close_time")
-  slotIntervalMinutes Int?      @map("slot_interval_minutes")
+  openTime            Int  @map("open_time")
+  closeTime           Int  @map("close_time")
+  slotIntervalMinutes Int? @map("slot_interval_minutes")
 
   location Location @relation(fields: [locationId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt      @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("location_schedules")
 }
-
-
 
 // ---------------------------------------------------------------------------
 // OWNER
@@ -390,8 +372,8 @@ model Owner {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant Tenant  @relation(fields: [tenantId], references: [id])
-  assets Asset[]
+  tenant    Tenant                @relation(fields: [tenantId], references: [id])
+  assets    Asset[]
   contracts OwnerContract[]
   splits    OrderItemOwnerSplit[]
   payments  OwnerPayment[]
@@ -408,21 +390,21 @@ model OwnerContract {
   id          String        @id @default(uuid())
   tenantId    String        @map("tenant_id")
   ownerId     String        @map("owner_id")
-  assetId     String?       @map("asset_id")       // null = owner-level default
-  ownerShare  Decimal       @map("owner_share")     // e.g. 0.70
-  rentalShare Decimal       @map("rental_share")    // e.g. 0.30
+  assetId     String?       @map("asset_id") // null = owner-level default
+  ownerShare  Decimal       @map("owner_share") // e.g. 0.70
+  rentalShare Decimal       @map("rental_share") // e.g. 0.30
   basis       ContractBasis @default(NET_COLLECTED)
   validFrom   DateTime      @map("valid_from")
-  validUntil  DateTime?     @map("valid_until")     // null = indefinite
+  validUntil  DateTime?     @map("valid_until") // null = indefinite
   notes       String?
   isActive    Boolean       @default(true) @map("is_active")
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  tenant  Tenant              @relation(fields: [tenantId], references: [id])
-  owner   Owner               @relation(fields: [ownerId], references: [id])
-  asset   Asset?              @relation(fields: [assetId], references: [id])
-  splits  OrderItemOwnerSplit[]
+  tenant Tenant                @relation(fields: [tenantId], references: [id])
+  owner  Owner                 @relation(fields: [ownerId], references: [id])
+  asset  Asset?                @relation(fields: [assetId], references: [id])
+  splits OrderItemOwnerSplit[]
 
   @@index([ownerId, assetId, validFrom, validUntil])
   @@index([tenantId, isActive])
@@ -451,8 +433,8 @@ model TenantBillingUnit {
   tenantId      String @map("tenant_id")
   billingUnitId String @map("billing_unit_id")
 
-  tenant        Tenant      @relation(fields: [tenantId], references: [id])
-  billingUnit   BillingUnit @relation(fields: [billingUnitId], references: [id])
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  billingUnit BillingUnit @relation(fields: [billingUnitId], references: [id])
 
   @@unique([tenantId, billingUnitId])
   @@map("tenant_billing_units")
@@ -478,34 +460,33 @@ model ProductCategory {
 }
 
 model ProductType {
-  id            String       @id @default(uuid())
-  tenantId      String       @map("tenant_id")
-  categoryId    String?      @map("category_id")
-  billingUnitId String       @map("billing_unit_id")
-  name          String
-  description   String?
-  imageUrl      String?      @map("image_url")
-  trackingMode  TrackingMode @map("tracking_mode")
-  excludeFromNewArrivals Boolean @default(false) @map("exclude_from_new_arrivals")
-  attributes    Json
-  includedItems Json         @default("[]") @map("included_items")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
-  deletedAt     DateTime?    @map("deleted_at")
-  publishedAt   DateTime?    @map("published_at")
-  retiredAt     DateTime?    @map("retired_at")
+  id                     String       @id @default(uuid())
+  tenantId               String       @map("tenant_id")
+  categoryId             String?      @map("category_id")
+  billingUnitId          String       @map("billing_unit_id")
+  name                   String
+  description            String?
+  imageUrl               String?      @map("image_url")
+  trackingMode           TrackingMode @map("tracking_mode")
+  excludeFromNewArrivals Boolean      @default(false) @map("exclude_from_new_arrivals")
+  attributes             Json
+  includedItems          Json         @default("[]") @map("included_items")
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+  deletedAt              DateTime?    @map("deleted_at")
+  publishedAt            DateTime?    @map("published_at")
+  retiredAt              DateTime?    @map("retired_at")
 
-
-  tenant             Tenant                    @relation(fields: [tenantId], references: [id])
-  category           ProductCategory?          @relation(fields: [categoryId], references: [id])
-  billingUnit        BillingUnit               @relation(fields: [billingUnitId], references: [id])
-  assets             Asset[]
-  pricingTiers       PricingTier[]
+  tenant                       Tenant                        @relation(fields: [tenantId], references: [id])
+  category                     ProductCategory?              @relation(fields: [categoryId], references: [id])
+  billingUnit                  BillingUnit                   @relation(fields: [billingUnitId], references: [id])
+  assets                       Asset[]
+  pricingTiers                 PricingTier[]
   longRentalDiscountExclusions LongRentalDiscountExclusion[]
-  promotionExclusions PromotionExclusion[]
-  bundleComponents   BundleComponent[]
-  snapshotComponents BundleSnapshotComponent[]
-  orderItems         OrderItem[]
+  promotionExclusions          PromotionExclusion[]
+  bundleComponents             BundleComponent[]
+  snapshotComponents           BundleSnapshotComponent[]
+  orderItems                   OrderItem[]
 
   @@index([tenantId, publishedAt, deletedAt, categoryId])
   @@map("product_types")
@@ -527,9 +508,9 @@ model Asset {
   updatedAt     DateTime  @updatedAt @map("updated_at")
   deletedAt     DateTime? @map("deleted_at")
 
-  location    Location          @relation(fields: [locationId], references: [id])
-  productType ProductType       @relation(fields: [productTypeId], references: [id])
-  owner       Owner?            @relation(fields: [ownerId], references: [id])
+  location    Location              @relation(fields: [locationId], references: [id])
+  productType ProductType           @relation(fields: [productTypeId], references: [id])
+  owner       Owner?                @relation(fields: [ownerId], references: [id])
   assignments AssetAssignment[]
   contracts   OwnerContract[]
   splits      OrderItemOwnerSplit[]
@@ -556,17 +537,17 @@ model Asset {
 //     EXCLUDE USING gist (asset_id WITH =, period WITH &&);
 
 model AssetAssignment {
-  id          String            @id @default(uuid())
-  assetId     String            @map("asset_id")
-  orderItemId String?           @map("order_item_id")
-  orderId     String?           @map("order_id")
+  id          String                   @id @default(uuid())
+  assetId     String                   @map("asset_id")
+  orderItemId String?                  @map("order_item_id")
+  orderId     String?                  @map("order_id")
   type        AssignmentType
   stage       OrderAssignmentStage?
   source      AssignmentSource?
   reason      String?
   period      Unsupported("tstzrange")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
+  createdAt   DateTime                 @default(now()) @map("created_at")
+  updatedAt   DateTime                 @updatedAt @map("updated_at")
 
   asset     Asset      @relation(fields: [assetId], references: [id])
   orderItem OrderItem? @relation(fields: [orderItemId], references: [id])
@@ -590,29 +571,29 @@ model Order {
   couponId          String?           @map("coupon_id")
   status            OrderStatus       @default(CONFIRMED)
   fulfillmentMethod FulfillmentMethod @default(PICKUP) @map("fulfillment_method")
-  orderNumber       Int               @map("order_number") @default(0)
+  orderNumber       Int               @default(0) @map("order_number")
   notes             String?
   insuranceSelected Boolean           @default(false) @map("insurance_selected")
   financialSnapshot Json              @default("{}") @map("financial_snapshot")
   periodStart       DateTime          @map("period_start")
   periodEnd         DateTime          @map("period_end")
 
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
-  deletedAt         DateTime?         @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
-  location           Location          @relation(fields: [locationId], references: [id])
-  items              OrderItem[]
-  assetAssignments   AssetAssignment[]
-  customer           Customer?         @relation(fields: [customerId], references: [id])
-  coupon             Coupon?           @relation(fields: [couponId], references: [id])
-  couponRedemption   CouponRedemption?
-  deliveryRequest    OrderDeliveryRequest?
+  location         Location              @relation(fields: [locationId], references: [id])
+  items            OrderItem[]
+  assetAssignments AssetAssignment[]
+  customer         Customer?             @relation(fields: [customerId], references: [id])
+  coupon           Coupon?               @relation(fields: [couponId], references: [id])
+  couponRedemption CouponRedemption?
+  deliveryRequest  OrderDeliveryRequest?
 
+  @@unique([tenantId, orderNumber])
   @@index([tenantId, locationId, status, createdAt(sort: Desc)])
   @@index([tenantId, locationId, periodStart, periodEnd])
   @@index([tenantId, deletedAt])
-  @@unique([tenantId, orderNumber])
   @@map("orders")
 }
 
@@ -637,20 +618,20 @@ model OrderDeliveryRequest {
 }
 
 model OrderItem {
-  id               String        @id @default(uuid())
-  orderId          String        @map("order_id")
-  type             OrderItemType
-  productTypeId    String?       @map("product_type_id")
-  bundleId         String?       @map("bundle_id")
-  priceSnapshot    Json          @map("price_snapshot")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
+  id            String        @id @default(uuid())
+  orderId       String        @map("order_id")
+  type          OrderItemType
+  productTypeId String?       @map("product_type_id")
+  bundleId      String?       @map("bundle_id")
+  priceSnapshot Json          @map("price_snapshot")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  order            Order                @relation(fields: [orderId], references: [id])
-  productType      ProductType?         @relation(fields: [productTypeId], references: [id])
-  bundle           Bundle?              @relation(fields: [bundleId], references: [id])
+  order            Order                 @relation(fields: [orderId], references: [id])
+  productType      ProductType?          @relation(fields: [productTypeId], references: [id])
+  bundle           Bundle?               @relation(fields: [bundleId], references: [id])
   assetAssignments AssetAssignment[]
-  ownerSplits      OrderItemOwnerSplit[] 
+  ownerSplits      OrderItemOwnerSplit[]
   bundleSnapshot   BundleSnapshot?
 
   @@index([orderId])
@@ -658,20 +639,20 @@ model OrderItem {
 }
 
 model TenantOrderSequence {
-  tenantId    String    @id @map("tenant_id")
-  lastNumber  Int       @default(0) @map("last_number")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  tenantId   String   @id @map("tenant_id")
+  lastNumber Int      @default(0) @map("last_number")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@map("tenant_order_sequences")
 }
 
 enum SplitStatus {
-  PENDING    // order created, amounts computed
-  CONFIRMED  // reserved for future async checkout confirmation
-  VOID       // order cancelled or item removed
-  SETTLED    // payment recorded
+  PENDING // order created, amounts computed
+  CONFIRMED // reserved for future async checkout confirmation
+  VOID // order cancelled or item removed
+  SETTLED // payment recorded
 }
 
 model OrderItemOwnerSplit {
@@ -683,23 +664,23 @@ model OrderItemOwnerSplit {
   status      SplitStatus @default(PENDING)
 
   // snapshot of contract terms at assignment time
-  ownerShare  Decimal     @map("owner_share")
-  rentalShare Decimal     @map("rental_share")
+  ownerShare  Decimal       @map("owner_share")
+  rentalShare Decimal       @map("rental_share")
   basis       ContractBasis
 
   // computed amounts
-  grossAmount  Decimal    @map("gross_amount")
-  netAmount    Decimal    @map("net_amount")
-  ownerAmount  Decimal    @map("owner_amount")
-  rentalAmount Decimal    @map("rental_amount")
+  grossAmount  Decimal @map("gross_amount")
+  netAmount    Decimal @map("net_amount")
+  ownerAmount  Decimal @map("owner_amount")
+  rentalAmount Decimal @map("rental_amount")
 
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  orderItem OrderItem           @relation(fields: [orderItemId], references: [id])
-  asset     Asset               @relation(fields: [assetId], references: [id])
-  owner     Owner               @relation(fields: [ownerId], references: [id])
-  contract  OwnerContract       @relation(fields: [contractId], references: [id])
+  orderItem OrderItem          @relation(fields: [orderItemId], references: [id])
+  asset     Asset              @relation(fields: [assetId], references: [id])
+  owner     Owner              @relation(fields: [ownerId], references: [id])
+  contract  OwnerContract      @relation(fields: [contractId], references: [id])
   payment   OwnerPaymentSplit?
 
   @@unique([orderItemId, assetId])
@@ -713,25 +694,24 @@ model OrderItemOwnerSplit {
 // ---------------------------------------------------------------------------
 
 model Bundle {
-  id            String       @id @default(uuid())
-  tenantId      String       @map("tenant_id")
-  billingUnitId String       @map("billing_unit_id")
+  id            String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  billingUnitId String    @map("billing_unit_id")
   name          String
-  description   String?      
-  imageUrl      String?      @map("image_url")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
-  publishedAt   DateTime?    @map("published_at")
-  retiredAt     DateTime?    @map("retired_at")
+  description   String?
+  imageUrl      String?   @map("image_url")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  publishedAt   DateTime? @map("published_at")
+  retiredAt     DateTime? @map("retired_at")
 
-  tenant       Tenant            @relation(fields: [tenantId], references: [id])
-  billingUnit  BillingUnit       @relation(fields: [billingUnitId], references: [id])
-  components   BundleComponent[]
-  pricingTiers PricingTier[]
+  tenant                       Tenant                        @relation(fields: [tenantId], references: [id])
+  billingUnit                  BillingUnit                   @relation(fields: [billingUnitId], references: [id])
+  components                   BundleComponent[]
+  pricingTiers                 PricingTier[]
   longRentalDiscountExclusions LongRentalDiscountExclusion[]
-  promotionExclusions PromotionExclusion[]
-  orderItems   OrderItem[]
-
+  promotionExclusions          PromotionExclusion[]
+  orderItems                   OrderItem[]
 
   @@index([tenantId, publishedAt])
   @@map("bundles")
@@ -762,19 +742,19 @@ model BundleSnapshot {
   bundlePrice Decimal  @map("bundle_price")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  orderItem  OrderItem               @relation(fields: [orderItemId], references: [id])
+  orderItem  OrderItem                 @relation(fields: [orderItemId], references: [id])
   components BundleSnapshotComponent[]
 
   @@map("bundle_snapshots")
 }
 
 model BundleSnapshotComponent {
-  id               String @id @default(uuid())
-  bundleSnapshotId String @map("bundle_snapshot_id")
-  productTypeId    String @map("product_type_id")
-  productTypeName  String @map("product_type_name")
+  id               String  @id @default(uuid())
+  bundleSnapshotId String  @map("bundle_snapshot_id")
+  productTypeId    String  @map("product_type_id")
+  productTypeName  String  @map("product_type_name")
   quantity         Int
-  pricePerUnit     Decimal @map("price_per_unit") @default(0)  // standalone price at snapshot time
+  pricePerUnit     Decimal @default(0) @map("price_per_unit") // standalone price at snapshot time
 
   bundleSnapshot BundleSnapshot @relation(fields: [bundleSnapshotId], references: [id])
   productType    ProductType    @relation(fields: [productTypeId], references: [id])
@@ -807,27 +787,6 @@ model PricingTier {
   @@map("pricing_tiers")
 }
 
-model PricingRule {
-  id        String           @id @default(uuid())
-  tenantId  String           @map("tenant_id")
-  name      String
-  type      PricingRuleType
-  scope     PricingRuleScope
-  priority  Int
-  stackable Boolean          @default(false)
-  isActive  Boolean          @default(true) @map("is_active")
-  condition Json
-  effect    Json
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
-
-  tenant   Tenant @relation(fields: [tenantId], references: [id])
-  coupons  Coupon[]
-
-  @@index([tenantId, isActive, type, scope])
-  @@map("pricing_rules")
-}
-
 // ---------------------------------------------------------------------------
 // COUPON
 // ---------------------------------------------------------------------------
@@ -835,7 +794,7 @@ model PricingRule {
 model Coupon {
   id                     String    @id @default(uuid())
   tenantId               String    @map("tenant_id")
-  pricingRuleId          String    @map("pricing_rule_id")
+  promotionId            String    @map("promotion_id")
   code                   String
   maxUses                Int?      @map("max_uses")
   maxUsesPerCustomer     Int?      @map("max_uses_per_customer")
@@ -846,9 +805,9 @@ model Coupon {
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @updatedAt @map("updated_at")
 
-  tenant             Tenant          @relation(fields: [tenantId], references: [id])
-  pricingRule        PricingRule     @relation(fields: [pricingRuleId], references: [id])
-  restrictedCustomer Customer?       @relation(fields: [restrictedToCustomerId], references: [id])
+  tenant             Tenant             @relation(fields: [tenantId], references: [id])
+  promotion          Promotion          @relation(fields: [promotionId], references: [id])
+  restrictedCustomer Customer?          @relation(fields: [restrictedToCustomerId], references: [id])
   redemptions        CouponRedemption[]
   orders             Order[]
 
@@ -889,8 +848,8 @@ model LongRentalDiscount {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant      Tenant                        @relation(fields: [tenantId], references: [id])
-  exclusions  LongRentalDiscountExclusion[]
+  tenant     Tenant                        @relation(fields: [tenantId], references: [id])
+  exclusions LongRentalDiscountExclusion[]
 
   @@index([tenantId, isActive, priority])
   @@map("long_rental_discounts")
@@ -907,9 +866,9 @@ model LongRentalDiscountExclusion {
   productType        ProductType?       @relation(fields: [productTypeId], references: [id])
   bundle             Bundle?            @relation(fields: [bundleId], references: [id])
 
-  @@index([longRentalDiscountId])
   @@unique([longRentalDiscountId, productTypeId])
   @@unique([longRentalDiscountId, bundleId])
+  @@index([longRentalDiscountId])
   @@map("long_rental_discount_exclusions")
 }
 
@@ -926,27 +885,28 @@ model Promotion {
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
 
-  tenant      Tenant                @relation(fields: [tenantId], references: [id])
-  exclusions  PromotionExclusion[]
+  tenant     Tenant               @relation(fields: [tenantId], references: [id])
+  coupons    Coupon[]
+  exclusions PromotionExclusion[]
 
   @@index([tenantId, isActive, type, priority])
   @@map("promotions")
 }
 
 model PromotionExclusion {
-  id           String   @id @default(uuid())
-  promotionId  String   @map("promotion_id")
-  productTypeId String? @map("product_type_id")
-  bundleId      String? @map("bundle_id")
+  id            String   @id @default(uuid())
+  promotionId   String   @map("promotion_id")
+  productTypeId String?  @map("product_type_id")
+  bundleId      String?  @map("bundle_id")
   createdAt     DateTime @default(now()) @map("created_at")
 
   promotion   Promotion    @relation(fields: [promotionId], references: [id])
   productType ProductType? @relation(fields: [productTypeId], references: [id])
   bundle      Bundle?      @relation(fields: [bundleId], references: [id])
 
-  @@index([promotionId])
   @@unique([promotionId, productTypeId])
   @@unique([promotionId, bundleId])
+  @@index([promotionId])
   @@map("promotion_exclusions")
 }
 
@@ -972,9 +932,9 @@ model OwnerPayment {
   paidAt      DateTime      @map("paid_at")
   createdAt   DateTime      @default(now()) @map("created_at")
 
-  tenant      Tenant              @relation(fields: [tenantId], references: [id])
-  owner       Owner               @relation(fields: [ownerId], references: [id])
-  splits      OwnerPaymentSplit[]
+  tenant Tenant              @relation(fields: [tenantId], references: [id])
+  owner  Owner               @relation(fields: [ownerId], references: [id])
+  splits OwnerPaymentSplit[]
 
   @@index([tenantId, ownerId, paidAt])
   @@map("owner_payments")
@@ -990,7 +950,6 @@ model OwnerPaymentSplit {
 
   @@map("owner_payment_splits")
 }
-
 
 // ---------------------------------------------------------------------------
 // PERMISSIONS & ROLES
@@ -1084,11 +1043,11 @@ model RolePermission {
 // ---------------------------------------------------------------------------
 
 model UserRole {
-  id         String    @id @default(uuid())
-  userId     String    @map("user_id")
-  roleId     String    @map("role_id")
-  locationId String?   @map("location_id")
-  createdAt  DateTime  @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  roleId     String   @map("role_id")
+  locationId String?  @map("location_id")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   user     User      @relation(fields: [userId], references: [id])
   role     Role      @relation(fields: [roleId], references: [id])

@@ -32,7 +32,7 @@ export class ListCouponsHandler implements IQueryHandler<ListCouponsQuery, Pagin
           validFrom: true,
           validUntil: true,
           isActive: true,
-          pricingRuleId: true,
+          promotionId: true,
           _count: {
             select: {
               redemptions: {
@@ -45,15 +45,14 @@ export class ListCouponsHandler implements IQueryHandler<ListCouponsQuery, Pagin
       this.prisma.client.coupon.count({ where }),
     ]);
 
-    const couponRows = rows.map((row) => ({ ...row, promotionId: row.pricingRuleId }));
-    const promotionIds = [...new Set(couponRows.map((row) => row.promotionId))];
+    const promotionIds = [...new Set(rows.map((row) => row.promotionId))];
     const promotions = await this.prisma.client.promotion.findMany({
       where: { id: { in: promotionIds } },
       select: { id: true, name: true },
     });
     const promotionNameById = new Map(promotions.map((promotion) => [promotion.id, promotion.name]));
 
-    const data: CouponView[] = couponRows.map((row) => ({
+    const data: CouponView[] = rows.map((row) => ({
       id: row.id,
       code: row.code,
       promotionName: promotionNameById.get(row.promotionId) ?? 'Unknown promotion',

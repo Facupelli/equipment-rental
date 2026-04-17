@@ -12,17 +12,17 @@ The pricing calculator (`PricingCalculator`) was already implemented and working
 
 The discount system has two distinct tracks:
 
-**Track 1 — Automatic rules.** `SEASONAL` and `VOLUME` rules fire automatically when their conditions match the pricing context. No user action required. A customer books during a seasonal window and the discount just applies.
+**Track 1 — Automatic promotions.** Automatic promotions fire when their conditions match the pricing context. No user action required. A customer books during a seasonal window and the discount just applies.
 
-**Track 2 — Redemption-gated rules.** `COUPON` rules are inert until a `Coupon` row wraps them and a customer presents the code. The `Coupon` model owns all access control: who can use it, how many times, and when. The `PricingRule` only defines the discount effect.
+**Track 2 — Redemption-gated promotions.** `COUPON` promotions are inert until a `Coupon` row wraps them and a customer presents the code. The `Coupon` model owns all access control: who can use it, how many times, and when. The `Promotion` defines the discount effect.
 
-`CUSTOMER_SPECIFIC` rules sit on Track 1 — they fire automatically when the `customerId` in context matches the condition. No code required.
+`CUSTOMER_SPECIFIC` promotions sit on Track 1 — they fire automatically when the `customerId` in context matches the condition. No code required.
 
 ### The Mental Model
 
 ```
-PricingRule  →  defines the discount ("10% off")
-Coupon       →  gates the rule ("who can use it, how many times, when")
+Promotion    →  defines the discount ("10% off")
+Coupon       →  gates the promotion ("who can use it, how many times, when")
 CouponRedemption  →  records each use (audit trail + usage counting)
 ```
 
@@ -40,7 +40,7 @@ CreateOrderHandler
   │
   ├── PricingApplicationService.calculateProductPrice()    [per item]
   │     └── PricingCalculator.calculate()                  [pure domain, no I/O]
-  │           └── PricingRule.isApplicableTo()             [trusts injected ruleIds]
+  │           └── PromotionEvaluatorService.evaluate()     [trusts injected promotion ids]
   │
   └── $transaction
         ├── order save
@@ -51,9 +51,9 @@ CreateOrderHandler
 
 ### Key Boundary
 
-The `PricingCalculator` is completely unaware of coupons as a concept. It receives `applicableCouponRuleIds` via `RuleApplicationContext` — a list of pre-validated rule IDs injected by the application layer. `PricingRule.isApplicableTo()` simply checks if its own id is in that list.
+The pricing engine is completely unaware of coupons as a concept. It receives pre-validated promotion ids from the application layer. Coupon validation stays outside the pricing evaluator; the evaluator only applies the promotion effect.
 
-The application layer owns the question "is this coupon valid?". The domain owns the question "what discount does this rule produce?". These two questions never mix.
+The application layer owns the question "is this coupon valid?". The domain owns the question "what discount does this promotion produce?". These two questions never mix.
 
 ---
 
@@ -64,7 +64,7 @@ The application layer owns the question "is this coupon valid?". The domain owns
 **`coupons`**
 
 ```
-id, tenantId, pricingRuleId (FK → pricing_rules)
+id, tenantId, promotionId (FK → promotions)
 code                          — unique per tenant, stored uppercase
 maxUses                       — nullable, null = unlimited
 maxUsesPerCustomer            — nullable, null = unlimited
@@ -116,7 +116,7 @@ Pure domain entity. Owns four validation methods — each answers a single boole
 
 ### `CouponValidationService`
 
-Pure domain service — same pattern as `PricingCalculator`. Takes a `CouponValidationInput`, calls the four entity methods in order, returns the first failure with a typed reason or `{ valid: true, ruleId }` on success.
+Pure domain service — same pattern as `PricingCalculator`. Takes a `CouponValidationInput`, calls the four entity methods in order, returns the first failure with a typed reason or `{ valid: true, promotionId }` on success.
 
 **Validation order (cheapest first):**
 
@@ -129,25 +129,9 @@ Pure domain service — same pattern as `PricingCalculator`. Takes a `CouponVali
 
 `NOT_YET_VALID` and `EXPIRED` are distinct reasons (both caught by the validity window check) so the application layer can surface different messages to the customer.
 
-### Updated `RuleApplicationContext`
+### Updated Pricing Context
 
-```typescript
-type RuleApplicationContext = {
-  // ... existing fields ...
-  customerId?: string; // for CUSTOMER_SPECIFIC evaluation
-  applicableCouponRuleIds?: string[]; // pre-validated by application layer
-};
-```
-
-### Updated `PricingRule.isApplicableTo()`
-
-```typescript
-case 'COUPON':
-  return context.applicableCouponRuleIds?.includes(this.id) ?? false;
-
-case 'CUSTOMER_SPECIFIC':
-  return context.customerId === condition.customerId;
-```
+The pricing application service passes pre-validated coupon-backed `promotionId` values into the promotion evaluation flow alongside `customerId`.
 
 ---
 
@@ -162,7 +146,7 @@ Three responsibilities:
 - Loads coupon by code + tenantId
 - Fetches `totalActiveRedemptions` and `customerActiveRedemptions` in parallel
 - Calls `CouponValidationService.validate()`
-- Returns `{ couponId, ruleId }` on success
+- Returns `{ couponId, promotionId }` on success
 - Throws `CouponNotFoundException` or `CouponValidationException` on failure
 
 **`redeemWithinTransaction(input, tx)`** — hard enforcement pass, called inside the order `$transaction` after `order.transitionTo(SOURCED)`.
