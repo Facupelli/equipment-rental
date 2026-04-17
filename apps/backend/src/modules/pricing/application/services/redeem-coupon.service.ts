@@ -2,9 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { err, ok, Result } from 'neverthrow';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { CouponNotFoundError, CouponValidationError } from '../../domain/errors/pricing.errors';
-import { CouponValidationService } from '../../domain/services/coupon-validation.service';
-import { CouponRepository } from '../../infrastructure/repositories/coupon.repository';
 import { CouponRedemptionRepository } from '../../infrastructure/repositories/coupon-redemption.repository';
+import { ValidateCouponAccessService } from './validate-coupon-access.service';
 
 export type RedeemCouponInput = {
   couponId: string;
@@ -17,43 +16,29 @@ export type RedeemCouponError = CouponNotFoundError | CouponValidationError;
 
 @Injectable()
 export class RedeemCouponService {
-  private readonly validationService = new CouponValidationService();
-
   constructor(
-    private readonly couponRepo: CouponRepository,
     private readonly redemptionRepo: CouponRedemptionRepository,
+    private readonly validateCouponAccess: ValidateCouponAccessService,
   ) {}
 
   async redeemWithinTransaction(
     input: RedeemCouponInput,
     tx: PrismaTransactionClient,
   ): Promise<Result<void, RedeemCouponError>> {
-    const coupon = await this.couponRepo.load(input.couponId);
-
-    if (!coupon) {
-      return err(new CouponNotFoundError(input.couponId));
-    }
-
-    const [totalActiveRedemptions, customerActiveRedemptions] = await Promise.all([
-      this.redemptionRepo.countActive(coupon.id, tx),
-      this.redemptionRepo.countActiveForCustomer(coupon.id, input.customerId, tx),
-    ]);
-
-    const result = this.validationService.validate({
-      coupon,
-      now: input.now,
+    const result = await this.validateCouponAccess.validateById({
+      couponId: input.couponId,
       customerId: input.customerId,
-      totalActiveRedemptions,
-      customerActiveRedemptions,
+      now: input.now,
+      tx,
     });
 
-    if (!result.valid) {
-      return err(new CouponValidationError(result.reason));
+    if (result.isErr()) {
+      return err(result.error);
     }
 
     await this.redemptionRepo.redeem(
       {
-        couponId: coupon.id,
+        couponId: result.value.coupon.id,
         orderId: input.orderId,
         customerId: input.customerId,
       },

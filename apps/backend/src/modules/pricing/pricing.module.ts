@@ -35,6 +35,7 @@ import { ListPromotionsHttpController } from './application/queries/list-promoti
 import { ListPromotionsHandler } from './application/queries/list-promotions/list-promotions.query-handler';
 import { RedeemCouponService } from './application/services/redeem-coupon.service';
 import { ResolveCouponForPricingService } from './application/services/resolve-coupon-for-pricing.service';
+import { ValidateCouponAccessService } from './application/services/validate-coupon-access.service';
 import { VoidCouponRedemptionService } from './application/services/void-coupon-redemption.service';
 import { PricingComputationReadService } from './infrastructure/read-services/pricing-computation-read.service';
 import { CouponRedemptionRepository } from './infrastructure/repositories/coupon-redemption.repository';
@@ -67,6 +68,7 @@ import { PromotionRepository } from './infrastructure/repositories/promotion.rep
     CouponRepository,
     CouponRedemptionRepository,
     PricingComputationReadService,
+    ValidateCouponAccessService,
     ResolveCouponForPricingService,
     RedeemCouponService,
     VoidCouponRedemptionService,

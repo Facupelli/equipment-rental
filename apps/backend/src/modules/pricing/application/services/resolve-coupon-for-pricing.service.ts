@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { err, ok, Result } from 'neverthrow';
-import { PrismaService } from 'src/core/database/prisma.service';
 import { CouponNotFoundError, CouponValidationError } from '../../domain/errors/pricing.errors';
-import { CouponValidationService } from '../../domain/services/coupon-validation.service';
-import { CouponRepository } from '../../infrastructure/repositories/coupon.repository';
-import { CouponRedemptionRepository } from '../../infrastructure/repositories/coupon-redemption.repository';
+import { ValidateCouponAccessService } from './validate-coupon-access.service';
 
 export type ResolveCouponResult = {
   couponId: string;
@@ -22,54 +19,22 @@ export type ResolveCouponForPricingError = CouponNotFoundError | CouponValidatio
 
 @Injectable()
 export class ResolveCouponForPricingService {
-  private readonly validationService = new CouponValidationService();
-
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly couponRepo: CouponRepository,
-    private readonly redemptionRepo: CouponRedemptionRepository,
-  ) {}
+  constructor(private readonly validateCouponAccess: ValidateCouponAccessService) {}
 
   async resolveCouponForPricing(
     input: ResolveCouponInput,
   ): Promise<Result<ResolveCouponResult, ResolveCouponForPricingError>> {
-    const couponRecord = await this.prisma.client.coupon.findFirst({
-      where: {
-        tenantId: input.tenantId,
-        code: input.code.trim().toUpperCase(),
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!couponRecord) {
-      return err(new CouponNotFoundError(input.code));
-    }
-
-    const coupon = await this.couponRepo.load(couponRecord.id);
-
-    if (!coupon) {
-      return err(new CouponNotFoundError(input.code));
-    }
-
-    const [totalActiveRedemptions, customerActiveRedemptions] = await Promise.all([
-      this.redemptionRepo.countActive(coupon.id),
-      this.redemptionRepo.countActiveForCustomer(coupon.id, input.customerId),
-    ]);
-
-    const result = this.validationService.validate({
-      coupon,
-      now: input.now,
+    const result = await this.validateCouponAccess.validateByCode({
+      tenantId: input.tenantId,
+      code: input.code,
       customerId: input.customerId,
-      totalActiveRedemptions,
-      customerActiveRedemptions,
+      now: input.now,
     });
 
-    if (!result.valid) {
-      return err(new CouponValidationError(result.reason));
+    if (result.isErr()) {
+      return err(result.error);
     }
 
-    return ok({ couponId: coupon.id, promotionId: result.promotionId });
+    return ok({ couponId: result.value.coupon.id, promotionId: result.value.promotionId });
   }
 }

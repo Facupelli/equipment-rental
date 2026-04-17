@@ -8,9 +8,23 @@ import { CouponMapper } from '../persistence/mappers/coupon.mapper';
 export class CouponRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async load(id: string): Promise<Coupon | null> {
-    const raw = await this.prisma.client.coupon.findUnique({
+  // TODO: i have a unit of work
+  async load(id: string, tx?: PrismaTransactionClient): Promise<Coupon | null> {
+    const client = tx ?? this.prisma.client;
+    const raw = await client.coupon.findUnique({
       where: { id },
+    });
+
+    return raw ? CouponMapper.toDomain(raw) : null;
+  }
+
+  async loadByTenantAndCode(tenantId: string, code: string, tx?: PrismaTransactionClient): Promise<Coupon | null> {
+    const client = tx ?? this.prisma.client;
+    const raw = await client.coupon.findFirst({
+      where: {
+        tenantId,
+        code: code.trim().toUpperCase(),
+      },
     });
 
     return raw ? CouponMapper.toDomain(raw) : null;
