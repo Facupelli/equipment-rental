@@ -1,4 +1,4 @@
-import { PricingRuleEffectType } from '@repo/types';
+import { PromotionAdjustmentType } from '@repo/types';
 import { Money } from 'src/core/domain/value-objects/money.value-object';
 
 export enum PricingAdjustmentSourceKind {
@@ -14,7 +14,7 @@ export type PricingAdjustment = {
   sourceKind: PricingAdjustmentSourceKind;
   sourceId: string;
   label: string;
-  effectType: PricingRuleEffectType;
+  effectType: PromotionAdjustmentType;
   configuredValue: number;
   discountAmount: Money;
 };

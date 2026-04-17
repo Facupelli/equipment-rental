@@ -1,4 +1,4 @@
-import { PricingRuleEffectType } from '@repo/types';
+import { PromotionAdjustmentType } from '@repo/types';
 import Decimal from 'decimal.js';
 import { PricingAdjustmentSourceKind } from 'src/modules/pricing/domain/types/pricing-adjustment.types';
 
@@ -9,17 +9,17 @@ import { PricingAdjustmentSourceKind } from 'src/modules/pricing/domain/types/pr
 // Owned by OrderItem. Persisted as a JSON column.
 //
 // Structural equality: two snapshots are equal if all fields match.
-// This VO intentionally does not reference live PricingRule entities —
-// it is a self-contained audit record, decoupled from the current rule state.
+// This VO intentionally does not reference live Promotion entities —
+// it is a self-contained audit record, decoupled from the current promotion state.
 // ---------------------------------------------------------------------------
 
 export type DiscountLineItem = {
   sourceKind: PricingAdjustmentSourceKind;
   sourceId: string;
   label: string;
-  type: PricingRuleEffectType;
-  value: number; // configured rule value — e.g. 10 for 10%, 20 for $20 flat
-  discountAmount: Decimal; // actual money deducted for this rule
+  type: PromotionAdjustmentType;
+  value: number; // configured promotion value — e.g. 10 for 10%, 20 for $20 flat
+  discountAmount: Decimal; // actual money deducted for this promotion
 };
 
 export interface PriceSnapshotProps {
@@ -86,11 +86,13 @@ export class PriceSnapshot {
       finalPrice: new Decimal(data.finalPrice as string),
       totalUnits: data.totalUnits as number,
       pricePerBillingUnit: new Decimal(data.pricePerBillingUnit as string),
+      // Old persisted snapshots used ruleId/ruleLabel. Keep that read-only fallback here,
+      // but always serialize using promotion terminology.
       discounts: (data.discounts as Array<Record<string, unknown>>).map((d) => ({
         sourceKind: (d.sourceKind as PricingAdjustmentSourceKind | undefined) ?? PricingAdjustmentSourceKind.PROMOTION,
-        sourceId: (d.sourceId as string | undefined) ?? (d.ruleId as string),
-        label: (d.label as string | undefined) ?? (d.ruleLabel as string),
-        type: d.type as PricingRuleEffectType,
+        sourceId: (d.sourceId as string | undefined) ?? (d.promotionId as string) ?? (d.ruleId as string),
+        label: (d.label as string | undefined) ?? (d.promotionLabel as string) ?? (d.ruleLabel as string),
+        type: d.type as PromotionAdjustmentType,
         value: d.value as number,
         discountAmount: new Decimal(d.discountAmount as string),
       })),

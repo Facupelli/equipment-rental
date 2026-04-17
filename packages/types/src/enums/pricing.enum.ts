@@ -13,6 +13,6 @@ export enum PricingRuleScope {
   BUNDLE = "BUNDLE",
 }
 
-export enum PricingRuleEffectType {
+export enum PromotionAdjustmentType {
   PERCENTAGE = "PERCENTAGE",
 }

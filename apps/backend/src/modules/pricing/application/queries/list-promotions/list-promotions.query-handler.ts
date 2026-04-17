@@ -2,6 +2,21 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { ListPromotionsQuery } from './list-promotions.query';
 import { ListPromotionsResponseDto, PromotionView } from './list-promotions.response.dto';
+import { PromotionType } from '@repo/types';
+
+const toPersistedActivationType = (activationType: ListPromotionsQuery['activationType']) => {
+  if (!activationType) {
+    return undefined;
+  }
+
+  return activationType === 'COUPON' ? ('COUPON' as const) : ('SEASONAL' as const);
+};
+
+const toPromotionActivationType = (persistedType: PromotionType) =>
+  (persistedType === 'COUPON' ? 'COUPON' : 'AUTOMATIC') as PromotionView['activationType'];
+
+const toPromotionStackingType = (isStackable: boolean) =>
+  (isStackable ? 'COMBINABLE' : 'EXCLUSIVE') as PromotionView['stackingType'];
 
 @QueryHandler(ListPromotionsQuery)
 export class ListPromotionsHandler implements IQueryHandler<ListPromotionsQuery, ListPromotionsResponseDto> {
@@ -14,7 +29,7 @@ export class ListPromotionsHandler implements IQueryHandler<ListPromotionsQuery,
     const where = {
       tenantId,
       ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
-      ...(activationType ? { type: activationType === 'COUPON' ? ('COUPON' as const) : ('SEASONAL' as const) } : {}),
+      ...(activationType ? { type: toPersistedActivationType(activationType) } : {}),
     };
 
     const [rows, total] = await Promise.all([
@@ -31,9 +46,9 @@ export class ListPromotionsHandler implements IQueryHandler<ListPromotionsQuery,
     const data: PromotionView[] = rows.map((row) => ({
       id: row.id,
       name: row.name,
-      activationType: (row.type === 'COUPON' ? 'COUPON' : 'AUTOMATIC') as PromotionView['activationType'],
+      activationType: toPromotionActivationType(row.type as PromotionType),
       priority: row.priority,
-      stackingType: (row.stackable ? 'COMBINABLE' : 'EXCLUSIVE') as PromotionView['stackingType'],
+      stackingType: toPromotionStackingType(row.stackable),
       validFrom: ((row.condition as { validFrom?: string | null }).validFrom
         ? new Date((row.condition as { validFrom?: string | null }).validFrom!)
         : null) as PromotionView['validFrom'],

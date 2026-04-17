@@ -2,7 +2,7 @@ import {
   FulfillmentMethod,
   OrderItemType,
   OrderStatus,
-  PricingRuleEffectType,
+  PromotionAdjustmentType,
 } from "@repo/types";
 import { z } from "zod";
 
@@ -78,9 +78,9 @@ const DiscountLineSchema = z.object({
   ]),
   sourceId: z.uuid(),
   label: z.string(),
-  ruleId: z.uuid(),
-  ruleLabel: z.string(),
-  type: z.enum(PricingRuleEffectType),
+  promotionId: z.uuid(),
+  promotionLabel: z.string(),
+  type: z.enum(PromotionAdjustmentType),
   value: z.number(),
   discountAmount: z.string(),
 });

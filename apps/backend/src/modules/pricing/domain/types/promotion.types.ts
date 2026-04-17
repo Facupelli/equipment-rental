@@ -1,10 +1,10 @@
 import {
+  PromotionAdjustmentType,
   PromotionActivationType,
   PromotionApplicabilityTarget,
   PromotionConditionType,
   PromotionEffectType,
   PromotionStackingType,
-  PricingRuleEffectType,
 } from '@repo/types';
 
 export type BookingWindowPromotionCondition = {
@@ -81,7 +81,7 @@ export type PromotionApplicability = {
 
 export type PromotionAdjustmentDescriptor = {
   configuredValue: number;
-  effectType: PricingRuleEffectType.PERCENTAGE;
+  effectType: PromotionAdjustmentType.PERCENTAGE;
 };
 
 export { PromotionActivationType, PromotionApplicabilityTarget, PromotionStackingType };

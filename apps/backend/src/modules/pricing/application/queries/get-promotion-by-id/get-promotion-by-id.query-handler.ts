@@ -2,6 +2,13 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { GetPromotionByIdQuery } from './get-promotion-by-id.query';
 import { GetPromotionByIdResponseDto } from './get-promotion-by-id.response.dto';
+import { PromotionType } from '@repo/types';
+
+const toPromotionActivationType = (persistedType: PromotionType) =>
+  (persistedType === 'COUPON' ? 'COUPON' : 'AUTOMATIC') as GetPromotionByIdResponseDto['activationType'];
+
+const toPromotionStackingType = (isStackable: boolean) =>
+  (isStackable ? 'COMBINABLE' : 'EXCLUSIVE') as GetPromotionByIdResponseDto['stackingType'];
 
 @QueryHandler(GetPromotionByIdQuery)
 export class GetPromotionByIdQueryHandler implements IQueryHandler<
@@ -23,9 +30,9 @@ export class GetPromotionByIdQueryHandler implements IQueryHandler<
     return {
       id: row.id,
       name: row.name,
-      activationType: (row.type === 'COUPON' ? 'COUPON' : 'AUTOMATIC') as GetPromotionByIdResponseDto['activationType'],
+      activationType: toPromotionActivationType(row.type as PromotionType),
       priority: row.priority,
-      stackingType: (row.stackable ? 'COMBINABLE' : 'EXCLUSIVE') as GetPromotionByIdResponseDto['stackingType'],
+      stackingType: toPromotionStackingType(row.stackable),
       validFrom: ((row.condition as { validFrom?: string | null }).validFrom
         ? new Date((row.condition as { validFrom?: string | null }).validFrom!)
         : null) as GetPromotionByIdResponseDto['validFrom'],

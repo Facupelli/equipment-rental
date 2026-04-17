@@ -2,7 +2,7 @@ import Decimal from 'decimal.js';
 import { Injectable } from '@nestjs/common';
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { TenantConfig } from '@repo/schemas';
-import { PricingRuleEffectType } from '@repo/types';
+import { PromotionAdjustmentType } from '@repo/types';
 import { err, ok, Result } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import {
@@ -50,9 +50,9 @@ export type CartDiscountLineItem = {
   sourceKind: 'PROMOTION';
   sourceId: string;
   label: string;
-  ruleId: string;
-  ruleLabel: string;
-  type: PricingRuleEffectType;
+  promotionId: string;
+  promotionLabel: string;
+  type: PromotionAdjustmentType;
   value: number;
   discountAmount: number;
 };
@@ -151,8 +151,8 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
           sourceKind: adjustment.sourceKind,
           sourceId: adjustment.sourceId,
           label: adjustment.label,
-          ruleId: adjustment.sourceId,
-          ruleLabel: adjustment.label,
+          promotionId: adjustment.sourceId,
+          promotionLabel: adjustment.label,
           type: adjustment.effectType,
           value: adjustment.configuredValue,
           discountAmount: adjustment.discountAmount.toDecimal().mul(item.quantity).toNumber(),

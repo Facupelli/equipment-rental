@@ -1,10 +1,10 @@
 import Decimal from 'decimal.js';
 import {
   PromotionActivationType,
+  PromotionAdjustmentType,
   PromotionConditionType,
   PromotionEffectType,
   PromotionStackingType,
-  PricingRuleEffectType,
 } from '@repo/types';
 import { Money } from 'src/core/domain/value-objects/money.value-object';
 import { Promotion } from '../entities/promotion.entity';
@@ -74,7 +74,7 @@ export class PromotionEvaluatorService {
       sourceKind: PricingAdjustmentSourceKind.PROMOTION,
       sourceId: promotion.id,
       label: promotion.name,
-      effectType: PricingRuleEffectType.PERCENTAGE,
+      effectType: PromotionAdjustmentType.PERCENTAGE,
       configuredValue: configuredPercentage,
       discountAmount: basePrice.multiply(new Decimal(configuredPercentage).div(100)),
     };

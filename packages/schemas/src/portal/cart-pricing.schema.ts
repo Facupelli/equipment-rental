@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PromotionAdjustmentType } from "@repo/types";
 import {
   localDateSchema,
   minutesFromMidnightSchema,
@@ -42,9 +43,9 @@ export const cartDiscountLineItemSchema = z.object({
   sourceKind: z.literal("PROMOTION"),
   sourceId: z.string(),
   label: z.string(),
-  ruleId: z.string(),
-  ruleLabel: z.string(),
-  type: z.literal("PERCENTAGE"),
+  promotionId: z.string(),
+  promotionLabel: z.string(),
+  type: z.enum(PromotionAdjustmentType),
   value: z.number(),
   discountAmount: z.number().nonnegative(),
 });
