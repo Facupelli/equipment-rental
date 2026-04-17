@@ -1,7 +1,7 @@
-import { PromotionActivationType } from "@repo/types";
-import { useEffect, useState } from "react";
+import type { PromotionActivationType } from "@repo/types";
 import { useNavigate } from "@tanstack/react-router";
-import { Route } from "@/routes/_admin/dashboard/pricing";
+import { useEffect, useState } from "react";
+import { Route } from "@/routes/_admin/dashboard/promotions";
 import useDebounce from "@/shared/hooks/use-debounce";
 import { usePromotions } from "../promotions.queries";
 

@@ -27,13 +27,13 @@ import { Route as PortalTenantOnboardIndexRouteImport } from './routes/_portal/_
 import { Route as PortalTenantCartIndexRouteImport } from './routes/_portal/_tenant/cart/index'
 import { Route as AdminDashboardSettingsIndexRouteImport } from './routes/_admin/dashboard/settings/index'
 import { Route as AdminDashboardScheduleIndexRouteImport } from './routes/_admin/dashboard/schedule/index'
-import { Route as AdminDashboardPricingIndexRouteImport } from './routes/_admin/dashboard/pricing/index'
+import { Route as AdminDashboardPromotionsIndexRouteImport } from './routes/_admin/dashboard/promotions/index'
 import { Route as AdminDashboardOwnersIndexRouteImport } from './routes/_admin/dashboard/owners/index'
 import { Route as AdminDashboardLocationsIndexRouteImport } from './routes/_admin/dashboard/locations/index'
 import { Route as AdminDashboardCustomersIndexRouteImport } from './routes/_admin/dashboard/customers/index'
 import { Route as ApiOrdersOrderIdContractRouteImport } from './routes/api/orders/$orderId/contract'
 import { Route as ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport } from './routes/api/customer-profiles/$customerProfileId/identity-document'
-import { Route as AdminDashboardPricingNewRouteImport } from './routes/_admin/dashboard/pricing/new'
+import { Route as AdminDashboardPromotionsNewRouteImport } from './routes/_admin/dashboard/promotions/new'
 import { Route as AdminDashboardOwnersOwnerIdRouteImport } from './routes/_admin/dashboard/owners/$ownerId'
 import { Route as AdminDashboardOrdersOrderIdRouteImport } from './routes/_admin/dashboard/orders/$orderId'
 import { Route as AdminDashboardLocationsLocationIdRouteImport } from './routes/_admin/dashboard/locations/$locationId'
@@ -144,10 +144,10 @@ const AdminDashboardScheduleIndexRoute =
     path: '/schedule/',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
-const AdminDashboardPricingIndexRoute =
-  AdminDashboardPricingIndexRouteImport.update({
-    id: '/pricing/',
-    path: '/pricing/',
+const AdminDashboardPromotionsIndexRoute =
+  AdminDashboardPromotionsIndexRouteImport.update({
+    id: '/promotions/',
+    path: '/promotions/',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
 const AdminDashboardOwnersIndexRoute =
@@ -180,10 +180,10 @@ const ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute =
     path: '/api/customer-profiles/$customerProfileId/identity-document',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AdminDashboardPricingNewRoute =
-  AdminDashboardPricingNewRouteImport.update({
-    id: '/pricing/new',
-    path: '/pricing/new',
+const AdminDashboardPromotionsNewRoute =
+  AdminDashboardPromotionsNewRouteImport.update({
+    id: '/promotions/new',
+    path: '/promotions/new',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
 const AdminDashboardOwnersOwnerIdRoute =
@@ -304,13 +304,13 @@ export interface FileRoutesByFullPath {
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
-  '/dashboard/pricing/new': typeof AdminDashboardPricingNewRoute
+  '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/owners/': typeof AdminDashboardOwnersIndexRoute
-  '/dashboard/pricing/': typeof AdminDashboardPricingIndexRoute
+  '/dashboard/promotions/': typeof AdminDashboardPromotionsIndexRoute
   '/dashboard/schedule/': typeof AdminDashboardScheduleIndexRoute
   '/dashboard/settings/': typeof AdminDashboardSettingsIndexRoute
   '/cart/': typeof PortalTenantCartIndexRoute
@@ -345,13 +345,13 @@ export interface FileRoutesByTo {
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
-  '/dashboard/pricing/new': typeof AdminDashboardPricingNewRoute
+  '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/dashboard/customers': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/owners': typeof AdminDashboardOwnersIndexRoute
-  '/dashboard/pricing': typeof AdminDashboardPricingIndexRoute
+  '/dashboard/promotions': typeof AdminDashboardPromotionsIndexRoute
   '/dashboard/schedule': typeof AdminDashboardScheduleIndexRoute
   '/dashboard/settings': typeof AdminDashboardSettingsIndexRoute
   '/cart': typeof PortalTenantCartIndexRoute
@@ -390,13 +390,13 @@ export interface FileRoutesById {
   '/_admin/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/_admin/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/_admin/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
-  '/_admin/dashboard/pricing/new': typeof AdminDashboardPricingNewRoute
+  '/_admin/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/_admin/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/_admin/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/_admin/dashboard/owners/': typeof AdminDashboardOwnersIndexRoute
-  '/_admin/dashboard/pricing/': typeof AdminDashboardPricingIndexRoute
+  '/_admin/dashboard/promotions/': typeof AdminDashboardPromotionsIndexRoute
   '/_admin/dashboard/schedule/': typeof AdminDashboardScheduleIndexRoute
   '/_admin/dashboard/settings/': typeof AdminDashboardSettingsIndexRoute
   '/_portal/_tenant/cart/': typeof PortalTenantCartIndexRoute
@@ -434,13 +434,13 @@ export interface FileRouteTypes {
     | '/dashboard/locations/$locationId'
     | '/dashboard/orders/$orderId'
     | '/dashboard/owners/$ownerId'
-    | '/dashboard/pricing/new'
+    | '/dashboard/promotions/new'
     | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/api/orders/$orderId/contract'
     | '/dashboard/customers/'
     | '/dashboard/locations/'
     | '/dashboard/owners/'
-    | '/dashboard/pricing/'
+    | '/dashboard/promotions/'
     | '/dashboard/schedule/'
     | '/dashboard/settings/'
     | '/cart/'
@@ -475,13 +475,13 @@ export interface FileRouteTypes {
     | '/dashboard/locations/$locationId'
     | '/dashboard/orders/$orderId'
     | '/dashboard/owners/$ownerId'
-    | '/dashboard/pricing/new'
+    | '/dashboard/promotions/new'
     | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/api/orders/$orderId/contract'
     | '/dashboard/customers'
     | '/dashboard/locations'
     | '/dashboard/owners'
-    | '/dashboard/pricing'
+    | '/dashboard/promotions'
     | '/dashboard/schedule'
     | '/dashboard/settings'
     | '/cart'
@@ -519,13 +519,13 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/locations/$locationId'
     | '/_admin/dashboard/orders/$orderId'
     | '/_admin/dashboard/owners/$ownerId'
-    | '/_admin/dashboard/pricing/new'
+    | '/_admin/dashboard/promotions/new'
     | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/api/orders/$orderId/contract'
     | '/_admin/dashboard/customers/'
     | '/_admin/dashboard/locations/'
     | '/_admin/dashboard/owners/'
-    | '/_admin/dashboard/pricing/'
+    | '/_admin/dashboard/promotions/'
     | '/_admin/dashboard/schedule/'
     | '/_admin/dashboard/settings/'
     | '/_portal/_tenant/cart/'
@@ -688,11 +688,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardScheduleIndexRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
-    '/_admin/dashboard/pricing/': {
-      id: '/_admin/dashboard/pricing/'
-      path: '/pricing'
-      fullPath: '/dashboard/pricing/'
-      preLoaderRoute: typeof AdminDashboardPricingIndexRouteImport
+    '/_admin/dashboard/promotions/': {
+      id: '/_admin/dashboard/promotions/'
+      path: '/promotions'
+      fullPath: '/dashboard/promotions/'
+      preLoaderRoute: typeof AdminDashboardPromotionsIndexRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
     '/_admin/dashboard/owners/': {
@@ -730,11 +730,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_admin/dashboard/pricing/new': {
-      id: '/_admin/dashboard/pricing/new'
-      path: '/pricing/new'
-      fullPath: '/dashboard/pricing/new'
-      preLoaderRoute: typeof AdminDashboardPricingNewRouteImport
+    '/_admin/dashboard/promotions/new': {
+      id: '/_admin/dashboard/promotions/new'
+      path: '/promotions/new'
+      fullPath: '/dashboard/promotions/new'
+      preLoaderRoute: typeof AdminDashboardPromotionsNewRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
     '/_admin/dashboard/owners/$ownerId': {
@@ -899,11 +899,11 @@ interface AdminDashboardRouteRouteChildren {
   AdminDashboardLocationsLocationIdRoute: typeof AdminDashboardLocationsLocationIdRoute
   AdminDashboardOrdersOrderIdRoute: typeof AdminDashboardOrdersOrderIdRoute
   AdminDashboardOwnersOwnerIdRoute: typeof AdminDashboardOwnersOwnerIdRoute
-  AdminDashboardPricingNewRoute: typeof AdminDashboardPricingNewRoute
+  AdminDashboardPromotionsNewRoute: typeof AdminDashboardPromotionsNewRoute
   AdminDashboardCustomersIndexRoute: typeof AdminDashboardCustomersIndexRoute
   AdminDashboardLocationsIndexRoute: typeof AdminDashboardLocationsIndexRoute
   AdminDashboardOwnersIndexRoute: typeof AdminDashboardOwnersIndexRoute
-  AdminDashboardPricingIndexRoute: typeof AdminDashboardPricingIndexRoute
+  AdminDashboardPromotionsIndexRoute: typeof AdminDashboardPromotionsIndexRoute
   AdminDashboardScheduleIndexRoute: typeof AdminDashboardScheduleIndexRoute
   AdminDashboardSettingsIndexRoute: typeof AdminDashboardSettingsIndexRoute
   AdminDashboardCatalogBundlesNewRoute: typeof AdminDashboardCatalogBundlesNewRoute
@@ -928,11 +928,11 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
     AdminDashboardLocationsLocationIdRoute,
   AdminDashboardOrdersOrderIdRoute: AdminDashboardOrdersOrderIdRoute,
   AdminDashboardOwnersOwnerIdRoute: AdminDashboardOwnersOwnerIdRoute,
-  AdminDashboardPricingNewRoute: AdminDashboardPricingNewRoute,
+  AdminDashboardPromotionsNewRoute: AdminDashboardPromotionsNewRoute,
   AdminDashboardCustomersIndexRoute: AdminDashboardCustomersIndexRoute,
   AdminDashboardLocationsIndexRoute: AdminDashboardLocationsIndexRoute,
   AdminDashboardOwnersIndexRoute: AdminDashboardOwnersIndexRoute,
-  AdminDashboardPricingIndexRoute: AdminDashboardPricingIndexRoute,
+  AdminDashboardPromotionsIndexRoute: AdminDashboardPromotionsIndexRoute,
   AdminDashboardScheduleIndexRoute: AdminDashboardScheduleIndexRoute,
   AdminDashboardSettingsIndexRoute: AdminDashboardSettingsIndexRoute,
   AdminDashboardCatalogBundlesNewRoute: AdminDashboardCatalogBundlesNewRoute,

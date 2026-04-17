@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Route } from "@/routes/_admin/dashboard/promotions";
 import useDebounce from "@/shared/hooks/use-debounce";
 import { useCoupons } from "../coupons.queries";
-import { Route } from "@/routes/_admin/dashboard/pricing";
 
 const DEBOUNCE_MS = 300;
 

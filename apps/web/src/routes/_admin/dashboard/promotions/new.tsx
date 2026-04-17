@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { CreatePromotionForm } from "@/features/pricing/promotions/components/create-promotion-form";
 
-export const Route = createFileRoute("/_admin/dashboard/pricing/new")({
+export const Route = createFileRoute("/_admin/dashboard/promotions/new")({
 	component: CreatePromotionPage,
 });
 
@@ -17,7 +17,7 @@ function CreatePromotionPage() {
 
 	function goBack() {
 		navigate({
-			to: "/dashboard/pricing",
+			to: "/dashboard/promotions",
 			search: {
 				tab: "promotions",
 				page: 1,

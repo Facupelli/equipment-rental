@@ -84,7 +84,7 @@ const sidebarItems: SidebarItem[] = [
 	{ name: "Categorías", href: "/dashboard/catalog/categories" },
 	{ name: "Productos", href: "/dashboard/catalog/products" },
 	{ name: "Combos", href: "/dashboard/catalog/bundles" },
-	{ name: "Promociones", href: "/dashboard/pricing" },
+	{ name: "Promociones", href: "/dashboard/promotions" },
 	{ name: "Activos Físicos", href: "/dashboard/inventory/assets" },
 	{ name: "Dueños de Equipo", href: "/dashboard/owners" },
 	{ name: "Depósitos", href: "/dashboard/locations" },

@@ -1,11 +1,11 @@
 import { PromotionActivationType } from "@repo/types";
-import z from "zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import z from "zod";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { PromotionsTab } from "@/features/pricing/promotions/components/promotions-tab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CouponsTab } from "@/features/pricing/coupons/components/coupons-tab";
 import { CreateCouponDialogForm } from "@/features/pricing/coupons/components/create-coupon-dialog-form";
+import { PromotionsTab } from "@/features/pricing/promotions/components/promotions-tab";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 const promotionsSearchSchema = z.object({
@@ -17,7 +17,7 @@ const promotionsSearchSchema = z.object({
 
 type Tab = "coupons" | "promotions";
 
-export const Route = createFileRoute("/_admin/dashboard/pricing/")({
+export const Route = createFileRoute("/_admin/dashboard/promotions/")({
 	validateSearch: promotionsSearchSchema,
 	errorComponent: ({ error }) => {
 		return (
@@ -60,7 +60,7 @@ function RouteComponent() {
 				{tab === "promotions" && (
 					<Button
 						className="shrink-0 gap-2"
-						render={<Link to="/dashboard/pricing/new">Nueva promocion</Link>}
+						render={<Link to="/dashboard/promotions/new">Nueva promocion</Link>}
 					/>
 				)}
 				{tab === "coupons" && <CreateCouponDialogForm />}

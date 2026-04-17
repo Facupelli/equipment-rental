@@ -105,9 +105,7 @@ export function PromotionsTable({ promotions }: PromotionsTableProps) {
 							</div>
 						</TableCell>
 						<TableCell className="align-top">
-							<span className="font-semibold text-sm">
-								{formatEffect(promotion)}
-							</span>
+							{formatEffect(promotion)}
 						</TableCell>
 						<TableCell className="text-center text-sm tabular-nums align-top">
 							{promotion.priority}
@@ -183,17 +181,28 @@ function formatApplicability(promotion: PromotionView) {
 
 function formatEffect(promotion: PromotionView) {
 	if (promotion.effect.type === PromotionEffectType.PERCENT_OFF) {
-		return `${promotion.effect.percentage}% off`;
+		return (
+			<span className="font-semibold text-sm">
+				{promotion.effect.percentage}% off
+			</span>
+		);
 	}
 
-	const tiers = promotion.effect.tiers
-		.map((tier) => {
-			const end = tier.toUnits === null ? "+" : `-${tier.toUnits}`;
-			return `${tier.fromUnits}${end}: ${tier.percentage}%`;
-		})
-		.join(" | ");
-
-	return `Tramos ${tiers}`;
+	return (
+		<div className="space-y-1">
+			{promotion.effect.tiers.map((tier, index) => {
+				const range =
+					tier.toUnits === null
+						? `${tier.fromUnits}+ unidades`
+						: `${tier.fromUnits}–${tier.toUnits} unidades`;
+				return (
+					<p key={index} className="text-sm font-semibold">
+						{range}: {tier.percentage}%
+					</p>
+				);
+			})}
+		</div>
+	);
 }
 
 function formatDate(value: string | Date) {
