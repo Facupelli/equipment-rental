@@ -33,6 +33,7 @@ export function AssetsTab() {
 	const { data: items, isPending } = useAssets({
 		productTypeId: id,
 	});
+	const assets = items?.data.flatMap((group) => group.assets) ?? [];
 
 	if (isPending) {
 		return <p className="text-sm text-muted-foreground">Cargando assets...</p>;
@@ -45,7 +46,7 @@ export function AssetsTab() {
 					<h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
 						Assets fisicos{" "}
 						<span className="ml-1 text-foreground">
-							({items?.data.length ?? 0})
+							({assets.length})
 						</span>
 					</h3>
 				</div>
@@ -77,7 +78,7 @@ export function AssetsTab() {
 							</tr>
 						</thead>
 						<tbody className="divide-y">
-							{items === undefined || items.data.length === 0 ? (
+							{assets.length === 0 ? (
 								<tr className="border-b bg-muted/50">
 									<td
 										colSpan={6}
@@ -87,7 +88,7 @@ export function AssetsTab() {
 									</td>
 								</tr>
 							) : (
-								items.data.map((item) => (
+								assets.map((item) => (
 									<PhysicalItemRow
 										key={item.id}
 										item={item}

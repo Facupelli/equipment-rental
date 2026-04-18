@@ -1,11 +1,10 @@
 import type {
-	AssetResponseDto,
+	GroupedAssetsResponseDto,
 	CreateAssetAssignmentsResponseDto,
 	CreateAssetDto,
 	CreateBlackoutAssignmentsDto,
 	CreateMaintenanceAssignmentsDto,
 	GetAssetsQuery,
-	PaginatedDto,
 	UpdateAssetDto,
 } from "@repo/schemas";
 import {
@@ -26,7 +25,7 @@ import {
 	updateAsset,
 } from "./assets.api";
 
-type PaginatedAssets = PaginatedDto<AssetResponseDto>;
+type GroupedAssets = GroupedAssetsResponseDto;
 
 // -----------------------------------------------------
 // Key Factory
@@ -42,8 +41,8 @@ export const assetKeys = {
 // Types
 // -----------------------------------------------------
 
-type AssetsOptions<TData = PaginatedAssets> = Omit<
-	UseQueryOptions<PaginatedAssets, ProblemDetailsError, TData>,
+type AssetsOptions<TData = GroupedAssets> = Omit<
+	UseQueryOptions<GroupedAssets, ProblemDetailsError, TData>,
 	"queryKey" | "queryFn"
 >;
 
@@ -79,7 +78,7 @@ type AssetAssignmentsMutationOptions<TVariables> = Omit<
 // Hooks
 // -----------------------------------------------------
 
-export function useAssets<TData = PaginatedAssets>(
+export function useAssets<TData = GroupedAssets>(
 	params: GetAssetsQuery = {},
 	options?: AssetsOptions<TData>,
 ) {

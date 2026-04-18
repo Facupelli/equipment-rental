@@ -82,10 +82,13 @@ const sidebarItems: SidebarItem[] = [
 		],
 	},
 	{ name: "Categorías", href: "/dashboard/catalog/categories" },
-	{ name: "Productos", href: "/dashboard/catalog/products" },
+	{
+		name: "Productos",
+		href: "/dashboard/catalog/products",
+		children: [{ name: "Assets", href: "/dashboard/inventory/assets" }],
+	},
 	{ name: "Combos", href: "/dashboard/catalog/bundles" },
 	{ name: "Promociones", href: "/dashboard/promotions" },
-	{ name: "Activos Físicos", href: "/dashboard/inventory/assets" },
 	{ name: "Dueños de Equipo", href: "/dashboard/owners" },
 	{ name: "Depósitos", href: "/dashboard/locations" },
 	{ name: "Ajustes", href: "/dashboard/settings" },
@@ -111,19 +114,39 @@ function DashboardLayout() {
 					</div>
 
 					{/* Nav links */}
-					<div className="grid gap-y-4 overflow-y-auto">
+					<nav className="flex flex-col gap-y-0.5 overflow-y-auto">
 						{sidebarItems.map((item) => (
-							<div key={item.name} className="space-y-4">
+							<div key={item.name}>
 								{item.href ? (
-									<Link to={item.href}>{item.name}</Link>
+									<Link
+										to={item.href}
+										className="block rounded-md px-3 py-1.5 text-sm font-medium text-neutral-400 transition-colors hover:bg-white/5 hover:text-white"
+										activeProps={{
+											className:
+												"block rounded-md px-3 py-1.5 text-sm font-medium bg-white/10 text-white transition-colors",
+										}}
+										activeOptions={{ exact: true }}
+									>
+										{item.name}
+									</Link>
 								) : (
-									<p>{item.name}</p>
+									<p className="px-3 py-1.5 text-sm font-medium text-neutral-400">
+										{item.name}
+									</p>
 								)}
 
 								{item.children ? (
-									<div className="ml-4 grid gap-y-2 border-l border-white/10 pl-3 text-sm text-neutral-400">
+									<div className="ml-3 mt-0.5 border-l border-white/10 pl-3">
 										{item.children.map((child) => (
-											<Link to={child.href} key={child.href}>
+											<Link
+												key={child.href}
+												to={child.href}
+												className="block py-1 text-sm text-neutral-400 transition-colors hover:text-neutral-300"
+												activeProps={{
+													className:
+														"block py-1 text-sm font-medium text-white transition-colors",
+												}}
+											>
 												{child.name}
 											</Link>
 										))}
@@ -131,7 +154,7 @@ function DashboardLayout() {
 								) : null}
 							</div>
 						))}
-					</div>
+					</nav>
 
 					{/* Profile popover — pinned to bottom via mt-auto */}
 					<div className="mt-auto">

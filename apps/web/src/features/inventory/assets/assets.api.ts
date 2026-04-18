@@ -1,5 +1,5 @@
 import {
-	type AssetResponseDto,
+	type AssetGroupResponseDto,
 	type CreateAssetAssignmentsResponseDto,
 	type CreateAssetDto,
 	type CreateBlackoutAssignmentsDto,
@@ -8,8 +8,8 @@ import {
 	createBlackoutAssignmentsSchema,
 	createMaintenanceAssignmentsSchema,
 	type GetAssetsQuery,
+	type GroupedAssetsResponseDto,
 	getAssetsQuerySchema,
-	type PaginatedDto,
 	type ProblemDetails,
 	type UpdateAssetDto,
 	updateAssetSchema,
@@ -42,8 +42,8 @@ export const createAsset = createServerFn({ method: "POST" })
 
 export const getAssets = createServerFn({ method: "GET" })
 	.inputValidator((data: GetAssetsQuery) => getAssetsQuerySchema.parse(data))
-	.handler(async ({ data }): Promise<PaginatedDto<AssetResponseDto>> => {
-		const result = await apiFetchPaginated<AssetResponseDto>(apiUrl, {
+	.handler(async ({ data }): Promise<GroupedAssetsResponseDto> => {
+		const result = await apiFetchPaginated<AssetGroupResponseDto>(apiUrl, {
 			method: "GET",
 			params: data,
 		});

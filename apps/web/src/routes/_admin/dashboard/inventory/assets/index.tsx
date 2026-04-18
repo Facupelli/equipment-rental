@@ -1,12 +1,8 @@
-import type { AssetResponseDto, GetAssetsQuery } from "@repo/schemas";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import type { ColumnDef, PaginationState } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import type { GetAssetsQuery } from "@repo/schemas";
+import { createFileRoute } from "@tanstack/react-router";
+import type { PaginationState } from "@tanstack/react-table";
+import { useState } from "react";
 import { useAssets } from "@/features/inventory/assets/assets.queries";
-import {
-	getAssetColumns,
-	getAssetSelectionColumn,
-} from "@/features/inventory/assets/components/aseets-columns";
 import { AssetsTable } from "@/features/inventory/assets/components/assets-table";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
 import { useLocationId } from "@/shared/contexts/location/location.hooks";
@@ -27,14 +23,12 @@ export const Route = createFileRoute("/_admin/dashboard/inventory/assets/")({
 const DEFAULT_PAGINATION: PaginationState = { pageIndex: 0, pageSize: 20 };
 
 function AssetsPage() {
-	const navigate = useNavigate();
 	const locationId = useLocationId();
+	const defaultFilters = { locationId };
 
 	const [pagination, setPagination] =
 		useState<PaginationState>(DEFAULT_PAGINATION);
-	const [filters, setFilters] = useState<GetAssetsQuery>({
-		locationId,
-	});
+	const [filters, setFilters] = useState<GetAssetsQuery>(defaultFilters);
 
 	function handleFiltersChange(next: GetAssetsQuery) {
 		setFilters(next);
@@ -47,36 +41,22 @@ function AssetsPage() {
 		limit: pagination.pageSize,
 	});
 
-	function handleEdit(item: AssetResponseDto) {
-		// navigate({
-		//   to: '/dashboard/inventory/items/$itemId/edit',
-		//   params: { itemId: item.id },
-		// });
-	}
-
-	const columns = [
-		getAssetSelectionColumn(),
-		...getAssetColumns({ onEdit: handleEdit }),
-	];
-
 	return (
 		<div className="space-y-6 p-6">
 			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">
-					Inventory Items
-				</h1>
+				<h1 className="text-2xl font-semibold tracking-tight">Assets</h1>
 				<p className="text-sm text-muted-foreground mt-1">
-					Manage your fleet — serialized assets and bulk stock.
+					Maneja tu equipo — activos físicos.
 				</p>
 			</div>
 
 			<AssetsTable
-				data={data?.data ?? []}
+				groups={data?.data ?? []}
 				meta={data?.meta}
-				columns={columns}
 				pagination={pagination}
 				onPaginationChange={setPagination}
 				filters={filters}
+				defaultFilters={defaultFilters}
 				onFiltersChange={handleFiltersChange}
 				isFetching={isFetching}
 			/>

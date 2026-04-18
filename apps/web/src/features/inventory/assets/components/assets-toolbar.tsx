@@ -1,5 +1,7 @@
-import { Input } from "@/components/ui/input";
+import type { GetAssetsQuery } from "@repo/schemas";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -7,139 +9,159 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { X } from "lucide-react";
-import { InventoryItemStatus } from "@repo/types";
+import { useProducts } from "@/features/catalog/product-types/products.queries";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
-import { useCategories } from "@/features/catalog/product-categories/categories.queries";
-import type { GetAssetsQuery } from "@repo/schemas";
 
-const STATUS_OPTIONS: { value: InventoryItemStatus; label: string }[] = [
-	{ value: InventoryItemStatus.OPERATIONAL, label: "Operational" },
-	{ value: InventoryItemStatus.MAINTENANCE, label: "Maintenance" },
-	{ value: InventoryItemStatus.RETIRED, label: "Retired" },
-];
+const ALL_LOCATIONS_VALUE = "all-locations";
+const ALL_PRODUCT_TYPES_VALUE = "all-product-types";
+const ALL_STATUS_VALUE = "all-statuses";
 
-interface InventoryItemsToolbarProps {
+interface AssetsToolbarProps {
 	filters: GetAssetsQuery;
+	defaultFilters: GetAssetsQuery;
 	onFiltersChange: (filters: GetAssetsQuery) => void;
 }
 
 export function AssetsToolbar({
 	filters,
+	defaultFilters,
 	onFiltersChange,
-}: InventoryItemsToolbarProps) {
-	const { data: categories = [] } = useCategories();
+}: AssetsToolbarProps) {
 	const { data: locations = [] } = useLocations();
+	const { data: productTypesResponse } = useProducts({
+		isActive: true,
+		limit: 200,
+	});
+
+	const productTypes = productTypesResponse?.data ?? [];
 
 	function set(patch: Partial<GetAssetsQuery>) {
 		onFiltersChange({ ...filters, ...patch });
 	}
 
-	const hasActiveFilters = !!(
-		filters.search ||
-		filters.categoryId ||
-		filters.locationId ||
-		filters.status ||
-		filters.includeRetired
-	);
+	function getOptionalSelectValue(
+		value: string | null | undefined,
+		emptyValue: string,
+	): string | undefined {
+		if (value == null || value === emptyValue) {
+			return undefined;
+		}
+
+		return value;
+	}
+
+	const hasActiveFilters =
+		(filters.search ?? "") !== (defaultFilters.search ?? "") ||
+		filters.locationId !== defaultFilters.locationId ||
+		filters.productTypeId !== defaultFilters.productTypeId ||
+		filters.isActive !== defaultFilters.isActive;
 
 	return (
 		<div className="flex flex-wrap items-center gap-3">
 			<Input
-				placeholder="Search by serial or name..."
+				placeholder="Buscar por número de serie o nombre de producto"
 				value={filters.search ?? ""}
 				onChange={(e) => set({ search: e.target.value || undefined })}
-				className="h-9 w-64"
+				className="h-9 w-full sm:w-96"
 			/>
 
 			<Select
-				value={filters.categoryId ?? ""}
-				onValueChange={(val) => set({ categoryId: val || undefined })}
-				items={categories.map((c) => ({
-					value: c.id,
-					label: c.name,
-				}))}
-			>
-				<SelectTrigger className="h-9 w-44">
-					<SelectValue placeholder="Category" />
-				</SelectTrigger>
-				<SelectContent>
-					{categories.map((c) => (
-						<SelectItem key={c.id} value={c.id}>
-							{c.name}
-						</SelectItem>
-					))}
-				</SelectContent>
-			</Select>
-
-			<Select
-				value={filters.locationId ?? ""}
-				onValueChange={(val) => set({ locationId: val || undefined })}
-				items={locations.map((l) => ({
-					value: l.id,
-					label: l.name,
-				}))}
-			>
-				<SelectTrigger className="h-9 w-44">
-					<SelectValue placeholder="Location" />
-				</SelectTrigger>
-				<SelectContent>
-					{locations.map((l) => (
-						<SelectItem key={l.id} value={l.id}>
-							{l.name}
-						</SelectItem>
-					))}
-				</SelectContent>
-			</Select>
-
-			<Select
-				value={filters.status ?? ""}
-				onValueChange={(val) =>
-					set({ status: (val as InventoryItemStatus) || undefined })
+				value={filters.locationId ?? ALL_LOCATIONS_VALUE}
+				onValueChange={(value) =>
+					set({
+						locationId: getOptionalSelectValue(value, ALL_LOCATIONS_VALUE),
+					})
 				}
-				items={STATUS_OPTIONS}
+				items={locations.map((location) => ({
+					value: location.id,
+					label: location.name,
+				}))}
 			>
-				<SelectTrigger className="h-9 w-40">
+				<SelectTrigger className="h-9 w-full sm:w-52">
+					<SelectValue placeholder="All locations" />
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value={ALL_LOCATIONS_VALUE}>All locations</SelectItem>
+					{locations.map((location) => (
+						<SelectItem key={location.id} value={location.id}>
+							{location.name}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+
+			<Select
+				value={filters.productTypeId ?? ALL_PRODUCT_TYPES_VALUE}
+				onValueChange={(value) =>
+					set({
+						productTypeId: getOptionalSelectValue(
+							value,
+							ALL_PRODUCT_TYPES_VALUE,
+						),
+					})
+				}
+				items={productTypes.map((productType) => ({
+					value: productType.id,
+					label: productType.name,
+				}))}
+			>
+				<SelectTrigger className="h-9 w-full sm:w-56">
+					<SelectValue placeholder="All product types" />
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value={ALL_PRODUCT_TYPES_VALUE}>
+						All product types
+					</SelectItem>
+					{productTypes.map((productType) => (
+						<SelectItem key={productType.id} value={productType.id}>
+							{productType.name}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+
+			<Select
+				value={
+					filters.isActive === undefined
+						? ALL_STATUS_VALUE
+						: filters.isActive
+							? "active"
+							: "inactive"
+				}
+				onValueChange={(value) =>
+					set({
+						isActive:
+							value == null || value === ALL_STATUS_VALUE
+								? undefined
+								: value === "active",
+					})
+				}
+				items={[
+					{ value: "active", label: "Active" },
+					{ value: "inactive", label: "Inactive" },
+				]}
+			>
+				<SelectTrigger className="h-9 w-full sm:w-40">
 					<SelectValue placeholder="Status" />
 				</SelectTrigger>
 				<SelectContent>
-					{STATUS_OPTIONS.map((s) => (
-						<SelectItem key={s.value} value={s.value}>
-							{s.label}
-						</SelectItem>
-					))}
+					<SelectItem value={ALL_STATUS_VALUE}>All statuses</SelectItem>
+					<SelectItem value="active">Active</SelectItem>
+					<SelectItem value="inactive">Inactive</SelectItem>
 				</SelectContent>
 			</Select>
 
-			<div className="flex items-center gap-2 ml-1">
-				<Switch
-					id="include-retired"
-					checked={filters.includeRetired ?? false}
-					onCheckedChange={(checked) =>
-						set({ includeRetired: checked || undefined })
-					}
-				/>
-				<Label
-					htmlFor="include-retired"
-					className="text-sm text-muted-foreground cursor-pointer"
-				>
-					Show retired
-				</Label>
-			</div>
-
-			{hasActiveFilters && (
+			{hasActiveFilters ? (
 				<Button
 					variant="ghost"
 					size="sm"
-					onClick={() => onFiltersChange({})}
+					onClick={() => onFiltersChange(defaultFilters)}
 					className="h-9 px-2 text-muted-foreground"
 				>
 					<X className="mr-1 h-4 w-4" />
 					Clear
 				</Button>
-			)}
+			) : null}
 		</div>
 	);
 }

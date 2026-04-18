@@ -1,16 +1,8 @@
-import { assetResponseSchema } from '@repo/schemas';
+import { groupedAssetsResponseSchema } from '@repo/schemas';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-export const GetAssetsResponseSchema = z.object({
-  data: z.array(assetResponseSchema),
-  meta: z.object({
-    total: z.number().int(),
-    page: z.number().int(),
-    limit: z.number().int(),
-    totalPages: z.number().int(),
-  }),
-});
+export const GetAssetsResponseSchema = groupedAssetsResponseSchema;
 
 export class GetAssetsResponseDto extends createZodDto(GetAssetsResponseSchema) {}
 

@@ -1,5 +1,6 @@
 import { TrackingMode } from "@repo/types";
 import { z } from "zod";
+import { paginatedSchema } from "../api/api.schema";
 
 export const assetLocationResponseSchema = z.object({
   id: z.uuid(),
@@ -32,6 +33,16 @@ export const assetResponseSchema = z.object({
   owner: assetOwnerResponseSchema.nullable(),
 });
 
+export const assetGroupResponseSchema = z.object({
+	productType: assetProductTypeResponseSchema,
+	assetCount: z.number().int().nonnegative(),
+	assets: z.array(assetResponseSchema),
+});
+
+export const groupedAssetsResponseSchema = paginatedSchema(
+	assetGroupResponseSchema,
+);
+
 export const getAssetsQuerySchema = z.object({
   locationId: z.uuid().optional(),
   productTypeId: z.uuid().optional(),
@@ -47,4 +58,6 @@ export type AssetProductTypeResponse = z.infer<
 >;
 export type AssetOwnerResponse = z.infer<typeof assetOwnerResponseSchema>;
 export type AssetResponseDto = z.infer<typeof assetResponseSchema>;
+export type AssetGroupResponseDto = z.infer<typeof assetGroupResponseSchema>;
+export type GroupedAssetsResponseDto = z.infer<typeof groupedAssetsResponseSchema>;
 export type GetAssetsQuery = z.infer<typeof getAssetsQuerySchema>;
