@@ -8,6 +8,7 @@ export * from "./catalog/product-type/product-type-response.schema";
 export * from "./customer/customer-profile.schema";
 export * from "./customer/customer-response.schema";
 export * from "./inventory/asset.schema";
+export * from "./inventory/asset-assignment.schema";
 export * from "./inventory/asset-response.schema";
 export * from "./order/get-order-by-id-response.schema";
 export * from "./order/get-orders-schedule-response.schema";

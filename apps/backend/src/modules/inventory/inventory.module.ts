@@ -8,6 +8,10 @@ import { DeactivateAssetService } from './application/commands/deactivate-asset/
 import { DeactivateAssetHttpController } from './application/commands/deactivate-asset/deactivate-asset.http.controller';
 import { SoftDeleteAssetService } from './application/commands/soft-delete-asset/soft-delete-asset.service';
 import { SoftDeleteAssetHttpController } from './application/commands/soft-delete-asset/soft-delete-asset.http.controller';
+import { CreateBlackoutAssignmentsService } from './application/commands/create-blackout-assignments/create-blackout-assignments.service';
+import { CreateBlackoutAssignmentsHttpController } from './application/commands/create-blackout-assignments/create-blackout-assignments.http.controller';
+import { CreateMaintenanceAssignmentsService } from './application/commands/create-maintenance-assignments/create-maintenance-assignments.service';
+import { CreateMaintenanceAssignmentsHttpController } from './application/commands/create-maintenance-assignments/create-maintenance-assignments.http.controller';
 import { GetAssetByIdQueryHandler } from './application/queries/get-asset-by-id/get-asset-by-id.query-handler';
 import { GetAssetsQueryHandler } from './application/queries/get-assets/get-assets.query-handler';
 import { FindAssetByIdQueryHandler } from './application/queries/find-asset-by-id/find-asset-by-id.query-handler';
@@ -22,10 +26,18 @@ import { GetAssetByIdHttpController } from './application/queries/get-asset-by-i
 import { GetAvailableAssetCountsQueryHandler } from './application/queries/get-available-asset-counts/get-available-asset-counts.query-handler';
 import { GetProductTypeAssetOwnershipQueryHandler } from './application/queries/get-product-type-asset-ownership/get-product-type-asset-ownership.query-handler';
 import { GetProductTypesAssetOwnershipQueryHandler } from './application/queries/get-product-types-asset-ownership/get-product-types-asset-ownership.query-handler';
+import { SaveInternalAssetAssignmentsService } from './application/commands/shared/save-internal-asset-assignments.service';
 
 const repositories = [AssetRepository, AssetAssignmentRepository];
 
-const commandHandlers = [CreateAssetService, UpdateAssetService, DeactivateAssetService, SoftDeleteAssetService];
+const commandHandlers = [
+  CreateAssetService,
+  UpdateAssetService,
+  DeactivateAssetService,
+  SoftDeleteAssetService,
+  CreateBlackoutAssignmentsService,
+  CreateMaintenanceAssignmentsService,
+];
 
 const queryHandlers = [
   FindAssetByIdQueryHandler,
@@ -43,6 +55,8 @@ const queryHandlers = [
     UpdateAssetHttpController,
     DeactivateAssetHttpController,
     SoftDeleteAssetHttpController,
+    CreateBlackoutAssignmentsHttpController,
+    CreateMaintenanceAssignmentsHttpController,
     GetAssetsHttpController,
     GetAssetByIdHttpController,
   ],
@@ -52,6 +66,7 @@ const queryHandlers = [
     ...queryHandlers,
     AssetAvailabilityService,
     AssetSerialNumberService,
+    SaveInternalAssetAssignmentsService,
     { provide: InventoryPublicApi, useClass: InventoryFacade },
   ],
   exports: [InventoryPublicApi],

@@ -12,6 +12,18 @@ export class AssetNotAvailableError extends InventoryError {
   }
 }
 
+export class InvalidAssetSelectionError extends InventoryError {
+  constructor(public readonly assetIds: string[]) {
+    super(`Invalid asset selection: [${assetIds.join(', ')}].`);
+  }
+}
+
+export class AssetAssignmentConflictError extends InventoryError {
+  constructor(public readonly assetIds: string[]) {
+    super(`Asset assignment conflict for assets: [${assetIds.join(', ')}].`);
+  }
+}
+
 export class SerialNumberRequiredError extends InventoryError {
   constructor(productTypeId: string) {
     super(`A serial number is required for assets of product type '${productTypeId}' with IDENTIFIED tracking mode.`);
