@@ -1,5 +1,8 @@
+import type { AssetResponseDto } from "@repo/schemas";
 import type { ColumnDef } from "@tanstack/react-table";
+import { MoreHorizontal, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -7,16 +10,14 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil } from "lucide-react";
-import type { AssetResponse } from "@repo/schemas";
 
 // ---------------------------------------------------------------------------
 // Actions cell
 // ---------------------------------------------------------------------------
 
 interface ActionsProps {
-	item: AssetResponse;
-	onEdit: (item: AssetResponse) => void;
+	item: AssetResponseDto;
+	onEdit: (item: AssetResponseDto) => void;
 }
 
 function ActionsCell({ item, onEdit }: ActionsProps) {
@@ -46,12 +47,40 @@ function ActionsCell({ item, onEdit }: ActionsProps) {
 // ---------------------------------------------------------------------------
 
 interface ColumnOptions {
-	onEdit: (item: AssetResponse) => void;
+	onEdit: (item: AssetResponseDto) => void;
+}
+
+export function getAssetSelectionColumn(): ColumnDef<AssetResponseDto> {
+	return {
+		id: "select",
+		header: ({ table }) => (
+			<div className="flex items-center justify-center">
+				<Checkbox
+					checked={table.getIsAllPageRowsSelected()}
+					indeterminate={table.getIsSomePageRowsSelected()}
+					onCheckedChange={table.getToggleAllPageRowsSelectedHandler()}
+					aria-label="Seleccionar assets de la pagina"
+				/>
+			</div>
+		),
+		cell: ({ row }) => (
+			<div className="flex items-center justify-center">
+				<Checkbox
+					checked={row.getIsSelected()}
+					onCheckedChange={row.getToggleSelectedHandler()}
+					disabled={!row.getCanSelect()}
+					aria-label={`Seleccionar asset ${row.original.id}`}
+				/>
+			</div>
+		),
+		enableSorting: false,
+		enableHiding: false,
+	};
 }
 
 export function getAssetColumns({
 	onEdit,
-}: ColumnOptions): ColumnDef<AssetResponse>[] {
+}: ColumnOptions): ColumnDef<AssetResponseDto>[] {
 	return [
 		{
 			id: "serial",

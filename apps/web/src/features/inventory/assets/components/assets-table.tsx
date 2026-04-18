@@ -1,14 +1,22 @@
-import type { ColumnDef, PaginationState } from "@tanstack/react-table";
+import type {
+	AssetResponseDto,
+	GetAssetsQuery,
+	PaginationMeta,
+} from "@repo/schemas";
+import type {
+	ColumnDef,
+	PaginationState,
+	RowSelectionState,
+} from "@tanstack/react-table";
 import {
 	flexRender,
 	getCoreRowModel,
 	useReactTable,
 } from "@tanstack/react-table";
-import type {
-	AssetResponse,
-	GetAssetsQuery,
-	PaginationMeta,
-} from "@repo/schemas";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -17,15 +25,13 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AssetsToolbar } from "./assets-toolbar";
+import { BulkAssetAssignmentDialog } from "./bulk-asset-assignment-dialog";
 
 interface InventoryItemsTableProps {
-	data: AssetResponse[];
+	data: AssetResponseDto[];
 	meta: PaginationMeta | undefined;
-	columns: ColumnDef<AssetResponse>[];
+	columns: ColumnDef<AssetResponseDto>[];
 	pagination: PaginationState;
 	onPaginationChange: React.Dispatch<React.SetStateAction<PaginationState>>;
 	filters: GetAssetsQuery;
@@ -42,15 +48,20 @@ function TableSkeleton({
 }) {
 	return (
 		<>
-			{Array.from({ length: rows }).map((_, i) => (
-				<TableRow key={i}>
-					{Array.from({ length: cols }).map((_, j) => (
-						<TableCell key={j}>
-							<Skeleton className="h-4 w-full" />
-						</TableCell>
-					))}
-				</TableRow>
-			))}
+			{Array.from({ length: rows }, (_, rowIndex) => `row-${rowIndex}`).map(
+				(rowKey) => (
+					<TableRow key={rowKey}>
+						{Array.from(
+							{ length: cols },
+							(_, cellIndex) => `${rowKey}-cell-${cellIndex}`,
+						).map((cellKey) => (
+							<TableCell key={cellKey}>
+								<Skeleton className="h-4 w-full" />
+							</TableCell>
+						))}
+					</TableRow>
+				),
+			)}
 		</>
 	);
 }
@@ -65,20 +76,75 @@ export function AssetsTable({
 	onFiltersChange,
 	isFetching,
 }: InventoryItemsTableProps) {
+	const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+	const [activeDialog, setActiveDialog] = useState<
+		"blackout" | "maintenance" | null
+	>(null);
+
+	const selectedAssetIds = Object.entries(rowSelection)
+		.filter(([, isSelected]) => Boolean(isSelected))
+		.map(([assetId]) => assetId);
+
 	const table = useReactTable({
 		data,
 		columns,
-		state: { pagination },
+		state: { pagination, rowSelection },
 		pageCount: meta?.totalPages ?? -1,
 		manualPagination: true,
 		manualFiltering: true,
 		onPaginationChange,
+		onRowSelectionChange: setRowSelection,
 		getCoreRowModel: getCoreRowModel(),
+		getRowId: (row) => row.id,
+		enableRowSelection: true,
 	});
+
+	function handleSelectionChange(updater: (previous: string[]) => string[]) {
+		setRowSelection((previous) => {
+			const nextSelectedIds = updater(
+				Object.entries(previous)
+					.filter(([, isSelected]) => Boolean(isSelected))
+					.map(([assetId]) => assetId),
+			);
+
+			return nextSelectedIds.reduce<RowSelectionState>((acc, assetId) => {
+				acc[assetId] = true;
+				return acc;
+			}, {});
+		});
+	}
+
+	function clearSelection() {
+		setRowSelection({});
+	}
 
 	return (
 		<div className="space-y-4">
 			<AssetsToolbar filters={filters} onFiltersChange={onFiltersChange} />
+
+			{selectedAssetIds.length > 0 ? (
+				<div className="bg-muted/40 flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+					<p className="text-sm text-muted-foreground">
+						{selectedAssetIds.length} asset
+						{selectedAssetIds.length === 1 ? "" : "s"} seleccionados.
+					</p>
+					<div className="flex flex-wrap gap-2">
+						<Button size="sm" onClick={() => setActiveDialog("blackout")}>
+							Create blackout
+						</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							onClick={() => setActiveDialog("maintenance")}
+						>
+							Create maintenance
+						</Button>
+						<Button size="sm" variant="ghost" onClick={clearSelection}>
+							Clear selection
+						</Button>
+					</div>
+				</div>
+			) : null}
 
 			<div className="rounded-md border">
 				<Table>
@@ -113,7 +179,10 @@ export function AssetsTable({
 							</TableRow>
 						) : (
 							table.getRowModel().rows.map((row) => (
-								<TableRow key={row.id}>
+								<TableRow
+									key={row.id}
+									data-state={row.getIsSelected() ? "selected" : undefined}
+								>
 									{row.getVisibleCells().map((cell) => (
 										<TableCell key={cell.id}>
 											{flexRender(
@@ -156,6 +225,21 @@ export function AssetsTable({
 					</Button>
 				</div>
 			</div>
+
+			{activeDialog ? (
+				<BulkAssetAssignmentDialog
+					mode={activeDialog}
+					open={activeDialog !== null}
+					onOpenChange={(open) => {
+						if (!open) {
+							setActiveDialog(null);
+						}
+					}}
+					selectedAssetIds={selectedAssetIds}
+					onSelectionChange={handleSelectionChange}
+					onSuccess={clearSelection}
+				/>
+			) : null}
 		</div>
 	);
 }

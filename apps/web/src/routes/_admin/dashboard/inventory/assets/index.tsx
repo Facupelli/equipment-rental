@@ -1,12 +1,15 @@
-import { useAssets } from "@/features/inventory/assets/assets.queries";
-import { AssetsTable } from "@/features/inventory/assets/components/assets-table";
 import type { AssetResponseDto, GetAssetsQuery } from "@repo/schemas";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import type { PaginationState } from "@tanstack/react-table";
-import { useState } from "react";
-import { getAssetColumns } from "@/features/inventory/assets/components/aseets-columns";
-import { useLocationId } from "@/shared/contexts/location/location.hooks";
+import type { ColumnDef, PaginationState } from "@tanstack/react-table";
+import { useMemo, useState } from "react";
+import { useAssets } from "@/features/inventory/assets/assets.queries";
+import {
+	getAssetColumns,
+	getAssetSelectionColumn,
+} from "@/features/inventory/assets/components/aseets-columns";
+import { AssetsTable } from "@/features/inventory/assets/components/assets-table";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
+import { useLocationId } from "@/shared/contexts/location/location.hooks";
 
 export const Route = createFileRoute("/_admin/dashboard/inventory/assets/")({
 	errorComponent: ({ error }) => {
@@ -51,9 +54,10 @@ function AssetsPage() {
 		// });
 	}
 
-	const columns = getAssetColumns({
-		onEdit: handleEdit,
-	});
+	const columns = [
+		getAssetSelectionColumn(),
+		...getAssetColumns({ onEdit: handleEdit }),
+	];
 
 	return (
 		<div className="space-y-6 p-6">

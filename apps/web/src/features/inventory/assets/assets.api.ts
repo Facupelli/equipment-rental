@@ -1,7 +1,12 @@
 import {
 	type AssetResponseDto,
+	type CreateAssetAssignmentsResponseDto,
 	type CreateAssetDto,
+	type CreateBlackoutAssignmentsDto,
+	type CreateMaintenanceAssignmentsDto,
 	createAssetSchema,
+	createBlackoutAssignmentsSchema,
+	createMaintenanceAssignmentsSchema,
 	type GetAssetsQuery,
 	getAssetsQuerySchema,
 	type PaginatedDto,
@@ -51,7 +56,7 @@ export const updateAsset = createServerFn({ method: "POST" })
 		assetId: data.assetId,
 		dto: updateAssetSchema.parse(data.dto),
 	}))
-	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+	.handler(async ({ data }): Promise<undefined | { error: ProblemDetails }> => {
 		try {
 			await apiFetch<void>(`${apiUrl}/${data.assetId}`, {
 				method: "PATCH",
@@ -67,7 +72,7 @@ export const updateAsset = createServerFn({ method: "POST" })
 
 export const deleteAsset = createServerFn({ method: "POST" })
 	.inputValidator((data: { assetId: string }) => data)
-	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+	.handler(async ({ data }): Promise<undefined | { error: ProblemDetails }> => {
 		try {
 			await apiFetch<void>(`${apiUrl}/${data.assetId}`, {
 				method: "DELETE",
@@ -82,7 +87,7 @@ export const deleteAsset = createServerFn({ method: "POST" })
 
 export const deactivateAsset = createServerFn({ method: "POST" })
 	.inputValidator((data: { assetId: string }) => data)
-	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+	.handler(async ({ data }): Promise<undefined | { error: ProblemDetails }> => {
 		try {
 			await apiFetch<void>(`${apiUrl}/${data.assetId}/deactivate`, {
 				method: "PATCH",
@@ -94,3 +99,57 @@ export const deactivateAsset = createServerFn({ method: "POST" })
 			throw error;
 		}
 	});
+
+export const createBlackoutAssignments = createServerFn({ method: "POST" })
+	.inputValidator((data: CreateBlackoutAssignmentsDto) =>
+		createBlackoutAssignmentsSchema.parse(data),
+	)
+	.handler(
+		async ({
+			data,
+		}): Promise<
+			CreateAssetAssignmentsResponseDto | { error: ProblemDetails }
+		> => {
+			try {
+				return await apiFetch<CreateAssetAssignmentsResponseDto>(
+					"/asset-assignments/blackouts",
+					{
+						method: "POST",
+						body: data,
+					},
+				);
+			} catch (error) {
+				if (error instanceof ProblemDetailsError) {
+					return { error: error.problemDetails };
+				}
+				throw error;
+			}
+		},
+	);
+
+export const createMaintenanceAssignments = createServerFn({ method: "POST" })
+	.inputValidator((data: CreateMaintenanceAssignmentsDto) =>
+		createMaintenanceAssignmentsSchema.parse(data),
+	)
+	.handler(
+		async ({
+			data,
+		}): Promise<
+			CreateAssetAssignmentsResponseDto | { error: ProblemDetails }
+		> => {
+			try {
+				return await apiFetch<CreateAssetAssignmentsResponseDto>(
+					"/asset-assignments/maintenance",
+					{
+						method: "POST",
+						body: data,
+					},
+				);
+			} catch (error) {
+				if (error instanceof ProblemDetailsError) {
+					return { error: error.problemDetails };
+				}
+				throw error;
+			}
+		},
+	);

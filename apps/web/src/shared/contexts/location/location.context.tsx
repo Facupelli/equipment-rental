@@ -1,10 +1,12 @@
-import { createStore, useStore, type StoreApi } from "zustand";
-import React from "react";
 import type { LocationListResponse } from "@repo/schemas";
+import type React from "react";
+import { createContext, useContext, useState } from "react";
+import { createStore, type StoreApi, useStore } from "zustand";
 import { LOCATION_STORAGE_KEY, type LocationStore } from "./location.types";
 
-const LocationStoreContext =
-	React.createContext<StoreApi<LocationStore> | null>(null);
+const LocationStoreContext = createContext<StoreApi<LocationStore> | null>(
+	null,
+);
 
 type LocationStoreProviderProps = {
 	locations: LocationListResponse;
@@ -15,7 +17,7 @@ export function LocationStoreProvider({
 	locations,
 	children,
 }: LocationStoreProviderProps) {
-	const [store] = React.useState(() => {
+	const [store] = useState(() => {
 		const persisted =
 			typeof window !== "undefined"
 				? localStorage.getItem(LOCATION_STORAGE_KEY)
@@ -45,7 +47,7 @@ export function LocationStoreProvider({
 }
 
 function useLocationStore<T>(selector: (state: LocationStore) => T): T {
-	const store = React.useContext(LocationStoreContext);
+	const store = useContext(LocationStoreContext);
 	if (!store) {
 		throw new Error(
 			"useLocationStore must be used within a LocationStoreProvider",

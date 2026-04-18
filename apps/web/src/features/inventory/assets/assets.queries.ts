@@ -1,6 +1,9 @@
 import type {
 	AssetResponseDto,
+	CreateAssetAssignmentsResponseDto,
 	CreateAssetDto,
+	CreateBlackoutAssignmentsDto,
+	CreateMaintenanceAssignmentsDto,
 	GetAssetsQuery,
 	PaginatedDto,
 	UpdateAssetDto,
@@ -15,6 +18,8 @@ import {
 import { ProblemDetailsError } from "@/shared/errors";
 import {
 	createAsset,
+	createBlackoutAssignments,
+	createMaintenanceAssignments,
 	deactivateAsset,
 	deleteAsset,
 	getAssets,
@@ -58,6 +63,15 @@ type UpdateAssetMutationOptions = Omit<
 
 type AssetActionMutationOptions = Omit<
 	UseMutationOptions<void, ProblemDetailsError, { assetId: string }>,
+	"mutationFn"
+>;
+
+type AssetAssignmentsMutationOptions<TVariables> = Omit<
+	UseMutationOptions<
+		CreateAssetAssignmentsResponseDto,
+		ProblemDetailsError,
+		TVariables
+	>,
 	"mutationFn"
 >;
 
@@ -140,4 +154,56 @@ export function useDeactivateAsset(options?: AssetActionMutationOptions) {
 			invalidates: assetKeys.lists(),
 		},
 	});
+}
+
+export function useCreateBlackoutAssignments(
+	options?: AssetAssignmentsMutationOptions<CreateBlackoutAssignmentsDto>,
+) {
+	return useMutation<
+		CreateAssetAssignmentsResponseDto,
+		ProblemDetailsError,
+		CreateBlackoutAssignmentsDto
+	>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await createBlackoutAssignments({ data });
+			if (hasMutationError(result)) {
+				throw new ProblemDetailsError(result.error);
+			}
+			return result;
+		},
+		meta: {
+			invalidates: assetKeys.lists(),
+		},
+	});
+}
+
+export function useCreateMaintenanceAssignments(
+	options?: AssetAssignmentsMutationOptions<CreateMaintenanceAssignmentsDto>,
+) {
+	return useMutation<
+		CreateAssetAssignmentsResponseDto,
+		ProblemDetailsError,
+		CreateMaintenanceAssignmentsDto
+	>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await createMaintenanceAssignments({ data });
+			if (hasMutationError(result)) {
+				throw new ProblemDetailsError(result.error);
+			}
+			return result;
+		},
+		meta: {
+			invalidates: assetKeys.lists(),
+		},
+	});
+}
+
+function hasMutationError(
+	result:
+		| CreateAssetAssignmentsResponseDto
+		| { error: ProblemDetailsError["problemDetails"] },
+): result is { error: ProblemDetailsError["problemDetails"] } {
+	return typeof result === "object" && result !== null && "error" in result;
 }
