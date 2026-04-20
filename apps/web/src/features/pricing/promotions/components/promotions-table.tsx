@@ -1,4 +1,5 @@
 import type { PromotionView } from "@repo/schemas";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import {
 	PromotionActivationType,
 	PromotionApplicabilityTarget,
@@ -7,6 +8,13 @@ import {
 	PromotionStackingType,
 } from "@repo/types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import {
 	Table,
@@ -19,6 +27,8 @@ import {
 
 interface PromotionsTableProps {
 	promotions: PromotionView[];
+	onEdit: (promotion: PromotionView) => void;
+	onDelete: (promotion: PromotionView) => void;
 }
 
 const ACTIVATION_TYPE_LABELS: Record<PromotionActivationType, string> = {
@@ -36,7 +46,11 @@ const APPLICABILITY_LABELS: Record<PromotionApplicabilityTarget, string> = {
 	[PromotionApplicabilityTarget.BUNDLE]: "Bundles",
 };
 
-export function PromotionsTable({ promotions }: PromotionsTableProps) {
+export function PromotionsTable({
+	promotions,
+	onDelete,
+	onEdit,
+}: PromotionsTableProps) {
 	return (
 		<Table>
 			<TableHeader>
@@ -46,8 +60,9 @@ export function PromotionsTable({ promotions }: PromotionsTableProps) {
 					<TableHead>Aplicabilidad</TableHead>
 					<TableHead>Efecto</TableHead>
 					<TableHead className="text-center">Prioridad</TableHead>
-					<TableHead className="text-center">Stacking</TableHead>
+					<TableHead className="text-center">Acumulacion</TableHead>
 					<TableHead className="text-right">Activa</TableHead>
+					<TableHead className="w-16 text-right">Acciones</TableHead>
 				</TableRow>
 			</TableHeader>
 			<TableBody>
@@ -93,7 +108,7 @@ export function PromotionsTable({ promotions }: PromotionsTableProps) {
 									<p>
 										Excluye{" "}
 										{promotion.applicability.excludedProductTypeIds.length}{" "}
-										product types
+										tipos de producto
 									</p>
 								)}
 								{promotion.applicability.excludedBundleIds.length > 0 && (
@@ -130,10 +145,50 @@ export function PromotionsTable({ promotions }: PromotionsTableProps) {
 								aria-label="Estado de la promocion"
 							/>
 						</TableCell>
+						<TableCell className="text-right align-top">
+							<RowActions
+								onEdit={() => onEdit(promotion)}
+								onDelete={() => onDelete(promotion)}
+							/>
+						</TableCell>
 					</TableRow>
 				))}
 			</TableBody>
 		</Table>
+	);
+}
+
+function RowActions({
+	onDelete,
+	onEdit,
+}: {
+	onDelete: () => void;
+	onEdit: () => void;
+}) {
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon"
+						aria-label="Abrir acciones de la promocion"
+					>
+						<MoreHorizontal className="h-4 w-4" />
+					</Button>
+				}
+			/>
+			<DropdownMenuContent align="end" className="w-40">
+				<DropdownMenuItem onClick={onEdit}>
+					<Pencil className="h-4 w-4" />
+					Editar
+				</DropdownMenuItem>
+				<DropdownMenuItem variant="destructive" onClick={onDelete}>
+					<Trash2 className="h-4 w-4" />
+					Eliminar
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
 
@@ -165,7 +220,7 @@ function formatCondition(condition: PromotionView["conditions"][number]) {
 		case PromotionConditionType.RENTAL_DURATION_MIN:
 			return `Duracion minima de ${condition.minUnits} unidad(es)`;
 		case PromotionConditionType.MIN_PRODUCT_QUANTITY:
-			return `${condition.minQuantity}+ producto(s) standalone`;
+			return `${condition.minQuantity}+ producto(s) individuales`;
 		case PromotionConditionType.MIN_PRODUCT_UNIT_PRICE:
 			return `Producto con precio base minimo de ${condition.amount} ${condition.currency}`;
 		default:
@@ -183,7 +238,7 @@ function formatEffect(promotion: PromotionView) {
 	if (promotion.effect.type === PromotionEffectType.PERCENT_OFF) {
 		return (
 			<span className="font-semibold text-sm">
-				{promotion.effect.percentage}% off
+				{promotion.effect.percentage}% de descuento
 			</span>
 		);
 	}

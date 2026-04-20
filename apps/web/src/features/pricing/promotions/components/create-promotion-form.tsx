@@ -39,12 +39,11 @@ import {
 	defaultConditionFor,
 	defaultEffectFor,
 	type PromotionConditionFormValues,
+	type PromotionFormValues,
 	promotionFormDefaults,
 	promotionFormSchema,
 	toCreatePromotionDto,
 } from "../schemas/promotion-form.schema";
-
-const formId = "create-promotion";
 
 const ACTIVATION_TYPE_LABELS: Record<PromotionActivationType, string> = {
 	[PromotionActivationType.AUTOMATIC]: "Automatica",
@@ -135,24 +134,34 @@ type SelectItemOption<T extends string> = {
 	value: T;
 };
 
-function usePromotionForm(onSuccess: () => void | Promise<void>) {
-	const { mutateAsync: createPromotion, isPending } = useCreatePromotion();
-
+function usePromotionForm({
+	defaultValues,
+	onSubmit,
+}: Pick<PromotionFormProps, "defaultValues" | "onSubmit">) {
 	const form = useForm({
-		defaultValues: promotionFormDefaults,
+		defaultValues,
 		validators: {
 			onSubmit: promotionFormSchema,
 		},
 		onSubmit: async ({ value }) => {
-			await createPromotion(toCreatePromotionDto(value));
-			await onSuccess();
+			await onSubmit(value);
 		},
 	});
 
-	return { form, isPending };
+	return { form };
 }
 
 type PromotionFormApi = ReturnType<typeof usePromotionForm>["form"];
+
+interface PromotionFormProps {
+	formId: string;
+	defaultValues: PromotionFormValues;
+	onCancel: () => void;
+	onSubmit: (values: PromotionFormValues) => Promise<void>;
+	isPending: boolean;
+	submitLabel: string;
+	pendingLabel: string;
+}
 
 const activationTypeItems = toSelectItems(ACTIVATION_TYPE_LABELS);
 const stackingTypeItems = toSelectItems(STACKING_TYPE_LABELS);
@@ -164,14 +173,16 @@ const conditionTypeItems = Object.entries(CONDITION_TYPE_META).map(
 	}),
 );
 
-export function CreatePromotionForm({
+export function PromotionForm({
+	formId,
+	defaultValues,
 	onCancel,
-	onSuccess,
-}: {
-	onCancel: () => void;
-	onSuccess: () => void | Promise<void>;
-}) {
-	const { form, isPending } = usePromotionForm(onSuccess);
+	onSubmit,
+	isPending,
+	submitLabel,
+	pendingLabel,
+}: PromotionFormProps) {
+	const { form } = usePromotionForm({ defaultValues, onSubmit });
 	const [firstConditionType] = conditionTypeItems;
 	const [nextConditionType, setNextConditionType] = useState(
 		firstConditionType?.value ?? PromotionConditionType.BOOKING_WINDOW,
@@ -237,7 +248,7 @@ export function CreatePromotionForm({
 
 								return (
 									<Field data-invalid={isInvalid}>
-										<FieldLabel>Stacking</FieldLabel>
+										<FieldLabel>Acumulacion</FieldLabel>
 										<Select
 											value={field.state.value}
 											onValueChange={(value) => {
@@ -282,7 +293,7 @@ export function CreatePromotionForm({
 
 				<Section
 					title="Aplicabilidad"
-					description="Define si la promocion aplica a productos, bundles o ambos, y que items quedan excluidos."
+					description="Define si la promocion aplica a productos, bundles o ambos, y que elementos quedan excluidos."
 				>
 					<form.Field name="applicability.appliesTo">
 						{(field) => (
@@ -318,7 +329,7 @@ export function CreatePromotionForm({
 													</FieldLabel>
 													<p className="text-muted-foreground text-xs">
 														{target === PromotionApplicabilityTarget.PRODUCT
-															? "Considera lineas de producto standalone."
+															? "Considera lineas de producto individuales."
 															: "Aplica sobre bundles completos."}
 													</p>
 												</div>
@@ -336,14 +347,14 @@ export function CreatePromotionForm({
 					<StringArrayField
 						form={form}
 						name="applicability.excludedProductTypeIds"
-						label="Product type IDs excluidos"
-						description="Usa UUIDs de product types que no deben recibir la promocion."
-						placeholder="UUID del product type"
+						label="IDs de tipos de producto excluidos"
+						description="Usa UUIDs de tipos de producto que no deben recibir la promocion."
+						placeholder="UUID del tipo de producto"
 					/>
 					<StringArrayField
 						form={form}
 						name="applicability.excludedBundleIds"
-						label="Bundle IDs excluidos"
+						label="IDs de bundles excluidos"
 						description="Usa UUIDs de bundles que no deben recibir la promocion."
 						placeholder="UUID del bundle"
 					/>
@@ -542,10 +553,37 @@ export function CreatePromotionForm({
 					Cancelar
 				</Button>
 				<Button type="submit" form={formId} disabled={isPending}>
-					{isPending ? "Creando..." : "Crear promocion"}
+					{isPending ? pendingLabel : submitLabel}
 				</Button>
 			</div>
 		</form>
+	);
+}
+
+const createFormId = "create-promotion";
+
+export function CreatePromotionForm({
+	onCancel,
+	onSuccess,
+}: {
+	onCancel: () => void;
+	onSuccess: () => void | Promise<void>;
+}) {
+	const { mutateAsync: createPromotion, isPending } = useCreatePromotion();
+
+	return (
+		<PromotionForm
+			formId={createFormId}
+			defaultValues={promotionFormDefaults}
+			onCancel={onCancel}
+			onSubmit={async (values) => {
+				await createPromotion(toCreatePromotionDto(values));
+				await onSuccess();
+			}}
+			isPending={isPending}
+			submitLabel="Crear promocion"
+			pendingLabel="Creando..."
+		/>
 	);
 }
 
@@ -763,7 +801,7 @@ function ConditionFields({
 			<StringArrayField
 				form={form}
 				name={`conditions[${index}].customerIds`}
-				label="Customer IDs"
+				label="IDs de clientes"
 				placeholder="UUID del cliente"
 			/>
 		);
@@ -827,9 +865,9 @@ function ConditionFields({
 				form={form}
 				name={`conditions[${index}].minQuantity`}
 				label="Cantidad minima"
-				description="Cuenta solo productos standalone, no componentes de bundles."
-				min={1}
-			/>
+					description="Cuenta solo productos individuales, no componentes de bundles."
+					min={1}
+				/>
 		);
 	}
 

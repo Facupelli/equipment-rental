@@ -1,4 +1,8 @@
-import { createPromotionSchema, type CreatePromotionDto } from "@repo/schemas";
+import {
+	createPromotionSchema,
+	type CreatePromotionDto,
+	type PromotionView,
+} from "@repo/schemas";
 import {
 	PromotionActivationType,
 	PromotionApplicabilityTarget,
@@ -246,6 +250,39 @@ export function toCreatePromotionDto(
 	});
 }
 
+export function promotionToFormValues(
+	promotion: PromotionView,
+): PromotionFormValues {
+	return {
+		name: promotion.name,
+		activationType: promotion.activationType,
+		priority: promotion.priority,
+		stackingType: promotion.stackingType,
+		validFrom: toDateInputValue(promotion.validFrom),
+		validUntil: toDateInputValue(promotion.validUntil),
+		conditions: promotion.conditions.map((condition) => {
+			switch (condition.type) {
+				case PromotionConditionType.BOOKING_WINDOW:
+				case PromotionConditionType.RENTAL_WINDOW:
+					return {
+						...condition,
+						from: toDateInputValue(condition.from),
+						to: toDateInputValue(condition.to),
+					};
+				default:
+					return condition;
+			}
+		}),
+		applicability: {
+			appliesTo: promotion.applicability.appliesTo,
+			excludedProductTypeIds:
+				promotion.applicability.excludedProductTypeIds,
+			excludedBundleIds: promotion.applicability.excludedBundleIds,
+		},
+		effect: promotion.effect,
+	};
+}
+
 function toOptionalDate(value?: string) {
 	if (!value?.trim()) {
 		return undefined;
@@ -256,6 +293,14 @@ function toOptionalDate(value?: string) {
 
 function toDateTime(value: string) {
 	return new Date(value).toISOString();
+}
+
+function toDateInputValue(value: string | Date | null) {
+	if (!value) {
+		return "";
+	}
+
+	return new Date(value).toISOString().slice(0, 10);
 }
 
 function assertNever(value: never): never {
