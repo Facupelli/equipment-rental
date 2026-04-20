@@ -2,6 +2,7 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
+import z from "zod";
 import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
 import {
 	AlertDialog,
@@ -38,9 +39,18 @@ import {
 } from "@/features/catalog/product-types/products.queries";
 import { ProblemDetailsError } from "@/shared/errors";
 
+const productDetailSearchSchema = z.object({
+	assetsView: z.enum(["list", "timeline"]).default("list"),
+	timelinePreset: z.enum(["day", "week", "2weeks"]).default("week"),
+	timelineFrom: z.iso.datetime().optional(),
+	timelineTo: z.iso.datetime().optional(),
+	showInactive: z.boolean().default(false),
+});
+
 export const Route = createFileRoute(
 	"/_admin/dashboard/catalog/products/$productId/",
 )({
+	validateSearch: productDetailSearchSchema,
 	loader: ({ context: { queryClient }, params: { productId } }) =>
 		queryClient.ensureQueryData(productQueries.detail(productId)),
 	component: RouteComponent,
@@ -48,6 +58,8 @@ export const Route = createFileRoute(
 
 function RouteComponent() {
 	const { productId } = Route.useParams();
+	const search = Route.useSearch();
+	const navigate = Route.useNavigate();
 	const queryClient = useQueryClient();
 
 	const { data: product } = useSuspenseQuery(productQueries.detail(productId));
@@ -79,6 +91,31 @@ function RouteComponent() {
 
 	function handleAddTier(tier: PricingTierFormValues) {
 		setPendingTiers((prev) => [...prev, tier]);
+	}
+
+	function handleAssetsViewChange(value: "list" | "timeline") {
+		navigate({
+			search: (prev) => ({
+				...prev,
+				assetsView: value,
+			}),
+		});
+	}
+
+	function handleTimelineSearchChange(
+		updates: Partial<{
+			timelinePreset: "day" | "week" | "2weeks";
+			timelineFrom: string | undefined;
+			timelineTo: string | undefined;
+			showInactive: boolean;
+		}>,
+	) {
+		navigate({
+			search: (prev) => ({
+				...prev,
+				...updates,
+			}),
+		});
 	}
 
 	async function handleSaveChanges() {
@@ -117,7 +154,7 @@ function RouteComponent() {
 	return (
 		<>
 			<ProductProvider product={product}>
-				<div className=" px-8">
+				<div className="pb-10 px-8">
 					<PageBreadcrumb
 						parent={{ label: "Productos", to: "/dashboard/catalog/products" }}
 						current={product.name}
@@ -127,15 +164,15 @@ function RouteComponent() {
 						<ProductHeader />
 
 						<Tabs
-							defaultValue="specifications"
+							defaultValue="physical-items"
 							className="flex flex-col gap-y-10"
 						>
 							<TabsList>
+								<TabsTrigger value="physical-items">Items fisicos</TabsTrigger>
 								<TabsTrigger value="specifications">
 									Especificaciones
 								</TabsTrigger>
 								<TabsTrigger value="pricing">Precios</TabsTrigger>
-								<TabsTrigger value="physical-items">Items fisicos</TabsTrigger>
 							</TabsList>
 
 							<TabsContent value="specifications">
@@ -159,7 +196,17 @@ function RouteComponent() {
 							</TabsContent>
 
 							<TabsContent value="physical-items">
-								<AssetsTab />
+								<AssetsTab
+									assetsView={search.assetsView}
+									onAssetsViewChange={handleAssetsViewChange}
+									timelineSearch={{
+										timelinePreset: search.timelinePreset,
+										timelineFrom: search.timelineFrom,
+										timelineTo: search.timelineTo,
+										showInactive: search.showInactive,
+									}}
+									onTimelineSearchChange={handleTimelineSearchChange}
+								/>
 							</TabsContent>
 						</Tabs>
 					</div>

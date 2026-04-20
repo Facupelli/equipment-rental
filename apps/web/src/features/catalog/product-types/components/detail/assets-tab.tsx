@@ -10,14 +10,40 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAssets } from "@/features/inventory/assets/assets.queries";
 import { CreateAssetDialogForm } from "@/features/inventory/assets/components/create-asset-dialog-form";
 import { DeactivateAssetAlertDialog } from "@/features/inventory/assets/components/deactivate-asset-alert-dialog";
 import { DeleteAssetAlertDialog } from "@/features/inventory/assets/components/delete-asset-alert-dialog";
 import { EditAssetDialog } from "@/features/inventory/assets/components/edit-asset-dialog";
+import { ProductAssetsTimeline } from "./product-assets-timeline/product-assets-timeline";
 import { useProduct } from "./product-detail.context";
 
-export function AssetsTab() {
+interface AssetsTabProps {
+	assetsView: "list" | "timeline";
+	onAssetsViewChange: (view: "list" | "timeline") => void;
+	timelineSearch: {
+		timelinePreset: "day" | "week" | "2weeks";
+		timelineFrom?: string;
+		timelineTo?: string;
+		showInactive: boolean;
+	};
+	onTimelineSearchChange: (
+		updates: Partial<{
+			timelinePreset: "day" | "week" | "2weeks";
+			timelineFrom: string | undefined;
+			timelineTo: string | undefined;
+			showInactive: boolean;
+		}>,
+	) => void;
+}
+
+export function AssetsTab({
+	assetsView,
+	onAssetsViewChange,
+	timelineSearch,
+	onTimelineSearchChange,
+}: AssetsTabProps) {
 	const {
 		product: { id },
 	} = useProduct();
@@ -35,73 +61,97 @@ export function AssetsTab() {
 	});
 	const assets = items?.data.flatMap((group) => group.assets) ?? [];
 
-	if (isPending) {
+	if (isPending && assetsView === "list") {
 		return <p className="text-sm text-muted-foreground">Cargando assets...</p>;
 	}
 
 	return (
 		<>
-			<div className="space-y-4">
-				<div className="flex items-center justify-between">
-					<h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-						Assets fisicos{" "}
-						<span className="ml-1 text-foreground">
-							({assets.length})
-						</span>
-					</h3>
+			<Tabs
+				value={assetsView}
+				onValueChange={(value) => {
+					if (value === "list" || value === "timeline") {
+						onAssetsViewChange(value);
+					}
+				}}
+				className="flex flex-col gap-y-4"
+			>
+				<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+					<div className="flex items-center gap-3">
+						<h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+							Assets fisicos{" "}
+							<span className="ml-1 text-foreground">
+								({isPending ? "..." : assets.length})
+							</span>
+						</h3>
+						<TabsList>
+							<TabsTrigger value="list">Lista</TabsTrigger>
+							<TabsTrigger value="timeline">Timeline</TabsTrigger>
+						</TabsList>
+					</div>
+
+					<CreateAssetDialogForm />
 				</div>
 
-				<CreateAssetDialogForm />
-
-				<div className="rounded-md border">
-					<table className="w-full text-sm">
-						<thead>
-							<tr className="border-b bg-muted/50">
-								<th className="px-4 py-3 text-left font-medium text-muted-foreground">
-									Numero de serie
-								</th>
-								<th className="px-4 py-3 text-left font-medium text-muted-foreground">
-									Ubicacion
-								</th>
-								<th className="px-4 py-3 text-left font-medium text-muted-foreground">
-									Propietario
-								</th>
-								<th className="px-4 py-3 text-left font-medium text-muted-foreground">
-									Alta
-								</th>
-								<th className="px-4 py-3 text-left font-medium text-muted-foreground">
-									Estado
-								</th>
-								<th className="px-4 py-3 text-right font-medium text-muted-foreground">
-									Acciones
-								</th>
-							</tr>
-						</thead>
-						<tbody className="divide-y">
-							{assets.length === 0 ? (
+				<TabsContent value="list" hidden={assetsView !== "list"}>
+					<div className="rounded-md border">
+						<table className="w-full text-sm">
+							<thead>
 								<tr className="border-b bg-muted/50">
-									<td
-										colSpan={6}
-										className="px-4 py-3 text-center text-muted-foreground"
-									>
-										No hay assets cargados.
-									</td>
+									<th className="px-4 py-3 text-left font-medium text-muted-foreground">
+										Numero de serie
+									</th>
+									<th className="px-4 py-3 text-left font-medium text-muted-foreground">
+										Ubicacion
+									</th>
+									<th className="px-4 py-3 text-left font-medium text-muted-foreground">
+										Propietario
+									</th>
+									<th className="px-4 py-3 text-left font-medium text-muted-foreground">
+										Alta
+									</th>
+									<th className="px-4 py-3 text-left font-medium text-muted-foreground">
+										Estado
+									</th>
+									<th className="px-4 py-3 text-right font-medium text-muted-foreground">
+										Acciones
+									</th>
 								</tr>
-							) : (
-								assets.map((item) => (
-									<PhysicalItemRow
-										key={item.id}
-										item={item}
-										onEdit={() => setEditingAsset(item)}
-										onDeactivate={() => setDeactivatingAsset(item)}
-										onDelete={() => setDeletingAsset(item)}
-									/>
-								))
-							)}
-						</tbody>
-					</table>
-				</div>
-			</div>
+							</thead>
+							<tbody className="divide-y">
+								{assets.length === 0 ? (
+									<tr className="border-b bg-muted/50">
+										<td
+											colSpan={6}
+											className="px-4 py-3 text-center text-muted-foreground"
+										>
+											No hay assets cargados.
+										</td>
+									</tr>
+								) : (
+									assets.map((item) => (
+										<PhysicalItemRow
+											key={item.id}
+											item={item}
+											onEdit={() => setEditingAsset(item)}
+											onDeactivate={() => setDeactivatingAsset(item)}
+											onDelete={() => setDeletingAsset(item)}
+										/>
+									))
+								)}
+							</tbody>
+						</table>
+					</div>
+				</TabsContent>
+
+				<TabsContent value="timeline" hidden={assetsView !== "timeline"}>
+					<ProductAssetsTimeline
+						productTypeId={id}
+						timelineSearch={timelineSearch}
+						onTimelineSearchChange={onTimelineSearchChange}
+					/>
+				</TabsContent>
+			</Tabs>
 
 			<EditAssetDialog
 				open={editingAsset !== null}
