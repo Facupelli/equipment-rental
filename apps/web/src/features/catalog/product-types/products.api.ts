@@ -1,10 +1,13 @@
 import {
 	type CreateProductTypeDto,
 	createProductTypeSchema,
+	type GetProductTimelineQuery,
 	type GetProductTypesQuery,
+	getProductTimelineQuerySchema,
 	getProductTypesQuerySchema,
 	type PaginatedDto,
 	type ProblemDetails,
+	type ProductTimelineResponse,
 	type ProductTypeResponse,
 	type UpdateProductTypeDto,
 	updateProductTypeSchema,
@@ -81,6 +84,22 @@ export const getProducts = createServerFn({ method: "GET" })
 			method: "GET",
 			params: data,
 		});
+
+		return result;
+	});
+
+export const getProductTimeline = createServerFn({ method: "GET" })
+	.inputValidator((data: GetProductTimelineQuery) =>
+		getProductTimelineQuerySchema.parse(data),
+	)
+	.handler(async ({ data }): Promise<ProductTimelineResponse> => {
+		const result = await apiFetch<ProductTimelineResponse>(
+			"/inventory/product-timeline",
+			{
+				method: "GET",
+				params: data,
+			},
+		);
 
 		return result;
 	});

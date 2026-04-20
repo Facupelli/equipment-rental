@@ -27,6 +27,8 @@ import { GetAvailableAssetCountsQueryHandler } from './application/queries/get-a
 import { GetProductTypeAssetOwnershipQueryHandler } from './application/queries/get-product-type-asset-ownership/get-product-type-asset-ownership.query-handler';
 import { GetProductTypesAssetOwnershipQueryHandler } from './application/queries/get-product-types-asset-ownership/get-product-types-asset-ownership.query-handler';
 import { SaveInternalAssetAssignmentsService } from './application/commands/shared/save-internal-asset-assignments.service';
+import { GetProductTimelineQueryHandler } from './application/queries/get-product-timeline/get-product-timeline.query-handler';
+import { GetProductTimelineHttpController } from './application/queries/get-product-timeline/get-product-timeline.http.controller';
 
 const repositories = [AssetRepository, AssetAssignmentRepository];
 
@@ -46,6 +48,7 @@ const queryHandlers = [
   GetAvailableAssetCountsQueryHandler,
   GetProductTypeAssetOwnershipQueryHandler,
   GetProductTypesAssetOwnershipQueryHandler,
+  GetProductTimelineQueryHandler,
 ];
 
 @Module({
@@ -59,6 +62,7 @@ const queryHandlers = [
     CreateMaintenanceAssignmentsHttpController,
     GetAssetsHttpController,
     GetAssetByIdHttpController,
+    GetProductTimelineHttpController,
   ],
   providers: [
     ...repositories,

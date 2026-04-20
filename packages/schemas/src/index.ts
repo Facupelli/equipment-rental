@@ -10,6 +10,7 @@ export * from "./customer/customer-response.schema";
 export * from "./inventory/asset.schema";
 export * from "./inventory/asset-assignment.schema";
 export * from "./inventory/asset-response.schema";
+export * from "./inventory/product-timeline.schema";
 export * from "./order/get-order-by-id-response.schema";
 export * from "./order/get-orders-schedule-response.schema";
 export * from "./order/get-pending-review-orders.schema";

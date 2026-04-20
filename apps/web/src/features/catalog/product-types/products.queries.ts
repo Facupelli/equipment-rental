@@ -6,10 +6,16 @@ import {
 	type UseQueryOptions,
 	type UseSuspenseQueryOptions,
 } from "@tanstack/react-query";
-import { getProductDetail, getProducts } from "./products.api";
+import {
+	getProductDetail,
+	getProductTimeline,
+	getProducts,
+} from "./products.api";
 import type {
+	GetProductTimelineQuery,
 	GetProductTypesQuery,
 	PaginatedDto,
+	ProductTimelineResponse,
 	ProductTypeResponse,
 } from "@repo/schemas";
 import type { ProblemDetailsError } from "@/shared/errors";
@@ -26,6 +32,13 @@ export type ProductDetailQueryOverrides<TData = ProductTypeResponse> = Omit<
 	"queryKey" | "queryFn"
 >;
 
+export type ProductTimelineQueryOverrides<
+	TData = ProductTimelineResponse,
+> = Omit<
+	UseQueryOptions<ProductTimelineResponse, ProblemDetailsError, TData>,
+	"queryKey" | "queryFn"
+>;
+
 // -------------------------------------------------------
 // Query Key Factory
 // -------------------------------------------------------
@@ -35,6 +48,9 @@ export const productKeys = {
 	lists: () => [...productKeys.all(), "list"] as const,
 	list: (params: GetProductTypesQuery) =>
 		[...productKeys.lists(), params] as const,
+	timelines: () => [...productKeys.all(), "timeline"] as const,
+	timeline: (params: GetProductTimelineQuery) =>
+		[...productKeys.timelines(), params] as const,
 	details: () => [...productKeys.all(), "detail"] as const,
 	detail: (id: string) => [...productKeys.details(), id] as const,
 };
@@ -63,6 +79,16 @@ export const productQueries = {
 			queryFn: () => getProductDetail({ data: { productId: id } }),
 			...overrides,
 		}),
+
+	timeline: <TData = ProductTimelineResponse>(
+		params: GetProductTimelineQuery,
+		overrides?: ProductTimelineQueryOverrides<TData>,
+	) =>
+		queryOptions<ProductTimelineResponse, ProblemDetailsError, TData>({
+			queryKey: productKeys.timeline(params),
+			queryFn: () => getProductTimeline({ data: params }),
+			...overrides,
+		}),
 };
 
 // -------------------------------------------------------
@@ -84,4 +110,11 @@ export function useProductDetail<TData = ProductTypeResponse>(
 	overrides?: ProductDetailQueryOverrides<TData>,
 ) {
 	return useSuspenseQuery(productQueries.detail(id, overrides));
+}
+
+export function useProductTimeline<TData = ProductTimelineResponse>(
+	params: GetProductTimelineQuery,
+	overrides?: ProductTimelineQueryOverrides<TData>,
+) {
+	return useQuery(productQueries.timeline(params, overrides));
 }
