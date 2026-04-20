@@ -164,10 +164,10 @@ function formatCondition(condition: PromotionView["conditions"][number]) {
 			return `Subtotal minimo ${condition.amount} ${condition.currency}`;
 		case PromotionConditionType.RENTAL_DURATION_MIN:
 			return `Duracion minima de ${condition.minUnits} unidad(es)`;
-		case PromotionConditionType.CATEGORY_ITEM_QUANTITY:
-			return `Categoria ${condition.categoryId}: ${condition.minQuantity}+ item(s)`;
-		case PromotionConditionType.DISTINCT_CATEGORIES_WITH_MIN_QUANTITY:
-			return `${condition.minCategoriesMatched} categoria(s) de ${condition.categoryIds.length} con ${condition.minQuantityPerCategory}+ item(s)`;
+		case PromotionConditionType.MIN_PRODUCT_QUANTITY:
+			return `${condition.minQuantity}+ producto(s) standalone`;
+		case PromotionConditionType.MIN_PRODUCT_UNIT_PRICE:
+			return `Producto con precio base minimo de ${condition.amount} ${condition.currency}`;
 		default:
 			return "Condicion desconocida";
 	}

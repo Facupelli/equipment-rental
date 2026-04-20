@@ -41,28 +41,18 @@ const rentalDurationMinConditionFormSchema = z.object({
 		.positive("Las unidades minimas deben ser mayores a 0"),
 });
 
-const categoryItemQuantityConditionFormSchema = z.object({
-	type: z.literal(PromotionConditionType.CATEGORY_ITEM_QUANTITY),
-	categoryId: requiredUuidSchema,
+const minProductQuantityConditionFormSchema = z.object({
+	type: z.literal(PromotionConditionType.MIN_PRODUCT_QUANTITY),
 	minQuantity: z
 		.number()
 		.int()
 		.positive("La cantidad minima debe ser mayor a 0"),
 });
 
-const distinctCategoriesWithMinQuantityConditionFormSchema = z.object({
-	type: z.literal(PromotionConditionType.DISTINCT_CATEGORIES_WITH_MIN_QUANTITY),
-	categoryIds: z
-		.array(requiredUuidSchema)
-		.min(1, "Agrega al menos una categoria"),
-	minCategoriesMatched: z
-		.number()
-		.int()
-		.positive("La cantidad minima de categorias debe ser mayor a 0"),
-	minQuantityPerCategory: z
-		.number()
-		.int()
-		.positive("La cantidad minima por categoria debe ser mayor a 0"),
+const minProductUnitPriceConditionFormSchema = z.object({
+	type: z.literal(PromotionConditionType.MIN_PRODUCT_UNIT_PRICE),
+	amount: z.number().positive("El monto minimo debe ser mayor a 0"),
+	currency: z.string().trim().length(3, "Usa una moneda de 3 letras"),
 });
 
 export const promotionConditionFormSchema = z.discriminatedUnion("type", [
@@ -71,8 +61,8 @@ export const promotionConditionFormSchema = z.discriminatedUnion("type", [
 	customerIdInConditionFormSchema,
 	minSubtotalConditionFormSchema,
 	rentalDurationMinConditionFormSchema,
-	categoryItemQuantityConditionFormSchema,
-	distinctCategoriesWithMinQuantityConditionFormSchema,
+	minProductQuantityConditionFormSchema,
+	minProductUnitPriceConditionFormSchema,
 ]);
 
 const percentOffEffectFormSchema = z.object({
@@ -167,15 +157,10 @@ export function defaultConditionFor(
 			return { type, amount: 0, currency: "USD" };
 		case PromotionConditionType.RENTAL_DURATION_MIN:
 			return { type, minUnits: 1 };
-		case PromotionConditionType.CATEGORY_ITEM_QUANTITY:
-			return { type, categoryId: "", minQuantity: 1 };
-		case PromotionConditionType.DISTINCT_CATEGORIES_WITH_MIN_QUANTITY:
-			return {
-				type,
-				categoryIds: [""],
-				minCategoriesMatched: 1,
-				minQuantityPerCategory: 1,
-			};
+		case PromotionConditionType.MIN_PRODUCT_QUANTITY:
+			return { type, minQuantity: 1 };
+		case PromotionConditionType.MIN_PRODUCT_UNIT_PRICE:
+			return { type, amount: 50, currency: "USD" };
 		default:
 			return assertNever(type);
 	}
@@ -239,6 +224,11 @@ export function toCreatePromotionDto(
 						to: toDateTime(condition.to),
 					};
 				case PromotionConditionType.MIN_SUBTOTAL:
+					return {
+						...condition,
+						currency: condition.currency.trim().toUpperCase(),
+					};
+				case PromotionConditionType.MIN_PRODUCT_UNIT_PRICE:
 					return {
 						...condition,
 						currency: condition.currency.trim().toUpperCase(),

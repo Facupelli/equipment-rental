@@ -8,6 +8,6 @@ export type NewPricingContext = {
   bundleId?: string;
   customerId?: string;
   applicablePromotionIds?: string[];
-  standaloneProductQuantityByCategory: Record<string, number>;
+  standaloneProductQuantity: number;
   orderSubtotalBeforePromotions?: number;
 };

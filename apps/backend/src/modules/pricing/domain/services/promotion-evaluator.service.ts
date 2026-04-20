@@ -29,7 +29,7 @@ export class PromotionEvaluatorService {
     units: number,
   ): PricingAdjustment[] {
     const applicableCandidates = promotions
-      .filter((promotion) => this.isApplicable(promotion, context, target, units))
+      .filter((promotion) => this.isApplicable(promotion, basePrice, context, target, units))
       .map((promotion) => ({ promotion, adjustment: this.buildAdjustment(basePrice, promotion, units) }))
       .filter((candidate) => candidate.adjustment.discountAmount.toDecimal().greaterThan(0));
 
@@ -93,6 +93,7 @@ export class PromotionEvaluatorService {
 
   private isApplicable(
     promotion: Promotion,
+    basePrice: Money,
     context: NewPricingContext,
     target: PricingTargetContext,
     units: number,
@@ -128,14 +129,13 @@ export class PromotionEvaluatorService {
           );
         case PromotionConditionType.RENTAL_DURATION_MIN:
           return units >= condition.minUnits;
-        case PromotionConditionType.CATEGORY_ITEM_QUANTITY:
-          return (context.standaloneProductQuantityByCategory[condition.categoryId] ?? 0) >= condition.minQuantity;
-        case PromotionConditionType.DISTINCT_CATEGORIES_WITH_MIN_QUANTITY:
+        case PromotionConditionType.MIN_PRODUCT_QUANTITY:
+          return Boolean(target.productTypeId) && context.standaloneProductQuantity >= condition.minQuantity;
+        case PromotionConditionType.MIN_PRODUCT_UNIT_PRICE:
           return (
-            condition.categoryIds.filter(
-              (categoryId) =>
-                (context.standaloneProductQuantityByCategory[categoryId] ?? 0) >= condition.minQuantityPerCategory,
-            ).length >= condition.minCategoriesMatched
+            Boolean(target.productTypeId) &&
+            basePrice.currency === condition.currency &&
+            basePrice.toDecimal().greaterThanOrEqualTo(condition.amount)
           );
       }
     });

@@ -35,17 +35,15 @@ export type RentalDurationMinPromotionCondition = {
   minUnits: number;
 };
 
-export type CategoryItemQuantityPromotionCondition = {
-  type: PromotionConditionType.CATEGORY_ITEM_QUANTITY;
-  categoryId: string;
+export type MinProductQuantityPromotionCondition = {
+  type: PromotionConditionType.MIN_PRODUCT_QUANTITY;
   minQuantity: number;
 };
 
-export type DistinctCategoriesWithMinQuantityPromotionCondition = {
-  type: PromotionConditionType.DISTINCT_CATEGORIES_WITH_MIN_QUANTITY;
-  categoryIds: string[];
-  minCategoriesMatched: number;
-  minQuantityPerCategory: number;
+export type MinProductUnitPricePromotionCondition = {
+  type: PromotionConditionType.MIN_PRODUCT_UNIT_PRICE;
+  amount: number;
+  currency: string;
 };
 
 export type PromotionCondition =
@@ -54,8 +52,8 @@ export type PromotionCondition =
   | CustomerIdInPromotionCondition
   | MinSubtotalPromotionCondition
   | RentalDurationMinPromotionCondition
-  | CategoryItemQuantityPromotionCondition
-  | DistinctCategoriesWithMinQuantityPromotionCondition;
+  | MinProductQuantityPromotionCondition
+  | MinProductUnitPricePromotionCondition;
 
 export type PercentOffPromotionEffect = {
   type: PromotionEffectType.PERCENT_OFF;

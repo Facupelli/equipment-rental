@@ -89,15 +89,15 @@ const CONDITION_TYPE_META: Record<
 		description:
 			"Requiere una cantidad minima de unidades de alquiler, como dias u horas.",
 	},
-	[PromotionConditionType.CATEGORY_ITEM_QUANTITY]: {
-		label: "Cantidad por categoria",
+	[PromotionConditionType.MIN_PRODUCT_QUANTITY]: {
+		label: "Cantidad minima de productos",
 		description:
-			"Pide una cantidad minima de items dentro de una categoria especifica.",
+			"Exige una cantidad minima total de productos standalone en la orden.",
 	},
-	[PromotionConditionType.DISTINCT_CATEGORIES_WITH_MIN_QUANTITY]: {
-		label: "Categorias distintas",
+	[PromotionConditionType.MIN_PRODUCT_UNIT_PRICE]: {
+		label: "Precio minimo por producto",
 		description:
-			"Valida varias categorias distintas, cada una con una cantidad minima requerida.",
+			"La promocion solo aplica a lineas de producto cuyo precio base por producto alcance ese monto.",
 	},
 };
 
@@ -116,18 +116,14 @@ type ConditionDateFieldName =
 	| `conditions[${number}].from`
 	| `conditions[${number}].to`;
 type ConditionCurrencyFieldName = `conditions[${number}].currency`;
-type ConditionTextFieldName = `conditions[${number}].categoryId`;
 type ConditionNumberFieldName =
 	| `conditions[${number}].amount`
 	| `conditions[${number}].minUnits`
-	| `conditions[${number}].minQuantity`
-	| `conditions[${number}].minCategoriesMatched`
-	| `conditions[${number}].minQuantityPerCategory`;
+	| `conditions[${number}].minQuantity`;
 type StringArrayFieldName =
 	| "applicability.excludedProductTypeIds"
 	| "applicability.excludedBundleIds"
-	| `conditions[${number}].customerIds`
-	| `conditions[${number}].categoryIds`;
+	| `conditions[${number}].customerIds`;
 type EffectPercentageFieldName = "effect.percentage";
 type TierNumberFieldName =
 	| `effect.tiers[${number}].fromUnits`
@@ -825,49 +821,57 @@ function ConditionFields({
 		);
 	}
 
-	if (condition.type === PromotionConditionType.CATEGORY_ITEM_QUANTITY) {
+	if (condition.type === PromotionConditionType.MIN_PRODUCT_QUANTITY) {
+		return (
+			<NumberField
+				form={form}
+				name={`conditions[${index}].minQuantity`}
+				label="Cantidad minima"
+				description="Cuenta solo productos standalone, no componentes de bundles."
+				min={1}
+			/>
+		);
+	}
+
+	if (condition.type === PromotionConditionType.MIN_PRODUCT_UNIT_PRICE) {
 		return (
 			<div className="grid gap-4 sm:grid-cols-2">
-				<TextField
-					form={form}
-					name={`conditions[${index}].categoryId`}
-					label="Category ID"
-					placeholder="UUID de la categoria"
-				/>
 				<NumberField
 					form={form}
-					name={`conditions[${index}].minQuantity`}
-					label="Cantidad minima"
-					min={1}
+					name={`conditions[${index}].amount`}
+					label="Monto minimo por producto"
+					description="La linea debe tener este precio base o mas para calificar."
+					min={0}
+					step={0.01}
 				/>
+				<form.Field name={`conditions[${index}].currency` as ConditionCurrencyFieldName}>
+					{(field) => {
+						const isInvalid =
+							field.state.meta.isTouched && !field.state.meta.isValid;
+
+						return (
+							<Field data-invalid={isInvalid}>
+								<FieldLabel htmlFor={field.name}>Moneda</FieldLabel>
+								<Input
+									id={field.name}
+									maxLength={3}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(e) =>
+										field.handleChange(e.target.value.toUpperCase())
+									}
+									aria-invalid={isInvalid}
+								/>
+								{isInvalid ? <FieldError errors={field.state.meta.errors} /> : null}
+							</Field>
+						);
+					}}
+				</form.Field>
 			</div>
 		);
 	}
 
-	return (
-		<div className="space-y-4">
-			<StringArrayField
-				form={form}
-				name={`conditions[${index}].categoryIds`}
-				label="Category IDs"
-				placeholder="UUID de la categoria"
-			/>
-			<div className="grid gap-4 sm:grid-cols-2">
-				<NumberField
-					form={form}
-					name={`conditions[${index}].minCategoriesMatched`}
-					label="Categorias que deben calificar"
-					min={1}
-				/>
-				<NumberField
-					form={form}
-					name={`conditions[${index}].minQuantityPerCategory`}
-					label="Cantidad minima por categoria"
-					min={1}
-				/>
-			</div>
-		</div>
-	);
+	return null;
 }
 
 function LongRentalTierEditor({ form }: { form: PromotionFormApi }) {
@@ -979,7 +983,7 @@ function TextField({
 	placeholder,
 }: {
 	form: PromotionFormApi;
-	name: RootTextFieldName | ConditionTextFieldName;
+	name: RootTextFieldName;
 	label: string;
 	placeholder?: string;
 }) {

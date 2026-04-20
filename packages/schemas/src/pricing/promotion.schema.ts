@@ -49,21 +49,16 @@ export const rentalDurationMinPromotionConditionSchema = z.object({
   minUnits: z.number().int().positive(),
 });
 
-export const categoryItemQuantityPromotionConditionSchema = z.object({
-  type: z.literal(PromotionConditionType.CATEGORY_ITEM_QUANTITY),
-  categoryId: z.uuid(),
+export const minProductQuantityPromotionConditionSchema = z.object({
+  type: z.literal(PromotionConditionType.MIN_PRODUCT_QUANTITY),
   minQuantity: z.number().int().positive(),
 });
 
-export const distinctCategoriesWithMinQuantityPromotionConditionSchema =
-  z.object({
-    type: z.literal(
-      PromotionConditionType.DISTINCT_CATEGORIES_WITH_MIN_QUANTITY,
-    ),
-    categoryIds: z.array(z.uuid()).min(1),
-    minCategoriesMatched: z.number().int().positive(),
-    minQuantityPerCategory: z.number().int().positive(),
-  });
+export const minProductUnitPricePromotionConditionSchema = z.object({
+  type: z.literal(PromotionConditionType.MIN_PRODUCT_UNIT_PRICE),
+  amount: z.number().positive(),
+  currency: z.string().length(3),
+});
 
 export const promotionConditionSchema = z.discriminatedUnion("type", [
   bookingWindowPromotionConditionSchema,
@@ -71,8 +66,8 @@ export const promotionConditionSchema = z.discriminatedUnion("type", [
   customerIdInPromotionConditionSchema,
   minSubtotalPromotionConditionSchema,
   rentalDurationMinPromotionConditionSchema,
-  categoryItemQuantityPromotionConditionSchema,
-  distinctCategoriesWithMinQuantityPromotionConditionSchema,
+  minProductQuantityPromotionConditionSchema,
+  minProductUnitPricePromotionConditionSchema,
 ]);
 
 export type PromotionCondition = z.infer<typeof promotionConditionSchema>;

@@ -6,11 +6,7 @@ import { RoundingRule } from '@repo/types';
 import { err, ok, Result } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
-import {
-  BundleBookingEligibilityDto,
-  CatalogPublicApi,
-  ProductTypeBookingEligibilityDto,
-} from 'src/modules/catalog/catalog.public-api';
+import { BundleBookingEligibilityDto, CatalogPublicApi } from 'src/modules/catalog/catalog.public-api';
 import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 import { PricingProductTypeNotFoundError, PricingBundleNotFoundError } from '../domain/errors/pricing.errors';
 import { PricingTier } from '../domain/entities/pricing-tier.entity';
@@ -65,17 +61,10 @@ export class PricingApplicationService implements PricingPublicApi {
       bundleMetas,
       productTiers,
       bundleTiers,
-      productEligibility,
       bundleEligibility,
     } = basketContext;
 
-    const standaloneProductQuantityByCategory = productItems.reduce<Record<string, number>>((acc, item) => {
-      const categoryId = productEligibility.get(item.productTypeId)?.categoryId;
-      if (categoryId) {
-        acc[categoryId] = (acc[categoryId] ?? 0) + (item.quantity ?? 1);
-      }
-      return acc;
-    }, {});
+    const standaloneProductQuantity = productItems.reduce((sum, item) => sum + (item.quantity ?? 1), 0);
 
     const applicablePromotionIds = resolvedCoupon ? [resolvedCoupon.promotionId] : undefined;
 
@@ -95,7 +84,7 @@ export class PricingApplicationService implements PricingPublicApi {
             currency: dto.currency,
             bookingCreatedAt,
             customerId: dto.customerId,
-            standaloneProductQuantityByCategory,
+            standaloneProductQuantity,
             applyPromotions: false,
             meta,
             promotions,
@@ -119,7 +108,7 @@ export class PricingApplicationService implements PricingPublicApi {
           currency: dto.currency,
           bookingCreatedAt,
           customerId: dto.customerId,
-          standaloneProductQuantityByCategory,
+          standaloneProductQuantity,
           applyPromotions: false,
           meta,
           promotions,
@@ -173,7 +162,7 @@ export class PricingApplicationService implements PricingPublicApi {
             bookingCreatedAt,
             customerId: dto.customerId,
             applicablePromotionIds,
-            standaloneProductQuantityByCategory,
+            standaloneProductQuantity,
             orderSubtotalBeforePromotions,
             applyPromotions: true,
             meta,
@@ -208,7 +197,7 @@ export class PricingApplicationService implements PricingPublicApi {
           bookingCreatedAt,
           customerId: dto.customerId,
           applicablePromotionIds,
-          standaloneProductQuantityByCategory,
+          standaloneProductQuantity,
           orderSubtotalBeforePromotions,
           applyPromotions: true,
           meta,
@@ -301,7 +290,6 @@ export class PricingApplicationService implements PricingPublicApi {
       bundleMetas: Awaited<ReturnType<PricingComputationReadService['loadBundleMetaBatch']>>;
       productTiers: Awaited<ReturnType<PricingComputationReadService['loadTiersForProducts']>>;
       bundleTiers: Awaited<ReturnType<PricingComputationReadService['loadTiersForBundles']>>;
-      productEligibility: Map<string, ProductTypeBookingEligibilityDto>;
       bundleEligibility: Map<string, BundleBookingEligibilityDto>;
     };
     resolvedCoupon: ResolvedCouponDto | undefined;
@@ -320,7 +308,6 @@ export class PricingApplicationService implements PricingPublicApi {
       bundleMetas,
       productTiers,
       bundleTiers,
-      productEligibility,
       bundleEligibility,
       resolvedCoupon,
     ] = await Promise.all([
@@ -336,7 +323,6 @@ export class PricingApplicationService implements PricingPublicApi {
       uniqueBundleIds.length > 0
         ? this.pricingRead.loadTiersForBundles(uniqueBundleIds, dto.locationId)
         : Promise.resolve(new Map()),
-      this.loadProductEligibility(dto.tenantId, dto.locationId, uniqueProductTypeIds),
       this.loadBundleEligibility(dto.tenantId, dto.locationId, uniqueBundleIds),
       this.resolveCouponIfProvided(dto.tenantId, dto.customerId, dto.couponCode, bookingCreatedAt),
     ]);
@@ -352,7 +338,6 @@ export class PricingApplicationService implements PricingPublicApi {
         bundleMetas,
         productTiers,
         bundleTiers,
-        productEligibility,
         bundleEligibility,
       },
       resolvedCoupon,
@@ -381,27 +366,6 @@ export class PricingApplicationService implements PricingPublicApi {
     }
 
     return result.value;
-  }
-
-  private async loadProductEligibility(
-    tenantId: string,
-    locationId: string,
-    productTypeIds: string[],
-  ): Promise<Map<string, ProductTypeBookingEligibilityDto>> {
-    const productMetas = await Promise.all(
-      productTypeIds.map((id) => this.catalogApi.getProductTypeBookingEligibility(tenantId, locationId, id)),
-    );
-
-    return new Map(
-      productTypeIds.map((id, index) => {
-        const productMeta = productMetas[index];
-        if (!productMeta) {
-          throw new PricingProductTypeNotFoundError(id);
-        }
-
-        return [id, productMeta];
-      }),
-    );
   }
 
   private async loadBundleEligibility(
@@ -473,7 +437,7 @@ export class PricingApplicationService implements PricingPublicApi {
     bookingCreatedAt: Date;
     customerId?: string;
     applicablePromotionIds?: string[];
-    standaloneProductQuantityByCategory: Record<string, number>;
+    standaloneProductQuantity: number;
     orderSubtotalBeforePromotions?: number;
     applyPromotions: boolean;
     meta: { billingUnitDurationMinutes: number };
@@ -496,7 +460,7 @@ export class PricingApplicationService implements PricingPublicApi {
         productTypeId: input.productTypeId,
         customerId: input.customerId,
         applicablePromotionIds: input.applicablePromotionIds,
-        standaloneProductQuantityByCategory: input.standaloneProductQuantityByCategory,
+        standaloneProductQuantity: input.standaloneProductQuantity,
         orderSubtotalBeforePromotions: input.orderSubtotalBeforePromotions,
       },
       currency: input.currency,
@@ -512,7 +476,7 @@ export class PricingApplicationService implements PricingPublicApi {
     bookingCreatedAt: Date;
     customerId?: string;
     applicablePromotionIds?: string[];
-    standaloneProductQuantityByCategory: Record<string, number>;
+    standaloneProductQuantity: number;
     orderSubtotalBeforePromotions?: number;
     applyPromotions: boolean;
     meta: { billingUnitDurationMinutes: number };
@@ -535,7 +499,7 @@ export class PricingApplicationService implements PricingPublicApi {
         bundleId: input.bundleId,
         customerId: input.customerId,
         applicablePromotionIds: input.applicablePromotionIds,
-        standaloneProductQuantityByCategory: input.standaloneProductQuantityByCategory,
+        standaloneProductQuantity: input.standaloneProductQuantity,
         orderSubtotalBeforePromotions: input.orderSubtotalBeforePromotions,
       },
       currency: input.currency,
