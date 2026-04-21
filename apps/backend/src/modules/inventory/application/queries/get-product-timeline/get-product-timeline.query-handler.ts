@@ -1,11 +1,14 @@
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
-import { ProductTimelineAssetRow, ProductTimelineBlock, TenantConfig } from '@repo/schemas';
+import { ProductTimelineAssetRow, ProductTimelineBlock } from '@repo/schemas';
 import { AssignmentType, OrderStatus, TrackingMode } from '@repo/types';
 
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { formatPostgresRange } from 'src/core/utils/postgres-range.util';
-import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
+import {
+  GetLocationContextQuery,
+  LocationContextReadModel,
+} from 'src/modules/tenant/public/queries/get-location-context.query';
 
 import { GetProductTimelineQuery } from './get-product-timeline.query';
 import { GetProductTimelineResponse } from './get-product-timeline.response.dto';
@@ -45,15 +48,10 @@ export class GetProductTimelineQueryHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetProductTimelineQuery): Promise<GetProductTimelineResponse | null> {
-    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
-      new GetTenantConfigQuery(query.tenantId),
-    );
-
-    if (!tenantConfig) {
-      throw new Error(`Tenant config not found for tenant "${query.tenantId}"`);
-    }
-
-    const [productType, location, assets] = await Promise.all([
+    const [locationContext, productType, location, assets] = await Promise.all([
+      this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+        new GetLocationContextQuery(query.tenantId, query.locationId),
+      ),
       this.prisma.client.productType.findFirst({
         where: {
           id: query.productTypeId,
@@ -101,7 +99,7 @@ export class GetProductTimelineQueryHandler implements IQueryHandler<
       }),
     ]);
 
-    if (!productType || !location) {
+    if (!locationContext || !productType || !location) {
       return null;
     }
 
@@ -153,7 +151,7 @@ export class GetProductTimelineQueryHandler implements IQueryHandler<
       range: {
         from: requestedRange.start.toISOString(),
         to: requestedRange.end.toISOString(),
-        timezone: tenantConfig.timezone,
+        timezone: locationContext.effectiveTimezone,
       },
       summary: {
         totalAssets: assets.length,

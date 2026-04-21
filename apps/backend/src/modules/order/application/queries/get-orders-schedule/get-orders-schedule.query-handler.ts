@@ -1,10 +1,13 @@
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { GetOrdersScheduleQuery } from './get-orders-schedule.query';
-import { OrderSummary, ScheduleEvent, TenantConfig } from '@repo/schemas';
+import { OrderSummary, ScheduleEvent } from '@repo/schemas';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { OrderStatus } from '@repo/types';
 import { GetOrdersScheduleResponseDto } from './get-orders-schedule.response.dto';
-import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
+import {
+  GetLocationContextQuery,
+  LocationContextReadModel,
+} from 'src/modules/tenant/public/queries/get-location-context.query';
 
 const OPERATIONAL_SCHEDULE_STATUSES = [OrderStatus.CONFIRMED, OrderStatus.ACTIVE] as const;
 
@@ -37,17 +40,17 @@ export class GetOrdersScheduleQueryHandler implements IQueryHandler<
 
   async execute(query: GetOrdersScheduleQuery): Promise<GetOrdersScheduleResponseDto> {
     const { tenantId, locationId, from, to } = query;
-    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
-      new GetTenantConfigQuery(tenantId),
+    const locationContext = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+      new GetLocationContextQuery(tenantId, locationId),
     );
 
-    if (!tenantConfig) {
-      throw new Error(`Tenant config not found for tenant "${tenantId}"`);
+    if (!locationContext) {
+      throw new Error(`Location context not found for location "${locationId}"`);
     }
 
     const [pickupRows, returnRows] = await Promise.all([
-      this.fetchPickups(tenantId, locationId, from, to, tenantConfig.timezone),
-      this.fetchReturns(tenantId, locationId, from, to, tenantConfig.timezone),
+      this.fetchPickups(tenantId, locationId, from, to, locationContext.effectiveTimezone),
+      this.fetchReturns(tenantId, locationId, from, to, locationContext.effectiveTimezone),
     ]);
 
     const pickupEvents: ScheduleEvent[] = pickupRows.map((row) => ({

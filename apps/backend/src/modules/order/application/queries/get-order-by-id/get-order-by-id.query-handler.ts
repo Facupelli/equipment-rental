@@ -8,8 +8,10 @@ import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snap
 import Decimal from 'decimal.js';
 import { OrderNotFoundException } from '../../../domain/exceptions/order.exceptions';
 import { GetOrderByIdResponseDto } from './get-order-by-id.response.dto';
-import { TenantConfig } from '@repo/schemas';
-import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
+import {
+  GetLocationContextQuery,
+  LocationContextReadModel,
+} from 'src/modules/tenant/public/queries/get-location-context.query';
 
 @QueryHandler(GetOrderByIdQuery)
 export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery, GetOrderByIdResponseDto> {
@@ -19,14 +21,6 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
   ) {}
 
   async execute(query: GetOrderByIdQuery): Promise<GetOrderByIdResponseDto> {
-    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
-      new GetTenantConfigQuery(query.tenantId),
-    );
-
-    if (!tenantConfig) {
-      throw new Error(`Tenant config not found for tenant "${query.tenantId}"`);
-    }
-
     const order = await this.prisma.client.order.findFirst({
       where: { id: query.orderId, tenantId: query.tenantId },
       include: {
@@ -106,6 +100,14 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
 
     if (!order) {
       throw new OrderNotFoundException(query.orderId);
+    }
+
+    const locationContext = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+      new GetLocationContextQuery(query.tenantId, order.locationId),
+    );
+
+    if (!locationContext) {
+      throw new Error(`Location context not found for location "${order.locationId}"`);
     }
 
     const period = DateRange.create(order.periodStart, order.periodEnd);
@@ -232,8 +234,8 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
       fulfillmentMethod: order.fulfillmentMethod as FulfillmentMethod,
       number: order.orderNumber,
       createdAt: order.createdAt,
-      pickupDate: toLocalDateKey(order.periodStart, tenantConfig.timezone),
-      returnDate: toLocalDateKey(order.periodEnd, tenantConfig.timezone),
+      pickupDate: toLocalDateKey(order.periodStart, locationContext.effectiveTimezone),
+      returnDate: toLocalDateKey(order.periodEnd, locationContext.effectiveTimezone),
       pickupAt: order.periodStart,
       returnAt: order.periodEnd,
       notes: order.notes,

@@ -3,8 +3,10 @@ import { GetCalendarDotsQuery } from './get-calendar-dots.query';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { OrderStatus } from '@repo/types';
 import { GetCalendarDotsResponseDto } from './get-calendar-dots.response.dto';
-import { TenantConfig } from '@repo/schemas';
-import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
+import {
+  GetLocationContextQuery,
+  LocationContextReadModel,
+} from 'src/modules/tenant/public/queries/get-location-context.query';
 
 type RawDateRow = { date: string };
 
@@ -19,17 +21,17 @@ export class GetCalendarDotsQueryHandler implements IQueryHandler<GetCalendarDot
 
   async execute(query: GetCalendarDotsQuery): Promise<GetCalendarDotsResponseDto> {
     const { tenantId, locationId, from, to } = query;
-    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
-      new GetTenantConfigQuery(tenantId),
+    const locationContext = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+      new GetLocationContextQuery(tenantId, locationId),
     );
 
-    if (!tenantConfig) {
-      throw new Error(`Tenant config not found for tenant "${tenantId}"`);
+    if (!locationContext) {
+      throw new Error(`Location context not found for location "${locationId}"`);
     }
 
     const [pickupRows, returnRows] = await Promise.all([
-      this.fetchPickupDates(tenantId, locationId, from, to, tenantConfig.timezone),
-      this.fetchReturnDates(tenantId, locationId, from, to, tenantConfig.timezone),
+      this.fetchPickupDates(tenantId, locationId, from, to, locationContext.effectiveTimezone),
+      this.fetchReturnDates(tenantId, locationId, from, to, locationContext.effectiveTimezone),
     ]);
 
     return {
