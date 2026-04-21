@@ -32,14 +32,6 @@ export class AuthHandoffTokenExpiredError extends AuthError {
   }
 }
 
-export class CustomerGoogleIdentityTenantMismatchError extends AuthError {
-  constructor(providerSubject: string, requestedTenantId: string, linkedTenantId: string) {
-    super(
-      `Google identity '${providerSubject}' is linked to tenant '${linkedTenantId}' and cannot authenticate in tenant '${requestedTenantId}'.`,
-    );
-  }
-}
-
 export class CustomerGoogleIdentityLinkedToUserError extends AuthError {
   constructor(providerSubject: string, userId: string) {
     super(`Google identity '${providerSubject}' is linked to user '${userId}' and cannot authenticate as a customer.`);

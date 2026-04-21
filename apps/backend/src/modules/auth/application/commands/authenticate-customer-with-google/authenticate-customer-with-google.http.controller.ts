@@ -8,7 +8,6 @@ import { AuthenticateCustomerWithGoogleResult } from './authenticate-customer-wi
 import { AuthenticateCustomerWithGoogleRequestDto } from './authenticate-customer-with-google.request.dto';
 import {
   CustomerGoogleIdentityLinkedToUserError,
-  CustomerGoogleIdentityTenantMismatchError,
   CustomerUnavailableForAuthenticationError,
   InvalidGoogleAuthenticationError,
   InvalidGoogleAuthenticationStateError,
@@ -41,10 +40,6 @@ export class AuthenticateCustomerWithGoogleHttpController {
       }
 
       if (error instanceof CustomerGoogleIdentityLinkedToUserError) {
-        throw new UnauthorizedException(error.message);
-      }
-
-      if (error instanceof CustomerGoogleIdentityTenantMismatchError) {
         throw new UnauthorizedException(error.message);
       }
 

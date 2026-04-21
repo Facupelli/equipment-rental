@@ -253,6 +253,7 @@ model AuthHandoffToken {
 
 model ExternalIdentity {
   id              String                   @id @default(uuid())
+  tenantId        String                   @map("tenant_id")
   provider        ExternalIdentityProvider
   providerSubject String                   @map("provider_subject")
   email           String
@@ -265,10 +266,11 @@ model ExternalIdentity {
   createdAt       DateTime                 @default(now()) @map("created_at")
   updatedAt       DateTime                 @updatedAt @map("updated_at")
 
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
   customer Customer? @relation(fields: [customerId], references: [id])
   user     User?     @relation(fields: [userId], references: [id])
 
-  @@unique([provider, providerSubject])
+  @@index([tenantId, provider, providerSubject])
   @@index([customerId])
   @@index([userId])
   @@map("external_identities")
@@ -324,6 +326,7 @@ model Tenant {
   ownerPayments       OwnerPayment[]
   ownerContracts      OwnerContract[]
   coupons             Coupon[]
+  externalIdentities  ExternalIdentity[]
 
   @@map("tenants")
 }

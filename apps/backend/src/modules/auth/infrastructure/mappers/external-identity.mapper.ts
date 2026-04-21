@@ -16,6 +16,7 @@ export class ExternalIdentityMapper {
   static toDomain(record: PrismaExternalIdentity): ExternalIdentity {
     return ExternalIdentity.reconstitute({
       id: record.id,
+      tenantId: record.tenantId,
       provider: record.provider as ExternalIdentityProvider,
       providerSubject: record.providerSubject,
       email: record.email,
@@ -34,6 +35,7 @@ export class ExternalIdentityMapper {
 
     return {
       id: entity.id,
+      tenantId: entity.tenantId,
       provider: entity.provider as PrismaExternalIdentityProvider,
       providerSubject: entity.providerSubject,
       email: entity.email,
@@ -52,6 +54,7 @@ export class ExternalIdentityMapper {
     const linkedActor = entity.linkedActor;
 
     return {
+      tenantId: entity.tenantId,
       provider: entity.provider as PrismaExternalIdentityProvider,
       providerSubject: entity.providerSubject,
       email: entity.email,

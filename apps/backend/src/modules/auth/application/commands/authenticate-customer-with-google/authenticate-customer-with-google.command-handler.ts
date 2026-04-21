@@ -15,7 +15,6 @@ import { BcryptService } from '../../bcript.service';
 import { AuthenticateCustomerWithGoogleCommand } from './authenticate-customer-with-google.command';
 import {
   CustomerGoogleIdentityLinkedToUserError,
-  CustomerGoogleIdentityTenantMismatchError,
   CustomerUnavailableForAuthenticationError,
   InvalidGoogleAuthenticationError,
   InvalidGoogleAuthenticationStateError,
@@ -41,7 +40,6 @@ export type AuthenticateCustomerWithGoogleResult = Result<
   | InvalidGoogleAuthenticationError
   | InvalidGoogleAuthenticationStateError
   | CustomerGoogleIdentityLinkedToUserError
-  | CustomerGoogleIdentityTenantMismatchError
   | CustomerUnavailableForAuthenticationError
 >;
 
@@ -92,13 +90,14 @@ export class AuthenticateCustomerWithGoogleCommandHandler implements ICommandHan
 
     const tenantId = verifiedState.tenantId;
 
-    const existingIdentity = await this.externalIdentityRepository.findByProviderSubject(
+    const existingIdentity = await this.externalIdentityRepository.findCustomerByProviderSubjectInTenant(
       ExternalIdentityProvider.GOOGLE,
       googleIdentity.providerSubject,
+      tenantId,
     );
 
     const customer = existingIdentity
-      ? await this.resolveExistingLinkedCustomer(existingIdentity, tenantId)
+      ? await this.resolveExistingLinkedCustomer(existingIdentity)
       : await this.resolveOrCreateCustomer(googleIdentity, tenantId);
 
     if (customer.isErr()) {
@@ -107,6 +106,7 @@ export class AuthenticateCustomerWithGoogleCommandHandler implements ICommandHan
 
     if (!existingIdentity) {
       const externalIdentity = ExternalIdentity.createForCustomer({
+        tenantId,
         provider: ExternalIdentityProvider.GOOGLE,
         providerSubject: googleIdentity.providerSubject,
         email: googleIdentity.email,
@@ -139,12 +139,10 @@ export class AuthenticateCustomerWithGoogleCommandHandler implements ICommandHan
 
   private async resolveExistingLinkedCustomer(
     identity: ExternalIdentity,
-    tenantId: string,
   ): Promise<
     Result<
       CustomerForAuthReadModel,
       | CustomerGoogleIdentityLinkedToUserError
-      | CustomerGoogleIdentityTenantMismatchError
       | CustomerUnavailableForAuthenticationError
     >
   > {
@@ -159,12 +157,6 @@ export class AuthenticateCustomerWithGoogleCommandHandler implements ICommandHan
     if (!linkedCustomer) {
       throw new Error(
         `Customer '${identity.linkedActor.actorId}' linked to external identity '${identity.id}' was not found.`,
-      );
-    }
-
-    if (linkedCustomer.tenantId !== tenantId) {
-      return err(
-        new CustomerGoogleIdentityTenantMismatchError(identity.providerSubject, tenantId, linkedCustomer.tenantId),
       );
     }
 

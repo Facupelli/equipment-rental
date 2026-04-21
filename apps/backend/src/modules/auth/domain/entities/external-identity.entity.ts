@@ -12,6 +12,7 @@ export type ExternalIdentityLinkedActor =
   | { actorType: ActorType.USER; actorId: string };
 
 interface ExternalIdentityProps {
+  tenantId: string;
   provider: ExternalIdentityProvider;
   providerSubject: string;
   email: string;
@@ -25,6 +26,7 @@ interface ExternalIdentityProps {
 }
 
 export interface CreateExternalIdentityForCustomerProps {
+  tenantId: string;
   provider: ExternalIdentityProvider;
   providerSubject: string;
   email: string;
@@ -37,6 +39,7 @@ export interface CreateExternalIdentityForCustomerProps {
 
 export interface ReconstituteExternalIdentityProps {
   id: string;
+  tenantId: string;
   provider: ExternalIdentityProvider;
   providerSubject: string;
   email: string;
@@ -56,6 +59,7 @@ export class ExternalIdentity {
   ) {}
 
   static createForCustomer(props: CreateExternalIdentityForCustomerProps): ExternalIdentity {
+    ExternalIdentity.assertNonEmpty('tenantId', props.tenantId);
     ExternalIdentity.assertNonEmpty('providerSubject', props.providerSubject);
     ExternalIdentity.assertNonEmpty('email', props.email);
     ExternalIdentity.assertNonEmpty('customerId', props.customerId);
@@ -63,6 +67,7 @@ export class ExternalIdentity {
     const now = new Date();
 
     return new ExternalIdentity(randomUUID(), {
+      tenantId: props.tenantId,
       provider: props.provider,
       providerSubject: props.providerSubject,
       email: props.email,
@@ -80,11 +85,13 @@ export class ExternalIdentity {
   }
 
   static reconstitute(props: ReconstituteExternalIdentityProps): ExternalIdentity {
+    ExternalIdentity.assertNonEmpty('tenantId', props.tenantId);
     ExternalIdentity.assertNonEmpty('providerSubject', props.providerSubject);
     ExternalIdentity.assertNonEmpty('email', props.email);
     ExternalIdentity.assertNonEmpty('linkedActor.actorId', props.linkedActor.actorId);
 
     return new ExternalIdentity(props.id, {
+      tenantId: props.tenantId,
       provider: props.provider,
       providerSubject: props.providerSubject,
       email: props.email,
@@ -100,6 +107,10 @@ export class ExternalIdentity {
 
   get provider(): ExternalIdentityProvider {
     return this.props.provider;
+  }
+
+  get tenantId(): string {
+    return this.props.tenantId;
   }
 
   get providerSubject(): string {

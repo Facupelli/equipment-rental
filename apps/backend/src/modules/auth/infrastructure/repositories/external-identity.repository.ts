@@ -9,18 +9,19 @@ import { ExternalIdentityMapper } from '../mappers/external-identity.mapper';
 export class ExternalIdentityRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByProviderSubject(
+  async findCustomerByProviderSubjectInTenant(
     provider: ExternalIdentityProvider,
     providerSubject: string,
+    tenantId: string,
   ): Promise<ExternalIdentity | null> {
-    const record = await this.prisma.client.externalIdentity.findUnique({
+    const record = await this.prisma.client.externalIdentity.findFirst({
       where: {
-        provider_providerSubject: {
-          provider,
-          providerSubject,
-        },
+        provider,
+        providerSubject,
+        tenantId,
+        customerId: { not: null },
       },
-    });
+    } as never);
 
     return record ? ExternalIdentityMapper.toDomain(record) : null;
   }
@@ -30,6 +31,6 @@ export class ExternalIdentityRepository {
       where: { id: identity.id },
       create: ExternalIdentityMapper.toPersistence(identity),
       update: ExternalIdentityMapper.toUpdatePersistence(identity),
-    });
+    } as never);
   }
 }
