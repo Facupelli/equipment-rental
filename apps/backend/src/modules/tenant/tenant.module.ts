@@ -20,6 +20,7 @@ import { UpdateTenantConfigCommandHandler } from './application/commands/update-
 import { UpdateTenantBrandingCommandHandler } from './application/commands/update-branding/update-branding.command-handler';
 import { FindTenantByCustomDomainQueryHandler } from './application/queries/find-tenant-by-custom-domain/find-tenant-by-custom-domain.query-handler';
 import { FindTenantBySlugQueryHandler } from './application/queries/find-tenant-by-slug/find-tenant-by-slug.query-handler';
+import { FindTenantByIdQueryHandler } from './application/queries/find-tenant-by-id/find-tenant-by-id.query-handler';
 import { GetLocationSchedulesQueryHandler } from './location/application/queries/get-location-schedules/get-location-schedules.query-handler';
 import { AddScheduleToLocationCommandHandler } from './location/application/commands/add-schedule-to-location/add-schedule-to-location.command-handler';
 import { BulkAddSchedulesToLocationCommandHandler } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-schedule-to-location.command-handler';
@@ -100,6 +101,7 @@ const queryHandlers = [
   GetLocationScheduleSlotsQueryHandler,
   GetLocationSchedulesQueryHandler,
   // internal
+  FindTenantByIdQueryHandler,
   FindTenantByCustomDomainQueryHandler,
   FindTenantBySlugQueryHandler,
 ];

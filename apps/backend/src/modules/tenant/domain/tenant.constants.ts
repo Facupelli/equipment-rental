@@ -13,6 +13,7 @@ export const BANNED_TENANT_SLUGS: readonly string[] = [
   'www',
   'api',
   'admin',
+  'auth',
   'internal',
   'mail',
   'static',

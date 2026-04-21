@@ -25,6 +25,8 @@ import { ApproveCustomerProfileService } from './application/commands/approve-cu
 import { ApproveCustomerProfileHttpController } from './application/commands/approve-customer-profile/approve-customer-profile.http.controller';
 import { RejectCustomerProfileService } from './application/commands/reject-customer-profile/reject-customer-profile.service';
 import { RejectCustomerProfileHttpController } from './application/commands/reject-customer-profile/reject-customer-profile.http.controller';
+import { FindCustomerForAuthByEmailQueryHandler } from './application/queries/find-customer-for-auth-by-email/find-customer-for-auth-by-email.query-handler';
+import { FindCustomerForAuthByIdQueryHandler } from './application/queries/find-customer-for-auth-by-id/find-customer-for-auth-by-id.query-handler';
 
 const commandServices = [
   SubmitCustomerProfileService,
@@ -35,6 +37,8 @@ const commandServices = [
 
 const queryHandlers = [
   FindCustomerCredentialsByEmailQueryHandler,
+  FindCustomerForAuthByEmailQueryHandler,
+  FindCustomerForAuthByIdQueryHandler,
   GetCustomersQueryHandler,
   GetCustomerDetailQueryHandler,
   GetCustomerProfileQueryHandler,

@@ -24,7 +24,7 @@ export class TenantContextController {
 
     this.rootDomain = rootDomain;
     this.adminHostname = `app.${rootDomain}`;
-    this.platformHostnames = new Set([rootDomain, `www.${rootDomain}`, 'localhost']);
+    this.platformHostnames = new Set([rootDomain, `www.${rootDomain}`, `auth.${rootDomain}`, 'localhost']);
   }
 
   @Public()
