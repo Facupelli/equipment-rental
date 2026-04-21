@@ -11,6 +11,8 @@ export const tenantPricingConfigSchema = z.object({
 	roundingRule: roundingRuleSchema,
 	currency: z.string(),
 	locale: z.string(),
+	insuranceEnabled: z.boolean(),
+	insuranceRatePercent: z.number().min(0).max(100),
 });
 
 export const tenantConfigSchema = z.object({

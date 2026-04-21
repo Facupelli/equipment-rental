@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import Decimal from 'decimal.js';
+import { InsuranceCalculationService } from 'src/core/domain/services/insurance-calculation.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { FulfillmentMethod } from '@repo/types';
 import { OrderItem } from './order-item.entity';
@@ -12,8 +13,6 @@ import {
 import { OrderStatus } from '@repo/types';
 import { OrderFinancialSnapshot } from '../value-objects/order-financial-snapshot.value-object';
 import { OrderDeliveryRequest } from '../value-objects/order-delivery-request.value-object';
-
-const EQUIPMENT_INSURANCE_RATE = new Decimal('0.06');
 
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.PENDING_REVIEW]: [OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.EXPIRED],
@@ -34,6 +33,7 @@ export interface CreateOrderProps {
   fulfillmentMethod: FulfillmentMethod;
   deliveryRequest?: OrderDeliveryRequest | null;
   insuranceSelected: boolean;
+  insuranceRatePercent: number;
   customerId?: string;
   notes?: string;
 }
@@ -64,6 +64,7 @@ export class Order {
     private readonly fulfillmentMethod: FulfillmentMethod,
     private readonly deliveryRequest: OrderDeliveryRequest | null,
     private readonly insuranceSelected: boolean,
+    private readonly insuranceRatePercent: number,
     private financialSnapshot: OrderFinancialSnapshot,
     private notes: string | null,
     private readonly items: OrderItem[],
@@ -80,7 +81,8 @@ export class Order {
       props.fulfillmentMethod,
       Order.assertDeliveryRequest(props.fulfillmentMethod, props.deliveryRequest ?? null),
       props.insuranceSelected,
-      OrderFinancialSnapshot.zero(props.currency, props.insuranceSelected),
+      props.insuranceRatePercent,
+      OrderFinancialSnapshot.zero(props.currency, props.insuranceSelected, props.insuranceRatePercent),
       props.notes?.trim() ?? null,
       [],
     );
@@ -97,6 +99,7 @@ export class Order {
       props.fulfillmentMethod,
       Order.assertDeliveryRequest(props.fulfillmentMethod, props.deliveryRequest),
       props.insuranceSelected,
+      props.financialSnapshot.insuranceRatePercent,
       props.financialSnapshot,
       props.notes,
       props.items,
@@ -206,18 +209,20 @@ export class Order {
       new Decimal(0),
     );
     const itemsSubtotal = this.items.reduce((sum, item) => sum.plus(item.priceSnapshot.finalPrice), new Decimal(0));
-    const insuranceAmount = this.insuranceSelected
-      ? subtotalBeforeDiscounts.mul(EQUIPMENT_INSURANCE_RATE)
-      : new Decimal(0);
+    const insurance = InsuranceCalculationService.calculate(subtotalBeforeDiscounts, {
+      insuranceSelected: this.insuranceSelected,
+      insuranceRatePercent: this.insuranceRatePercent,
+    });
 
     this.financialSnapshot = OrderFinancialSnapshot.create({
       currency,
       subtotalBeforeDiscounts,
       itemsDiscountTotal,
       itemsSubtotal,
-      insuranceApplied: this.insuranceSelected,
-      insuranceAmount,
-      total: itemsSubtotal.plus(insuranceAmount),
+      insuranceApplied: insurance.insuranceApplied,
+      insuranceRatePercent: insurance.insuranceRatePercent,
+      insuranceAmount: insurance.insuranceAmount,
+      total: itemsSubtotal.plus(insurance.insuranceAmount),
     });
   }
 

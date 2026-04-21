@@ -250,7 +250,7 @@ function SettingsPanel({ section }: { section: SettingsSection }) {
     case "pricing":
       return <TenantConfigForm section="pricing" />;
     case "insurance":
-      return <div>Proximamente</div>;
+      return <TenantConfigForm section="insurance" />;
   }
 }
 

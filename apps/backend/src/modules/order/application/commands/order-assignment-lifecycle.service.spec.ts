@@ -23,6 +23,7 @@ function makeOrder(status: OrderStatus): Order {
     status,
     fulfillmentMethod: FulfillmentMethod.PICKUP,
     insuranceSelected: false,
+    insuranceRatePercent: 0,
   });
 }
 

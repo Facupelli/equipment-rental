@@ -3,6 +3,7 @@ import {
   InvalidNewArrivalsWindowDaysException,
   InvalidDefaultCurrencyException,
   InvalidMaxOverRentThresholdException,
+  InvalidInsuranceRatePercentException,
   InvalidBookingModeException,
 } from '../exceptions/tenant.exceptions';
 import { assertValidIanaTimezone } from '../utils/timezone.validation';
@@ -14,6 +15,8 @@ export interface TenantPricingConfigProps {
   roundingRule: RoundingRule;
   currency: string;
   locale: string;
+  insuranceEnabled: boolean;
+  insuranceRatePercent: number;
 }
 
 export interface TenantConfigProps {
@@ -55,6 +58,7 @@ export class TenantConfig {
     TenantConfig.validateNewArrivalsWindowDays(normalizedProps.newArrivalsWindowDays);
     TenantConfig.validateDefaultCurrency(normalizedProps.pricing.currency);
     TenantConfig.validateMaxOverRentThreshold(normalizedProps.pricing.maxOverRentThreshold);
+    TenantConfig.validateInsuranceRatePercent(normalizedProps.pricing.insuranceRatePercent);
     TenantConfig.validateBookingMode(normalizedProps.bookingMode);
 
     return new TenantConfig(normalizedProps);
@@ -75,6 +79,8 @@ export class TenantConfig {
         roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
         currency: 'ARS',
         locale: 'es-AR',
+        insuranceEnabled: false,
+        insuranceRatePercent: 0,
       },
       timezone: 'UTC',
       newArrivalsWindowDays: 30,
@@ -151,6 +157,12 @@ export class TenantConfig {
   private static validateMaxOverRentThreshold(threshold: number): void {
     if (typeof threshold !== 'number' || threshold < 0) {
       throw new InvalidMaxOverRentThresholdException(threshold);
+    }
+  }
+
+  private static validateInsuranceRatePercent(ratePercent: number): void {
+    if (typeof ratePercent !== 'number' || ratePercent < 0 || ratePercent > 100) {
+      throw new InvalidInsuranceRatePercentException(ratePercent);
     }
   }
 

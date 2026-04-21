@@ -1,6 +1,6 @@
 import { RoundingRule } from '@repo/types';
 
-import { InvalidBookingModeException } from '../exceptions/tenant.exceptions';
+import { InvalidBookingModeException, InvalidInsuranceRatePercentException } from '../exceptions/tenant.exceptions';
 import { TenantConfig } from './tenant-config.value-object';
 
 describe('TenantConfig', () => {
@@ -9,6 +9,8 @@ describe('TenantConfig', () => {
 
     expect(config.bookingMode).toBe('instant-book');
     expect(config.toPlainObject().bookingMode).toBe('instant-book');
+    expect(config.pricing.insuranceEnabled).toBe(false);
+    expect(config.pricing.insuranceRatePercent).toBe(0);
   });
 
   it('rejects invalid bookingMode values', () => {
@@ -21,6 +23,8 @@ describe('TenantConfig', () => {
           roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
           currency: 'ARS',
           locale: 'es-AR',
+          insuranceEnabled: false,
+          insuranceRatePercent: 0,
         },
         timezone: 'UTC',
         newArrivalsWindowDays: 30,
@@ -38,12 +42,16 @@ describe('TenantConfig', () => {
         roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
         currency: 'ARS',
         locale: 'es-AR',
+        insuranceEnabled: false,
+        insuranceRatePercent: 0,
       },
       timezone: 'UTC',
       newArrivalsWindowDays: 30,
     });
 
     expect(config.bookingMode).toBe('instant-book');
+    expect(config.pricing.insuranceEnabled).toBe(false);
+    expect(config.pricing.insuranceRatePercent).toBe(0);
   });
 
   it('maps legacy rounding rule values during reconstitution', () => {
@@ -55,11 +63,33 @@ describe('TenantConfig', () => {
         roundingRule: 'SPLIT' as never,
         currency: 'ARS',
         locale: 'es-AR',
+        insuranceEnabled: false,
+        insuranceRatePercent: 0,
       },
       timezone: 'UTC',
       newArrivalsWindowDays: 30,
     });
 
     expect(config.pricing.roundingRule).toBe(RoundingRule.IGNORE_PARTIAL_UNIT);
+  });
+
+  it('rejects insurance rates above 100 percent', () => {
+    expect(() =>
+      TenantConfig.create({
+        pricing: {
+          overRentalEnabled: false,
+          maxOverRentThreshold: 0,
+          weekendCountsAsOne: false,
+          roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
+          currency: 'ARS',
+          locale: 'es-AR',
+          insuranceEnabled: true,
+          insuranceRatePercent: 101,
+        },
+        timezone: 'UTC',
+        newArrivalsWindowDays: 30,
+        bookingMode: 'instant-book',
+      }),
+    ).toThrow(InvalidInsuranceRatePercentException);
   });
 });

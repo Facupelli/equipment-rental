@@ -1,8 +1,9 @@
-import Decimal from 'decimal.js';
+import { TenantConfig } from '@repo/schemas';
 import { Injectable } from '@nestjs/common';
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { PromotionAdjustmentType } from '@repo/types';
 import { err, ok, Result } from 'neverthrow';
+import { InsuranceCalculationService } from 'src/core/domain/services/insurance-calculation.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import {
   BundleInactiveForBookingError,
@@ -10,6 +11,7 @@ import {
   ProductTypeInactiveForBookingError,
   ProductTypeNotBookableAtLocationError,
 } from 'src/modules/catalog/catalog.public-api';
+import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 import {
   GetLocationContextQuery,
   LocationContextReadModel,
@@ -55,8 +57,6 @@ export type CartDiscountLineItem = {
   discountAmount: number;
 };
 
-const EQUIPMENT_INSURANCE_RATE = new Decimal('0.06');
-
 export type CalculateCartPricesError =
   | PricingPeriodInvalidError
   | PricingInvalidBookingLocationError
@@ -82,11 +82,19 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
 
   async execute(query: CalculateCartPricesQuery): Promise<Result<CartPriceResult, CalculateCartPricesError>> {
     if (query.items.length === 0) {
+      const insuranceTerms = InsuranceCalculationService.resolveTerms(
+        {
+          insuranceEnabled: false,
+          insuranceRatePercent: 0,
+        },
+        query.insuranceSelected,
+      );
+
       return ok({
         lineItems: [],
         totalUnits: 0,
         itemsSubtotal: 0,
-        insuranceApplied: query.insuranceSelected,
+        insuranceApplied: insuranceTerms.insuranceSelected,
         insuranceAmount: 0,
         total: 0,
         totalBeforeDiscounts: 0,
@@ -95,12 +103,19 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       });
     }
 
-    const location = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
-      new GetLocationContextQuery(query.tenantId, query.locationId),
-    );
+    const [location, tenantConfig] = await Promise.all([
+      this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+        new GetLocationContextQuery(query.tenantId, query.locationId),
+      ),
+      this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(new GetTenantConfigQuery(query.tenantId)),
+    ]);
 
     if (!location) {
       return err(new PricingInvalidBookingLocationError(query.locationId));
+    }
+
+    if (!tenantConfig) {
+      throw new Error(`Tenant config not found for tenant "${query.tenantId}"`);
     }
 
     let period: DateRange;
@@ -149,17 +164,22 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
         })),
       }));
 
-      const insuranceAmount = query.insuranceSelected
-        ? new Decimal(pricedBasket.totalBeforeDiscounts).mul(EQUIPMENT_INSURANCE_RATE).toNumber()
-        : 0;
+      const insuranceTerms = InsuranceCalculationService.resolveTerms(
+        {
+          insuranceEnabled: tenantConfig.pricing.insuranceEnabled,
+          insuranceRatePercent: tenantConfig.pricing.insuranceRatePercent,
+        },
+        query.insuranceSelected,
+      );
+      const insurance = InsuranceCalculationService.calculate(pricedBasket.totalBeforeDiscounts, insuranceTerms);
 
       return ok({
         lineItems,
         totalUnits: pricedBasket.items[0]?.price.totalUnits ?? 0,
         itemsSubtotal: pricedBasket.itemsSubtotal,
-        insuranceApplied: query.insuranceSelected,
-        insuranceAmount,
-        total: new Decimal(pricedBasket.itemsSubtotal).plus(insuranceAmount).toNumber(),
+        insuranceApplied: insurance.insuranceApplied,
+        insuranceAmount: insurance.insuranceAmount.toNumber(),
+        total: pricedBasket.itemsSubtotal + insurance.insuranceAmount.toNumber(),
         totalBeforeDiscounts: pricedBasket.totalBeforeDiscounts,
         totalDiscount: pricedBasket.totalDiscount,
         couponApplied: pricedBasket.couponApplied,

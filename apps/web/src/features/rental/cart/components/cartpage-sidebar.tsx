@@ -632,7 +632,8 @@ export function CartPagePriceBreakdown({
 	}
 
 	const hasSavings = (totalDiscount ?? 0) > 0;
-	const shouldShowInsuranceRow = insuranceSelected || insuranceApplied;
+	const shouldShowInsuranceToggle = priceConfig.insuranceEnabled;
+	const shouldShowInsuranceRow = insuranceApplied === true;
 
 	function handleApplyCoupon() {
 		onCouponCodeChange(draftCouponCode.trim().toUpperCase());
@@ -670,12 +671,16 @@ export function CartPagePriceBreakdown({
 						))}
 			</div>
 
-			<div className="my-4 border-t border-neutral-200" />
-
-			<InsuranceToggleRow
-				checked={insuranceSelected}
-				onCheckedChange={onInsuranceSelectedChange}
-			/>
+			{shouldShowInsuranceToggle ? (
+				<>
+					<div className="my-4 border-t border-neutral-200" />
+					<InsuranceToggleRow
+						checked={insuranceSelected}
+						onCheckedChange={onInsuranceSelectedChange}
+						ratePercent={priceConfig.insuranceRatePercent}
+					/>
+				</>
+			) : null}
 
 			{/* <div className="my-4 border-t border-neutral-200" />
 
@@ -848,11 +853,13 @@ void CouponInputRow;
 type InsuranceToggleRowProps = {
 	checked: boolean;
 	onCheckedChange: (value: boolean) => void;
+	ratePercent: number;
 };
 
 function InsuranceToggleRow({
 	checked,
 	onCheckedChange,
+	ratePercent,
 }: InsuranceToggleRowProps) {
 	return (
 		<div className="flex items-center gap-4">
@@ -864,7 +871,7 @@ function InsuranceToggleRow({
 
 			<div className="flex min-w-0 items-center gap-2">
 				<span className="text-[15px] font-medium text-neutral-700">
-					Seguro de Equipos
+					Seguro de equipos ({ratePercent}%)
 				</span>
 
 				<Popover>
@@ -891,8 +898,9 @@ function InsuranceToggleRow({
 							<PopoverDescription className="space-y-3 text-xs leading-5 text-neutral-200">
 								<p>
 									Protege tu pedido con una cobertura adicional ante imprevistos
-									durante el alquiler. El cargo corresponde al 6% del subtotal
-									antes de descuentos y se suma al total final del pedido.
+									durante el alquiler. El cargo corresponde al {ratePercent}%
+									del subtotal antes de descuentos y se suma al total final del
+									pedido.
 								</p>
 								<p>
 									El seguro NO incluye daños por el mal uso del equipo por parte

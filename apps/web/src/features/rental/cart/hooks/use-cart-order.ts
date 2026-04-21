@@ -22,6 +22,7 @@ import { isAuthError } from "@/shared/errors";
 import { useCartOrderDelivery } from "./use-cart-order-delivery";
 import { useCartOrderPricing } from "./use-cart-order-pricing";
 import { useCartOrderTimes } from "./use-cart-order-times";
+import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 
 type UseCartOrderParams = {
 	location: {
@@ -55,10 +56,13 @@ export function useCartOrder({
 }: UseCartOrderParams) {
 	const navigate = useNavigate();
 	const { data: sessionUser } = useCurrentPortalSession();
+	const { data: tenantPricingConfig } = useTenantPricingConfig();
 	const cartItems = useCartItems();
 	const { clearCart } = useCartActions();
 
-	const [insuranceSelected, setInsuranceSelected] = useState(true);
+	const [insuranceSelected, setInsuranceSelected] = useState(
+		tenantPricingConfig.insuranceEnabled,
+	);
 	const [couponCode, setCouponCode] = useState("");
 	const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
 	const [conflictGroups, setConflictGroups] = useState<ConflictGroup[]>([]);

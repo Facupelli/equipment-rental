@@ -17,6 +17,7 @@ function makeOrder(status: OrderStatus = OrderStatus.PENDING_REVIEW): Order {
     status,
     fulfillmentMethod: FulfillmentMethod.PICKUP,
     insuranceSelected: false,
+    insuranceRatePercent: 0,
   });
 }
 
@@ -41,13 +42,13 @@ function makeReconstitutedOrder(status: OrderStatus = OrderStatus.PENDING_REVIEW
     customerId: 'customer-1',
     period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
     status,
-    fulfillmentMethod: FulfillmentMethod.PICKUP,
-    deliveryRequest: null,
-    insuranceSelected: false,
-    financialSnapshot: OrderFinancialSnapshot.zero('ARS', false),
-    notes: null,
-    items: [],
-  });
+      fulfillmentMethod: FulfillmentMethod.PICKUP,
+      deliveryRequest: null,
+      insuranceSelected: false,
+      financialSnapshot: OrderFinancialSnapshot.zero('ARS', false, 0),
+      notes: null,
+      items: [],
+    });
 }
 
 describe('Order', () => {
@@ -117,6 +118,7 @@ describe('Order', () => {
       fulfillmentMethod: FulfillmentMethod.DELIVERY,
       deliveryRequest: makeDeliveryRequest(),
       insuranceSelected: false,
+      insuranceRatePercent: 0,
     });
 
     expect(order.currentFulfillmentMethod).toBe(FulfillmentMethod.DELIVERY);

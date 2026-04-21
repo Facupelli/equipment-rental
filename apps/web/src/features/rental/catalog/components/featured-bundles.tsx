@@ -11,11 +11,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { groupBundleComponents } from "@/features/catalog/bundles/bundles.utils";
 import { rentalQueries } from "@/features/rental/rental.queries";
 import { usePortalTenantId } from "@/features/tenant-context/use-portal-tenant-id";
+import { buildR2PublicUrl } from "@/lib/r2-public-url";
 import { formatCurrency } from "@/shared/utils/price.utils";
 import { useBundleCardState } from "../../cart/hooks/use-bundle-card-state";
 import { useTenantPricingConfig } from "../../tenant/tenant.queries";
 import type { RentalPageSearch } from "../hooks/use-catalog-page-search";
-import { buildR2PublicUrl } from "@/lib/r2-public-url";
 
 const LazyBundleDetailDialog = lazy(() =>
 	import("./bundle-detail-dialog").then((module) => ({
@@ -336,7 +336,7 @@ function BundleCard({
 						<div className="flex gap-2 w-full">
 							<Button variant="outline" className="flex-1" disabled>
 								<CheckCircle className="w-4 h-4 mr-2" />
-								Reserved
+								Reservado
 							</Button>
 							<Button
 								variant="outline"

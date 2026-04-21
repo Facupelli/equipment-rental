@@ -13,7 +13,9 @@ const pricingPatchSchema = z.object({
     .string()
     .regex(/^[A-Z]{3}$/, "Must be a 3-letter ISO 4217 code")
     .optional(),
-  locale: z.string(),
+  locale: z.string().optional(),
+  insuranceEnabled: z.boolean().optional(),
+  insuranceRatePercent: z.number().min(0).max(100).optional(),
 });
 
 export const updateTenantConfigSchema = z.object({

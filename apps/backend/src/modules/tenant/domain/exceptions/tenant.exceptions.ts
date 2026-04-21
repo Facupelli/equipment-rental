@@ -50,6 +50,12 @@ export class InvalidMaxOverRentThresholdException extends Error {
   }
 }
 
+export class InvalidInsuranceRatePercentException extends Error {
+  constructor(ratePercent: number) {
+    super(`insuranceRatePercent must be a number between 0 and 100, got ${ratePercent}`);
+  }
+}
+
 export class InvalidBookingModeException extends Error {
   constructor(mode: string) {
     super(`bookingMode must be 'instant-book' or 'request-to-book', got ${mode}`);

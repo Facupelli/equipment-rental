@@ -14,6 +14,8 @@ export const tenantConfigFormSchema = z.object({
   roundingRule: z.enum(RoundingRule),
   currency: z.string().regex(/^[A-Z]{3}$/, "Must be a 3-letter ISO 4217 code"),
   locale: z.string(),
+  insuranceEnabled: z.boolean(),
+  insuranceRatePercent: z.number().min(0).max(100),
   timezone: z.string().min(1, "Timezone is required"),
   newArrivalsWindowDays: z.number().int().positive(),
   bookingMode: bookingModeSchema,
@@ -28,6 +30,8 @@ export const tenantConfigFormDefaults: TenantConfigFormValues = {
   roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
   currency: "ARS",
   locale: "es-AR",
+  insuranceEnabled: false,
+  insuranceRatePercent: 0,
   timezone: "UTC",
   newArrivalsWindowDays: 30,
   bookingMode: BookingMode.INSTANT_BOOK,
@@ -41,6 +45,8 @@ export function tenantConfigToFormValues(config: {
     roundingRule: RoundingRule;
     currency: string;
     locale: string;
+    insuranceEnabled: boolean;
+    insuranceRatePercent: number;
   };
   timezone: string;
   newArrivalsWindowDays: number;
@@ -53,6 +59,8 @@ export function tenantConfigToFormValues(config: {
     roundingRule: config.pricing.roundingRule,
     currency: config.pricing.currency,
     locale: config.pricing.locale,
+    insuranceEnabled: config.pricing.insuranceEnabled,
+    insuranceRatePercent: config.pricing.insuranceRatePercent,
     timezone: config.timezone,
     newArrivalsWindowDays: config.newArrivalsWindowDays,
     bookingMode: config.bookingMode,
@@ -70,6 +78,8 @@ export function toUpdateTenantConfigDto(
       roundingRule: values.roundingRule,
       currency: values.currency,
       locale: values.locale,
+      insuranceEnabled: values.insuranceEnabled,
+      insuranceRatePercent: values.insuranceRatePercent,
     },
     timezone: values.timezone,
     newArrivalsWindowDays: values.newArrivalsWindowDays,

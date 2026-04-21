@@ -13,6 +13,7 @@ import Decimal from 'decimal.js';
 import { err, ok, Result } from 'neverthrow';
 
 import { PrismaService } from 'src/core/database/prisma.service';
+import { InsuranceCalculationService } from 'src/core/domain/services/insurance-calculation.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { GetLocationScheduleSlotsQuery } from 'src/modules/tenant/public/queries/get-location-schedule-slots.query';
 import {
@@ -83,8 +84,16 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
       return err(slotValidation.error);
     }
 
-    const { period, bookingMode } = await this.deriveBookingContext(command);
+    const bookingContext = await this.deriveBookingContext(command);
+    const { period, bookingMode } = bookingContext;
     const now = new Date();
+    const insuranceTerms = InsuranceCalculationService.resolveTerms(
+      {
+        insuranceEnabled: bookingContext.insuranceEnabled,
+        insuranceRatePercent: bookingContext.insuranceRatePercent,
+      },
+      command.insuranceSelected,
+    );
 
     let resolvedItems: ResolvedItem[];
     let resolvedCouponId: string | undefined;
@@ -150,7 +159,8 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
           command.fulfillmentMethod === FulfillmentMethod.DELIVERY && command.deliveryRequest
             ? OrderDeliveryRequest.create(command.deliveryRequest)
             : null,
-        insuranceSelected: command.insuranceSelected,
+        insuranceSelected: insuranceTerms.insuranceSelected,
+        insuranceRatePercent: insuranceTerms.insuranceRatePercent,
       });
 
       const demandUnits = buildDemandUnits(resolvedItems);
@@ -261,7 +271,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
 
   private async deriveBookingContext(
     command: CreateOrderCommand,
-  ): Promise<{ period: DateRange; bookingMode: BookingMode }> {
+  ): Promise<{ period: DateRange; bookingMode: BookingMode; insuranceEnabled: boolean; insuranceRatePercent: number }> {
     const [locationContext, tenantConfig] = await Promise.all([
       this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
         new GetLocationContextQuery(command.tenantId, command.locationId),
@@ -286,6 +296,8 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
         locationContext.effectiveTimezone,
       ),
       bookingMode: tenantConfig.bookingMode,
+      insuranceEnabled: tenantConfig.pricing.insuranceEnabled,
+      insuranceRatePercent: tenantConfig.pricing.insuranceRatePercent,
     };
   }
 

@@ -19,7 +19,7 @@ import {
 } from "../schemas/tenant-config-form.schema";
 import { tenantQueries, useUpdateTenantConfig } from "../tenant.queries";
 
-type TenantConfigSection = "pricing" | "general";
+type TenantConfigSection = "pricing" | "general" | "insurance";
 
 interface TenantConfigFormProps {
   section: TenantConfigSection;
@@ -27,6 +27,22 @@ interface TenantConfigFormProps {
 
 export function TenantConfigForm({ section }: TenantConfigFormProps) {
   const { form, hasDailyBillingUnits } = useTenantConfigSettingsForm();
+
+	function renderSectionFields() {
+		switch (section) {
+			case "pricing":
+				return (
+					<PricingSettingsFields
+						form={form}
+						hasDailyBillingUnits={hasDailyBillingUnits}
+					/>
+				);
+			case "insurance":
+				return <InsuranceSettingsFields form={form} />;
+			case "general":
+				return <GeneralSettingsFields form={form} />;
+		}
+	}
 
   return (
     <form
@@ -37,14 +53,7 @@ export function TenantConfigForm({ section }: TenantConfigFormProps) {
       }}
       className="space-y-6"
     >
-      {section === "pricing" ? (
-        <PricingSettingsFields
-          form={form}
-          hasDailyBillingUnits={hasDailyBillingUnits}
-        />
-      ) : (
-        <GeneralSettingsFields form={form} />
-      )}
+		{renderSectionFields()}
 
       <div className="flex justify-end">
         <Button type="submit">Guardar Configuración</Button>
@@ -226,7 +235,87 @@ function PricingSettingsFields({
         )}
       </form.Field>
     </div>
-  );
+	);
+}
+
+function InsuranceSettingsFields({
+	form,
+}: {
+	form: TenantConfigSettingsFormApi;
+}) {
+	return (
+		<div className="rounded-xl border border-border bg-card divide-y divide-border">
+			<form.Field name="insuranceEnabled">
+				{(field) => (
+					<div className="grid grid-cols-[1fr_auto] items-start gap-8 px-5 py-4">
+						<div>
+							<p className="text-sm font-semibold text-foreground">
+								Habilitar seguro de equipos
+							</p>
+							<p className="mt-0.5 text-xs text-muted-foreground">
+								Muestra la opción de seguro en la tienda y permite aplicarlo a
+								los pedidos.
+							</p>
+						</div>
+						<div className="pt-1">
+							<Switch
+								checked={field.state.value}
+								onCheckedChange={field.handleChange}
+								aria-label="Habilitar seguro de equipos"
+							/>
+						</div>
+					</div>
+				)}
+			</form.Field>
+
+			<form.Subscribe
+				selector={(state) => state.values.insuranceEnabled}
+				children={(insuranceEnabled) => (
+					<form.Field name="insuranceRatePercent">
+						{(field) => {
+							const isInvalid =
+								field.state.meta.isTouched && !field.state.meta.isValid;
+
+							return (
+								<div className="grid grid-cols-[1fr_auto] items-start gap-8 px-5 py-4">
+									<div>
+										<p className="text-sm font-semibold text-foreground">
+											Porcentaje del seguro
+										</p>
+										<p className="mt-0.5 text-xs text-muted-foreground">
+											Porcentaje aplicado sobre el subtotal antes de descuentos.
+											Debe estar entre 0 y 100.
+										</p>
+									</div>
+									<Field data-invalid={isInvalid} className="items-end pt-1">
+										<FieldLabel htmlFor={field.name} className="sr-only">
+											Porcentaje del seguro
+										</FieldLabel>
+										<div className="flex items-center gap-2">
+											<Input
+												id={field.name}
+												type="number"
+												min={0}
+												max={100}
+												step={0.1}
+												value={field.state.value}
+												onChange={(e) => field.handleChange(Number(e.target.value))}
+												onBlur={field.handleBlur}
+												disabled={!insuranceEnabled}
+												className="w-24 text-right"
+											/>
+											<span className="text-sm text-muted-foreground">%</span>
+										</div>
+										{isInvalid && <FieldError errors={field.state.meta.errors} />}
+									</Field>
+								</div>
+							);
+						}}
+					</form.Field>
+				)}
+			/>
+		</div>
+	);
 }
 
 function GeneralSettingsFields({

@@ -41,11 +41,18 @@ describe('CreateOrderService', () => {
     const queryBus = {
       execute: jest.fn(async (query: { constructor: { name: string }; type?: ScheduleSlotType }) => {
         if (query.constructor.name === 'GetTenantConfigQuery') {
-          return { timezone: 'UTC', bookingMode };
+          return {
+            timezone: 'UTC',
+            bookingMode,
+            pricing: {
+              insuranceEnabled: false,
+              insuranceRatePercent: 6,
+            },
+          };
         }
 
         if (query.constructor.name === 'GetLocationContextQuery') {
-          return { id: 'location-1', supportsDelivery: false };
+          return { id: 'location-1', supportsDelivery: false, effectiveTimezone: 'UTC' };
         }
 
         return [600, 900];
@@ -147,6 +154,22 @@ describe('CreateOrderService', () => {
     });
   }
 
+  function makeInsuranceCommand() {
+    return new CreateOrderCommand({
+      tenantId: 'tenant-1',
+      locationId: 'location-1',
+      customerId: 'customer-1',
+      pickupDate: '2026-03-30',
+      returnDate: '2026-03-31',
+      pickupTime: 600,
+      returnTime: 900,
+      items: [{ type: 'PRODUCT', productTypeId: 'product-1', quantity: 1 }],
+      currency: 'ARS',
+      insuranceSelected: true,
+      fulfillmentMethod: FulfillmentMethod.PICKUP,
+    });
+  }
+
   it('creates confirmed orders for instant-book tenants', async () => {
     const { service, saved } = makeService(BookingMode.INSTANT_BOOK);
 
@@ -198,5 +221,13 @@ describe('CreateOrderService', () => {
 
     expect(result.isErr()).toBe(true);
     expect(result._unsafeUnwrapErr().message).toContain('does not support delivery');
+  });
+
+  it('ignores insurance selection when tenant insurance is disabled', async () => {
+    const { service } = makeService(BookingMode.INSTANT_BOOK);
+
+    const result = await service.execute(makeInsuranceCommand());
+
+    expect(result.isOk()).toBe(true);
   });
 });
