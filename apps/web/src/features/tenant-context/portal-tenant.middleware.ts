@@ -1,5 +1,5 @@
-import { createMiddleware } from "@tanstack/react-start";
 import type { TenantContext } from "@repo/schemas";
+import { createMiddleware } from "@tanstack/react-start";
 import { resolveTenantContextByHostname } from "./tenant-context.service";
 
 export const portalTenantMiddleware = createMiddleware({

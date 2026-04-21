@@ -1,8 +1,8 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
-import { Mail, Lock, Building2 } from "lucide-react";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { Building2, Lock, Mail } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Field,
@@ -10,23 +10,26 @@ import {
 	FieldGroup,
 	FieldLabel,
 } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { getOptionalPrincipalFn } from "@/features/auth/auth-guards.api";
+import { buildSharedGoogleAuthStartUrl } from "@/features/rental/auth/google/google-auth.redirect";
+import {
+	useCreateGoogleCustomerState,
+	useCustomerLogin,
+	useCustomerRegister,
+} from "@/features/rental/auth/portal-auth.queries";
+import {
+	getPortalAuthRedirectTarget,
+	portalAuthRedirectSchema,
+} from "@/features/rental/auth/portal-auth.redirect";
 import {
 	customerRegisterDefaultValues,
 	customerRegisterSchema,
 	toRegisterCustomerDto,
 } from "@/features/rental/auth/register/customer-register-form.schema";
-import {
-	getPortalAuthRedirectTarget,
-	portalAuthRedirectSchema,
-} from "@/features/rental/auth/portal-auth.redirect";
-import { getOptionalPrincipalFn } from "@/features/auth/auth-guards.api";
-import {
-	useCustomerLogin,
-	useCustomerRegister,
-} from "@/features/rental/auth/portal-auth.queries";
-import { Link } from "@tanstack/react-router";
 import { getTenantBranding } from "@/features/tenant-branding/tenant-branding";
 import { PoweredByFooter } from "@/shared/components/powered-by-footer";
+import { isAuthError, ProblemDetailsError } from "@/shared/errors";
 
 export const Route = createFileRoute("/_portal/register")({
 	validateSearch: portalAuthRedirectSchema,
@@ -53,6 +56,11 @@ function RegisterPage() {
 
 	const { mutateAsync: register, isPending } = useCustomerRegister();
 	const { mutateAsync: customerLogin } = useCustomerLogin();
+	const { mutateAsync: createGoogleState, isPending: isGoogleStatePending } =
+		useCreateGoogleCustomerState();
+	const [serverError, setServerError] = useState<string | null>(null);
+	const redirectTarget = getPortalAuthRedirectTarget(redirectSearch);
+	const isGooglePending = isGoogleStatePending;
 
 	const form = useForm({
 		defaultValues: customerRegisterDefaultValues,
@@ -60,6 +68,7 @@ function RegisterPage() {
 			onSubmit: customerRegisterSchema,
 		},
 		onSubmit: async ({ value }) => {
+			setServerError(null);
 			const dto = toRegisterCustomerDto(value);
 
 			try {
@@ -68,12 +77,27 @@ function RegisterPage() {
 					email: value.email,
 					password: value.password,
 				});
-				navigate(getPortalAuthRedirectTarget(redirectSearch));
+				navigate(redirectTarget);
 			} catch (error) {
-				console.log({ error });
+				setServerError(getRegisterAuthErrorMessage(error));
 			}
 		},
 	});
+
+	const handleGoogleLogin = async () => {
+		setServerError(null);
+
+		try {
+			const { state } = await createGoogleState({
+				tenantId: tenantContext.tenant.id,
+				portalOrigin: window.location.origin,
+				redirectPath: redirectTarget.href,
+			});
+			window.location.assign(buildSharedGoogleAuthStartUrl(state));
+		} catch (error) {
+			setServerError(getGoogleAuthErrorMessage(error));
+		}
+	};
 
 	const branding = getTenantBranding(tenantContext.tenant);
 
@@ -81,7 +105,7 @@ function RegisterPage() {
 		<div className="grid grid-rows-[1fr_auto] min-h-svh bg-neutral-100">
 			{/* Main — centers content both axes */}
 			<main className="flex flex-col items-center justify-center px-4 py-12">
-				<div className="w-full max-w-md space-y-8">
+				<div className="w-full max-w-md space-y-6">
 					{/* ── Logo + heading ── */}
 					<div className="space-y-2">
 						{branding.logoSrc && (
@@ -100,6 +124,48 @@ function RegisterPage() {
 							<p className="text-sm text-muted-foreground">
 								Regístrate para empezar a alquilar equipos profesionales.
 							</p>
+						</div>
+					</div>
+
+					<div className="space-y-4">
+						<button
+							type="button"
+							onClick={handleGoogleLogin}
+							disabled={isPending || isGooglePending}
+							className="w-full flex items-center justify-center gap-3 h-11 px-3 rounded-md border border-[#747775] bg-white text-[#1F1F1F] font-medium text-sm font-[Roboto,sans-serif] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								viewBox="0 0 48 48"
+								className="size-5 shrink-0"
+							>
+								<title>Google Logo</title>
+								<path
+									fill="#EA4335"
+									d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+								/>
+								<path
+									fill="#4285F4"
+									d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+								/>
+								<path
+									fill="#FBBC05"
+									d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+								/>
+								<path
+									fill="#34A853"
+									d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+								/>
+								<path fill="none" d="M0 0h48v48H0z" />
+							</svg>
+
+							{isGooglePending ? "Conectando..." : "Continuar con Google"}
+						</button>
+
+						<div className="flex items-center gap-3">
+							<span className="flex-1 h-px bg-neutral-300" />
+							<span className="text-sm text-muted-foreground">o</span>
+							<span className="flex-1 h-px bg-neutral-300" />
 						</div>
 					</div>
 
@@ -132,6 +198,7 @@ function RegisterPage() {
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e.target.value)}
 													aria-invalid={isInvalid}
+													className="bg-white"
 												/>
 												{isInvalid && (
 													<FieldError errors={field.state.meta.errors} />
@@ -159,6 +226,7 @@ function RegisterPage() {
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e.target.value)}
 													aria-invalid={isInvalid}
+													className="bg-white"
 												/>
 												{isInvalid && (
 													<FieldError errors={field.state.meta.errors} />
@@ -192,7 +260,7 @@ function RegisterPage() {
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e.target.value)}
 													aria-invalid={isInvalid}
-													className="pl-9"
+													className="pl-9 bg-white"
 												/>
 											</div>
 											{isInvalid && (
@@ -224,7 +292,7 @@ function RegisterPage() {
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e.target.value)}
 													aria-invalid={isInvalid}
-													className="pl-9"
+													className="pl-9 bg-white"
 												/>
 											</div>
 											{isInvalid && (
@@ -249,6 +317,7 @@ function RegisterPage() {
 													form.setFieldValue("companyName", undefined);
 												}
 											}}
+											className="bg-white"
 										/>
 										<label
 											htmlFor={field.name}
@@ -308,14 +377,22 @@ function RegisterPage() {
 							<form.Subscribe
 								selector={(state) => [state.canSubmit, state.isSubmitting]}
 								children={([canSubmit, isSubmitting]) => (
-									<Button
-										className="w-full py-5"
-										type="submit"
-										form={formId}
-										disabled={!canSubmit || isPending}
-									>
-										{isSubmitting ? "Creando..." : "Crear cuenta"}
-									</Button>
+									<Field data-invalid={!!serverError} className="grid gap-y-2">
+										<Button
+											className="w-full py-5"
+											type="submit"
+											form={formId}
+											disabled={!canSubmit || isPending || isGooglePending}
+										>
+											{isSubmitting || isPending
+												? "Creando..."
+												: "Crear cuenta"}
+										</Button>
+
+										{serverError ? (
+											<FieldError errors={[{ message: serverError }]} />
+										) : null}
+									</Field>
 								)}
 							/>
 						</FieldGroup>
@@ -361,4 +438,36 @@ function RegisterPage() {
 			<PoweredByFooter />
 		</div>
 	);
+}
+
+function getGoogleAuthErrorMessage(error: unknown): string {
+	if (isAuthError(error)) {
+		return "No pudimos iniciar sesión con Google.";
+	}
+
+	if (error instanceof ProblemDetailsError) {
+		return error.problemDetails.detail;
+	}
+
+	if (error instanceof Error) {
+		return error.message;
+	}
+
+	return "Ocurrió un error inesperado al iniciar sesión con Google.";
+}
+
+function getRegisterAuthErrorMessage(error: unknown): string {
+	if (isAuthError(error)) {
+		return "No pudimos completar el registro.";
+	}
+
+	if (error instanceof ProblemDetailsError) {
+		return error.problemDetails.detail;
+	}
+
+	if (error instanceof Error) {
+		return error.message;
+	}
+
+	return "Ocurrió un error inesperado al crear la cuenta.";
 }

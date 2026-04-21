@@ -19,6 +19,8 @@ import { Route as PortalLoginRouteImport } from './routes/_portal/login'
 import { Route as PortalTenantRouteRouteImport } from './routes/_portal/_tenant/route'
 import { Route as AdminDashboardRouteRouteImport } from './routes/_admin/dashboard/route'
 import { Route as AdminDashboardIndexRouteImport } from './routes/_admin/dashboard/index'
+import { Route as AuthGoogleStartRouteImport } from './routes/auth/google/start'
+import { Route as AuthGoogleCallbackRouteImport } from './routes/auth/google/callback'
 import { Route as AdminAdminRegisterRouteImport } from './routes/_admin/admin/register'
 import { Route as AdminAdminLoginRouteImport } from './routes/_admin/admin/login'
 import { Route as PortalTenantRentalIndexRouteImport } from './routes/_portal/_tenant/rental/index'
@@ -33,6 +35,7 @@ import { Route as AdminDashboardLocationsIndexRouteImport } from './routes/_admi
 import { Route as AdminDashboardCustomersIndexRouteImport } from './routes/_admin/dashboard/customers/index'
 import { Route as ApiOrdersOrderIdContractRouteImport } from './routes/api/orders/$orderId/contract'
 import { Route as ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport } from './routes/api/customer-profiles/$customerProfileId/identity-document'
+import { Route as PortalAuthGoogleFinalizeRouteImport } from './routes/_portal/auth/google/finalize'
 import { Route as AdminDashboardPromotionsNewRouteImport } from './routes/_admin/dashboard/promotions/new'
 import { Route as AdminDashboardOwnersOwnerIdRouteImport } from './routes/_admin/dashboard/owners/$ownerId'
 import { Route as AdminDashboardOrdersOrderIdRouteImport } from './routes/_admin/dashboard/orders/$orderId'
@@ -100,6 +103,16 @@ const AdminDashboardIndexRoute = AdminDashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminDashboardRouteRoute,
+} as any)
+const AuthGoogleStartRoute = AuthGoogleStartRouteImport.update({
+  id: '/auth/google/start',
+  path: '/auth/google/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
+  id: '/auth/google/callback',
+  path: '/auth/google/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAdminRegisterRoute = AdminAdminRegisterRouteImport.update({
   id: '/_admin/admin/register',
@@ -180,6 +193,12 @@ const ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute =
     id: '/api/customer-profiles/$customerProfileId/identity-document',
     path: '/api/customer-profiles/$customerProfileId/identity-document',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const PortalAuthGoogleFinalizeRoute =
+  PortalAuthGoogleFinalizeRouteImport.update({
+    id: '/auth/google/finalize',
+    path: '/auth/google/finalize',
+    getParentRoute: () => PortalRouteRoute,
   } as any)
 const AdminDashboardPromotionsNewRoute =
   AdminDashboardPromotionsNewRouteImport.update({
@@ -306,12 +325,15 @@ export interface FileRoutesByFullPath {
   '/api/upload': typeof ApiUploadRoute
   '/admin/login': typeof AdminAdminLoginRoute
   '/admin/register': typeof AdminAdminRegisterRoute
+  '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/auth/google/start': typeof AuthGoogleStartRoute
   '/dashboard/': typeof AdminDashboardIndexRoute
   '/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
+  '/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
@@ -348,12 +370,15 @@ export interface FileRoutesByTo {
   '/api/upload': typeof ApiUploadRoute
   '/admin/login': typeof AdminAdminLoginRoute
   '/admin/register': typeof AdminAdminRegisterRoute
+  '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/auth/google/start': typeof AuthGoogleStartRoute
   '/dashboard': typeof AdminDashboardIndexRoute
   '/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
+  '/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/dashboard/customers': typeof AdminDashboardCustomersIndexRoute
@@ -394,12 +419,15 @@ export interface FileRoutesById {
   '/api/upload': typeof ApiUploadRoute
   '/_admin/admin/login': typeof AdminAdminLoginRoute
   '/_admin/admin/register': typeof AdminAdminRegisterRoute
+  '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/auth/google/start': typeof AuthGoogleStartRoute
   '/_admin/dashboard/': typeof AdminDashboardIndexRoute
   '/_admin/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/_admin/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/_admin/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/_admin/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/_admin/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
+  '/_portal/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/_admin/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
@@ -439,12 +467,15 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/admin/login'
     | '/admin/register'
+    | '/auth/google/callback'
+    | '/auth/google/start'
     | '/dashboard/'
     | '/dashboard/customers/$customerId'
     | '/dashboard/locations/$locationId'
     | '/dashboard/orders/$orderId'
     | '/dashboard/owners/$ownerId'
     | '/dashboard/promotions/new'
+    | '/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/api/orders/$orderId/contract'
     | '/dashboard/customers/'
@@ -481,12 +512,15 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/admin/login'
     | '/admin/register'
+    | '/auth/google/callback'
+    | '/auth/google/start'
     | '/dashboard'
     | '/dashboard/customers/$customerId'
     | '/dashboard/locations/$locationId'
     | '/dashboard/orders/$orderId'
     | '/dashboard/owners/$ownerId'
     | '/dashboard/promotions/new'
+    | '/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/api/orders/$orderId/contract'
     | '/dashboard/customers'
@@ -526,12 +560,15 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/_admin/admin/login'
     | '/_admin/admin/register'
+    | '/auth/google/callback'
+    | '/auth/google/start'
     | '/_admin/dashboard/'
     | '/_admin/dashboard/customers/$customerId'
     | '/_admin/dashboard/locations/$locationId'
     | '/_admin/dashboard/orders/$orderId'
     | '/_admin/dashboard/owners/$ownerId'
     | '/_admin/dashboard/promotions/new'
+    | '/_portal/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/api/orders/$orderId/contract'
     | '/_admin/dashboard/customers/'
@@ -569,6 +606,8 @@ export interface RootRouteChildren {
   ApiUploadRoute: typeof ApiUploadRoute
   AdminAdminLoginRoute: typeof AdminAdminLoginRoute
   AdminAdminRegisterRoute: typeof AdminAdminRegisterRoute
+  AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
+  AuthGoogleStartRoute: typeof AuthGoogleStartRoute
   ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute: typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   ApiOrdersOrderIdContractRoute: typeof ApiOrdersOrderIdContractRouteWithChildren
 }
@@ -644,6 +683,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof AdminDashboardIndexRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
+    }
+    '/auth/google/start': {
+      id: '/auth/google/start'
+      path: '/auth/google/start'
+      fullPath: '/auth/google/start'
+      preLoaderRoute: typeof AuthGoogleStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/google/callback': {
+      id: '/auth/google/callback'
+      path: '/auth/google/callback'
+      fullPath: '/auth/google/callback'
+      preLoaderRoute: typeof AuthGoogleCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_admin/admin/register': {
       id: '/_admin/admin/register'
@@ -742,6 +795,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/customer-profiles/$customerProfileId/identity-document'
       preLoaderRoute: typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_portal/auth/google/finalize': {
+      id: '/_portal/auth/google/finalize'
+      path: '/auth/google/finalize'
+      fullPath: '/auth/google/finalize'
+      preLoaderRoute: typeof PortalAuthGoogleFinalizeRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
     '/_admin/dashboard/promotions/new': {
       id: '/_admin/dashboard/promotions/new'
@@ -901,12 +961,14 @@ interface PortalRouteRouteChildren {
   PortalTenantRouteRoute: typeof PortalTenantRouteRouteWithChildren
   PortalLoginRoute: typeof PortalLoginRoute
   PortalRegisterRoute: typeof PortalRegisterRoute
+  PortalAuthGoogleFinalizeRoute: typeof PortalAuthGoogleFinalizeRoute
 }
 
 const PortalRouteRouteChildren: PortalRouteRouteChildren = {
   PortalTenantRouteRoute: PortalTenantRouteRouteWithChildren,
   PortalLoginRoute: PortalLoginRoute,
   PortalRegisterRoute: PortalRegisterRoute,
+  PortalAuthGoogleFinalizeRoute: PortalAuthGoogleFinalizeRoute,
 }
 
 const PortalRouteRouteWithChildren = PortalRouteRoute._addFileChildren(
@@ -1009,6 +1071,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiUploadRoute: ApiUploadRoute,
   AdminAdminLoginRoute: AdminAdminLoginRoute,
   AdminAdminRegisterRoute: AdminAdminRegisterRoute,
+  AuthGoogleCallbackRoute: AuthGoogleCallbackRoute,
+  AuthGoogleStartRoute: AuthGoogleStartRoute,
   ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute:
     ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute,
   ApiOrdersOrderIdContractRoute: ApiOrdersOrderIdContractRouteWithChildren,

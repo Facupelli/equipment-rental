@@ -1,23 +1,11 @@
-import {
-  BadRequestException,
-  Controller,
-  Post,
-  UseGuards,
-  Request,
-  Req,
-  HttpCode,
-  HttpStatus,
-  Body,
-} from '@nestjs/common';
+import { BadRequestException, Controller, Post, UseGuards, Request, HttpCode, HttpStatus, Body } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ConfigService } from '@nestjs/config';
 import { TenantContext } from '@repo/schemas';
 import { ActorType } from '@repo/types';
-import { Request as ExpressRequest } from 'express';
 
 import { Env } from 'src/config/env.schema';
 import { Public } from 'src/core/decorators/public.decorator';
-import { TenantContextService } from 'src/modules/shared/tenant/tenant-context.service';
 import { FindTenantByIdQuery } from 'src/modules/tenant/public/queries/find-tenant-by-id.query';
 
 import { AuthService } from '../../application/auth.service';
@@ -40,7 +28,6 @@ export class AuthController {
     private readonly queryBus: QueryBus,
     private readonly authService: AuthService,
     private readonly googleAuthStateService: GoogleAuthStateService,
-    private readonly tenantContext: TenantContextService,
     private readonly configService: ConfigService<Env, true>,
   ) {}
 
@@ -95,20 +82,19 @@ export class AuthController {
   @Public()
   @Post('customer/google/state')
   @HttpCode(HttpStatus.OK)
-  async issueCustomerGoogleState(@Body() dto: IssueCustomerGoogleAuthStateRequestDto, @Req() req: ExpressRequest) {
-    const tenantId = this.tenantContext.requireTenantId();
+  async issueCustomerGoogleState(@Body() dto: IssueCustomerGoogleAuthStateRequestDto) {
     const tenant = await this.queryBus.execute<FindTenantByIdQuery, TenantContext | null>(
-      new FindTenantByIdQuery(tenantId),
+      new FindTenantByIdQuery(dto.tenantId),
     );
 
     if (!tenant) {
-      throw new BadRequestException(`No active tenant found for id: ${tenantId}`);
+      throw new BadRequestException(`No active tenant found for id: ${dto.tenantId}`);
     }
 
     return {
       state: this.googleAuthStateService.issueState({
-        tenantId,
-        portalOrigin: this.resolveTrustedPortalOrigin(req, tenant),
+        tenantId: dto.tenantId,
+        portalOrigin: this.resolveTrustedPortalOrigin(dto.portalOrigin, tenant),
         redirectPath: dto.redirectPath,
       }),
     };
@@ -136,8 +122,9 @@ export class AuthController {
     await this.authService.logout(req.user.id, req.user.actorType);
   }
 
-  private resolveTrustedPortalOrigin(req: ExpressRequest, tenant: TenantContext): string {
-    const hostname = this.normalizeHostname(req.headers.host);
+  private resolveTrustedPortalOrigin(portalOrigin: string, tenant: TenantContext): string {
+    const origin = this.parsePortalOrigin(portalOrigin);
+    const hostname = origin.hostname.toLowerCase();
     const allowedHostnames = new Set([`${tenant.slug}.${this.configService.get('ROOT_DOMAIN')}`]);
 
     if (tenant.customDomain) {
@@ -148,32 +135,30 @@ export class AuthController {
       throw new BadRequestException('Request hostname does not match the current tenant portal hostname.');
     }
 
-    return `${this.resolveTrustedPortalProtocol(req, hostname)}://${hostname}`;
+    return origin.origin;
   }
 
-  private resolveTrustedPortalProtocol(req: ExpressRequest, hostname: string): string {
-    if (hostname !== 'localhost' && !hostname.endsWith('.localhost')) {
-      return 'https';
+  private parsePortalOrigin(portalOrigin: string): URL {
+    let parsed: URL;
+
+    try {
+      parsed = new URL(portalOrigin);
+    } catch {
+      throw new BadRequestException('portalOrigin must be a valid URL.');
     }
 
-    const forwardedProto = req.headers['x-forwarded-proto'];
-
-    if (typeof forwardedProto === 'string' && forwardedProto.length > 0) {
-      return forwardedProto.split(',')[0].trim();
+    if (parsed.pathname !== '/' || parsed.search || parsed.hash || parsed.username || parsed.password) {
+      throw new BadRequestException('portalOrigin must contain only scheme, hostname, and optional port.');
     }
 
-    if (Array.isArray(forwardedProto) && typeof forwardedProto[0] === 'string' && forwardedProto[0].length > 0) {
-      return forwardedProto[0].split(',')[0].trim();
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      throw new BadRequestException('portalOrigin must use http or https.');
     }
 
-    return req.protocol;
-  }
-
-  private normalizeHostname(hostHeader: string | undefined): string {
-    if (!hostHeader) {
-      throw new BadRequestException('Request hostname is required.');
+    if (parsed.protocol === 'http:' && parsed.hostname !== 'localhost' && !parsed.hostname.endsWith('.localhost')) {
+      throw new BadRequestException('portalOrigin may use http only for localhost development hosts.');
     }
 
-    return hostHeader.toLowerCase().trim().split(':')[0];
+    return parsed;
   }
 }

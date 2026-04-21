@@ -1,4 +1,5 @@
 export * from "./api/api.schema";
+export * from "./auth/customer-google.schema";
 export * from "./auth/register.schema";
 export * from "./catalog/bundle.schema";
 export * from "./catalog/category/product-category.schema";
