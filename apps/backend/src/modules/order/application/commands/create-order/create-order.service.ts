@@ -262,9 +262,16 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
   private async deriveBookingContext(
     command: CreateOrderCommand,
   ): Promise<{ period: DateRange; bookingMode: BookingMode }> {
-    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
-      new GetTenantConfigQuery(command.tenantId),
-    );
+    const [locationContext, tenantConfig] = await Promise.all([
+      this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+        new GetLocationContextQuery(command.tenantId, command.locationId),
+      ),
+      this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(new GetTenantConfigQuery(command.tenantId)),
+    ]);
+
+    if (!locationContext) {
+      throw new Error(`Location context not found for location "${command.locationId}"`);
+    }
 
     if (!tenantConfig) {
       throw new TenantConfigNotFoundException(command.tenantId);
@@ -276,7 +283,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
         command.pickupTime,
         command.returnDate,
         command.returnTime,
-        tenantConfig.timezone,
+        locationContext.effectiveTimezone,
       ),
       bookingMode: tenantConfig.bookingMode,
     };

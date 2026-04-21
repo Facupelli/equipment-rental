@@ -1,7 +1,6 @@
 import Decimal from 'decimal.js';
 import { Injectable } from '@nestjs/common';
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
-import { TenantConfig } from '@repo/schemas';
 import { PromotionAdjustmentType } from '@repo/types';
 import { err, ok, Result } from 'neverthrow';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
@@ -15,7 +14,6 @@ import {
   GetLocationContextQuery,
   LocationContextReadModel,
 } from 'src/modules/tenant/public/queries/get-location-context.query';
-import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 import { CouponNotFoundError, CouponValidationError, PricingPublicApi } from '../../../pricing.public-api';
 import { CalculateCartPricesQuery } from './calculate-cart-prices.query';
 import {
@@ -105,14 +103,6 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
       return err(new PricingInvalidBookingLocationError(query.locationId));
     }
 
-    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
-      new GetTenantConfigQuery(query.tenantId),
-    );
-
-    if (!tenantConfig) {
-      throw new Error(`Tenant config not found for tenant "${query.tenantId}"`);
-    }
-
     let period: DateRange;
 
     try {
@@ -123,9 +113,9 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
               query.pickupTime,
               query.returnDate,
               query.returnTime,
-              tenantConfig.timezone,
+              location.effectiveTimezone,
             )
-          : DateRange.fromLocalDateKeys(query.pickupDate, query.returnDate, tenantConfig.timezone);
+          : DateRange.fromLocalDateKeys(query.pickupDate, query.returnDate, location.effectiveTimezone);
     } catch {
       return err(new PricingPeriodInvalidError());
     }

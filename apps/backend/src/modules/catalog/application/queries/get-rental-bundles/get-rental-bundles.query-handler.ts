@@ -7,9 +7,11 @@ import {
   GetAvailableAssetCountsQuery,
 } from 'src/modules/inventory/public/queries/get-available-asset-counts.query';
 import { BundleListResponseDto, ProductTypeIncludedItemDto } from '@repo/schemas';
-import { TenantConfig } from '@repo/schemas';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
-import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
+import {
+  GetLocationContextQuery,
+  LocationContextReadModel,
+} from 'src/modules/tenant/public/queries/get-location-context.query';
 
 @Injectable()
 @QueryHandler(GetRentalBundlesQuery)
@@ -122,15 +124,15 @@ export class GetCombosQueryHandler implements IQueryHandler<GetRentalBundlesQuer
   ): Promise<Map<string, number> | null> {
     if (!pickupDate || !returnDate) return null;
 
-    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
-      new GetTenantConfigQuery(tenantId),
+    const locationContext = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+      new GetLocationContextQuery(tenantId, locationId),
     );
 
-    if (!tenantConfig) {
-      throw new Error(`Tenant config not found for tenant "${tenantId}"`);
+    if (!locationContext) {
+      throw new Error(`Location context not found for location "${locationId}"`);
     }
 
-    const period = DateRange.fromLocalDateKeys(pickupDate, returnDate, tenantConfig.timezone);
+    const period = DateRange.fromLocalDateKeys(pickupDate, returnDate, locationContext.effectiveTimezone);
 
     const availabilityRows = await this.queryBus.execute<GetAvailableAssetCountsQuery, AvailableAssetCountReadModel[]>(
       new GetAvailableAssetCountsQuery(locationId, period.start, period.end, productTypeIds),
