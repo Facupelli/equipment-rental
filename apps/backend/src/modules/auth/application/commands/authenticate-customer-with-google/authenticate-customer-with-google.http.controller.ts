@@ -22,6 +22,8 @@ export class AuthenticateCustomerWithGoogleHttpController {
   @Post('customer/google')
   @HttpCode(HttpStatus.OK)
   async authenticate(@Body() dto: AuthenticateCustomerWithGoogleRequestDto) {
+    console.log('AUTH CUSTOMER GOOGLE');
+
     const result = await this.commandBus.execute<
       AuthenticateCustomerWithGoogleCommand,
       AuthenticateCustomerWithGoogleResult
@@ -52,6 +54,8 @@ export class AuthenticateCustomerWithGoogleHttpController {
 
       throw error;
     }
+
+    console.log({ value: result.value });
 
     return {
       handoff_token: result.value.handoffToken,
