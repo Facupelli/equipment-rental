@@ -49,6 +49,10 @@ function getDirtyValues(
 		dirtyValues.address = values.address;
 	}
 
+	if (values.timezone !== defaultValues.timezone) {
+		dirtyValues.timezone = values.timezone;
+	}
+
 	if (values.isActive !== defaultValues.isActive) {
 		dirtyValues.isActive = values.isActive;
 	}
@@ -91,6 +95,7 @@ export function LocationForm({
 	const hasChanges =
 		values.name !== defaultValues.name ||
 		values.address !== defaultValues.address ||
+		values.timezone !== defaultValues.timezone ||
 		values.supportsDelivery !== defaultValues.supportsDelivery ||
 		values.deliveryDefaults.country !==
 			defaultValues.deliveryDefaults.country ||
@@ -158,6 +163,37 @@ export function LocationForm({
 										aria-invalid={isInvalid}
 										placeholder="Ej. Av. Corrientes 1234"
 									/>
+									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+								</Field>
+							);
+						}}
+					</form.Field>
+
+					<form.Field name="timezone">
+						{(field) => {
+							const isInvalid =
+								field.state.meta.isTouched && !field.state.meta.isValid;
+
+							return (
+								<Field data-invalid={isInvalid}>
+									<FieldLabel htmlFor={field.name}>
+										Zona horaria{" "}
+										<span className="text-muted-foreground text-xs">
+											(opcional)
+										</span>
+									</FieldLabel>
+									<Input
+										id={field.name}
+										name={field.name}
+										value={field.state.value}
+										onBlur={field.handleBlur}
+										onChange={(e) => field.handleChange(e.target.value)}
+										aria-invalid={isInvalid}
+										placeholder="Ej. America/Argentina/Buenos_Aires"
+									/>
+									<p className="text-muted-foreground text-sm">
+										Si se define, sobrescribe la zona horaria global del tenant.
+									</p>
 									{isInvalid && <FieldError errors={field.state.meta.errors} />}
 								</Field>
 							);

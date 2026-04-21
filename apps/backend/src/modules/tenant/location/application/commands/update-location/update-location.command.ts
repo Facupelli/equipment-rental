@@ -1,6 +1,7 @@
 export type UpdateLocationProps = {
   name?: string;
   address?: string | null;
+  timezone?: string | null;
   supportsDelivery?: boolean;
   deliveryDefaults?: {
     country: string | null;

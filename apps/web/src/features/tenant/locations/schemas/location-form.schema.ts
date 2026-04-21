@@ -7,9 +7,23 @@ import {
 import { z } from "zod";
 import { emptyToNull, emptyToNullOrUndefined } from "@/shared/utils/form.utils";
 
+function isValidIanaTimezone(timezone: string): boolean {
+	if (timezone === "UTC") {
+		return true;
+	}
+
+	return Intl.supportedValuesOf("timeZone").includes(timezone);
+}
+
 export const locationFormSchema = z.object({
 	name: z.string().min(1, "Name is required"),
 	address: z.string().or(z.literal("")),
+	timezone: z
+		.string()
+		.refine(
+			(value) => value.trim() === "" || isValidIanaTimezone(value.trim()),
+			"Timezone must be a valid IANA timezone",
+		),
 	isActive: z.boolean(),
 	supportsDelivery: z.boolean(),
 	deliveryDefaults: z.object({
@@ -25,6 +39,7 @@ export type LocationFormValues = z.infer<typeof locationFormSchema>;
 export const locationFormDefaults: LocationFormValues = {
 	name: "",
 	address: "",
+	timezone: "",
 	isActive: true,
 	supportsDelivery: false,
 	deliveryDefaults: {
@@ -38,6 +53,7 @@ export const locationFormDefaults: LocationFormValues = {
 export function locationToFormValues(location: {
 	name: string;
 	address: string | null;
+	timezone: string | null;
 	isActive: boolean;
 	supportsDelivery: boolean;
 	deliveryDefaults: {
@@ -50,6 +66,7 @@ export function locationToFormValues(location: {
 	return {
 		name: location.name,
 		address: location.address ?? "",
+		timezone: location.timezone ?? "",
 		isActive: location.isActive,
 		supportsDelivery: location.supportsDelivery,
 		deliveryDefaults: {
@@ -67,6 +84,7 @@ export function toCreateLocationDto(
 	const dto = {
 		name: values.name.trim(),
 		address: emptyToNull(values.address),
+		timezone: emptyToNull(values.timezone.trim()),
 		isActive: values.isActive,
 		supportsDelivery: values.supportsDelivery,
 		deliveryDefaults: {
@@ -90,6 +108,9 @@ export function toUpdateLocationDto(
 	}
 	if (dirtyValues.address !== undefined) {
 		dto.address = emptyToNullOrUndefined(dirtyValues.address);
+	}
+	if (dirtyValues.timezone !== undefined) {
+		dto.timezone = emptyToNullOrUndefined(dirtyValues.timezone.trim()) ?? null;
 	}
 	if (dirtyValues.supportsDelivery !== undefined) {
 		dto.supportsDelivery = dirtyValues.supportsDelivery;

@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { assertValidIanaTimezone } from 'src/modules/tenant/domain/utils/timezone.validation';
 import { InvalidLocationNameException } from '../exceptions/location.exceptions';
 import { LocationScheduleOverlapException } from '../exceptions/location-schedule.exceptions';
 import { LocationSchedule, CreateLocationScheduleProps } from './location-schedule.entity';
@@ -7,6 +8,7 @@ export interface CreateLocationProps {
   tenantId: string;
   name: string;
   address: string | null;
+  timezone: string | null;
   supportsDelivery: boolean;
   deliveryDefaults: {
     country: string | null;
@@ -21,6 +23,7 @@ export interface ReconstituteLocationProps {
   tenantId: string;
   name: string;
   address: string | null;
+  timezone: string | null;
   isActive: boolean;
   supportsDelivery: boolean;
   deliveryDefaults: {
@@ -38,6 +41,7 @@ export class Location {
     public readonly tenantId: string,
     private name: string,
     private address: string | null,
+    private timezone: string | null,
     private isActive: boolean,
     private supportsDelivery: boolean,
     private deliveryDefaultCountry: string | null,
@@ -51,6 +55,9 @@ export class Location {
     if (!props.name || props.name.trim().length === 0) {
       throw new InvalidLocationNameException();
     }
+
+    Location.validateTimezone(props.timezone);
+
     const defaults = Location.normalizeDeliveryDefaults(props.deliveryDefaults);
 
     return new Location(
@@ -58,6 +65,7 @@ export class Location {
       props.tenantId,
       props.name.trim(),
       props.address?.trim() ?? null,
+      props.timezone,
       true,
       props.supportsDelivery,
       defaults.country,
@@ -76,6 +84,7 @@ export class Location {
       props.tenantId,
       props.name,
       props.address,
+      props.timezone,
       props.isActive,
       props.supportsDelivery,
       defaults.country,
@@ -98,6 +107,10 @@ export class Location {
 
   getAddress(): string | null {
     return this.address;
+  }
+
+  getTimezone(): string | null {
+    return this.timezone;
   }
 
   getSchedules(): readonly LocationSchedule[] {
@@ -131,6 +144,7 @@ export class Location {
   update(props: {
     name?: string;
     address?: string | null;
+    timezone?: string | null;
     supportsDelivery?: boolean;
     deliveryDefaults?: {
       country: string | null;
@@ -151,6 +165,11 @@ export class Location {
 
     if (props.address !== undefined) {
       this.address = props.address?.trim() ?? null;
+    }
+
+    if (props.timezone !== undefined) {
+      Location.validateTimezone(props.timezone);
+      this.timezone = props.timezone;
     }
 
     if (props.supportsDelivery !== undefined) {
@@ -250,5 +269,13 @@ export class Location {
       city: props.city?.trim() || null,
       postalCode: props.postalCode?.trim() || null,
     };
+  }
+
+  private static validateTimezone(timezone: string | null): void {
+    if (timezone === null) {
+      return;
+    }
+
+    assertValidIanaTimezone(timezone);
   }
 }

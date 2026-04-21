@@ -356,6 +356,7 @@ model Location {
   tenantId String  @map("tenant_id")
   name     String
   address  String?
+  timezone String?
   isActive Boolean @default(true) @map("is_active")
 
   supportsDelivery           Boolean @default(false) @map("supports_delivery")

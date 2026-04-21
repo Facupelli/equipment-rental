@@ -20,6 +20,7 @@ export class CreateLocationHttpController {
       user.tenantId,
       dto.name,
       dto.address,
+      dto.timezone,
       dto.supportsDelivery,
       dto.deliveryDefaults,
     );

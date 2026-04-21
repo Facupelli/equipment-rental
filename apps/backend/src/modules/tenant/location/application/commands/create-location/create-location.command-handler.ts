@@ -12,6 +12,7 @@ export class CreateLocationCommandHandler implements ICommandHandler<CreateLocat
       tenantId: command.tenantId,
       name: command.name,
       address: command.address,
+      timezone: command.timezone,
       supportsDelivery: command.supportsDelivery,
       deliveryDefaults: command.deliveryDefaults,
     });

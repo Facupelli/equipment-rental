@@ -3,6 +3,7 @@ export class CreateLocationCommand {
     public readonly tenantId: string,
     public readonly name: string,
     public readonly address: string | null,
+    public readonly timezone: string | null,
     public readonly supportsDelivery: boolean,
     public readonly deliveryDefaults: {
       country: string | null;

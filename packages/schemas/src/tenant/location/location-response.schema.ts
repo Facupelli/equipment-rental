@@ -11,6 +11,7 @@ export const locationListItemResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   address: z.string().nullable(),
+  timezone: z.string().nullable(),
   isActive: z.boolean(),
   supportsDelivery: z.boolean(),
   deliveryDefaults: locationDeliveryDefaultsResponseSchema.nullable(),

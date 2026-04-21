@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+function isValidIanaTimezone(timezone: string): boolean {
+	if (timezone === "UTC") {
+		return true;
+	}
+
+	return Intl.supportedValuesOf("timeZone").includes(timezone);
+}
+
+const timezoneSchema = z
+	.string()
+	.trim()
+	.min(1, "Timezone is required")
+	.refine(isValidIanaTimezone, "Timezone must be a valid IANA timezone");
+
 const emptyLocationDeliveryDefaults = {
   country: null,
   stateRegion: null,
@@ -17,6 +31,7 @@ export const locationDeliveryDefaultsSchema = z.object({
 export const createLocationSchema = z.object({
   name: z.string().min(1, "Name is required"),
   address: z.string().nullable(),
+  timezone: timezoneSchema.nullable().default(null),
   isActive: z.boolean().default(true),
   supportsDelivery: z.boolean().default(false),
   deliveryDefaults: locationDeliveryDefaultsSchema.default(
@@ -27,6 +42,7 @@ export const createLocationSchema = z.object({
 export const updateLocationSchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
   address: z.string().nullable().optional(),
+  timezone: timezoneSchema.nullable().optional(),
   supportsDelivery: z.boolean().optional(),
   deliveryDefaults: locationDeliveryDefaultsSchema.optional(),
 });

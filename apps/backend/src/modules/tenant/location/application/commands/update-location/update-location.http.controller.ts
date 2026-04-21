@@ -25,6 +25,7 @@ export class UpdateLocationHttpController {
       new UpdateLocationCommand(user.tenantId, id, {
         name: dto.name,
         address: dto.address,
+        timezone: dto.timezone,
         supportsDelivery: dto.supportsDelivery,
         deliveryDefaults: dto.deliveryDefaults,
       }),

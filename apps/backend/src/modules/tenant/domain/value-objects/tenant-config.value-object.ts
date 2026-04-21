@@ -1,11 +1,11 @@
 import { BookingMode, RoundingRule } from '@repo/types';
 import {
-  InvalidTimezoneException,
   InvalidNewArrivalsWindowDaysException,
   InvalidDefaultCurrencyException,
   InvalidMaxOverRentThresholdException,
   InvalidBookingModeException,
 } from '../exceptions/tenant.exceptions';
+import { assertValidIanaTimezone } from '../utils/timezone.validation';
 
 export interface TenantPricingConfigProps {
   overRentalEnabled: boolean;
@@ -133,14 +133,7 @@ export class TenantConfig {
   // --- Validation helpers ---
 
   private static validateTimezone(timezone: string): void {
-    if (timezone === 'UTC') {
-      return;
-    }
-
-    const valid = Intl.supportedValuesOf('timeZone');
-    if (!valid.includes(timezone)) {
-      throw new InvalidTimezoneException(timezone);
-    }
+    assertValidIanaTimezone(timezone);
   }
 
   private static validateNewArrivalsWindowDays(days: number): void {

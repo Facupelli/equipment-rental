@@ -11,6 +11,7 @@ export const rentalLocationResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   address: z.string().nullable(),
+  timezone: z.string().nullable(),
   supportsDelivery: z.boolean(),
   deliveryDefaults: rentalLocationDeliveryDefaultsSchema.nullable(),
   createdAt: z.coerce.date(),

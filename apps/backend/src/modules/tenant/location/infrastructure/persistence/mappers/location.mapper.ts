@@ -16,6 +16,7 @@ export class LocationMapper {
       tenantId: raw.tenantId,
       name: raw.name,
       address: raw.address,
+      timezone: raw.timezone,
       isActive: raw.isActive,
       supportsDelivery: raw.supportsDelivery,
       deliveryDefaults: {
@@ -34,6 +35,7 @@ export class LocationMapper {
       tenantId: entity.tenantId,
       name: entity.getName(),
       address: entity.getAddress(),
+      timezone: entity.getTimezone(),
       isActive: entity.active,
       supportsDelivery: entity.supportsDeliveryEnabled,
       deliveryDefaultCountry: entity.getDeliveryDefaults().country,
@@ -50,6 +52,7 @@ export class LocationMapper {
     return {
       name: entity.getName(),
       address: entity.getAddress(),
+      timezone: entity.getTimezone(),
       isActive: entity.active,
       supportsDelivery: entity.supportsDeliveryEnabled,
       deliveryDefaultCountry: entity.getDeliveryDefaults().country,
