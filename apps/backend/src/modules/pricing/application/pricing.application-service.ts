@@ -31,9 +31,13 @@ import {
 } from '../infrastructure/read-services/pricing-computation-read.service';
 import { RedeemCouponService } from './services/redeem-coupon.service';
 import { ResolveCouponForPricingService } from './services/resolve-coupon-for-pricing.service';
+import {
+  GetLocationContextQuery,
+  LocationContextReadModel,
+} from 'src/modules/tenant/public/queries/get-location-context.query';
 
-type TenantPricingContext = {
-  timezone: string;
+type PricingContext = {
+  effectiveTimezone: string;
   weekendCountsAsOne: boolean;
   roundingRule: RoundingRule;
 };
@@ -54,15 +58,8 @@ export class PricingApplicationService implements PricingPublicApi {
   async priceBasket(dto: PriceBasketDto): Promise<PriceBasketResultDto> {
     const { period, bookingCreatedAt, productItems, basketContext, resolvedCoupon } =
       await this.loadBasketPricingContext(dto);
-    const {
-      tenantPricingContext,
-      promotions,
-      productMetas,
-      bundleMetas,
-      productTiers,
-      bundleTiers,
-      bundleEligibility,
-    } = basketContext;
+    const { pricingContext, promotions, productMetas, bundleMetas, productTiers, bundleTiers, bundleEligibility } =
+      basketContext;
 
     const standaloneProductQuantity = productItems.reduce((sum, item) => sum + (item.quantity ?? 1), 0);
 
@@ -88,7 +85,7 @@ export class PricingApplicationService implements PricingPublicApi {
             applyPromotions: false,
             meta,
             promotions,
-            tenantPricingContext,
+            pricingContext,
             tiers: productTiers.get(item.productTypeId) ?? [],
           }),
         };
@@ -112,7 +109,7 @@ export class PricingApplicationService implements PricingPublicApi {
           applyPromotions: false,
           meta,
           promotions,
-          tenantPricingContext,
+          pricingContext,
           tiers: bundleTiers.get(item.bundleId) ?? [],
         }),
       };
@@ -136,7 +133,7 @@ export class PricingApplicationService implements PricingPublicApi {
             dto.locationId,
             uniqueBundleComponentProductTypeIds,
             period,
-            tenantPricingContext,
+            pricingContext,
           )
         : new Map<string, Decimal>();
 
@@ -167,7 +164,7 @@ export class PricingApplicationService implements PricingPublicApi {
             applyPromotions: true,
             meta,
             promotions,
-            tenantPricingContext,
+            pricingContext,
             tiers: productTiers.get(item.productTypeId) ?? [],
           }),
         };
@@ -202,7 +199,7 @@ export class PricingApplicationService implements PricingPublicApi {
           applyPromotions: true,
           meta,
           promotions,
-          tenantPricingContext,
+          pricingContext,
           tiers: bundleTiers.get(item.bundleId) ?? [],
         }),
         bundleName: bundle.name,
@@ -259,17 +256,24 @@ export class PricingApplicationService implements PricingPublicApi {
     return result.isErr() ? err(result.error) : ok(undefined);
   }
 
-  private async loadTenantPricingContext(tenantId: string): Promise<TenantPricingContext> {
-    const tenantConfig = await this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(
-      new GetTenantConfigQuery(tenantId),
-    );
+  private async loadPricingContext(tenantId: string, locationId: string): Promise<PricingContext> {
+    const [locationContext, tenantConfig] = await Promise.all([
+      this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+        new GetLocationContextQuery(tenantId, locationId),
+      ),
+      this.queryBus.execute<GetTenantConfigQuery, TenantConfig | null>(new GetTenantConfigQuery(tenantId)),
+    ]);
+
+    if (!locationContext) {
+      throw new Error(`Location context not found for location "${locationId}"`);
+    }
 
     if (!tenantConfig) {
       throw new Error(`Tenant config not found for tenant "${tenantId}"`);
     }
 
     return {
-      timezone: tenantConfig.timezone,
+      effectiveTimezone: locationContext.effectiveTimezone,
       weekendCountsAsOne: tenantConfig.pricing.weekendCountsAsOne,
       roundingRule: tenantConfig.pricing.roundingRule,
     };
@@ -284,7 +288,7 @@ export class PricingApplicationService implements PricingPublicApi {
     bookingCreatedAt: Date;
     productItems: PriceBasketProductItemDto[];
     basketContext: {
-      tenantPricingContext: TenantPricingContext;
+      pricingContext: PricingContext;
       promotions: Awaited<ReturnType<PricingComputationReadService['loadActivePromotionsForTenant']>>;
       productMetas: Awaited<ReturnType<PricingComputationReadService['loadProductTypeMetaBatch']>>;
       bundleMetas: Awaited<ReturnType<PricingComputationReadService['loadBundleMetaBatch']>>;
@@ -302,7 +306,7 @@ export class PricingApplicationService implements PricingPublicApi {
     const uniqueBundleIds = [...new Set(bundleItems.map((item) => item.bundleId))];
 
     const [
-      tenantPricingContext,
+      pricingContext,
       promotions,
       productMetas,
       bundleMetas,
@@ -311,7 +315,7 @@ export class PricingApplicationService implements PricingPublicApi {
       bundleEligibility,
       resolvedCoupon,
     ] = await Promise.all([
-      this.loadTenantPricingContext(dto.tenantId),
+      this.loadPricingContext(dto.tenantId, dto.locationId),
       this.pricingRead.loadActivePromotionsForTenant(dto.tenantId),
       uniqueProductTypeIds.length > 0
         ? this.pricingRead.loadProductTypeMetaBatch(uniqueProductTypeIds)
@@ -332,7 +336,7 @@ export class PricingApplicationService implements PricingPublicApi {
       bookingCreatedAt,
       productItems,
       basketContext: {
-        tenantPricingContext,
+        pricingContext,
         promotions,
         productMetas,
         bundleMetas,
@@ -393,17 +397,17 @@ export class PricingApplicationService implements PricingPublicApi {
     locationId: string,
     componentProductTypeIds: string[],
     period: DateRange,
-    tenantPricingContext: TenantPricingContext,
+    pricingContext: PricingContext,
   ): Promise<Map<string, Decimal>> {
     const componentData = await this.pricingRead.loadTiersForBundleComponents(componentProductTypeIds, locationId);
 
-    return this.resolveStandaloneComponentPrices(componentData, period, tenantPricingContext, locationId);
+    return this.resolveStandaloneComponentPrices(componentData, period, pricingContext, locationId);
   }
 
   private resolveStandaloneComponentPrices(
     componentData: Map<string, ComponentTierData>,
     period: DateRange,
-    tenantPricingContext: TenantPricingContext,
+    pricingContext: PricingContext,
     locationId: string,
   ): Map<string, Decimal> {
     const result = new Map<string, Decimal>();
@@ -412,9 +416,9 @@ export class PricingApplicationService implements PricingPublicApi {
       const units = this.billingUnitResolver.resolveUnits({
         period,
         billingUnitDurationMinutes,
-        tenantTimezone: tenantPricingContext.timezone,
-        weekendCountsAsOne: tenantPricingContext.weekendCountsAsOne,
-        roundingRule: tenantPricingContext.roundingRule,
+        effectiveTimezone: pricingContext.effectiveTimezone,
+        weekendCountsAsOne: pricingContext.weekendCountsAsOne,
+        roundingRule: pricingContext.roundingRule,
       });
 
       const tier = tiers.find((candidate) => candidate.coversUnits(units));
@@ -442,15 +446,15 @@ export class PricingApplicationService implements PricingPublicApi {
     applyPromotions: boolean;
     meta: { billingUnitDurationMinutes: number };
     promotions: Awaited<ReturnType<PricingComputationReadService['loadActivePromotionsForTenant']>>;
-    tenantPricingContext: TenantPricingContext;
+    pricingContext: PricingContext;
     tiers: PricingTier[];
   }): NewPricingResult {
     return this.calculator.calculate({
       period: input.period,
       billingUnitDurationMinutes: input.meta.billingUnitDurationMinutes,
-      tenantTimezone: input.tenantPricingContext.timezone,
-      weekendCountsAsOne: input.tenantPricingContext.weekendCountsAsOne,
-      roundingRule: input.tenantPricingContext.roundingRule,
+      effectiveTimezone: input.pricingContext.effectiveTimezone,
+      weekendCountsAsOne: input.pricingContext.weekendCountsAsOne,
+      roundingRule: input.pricingContext.roundingRule,
       tiers: input.tiers,
       promotions: input.promotions,
       context: {
@@ -481,15 +485,15 @@ export class PricingApplicationService implements PricingPublicApi {
     applyPromotions: boolean;
     meta: { billingUnitDurationMinutes: number };
     promotions: Awaited<ReturnType<PricingComputationReadService['loadActivePromotionsForTenant']>>;
-    tenantPricingContext: TenantPricingContext;
+    pricingContext: PricingContext;
     tiers: PricingTier[];
   }): NewPricingResult {
     return this.calculator.calculate({
       period: input.period,
       billingUnitDurationMinutes: input.meta.billingUnitDurationMinutes,
-      tenantTimezone: input.tenantPricingContext.timezone,
-      weekendCountsAsOne: input.tenantPricingContext.weekendCountsAsOne,
-      roundingRule: input.tenantPricingContext.roundingRule,
+      effectiveTimezone: input.pricingContext.effectiveTimezone,
+      weekendCountsAsOne: input.pricingContext.weekendCountsAsOne,
+      roundingRule: input.pricingContext.roundingRule,
       tiers: input.tiers,
       promotions: input.promotions,
       context: {

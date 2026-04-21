@@ -4,7 +4,7 @@ import { DateRange } from 'src/core/domain/value-objects/date-range.value-object
 export type ResolveBillingUnitsInput = {
   period: DateRange;
   billingUnitDurationMinutes: number;
-  tenantTimezone: string;
+  effectiveTimezone: string;
   weekendCountsAsOne: boolean;
   roundingRule: RoundingRule;
 };
@@ -23,7 +23,7 @@ export class BillingUnitResolverService {
       return baseUnits;
     }
 
-    return this.applyWeekendCollapse(baseUnits, input.period, input.tenantTimezone);
+    return this.applyWeekendCollapse(baseUnits, input.period, input.effectiveTimezone);
   }
 
   private resolveDailyUnits(period: DateRange, roundingRule: RoundingRule): number {
@@ -70,7 +70,7 @@ export class BillingUnitResolverService {
   private listOccupiedLocalDates(period: DateRange, timezone: string): string[] {
     const startDate = this.toLocalDateKey(period.start, timezone);
 
-    // Day billing treats the return date as exclusive in the tenant's local
+    // Day billing treats the return date as exclusive in the effective local
     // calendar, so a Friday -> Monday rental occupies Friday, Saturday, Sunday.
     const endDateExclusive = this.toLocalDateKey(period.end, timezone);
 

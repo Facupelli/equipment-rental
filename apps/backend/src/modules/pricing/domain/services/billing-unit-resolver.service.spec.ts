@@ -13,7 +13,7 @@ describe('BillingUnitResolverService', () => {
     const units = resolver.resolveUnits({
       period: DateRange.create(new Date('2025-01-01T10:00:00Z'), new Date('2025-01-01T11:30:00Z')),
       billingUnitDurationMinutes: 60,
-      tenantTimezone: 'UTC',
+      effectiveTimezone: 'UTC',
       weekendCountsAsOne: true,
       roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
     });
@@ -25,7 +25,7 @@ describe('BillingUnitResolverService', () => {
     const units = resolver.resolveUnits({
       period: DateRange.create(new Date('2025-01-03T13:00:00Z'), new Date('2025-01-06T13:00:00Z')),
       billingUnitDurationMinutes: 1440,
-      tenantTimezone: 'America/Argentina/Buenos_Aires',
+      effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: false,
       roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
     });
@@ -37,7 +37,7 @@ describe('BillingUnitResolverService', () => {
     const units = resolver.resolveUnits({
       period: DateRange.create(new Date('2025-01-03T13:00:00Z'), new Date('2025-01-06T13:00:00Z')),
       billingUnitDurationMinutes: 1440,
-      tenantTimezone: 'America/Argentina/Buenos_Aires',
+      effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
       roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
     });
@@ -49,7 +49,7 @@ describe('BillingUnitResolverService', () => {
     const units = resolver.resolveUnits({
       period: DateRange.create(new Date('2025-01-04T13:00:00Z'), new Date('2025-01-05T13:00:00Z')),
       billingUnitDurationMinutes: 1440,
-      tenantTimezone: 'America/Argentina/Buenos_Aires',
+      effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
       roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
     });
@@ -61,7 +61,7 @@ describe('BillingUnitResolverService', () => {
     const units = resolver.resolveUnits({
       period: DateRange.create(new Date('2025-01-04T13:00:00Z'), new Date('2025-01-06T13:00:00Z')),
       billingUnitDurationMinutes: 1440,
-      tenantTimezone: 'America/Argentina/Buenos_Aires',
+      effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
       roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
     });
@@ -69,11 +69,11 @@ describe('BillingUnitResolverService', () => {
     expect(units).toBe(1);
   });
 
-  it('uses tenant-local dates instead of UTC day boundaries', () => {
+  it('uses effective local dates instead of UTC day boundaries', () => {
     const units = resolver.resolveUnits({
       period: DateRange.create(new Date('2025-01-04T02:30:00Z'), new Date('2025-01-06T12:00:00Z')),
       billingUnitDurationMinutes: 1440,
-      tenantTimezone: 'America/Argentina/Buenos_Aires',
+      effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
       roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
     });
@@ -85,7 +85,7 @@ describe('BillingUnitResolverService', () => {
     const units = resolver.resolveUnits({
       period: DateRange.create(new Date('2025-05-11T08:00:00Z'), new Date('2025-05-13T09:00:00Z')),
       billingUnitDurationMinutes: 1440,
-      tenantTimezone: 'UTC',
+      effectiveTimezone: 'UTC',
       weekendCountsAsOne: false,
       roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
     });
@@ -97,7 +97,7 @@ describe('BillingUnitResolverService', () => {
     const units = resolver.resolveUnits({
       period: DateRange.create(new Date('2025-05-11T08:00:00Z'), new Date('2025-05-13T09:00:00Z')),
       billingUnitDurationMinutes: 1440,
-      tenantTimezone: 'UTC',
+      effectiveTimezone: 'UTC',
       weekendCountsAsOne: false,
       roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
     });
@@ -109,7 +109,7 @@ describe('BillingUnitResolverService', () => {
     const units = resolver.resolveUnits({
       period: DateRange.create(new Date('2025-01-03T13:00:00Z'), new Date('2025-01-06T14:00:00Z')),
       billingUnitDurationMinutes: 1440,
-      tenantTimezone: 'America/Argentina/Buenos_Aires',
+      effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
       roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
     });

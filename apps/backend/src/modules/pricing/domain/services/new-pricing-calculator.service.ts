@@ -21,7 +21,7 @@ export type NewPricingResult = {
 export type NewPricingCalculatorInput = {
   period: DateRange;
   billingUnitDurationMinutes: number;
-  tenantTimezone: string;
+  effectiveTimezone: string;
   weekendCountsAsOne: boolean;
   roundingRule: RoundingRule;
   tiers: PricingTier[];
@@ -40,7 +40,7 @@ export class NewPricingCalculatorService {
     const units = this.billingUnitResolver.resolveUnits({
       period: input.period,
       billingUnitDurationMinutes: input.billingUnitDurationMinutes,
-      tenantTimezone: input.tenantTimezone,
+      effectiveTimezone: input.effectiveTimezone,
       weekendCountsAsOne: input.weekendCountsAsOne,
       roundingRule: input.roundingRule,
     });
