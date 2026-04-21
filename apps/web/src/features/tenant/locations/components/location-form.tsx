@@ -24,7 +24,6 @@ interface LocationFormProps {
 	submitLabel: string;
 	pendingLabel: string;
 	formId: string;
-	showIsActiveField?: boolean;
 }
 
 function getDirtyValues(
@@ -76,7 +75,6 @@ export function LocationForm({
 	submitLabel,
 	pendingLabel,
 	formId,
-	showIsActiveField = false,
 }: LocationFormProps) {
 	const form = useForm({
 		defaultValues,
@@ -104,7 +102,7 @@ export function LocationForm({
 		values.deliveryDefaults.city !== defaultValues.deliveryDefaults.city ||
 		values.deliveryDefaults.postalCode !==
 			defaultValues.deliveryDefaults.postalCode ||
-		(showIsActiveField && values.isActive !== defaultValues.isActive);
+		values.isActive !== defaultValues.isActive;
 
 	return (
 		<>
@@ -353,25 +351,6 @@ export function LocationForm({
 								</form.Field>
 							</div>
 						</div>
-					)}
-
-					{showIsActiveField && (
-						<form.Field name="isActive">
-							{(field) => (
-								<Field orientation="horizontal">
-									<Checkbox
-										id={field.name}
-										checked={field.state.value}
-										onCheckedChange={(checked) =>
-											field.handleChange(checked === true)
-										}
-									/>
-									<FieldLabel htmlFor={field.name}>
-										Crear como ubicación activa
-									</FieldLabel>
-								</Field>
-							)}
-						</form.Field>
 					)}
 				</FieldGroup>
 			</form>

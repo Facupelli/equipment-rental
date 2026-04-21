@@ -1,5 +1,5 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { LocationListResponse } from '@repo/schemas';
+import { LocationListResponse, tenantConfigSchema } from '@repo/schemas';
 
 import { PrismaService } from 'src/core/database/prisma.service';
 
@@ -25,19 +25,29 @@ export class GetLocationsQueryHandler implements IQueryHandler<GetLocationsQuery
           deliveryDefaultCity: true,
           deliveryDefaultPostalCode: true,
           createdAt: true,
+          tenant: {
+            select: {
+              config: true,
+            },
+          },
         },
       })
       .then((locations) =>
-        locations.map((location) => ({
-          id: location.id,
-          name: location.name,
-          address: location.address,
-          timezone: location.timezone,
-          isActive: location.isActive,
-          supportsDelivery: location.supportsDelivery,
-          deliveryDefaults: toDeliveryDefaults(location),
-          createdAt: location.createdAt,
-        })),
+        locations.map((location) => {
+          const tenantConfig = tenantConfigSchema.parse(location.tenant.config);
+
+          return {
+            id: location.id,
+            name: location.name,
+            address: location.address,
+            timezone: location.timezone,
+            effectiveTimezone: location.timezone ?? tenantConfig.timezone,
+            isActive: location.isActive,
+            supportsDelivery: location.supportsDelivery,
+            deliveryDefaults: toDeliveryDefaults(location),
+            createdAt: location.createdAt,
+          };
+        }),
       );
   }
 }

@@ -47,7 +47,6 @@ export function CreateLocationDialog({
 						isPending={isPending}
 						submitLabel="Crear"
 						pendingLabel="Creando..."
-						showIsActiveField
 						onSubmit={async ({ values }) => {
 							await createLocation(toCreateLocationDto(values));
 							handleOpenChange(false);

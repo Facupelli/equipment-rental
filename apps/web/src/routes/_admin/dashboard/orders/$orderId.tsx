@@ -47,7 +47,6 @@ import {
 	createOrderDetailQueryOptions,
 	type ParsedOrderDetailResponseDto,
 } from "@/features/orders/queries/get-order-by-id";
-import { tenantQueries } from "@/features/tenant/tenant.queries";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
@@ -71,9 +70,6 @@ function RouteComponent() {
 	const { data: order } = useSuspenseQuery(
 		createOrderDetailQueryOptions({ orderId }),
 	);
-	const {
-		data: { config },
-	} = useSuspenseQuery(tenantQueries.me());
 
 	return (
 		<OrderDetailProvider order={order}>
@@ -94,7 +90,7 @@ function RouteComponent() {
 					{/* Right */}
 					<div className="space-y-4">
 						{order.customer && <OrderClientCard />}
-						<OrderLogisticsCard timezone={config.timezone} />
+						<OrderLogisticsCard timezone={order.location.effectiveTimezone} />
 						<OrderFinancialsCard />
 					</div>
 				</div>

@@ -240,7 +240,10 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
       returnAt: order.periodEnd,
       notes: order.notes,
       customer: order.customer ?? null,
-      location: { name: order.location.name },
+      location: {
+        name: order.location.name,
+        effectiveTimezone: locationContext.effectiveTimezone,
+      },
       deliveryRequest: order.deliveryRequest
         ? {
             recipientName: order.deliveryRequest.recipientName,

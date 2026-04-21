@@ -17,6 +17,7 @@ const CustomerSummarySchema = z.object({
 
 const LocationSummarySchema = z.object({
 	name: z.string(),
+	effectiveTimezone: z.string(),
 });
 
 const RentalPeriodSchema = z.object({

@@ -2,8 +2,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProductTimeline } from "@/features/catalog/product-types/products.queries";
-import { tenantQueries } from "@/features/tenant/tenant.queries";
-import { useLocationId } from "@/shared/contexts/location/location.hooks";
+import { locationQueries } from "@/features/tenant/locations/locations.queries";
+import { useSelectedLocation } from "@/shared/contexts/location/location.hooks";
 import {
 	getDefaultTimelineRange,
 	resolveTimelineRange,
@@ -36,9 +36,9 @@ export function ProductAssetsTimeline({
 	timelineSearch,
 	onTimelineSearchChange,
 }: ProductAssetsTimelineProps) {
-	const locationId = useLocationId();
-	const { data: tenant } = useSuspenseQuery(tenantQueries.me());
-	const timezone = tenant.config.timezone;
+	const { data: locations } = useSuspenseQuery(locationQueries.list());
+	const selectedLocation = useSelectedLocation(locations);
+	const timezone = selectedLocation?.effectiveTimezone ?? "UTC";
 	const range = resolveTimelineRange({
 		preset: timelineSearch.timelinePreset,
 		timezone,
@@ -49,12 +49,12 @@ export function ProductAssetsTimeline({
 	const { data, isPending, isError } = useProductTimeline(
 		{
 			productTypeId,
-			locationId: locationId ?? productTypeId,
+			locationId: selectedLocation?.id ?? productTypeId,
 			from: range.from,
 			to: range.to,
 		},
 		{
-			enabled: Boolean(locationId),
+			enabled: Boolean(selectedLocation),
 		},
 	);
 
@@ -75,7 +75,7 @@ export function ProductAssetsTimeline({
 		});
 	}
 
-	if (!locationId) {
+	if (!selectedLocation) {
 		return (
 			<div className="rounded-lg border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
 				Selecciona una ubicacion para ver el timeline de assets.

@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useLocationId } from "@/shared/contexts/location/location.hooks";
+import { useSelectedLocation } from "@/shared/contexts/location/location.hooks";
 import { localDateToDateParam } from "@/lib/dates/parse";
 import {
 	useCalendarDots,
@@ -37,7 +37,7 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useCallback } from "react";
 import dayjs from "@/lib/dates/dayjs";
 import { useScheduleParams } from "@/features/orders/hooks/use-schedule-params";
-import { tenantQueries } from "@/features/tenant/tenant.queries";
+import { locationQueries } from "@/features/tenant/locations/locations.queries";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 const searchSchema = z.object({
@@ -70,11 +70,10 @@ function dateToLabel(d: Date): string {
 	return dayjs(d).format("YYYY-MM-DD");
 }
 
-// TODO: make a context for timezone prop
 function TodaySchedulePage() {
-	const {
-		data: { config },
-	} = useSuspenseQuery(tenantQueries.me());
+	const { data: locations } = useSuspenseQuery(locationQueries.list());
+	const selectedLocation = useSelectedLocation(locations);
+	const timezone = selectedLocation?.effectiveTimezone ?? "UTC";
 
 	const {
 		selectedDate,
@@ -84,9 +83,7 @@ function TodaySchedulePage() {
 		selectedOrderId,
 		setDate,
 		setOrderId,
-	} = useScheduleParams(Route, config.timezone);
-
-	const locationId = useLocationId();
+	} = useScheduleParams(Route, timezone);
 
 	const displayLabel = isToday
 		? "Today"
@@ -100,6 +97,16 @@ function TodaySchedulePage() {
 		window.addEventListener("keydown", handler);
 		return () => window.removeEventListener("keydown", handler);
 	}, [selectedOrderId, setOrderId]);
+
+	if (!selectedLocation) {
+		return (
+			<div className="flex h-full items-center justify-center p-6">
+				<div className="rounded-lg border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+					Selecciona una ubicacion para ver el cronograma.
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex h-full flex-col gap-6 p-6">
@@ -127,24 +134,24 @@ function TodaySchedulePage() {
 			{/* Body */}
 			<div className="grid flex-1 grid-cols-[1fr_400px] gap-6 overflow-hidden">
 				<ScheduleContent
-					locationId={locationId}
+					locationId={selectedLocation.id}
 					date={selectedDate}
 					selectedOrderId={selectedOrderId}
 					onOrderSelect={(id) =>
 						setOrderId(id === selectedOrderId ? undefined : id)
 					}
-					timezone={config.timezone}
+					timezone={timezone}
 				/>
 
 				{selectedOrderId ? (
 					<OrderQuickPanel
 						orderId={selectedOrderId}
-						timezone={config.timezone}
+						timezone={timezone}
 						onClose={() => setOrderId(undefined)}
 					/>
 				) : (
 					<ScheduleSidebar
-						locationId={locationId}
+						locationId={selectedLocation.id}
 						selectedDate={selectedDate}
 						monthFrom={monthFrom}
 						monthTo={monthTo}
