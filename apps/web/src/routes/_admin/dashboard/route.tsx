@@ -6,7 +6,22 @@ import {
 	Outlet,
 	redirect,
 } from "@tanstack/react-router";
-import { ChevronsUpDown, LogOut, User } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+	BadgePercent,
+	Boxes,
+	CalendarDays,
+	ChevronsUpDown,
+	Handshake,
+	LayoutGrid,
+	LogOut,
+	Package,
+	Settings,
+	Tags,
+	User,
+	Users,
+	Warehouse,
+} from "lucide-react";
 import {
 	Popover,
 	PopoverContent,
@@ -60,7 +75,8 @@ export const Route = createFileRoute("/_admin/dashboard")({
 
 type SidebarItem = {
 	name: string;
-	href?: string;
+	icon: LucideIcon;
+	href: string;
 	children?: Array<{
 		name: string;
 		href: string;
@@ -68,11 +84,12 @@ type SidebarItem = {
 };
 
 const sidebarItems: SidebarItem[] = [
-	{ name: "Inicio", href: "/dashboard" },
-	{ name: "Cronograma", href: "/dashboard/schedule" },
+	{ name: "Inicio", icon: LayoutGrid, href: "/dashboard" },
+	{ name: "Cronograma", icon: CalendarDays, href: "/dashboard/schedule" },
 	// { name: "Orders", href: "/dashboard/orders" },
 	{
 		name: "Clientes",
+		icon: Users,
 		href: "/dashboard/customers",
 		children: [
 			{
@@ -81,17 +98,18 @@ const sidebarItems: SidebarItem[] = [
 			},
 		],
 	},
-	{ name: "Categorías", href: "/dashboard/catalog/categories" },
+	{ name: "Categorías", icon: Tags, href: "/dashboard/catalog/categories" },
 	{
 		name: "Productos",
+		icon: Package,
 		href: "/dashboard/catalog/products",
 		children: [{ name: "Assets", href: "/dashboard/inventory/assets" }],
 	},
-	{ name: "Combos", href: "/dashboard/catalog/bundles" },
-	{ name: "Promociones", href: "/dashboard/promotions" },
-	{ name: "Dueños de Equipo", href: "/dashboard/owners" },
-	{ name: "Depósitos", href: "/dashboard/locations" },
-	{ name: "Ajustes", href: "/dashboard/settings" },
+	{ name: "Combos", icon: Boxes, href: "/dashboard/catalog/bundles" },
+	{ name: "Promociones", icon: BadgePercent, href: "/dashboard/promotions" },
+	{ name: "Dueños de Equipo", icon: Handshake, href: "/dashboard/owners" },
+	{ name: "Depósitos", icon: Warehouse, href: "/dashboard/locations" },
+	{ name: "Ajustes", icon: Settings, href: "/dashboard/settings" },
 ];
 
 function DashboardLayout() {
@@ -115,45 +133,44 @@ function DashboardLayout() {
 
 					{/* Nav links */}
 					<nav className="flex flex-col gap-y-0.5 overflow-y-auto">
-						{sidebarItems.map((item) => (
-							<div key={item.name}>
-								{item.href ? (
+						{sidebarItems.map((item) => {
+							const Icon = item.icon;
+
+							return (
+								<div key={item.name}>
 									<Link
 										to={item.href}
-										className="block rounded-md px-3 py-1.5 text-sm font-medium text-neutral-400 transition-colors hover:bg-white/5 hover:text-white"
+										className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-neutral-400 transition-colors hover:bg-white/5 hover:text-white"
 										activeProps={{
 											className:
-												"block rounded-md px-3 py-1.5 text-sm font-medium bg-white/10 text-white transition-colors",
+												"flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium bg-white/10 text-white transition-colors",
 										}}
 										activeOptions={{ exact: true }}
 									>
+										<Icon className="h-4 w-4 shrink-0" />
 										{item.name}
 									</Link>
-								) : (
-									<p className="px-3 py-1.5 text-sm font-medium text-neutral-400">
-										{item.name}
-									</p>
-								)}
 
-								{item.children ? (
-									<div className="ml-3 mt-0.5 border-l border-white/10 pl-3">
-										{item.children.map((child) => (
-											<Link
-												key={child.href}
-												to={child.href}
-												className="block py-1 text-sm text-neutral-400 transition-colors hover:text-neutral-300"
-												activeProps={{
-													className:
-														"block py-1 text-sm font-medium text-white transition-colors",
-												}}
-											>
-												{child.name}
-											</Link>
-										))}
-									</div>
-								) : null}
-							</div>
-						))}
+									{item.children ? (
+										<div className="ml-3 mt-0.5 border-l border-white/10 pl-3">
+											{item.children.map((child) => (
+												<Link
+													key={child.href}
+													to={child.href}
+													className="block py-1 text-sm text-neutral-400 transition-colors hover:text-neutral-300"
+													activeProps={{
+														className:
+															"block py-1 text-sm font-medium text-white transition-colors",
+													}}
+												>
+													{child.name}
+												</Link>
+											))}
+										</div>
+									) : null}
+								</div>
+							);
+						})}
 					</nav>
 
 					{/* Profile popover — pinned to bottom via mt-auto */}
