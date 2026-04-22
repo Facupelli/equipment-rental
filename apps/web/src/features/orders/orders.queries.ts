@@ -2,12 +2,14 @@ import type {
 	CreateOrderDto,
 	GetCalendarDotsQueryDto,
 	GetCalendarDotsResponseDto,
+	GetOrderByIdParamDto,
 	GetOrdersQueryDto,
 	GetOrdersResponseDto,
 	GetOrdersScheduleQuery,
 	GetOrdersScheduleResponse,
 	OrderListItem,
 	OrderSummary,
+	ProblemDetails,
 	ScheduleEvent,
 } from "@repo/schemas";
 import {
@@ -26,6 +28,8 @@ import {
 	getCalendarDots,
 	getOrders,
 	getOrdersSchedule,
+	markEquipmentAsRetired,
+	markEquipmentAsReturned,
 } from "./orders.api";
 
 // -----------------------------------------------------
@@ -72,6 +76,9 @@ export const orderKeys = {
 	all: () => ["orders"] as const,
 	lists: () => [...orderKeys.all(), "list"] as const,
 	list: (params: GetOrdersQueryDto) => [...orderKeys.lists(), params] as const,
+	details: () => [...orderKeys.all(), "detail"] as const,
+	detail: (params: GetOrderByIdParamDto) =>
+		[...orderKeys.details(), params] as const,
 	schedules: () => [...orderKeys.all(), "schedule"] as const,
 	schedule: (params: GetOrdersScheduleQuery) =>
 		[...orderKeys.schedules(), params] as const,
@@ -116,6 +123,11 @@ type GetOrdersQueryOptions<TData = ParsedGetOrdersResponse> = Omit<
 type GetCalendarDotsQueryOptions<TData = GetCalendarDotsResponseDto> = Omit<
 	UseQueryOptions<GetCalendarDotsResponseDto, ProblemDetailsError, TData>,
 	"queryKey" | "queryFn"
+>;
+
+type OrderDetailMutationOptions = Omit<
+	UseMutationOptions<void, ProblemDetailsError, GetOrderByIdParamDto>,
+	"mutationFn"
 >;
 
 type OrderMutationOptions = Omit<
@@ -221,6 +233,46 @@ export function useCreateOrder(options?: OrderMutationOptions) {
 			invalidates: orderKeys.all(),
 		},
 	});
+}
+
+export function useMarkEquipmentAsReturned(
+	options?: OrderDetailMutationOptions,
+) {
+	return useMutation<void, ProblemDetailsError, GetOrderByIdParamDto>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await markEquipmentAsReturned({ data });
+			if (hasMutationError(result)) {
+				throw new ProblemDetailsError(result.error);
+			}
+		},
+		meta: {
+			invalidates: orderKeys.all(),
+		},
+	});
+}
+
+export function useMarkEquipmentAsRetired(
+	options?: OrderDetailMutationOptions,
+) {
+	return useMutation<void, ProblemDetailsError, GetOrderByIdParamDto>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await markEquipmentAsRetired({ data });
+			if (hasMutationError(result)) {
+				throw new ProblemDetailsError(result.error);
+			}
+		},
+		meta: {
+			invalidates: orderKeys.all(),
+		},
+	});
+}
+
+function hasMutationError(
+	result: void | { error: ProblemDetails },
+): result is { error: ProblemDetails } {
+	return typeof result === "object" && result !== null && "error" in result;
 }
 
 function requireDayjs(value: Dayjs | null, field: string): Dayjs {

@@ -1,28 +1,28 @@
 import {
-	authenticatedApiFetch as apiFetch,
-	authenticatedApiFetchPaginated as apiFetchPaginated,
-} from "@/lib/api-auth";
-import { ProblemDetailsError } from "@/shared/errors";
-import {
-	createOrderSchema,
-	getOrdersQuerySchema,
-	GetCalendarDotsQuerySchema,
-	getOrderByIdParamSchema,
-	GetOrdersScheduleQuerySchema,
 	type CreateOrderDto,
-	type GetOrdersQueryDto,
-	type OrderListItem,
-	type GetOrdersResponseDto,
+	createOrderSchema,
 	type GetCalendarDotsQueryDto,
+	GetCalendarDotsQuerySchema,
 	type GetCalendarDotsResponseDto,
 	type GetOrderByIdParamDto,
+	type GetOrdersQueryDto,
+	type GetOrdersResponseDto,
 	type GetOrdersScheduleQuery,
+	GetOrdersScheduleQuerySchema,
 	type GetOrdersScheduleResponse,
+	getOrderByIdParamSchema,
+	getOrdersQuerySchema,
 	type OrderDetailResponseDto,
+	type OrderListItem,
 	type ProblemDetails,
 } from "@repo/schemas";
 import { ActorType } from "@repo/types";
 import { createServerFn } from "@tanstack/react-start";
+import {
+	authenticatedApiFetch as apiFetch,
+	authenticatedApiFetchPaginated as apiFetchPaginated,
+} from "@/lib/api-auth";
+import { ProblemDetailsError } from "@/shared/errors";
 
 const apiUrl = "/orders";
 
@@ -99,6 +99,45 @@ export const createOrder = createServerFn({ method: "POST" })
 			if (error instanceof ProblemDetailsError) {
 				return { error: error.problemDetails };
 			}
+			throw error;
+		}
+	});
+
+export const markEquipmentAsReturned = createServerFn({ method: "POST" })
+	.inputValidator((data: GetOrderByIdParamDto) =>
+		getOrderByIdParamSchema.parse(data),
+	)
+	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+		try {
+			await apiFetch<void>(
+				`${apiUrl}/${data.orderId}/mark-equipment-returned`,
+				{
+					method: "POST",
+				},
+			);
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+
+			throw error;
+		}
+	});
+
+export const markEquipmentAsRetired = createServerFn({ method: "POST" })
+	.inputValidator((data: GetOrderByIdParamDto) =>
+		getOrderByIdParamSchema.parse(data),
+	)
+	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+		try {
+			await apiFetch<void>(`${apiUrl}/${data.orderId}/mark-equipment-retired`, {
+				method: "POST",
+			});
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+
 			throw error;
 		}
 	});

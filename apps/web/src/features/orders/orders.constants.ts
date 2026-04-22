@@ -7,31 +7,31 @@ export type StatusConfig = {
 
 export const ORDER_STATUS_MAP: Record<OrderStatus, StatusConfig> = {
 	[OrderStatus.PENDING_REVIEW]: {
-		label: "Pending Review",
+		label: "Pendiente Revisión",
 		className: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
 	},
 	[OrderStatus.CONFIRMED]: {
-		label: "Confirmed",
+		label: "Confirmado",
 		className: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
 	},
 	[OrderStatus.REJECTED]: {
-		label: "Rejected",
+		label: "Rechazado",
 		className: "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
 	},
 	[OrderStatus.EXPIRED]: {
-		label: "Expired",
+		label: "Expirado",
 		className: "bg-orange-50 text-orange-700 ring-1 ring-orange-200",
 	},
 	[OrderStatus.ACTIVE]: {
-		label: "Out",
-		className: "bg-sky-50 text-sky-700 ring-1 ring-sky-200",
+		label: "En Alquiler",
+		className: "bg-purple-50 text-purple-700 ring-1 ring-purple-200",
 	},
 	[OrderStatus.COMPLETED]: {
-		label: "Completed",
+		label: "Completado",
 		className: "bg-gray-100 text-gray-500 ring-1 ring-gray-200",
 	},
 	[OrderStatus.CANCELLED]: {
-		label: "Cancelled",
+		label: "Cancelado",
 		className: "bg-red-50 text-red-600 ring-1 ring-red-200",
 	},
 };

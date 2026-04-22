@@ -7,6 +7,7 @@ import type { Dayjs } from "dayjs";
 import { fromDate, fromDateParam, parseTimestamp } from "@/lib/dates/parse";
 import type { ProblemDetailsError } from "@/shared/errors";
 import { getOrderById } from "../orders.api";
+import { orderKeys } from "../orders.queries";
 
 // TODO: replace parseDailyBound with parseTimestamp for hourly orders once
 // rentalType is available on OrderDetailResponseDto (tracked: BillingUnit.type).
@@ -74,7 +75,7 @@ export function createOrderDetailQueryOptions<
 ): UseSuspenseQueryOptions<OrderDetailResponseDto, ProblemDetailsError, TData> {
 	return {
 		...options,
-		queryKey: ["order", params],
+		queryKey: orderKeys.detail(params),
 		queryFn: () => getOrderById({ data: params }),
 		select: (raw) => parseOrderDetailResponse(raw) as TData,
 	};

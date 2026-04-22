@@ -19,6 +19,7 @@ import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
 import {
 	AlertDialog,
 	AlertDialogAction,
+	AlertDialogCancel,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
@@ -142,7 +143,7 @@ function OrderHeader() {
 					</p>
 				</div>
 
-				<div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-end">
+				<div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-end">
 					<OrderStatusCard status={order.status} />
 					<OperationalStateCard
 						title={temporalInsight.title}
@@ -203,7 +204,75 @@ function OrderHeader() {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
+
+			<OrderLifecycleActionDialog actions={actions} />
 		</header>
+	);
+}
+
+function OrderLifecycleActionDialog({
+	actions,
+}: {
+	actions: ReturnType<typeof useOrderDetailContext>["actions"];
+}) {
+	const action = actions.pendingLifecycleAction;
+
+	if (!action) {
+		return null;
+	}
+
+	const copy =
+		action === "pickup"
+			? {
+				title: "Marcar equipo retirado",
+				description:
+					"Confirma que el cliente ya retiró el equipo en la sucursal. El pedido pasará a estar activo.",
+				confirmLabel: actions.isLifecycleActionPending
+					? "Marcando retiro..."
+					: "Marcar retirado",
+			}
+			: {
+				title: "Marcar equipo devuelto",
+				description:
+					"Confirma que el cliente ya devolvió el equipo. El pedido pasará a estar completado.",
+				confirmLabel: actions.isLifecycleActionPending
+					? "Marcando devolucion..."
+					: "Marcar devuelto",
+			};
+
+	return (
+		<AlertDialog
+			open={Boolean(action)}
+			onOpenChange={actions.setIsLifecycleActionDialogOpen}
+		>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>{copy.title}</AlertDialogTitle>
+					<AlertDialogDescription>{copy.description}</AlertDialogDescription>
+				</AlertDialogHeader>
+
+				{actions.lifecycleActionError ? (
+					<p className="text-sm text-destructive">
+						{actions.lifecycleActionError}
+					</p>
+				) : null}
+
+				<AlertDialogFooter>
+					<AlertDialogCancel disabled={actions.isLifecycleActionPending}>
+						Cancelar
+					</AlertDialogCancel>
+					<AlertDialogAction
+						onClick={(event) => {
+							event.preventDefault();
+							void actions.handleConfirmLifecycleAction();
+						}}
+						disabled={actions.isLifecycleActionPending}
+					>
+						{copy.confirmLabel}
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }
 
@@ -255,18 +324,21 @@ function OperationalStateCard({
 		<section
 			className={`min-w-70 rounded-xl border p-2 ${config.panelClassName}`}
 		>
-			<div className="flex items-start gap-4">
+			<div className="flex items-start gap-2">
 				<span
 					className={`mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full ${config.dotClassName}`}
 				/>
-				<div className="space-y-1">
+				<div className="flex items-start gap-2">
 					<p className="font-semibold tracking-tight text-neutral-950">
 						{title}
 					</p>
-					<p className="text-sm font-medium text-neutral-700 line-clamp-1">
-						{description}
-					</p>
-					<p className="text-xs text-neutral-500 line-clamp-1">{deadline}</p>
+
+					<div>
+						<p className="text-sm font-medium text-neutral-700 line-clamp-1">
+							{description}
+						</p>
+						<p className="text-xs text-neutral-500 line-clamp-1">{deadline}</p>
+					</div>
 				</div>
 			</div>
 		</section>
@@ -279,7 +351,7 @@ function OrderStatusCard({
 	status: ParsedOrderDetailResponseDto["status"];
 }) {
 	return (
-		<section className="xl:min-w-45">
+		<section>
 			<p className="mb-2 text-[10px] font-mono uppercase text-neutral-400">
 				Estado del pedido
 			</p>
@@ -290,6 +362,38 @@ function OrderStatusCard({
 	);
 }
 
+function getPrimaryAdminButtonConfig(
+	action: ReturnType<typeof getOrderPrimaryAdminAction>,
+	actions: ReturnType<typeof useOrderDetailContext>["actions"],
+) {
+	if (!action) {
+		return null;
+	}
+
+	switch (action.action) {
+		case "confirm":
+			return {
+				icon: CheckCircle2,
+				onClick: actions.handleConfirmOrder,
+				description: "Aprobar pedido",
+			};
+		case "pickup":
+			return {
+				icon: Truck,
+				onClick: actions.handleMarkAsPickedUp,
+				description: "Registrar retiro",
+			};
+		case "return":
+			return {
+				icon: RotateCcw,
+				onClick: actions.handleMarkAsReturned,
+				description: "Completar devolución",
+			};
+		default:
+			return null;
+	}
+}
+
 function PrimaryAdminActionButton({
 	action,
 	actions,
@@ -297,31 +401,17 @@ function PrimaryAdminActionButton({
 	action: ReturnType<typeof getOrderPrimaryAdminAction>;
 	actions: ReturnType<typeof useOrderDetailContext>["actions"];
 }) {
-	if (!action) {
-		return null;
-	}
+const config = getPrimaryAdminButtonConfig(action, actions);
 
-	const config =
-		action.action === "confirm"
-			? {
-					icon: CheckCircle2,
-					onClick: actions.handleConfirmOrder,
-				}
-			: action.action === "pickup"
-				? {
-						icon: Truck,
-						onClick: actions.handleMarkAsPickedUp,
-					}
-				: {
-						icon: RotateCcw,
-						onClick: actions.handleMarkAsReturned,
-					};
+if (!config) {
+	return null;
+}
 
-	const Icon = config.icon;
+const Icon = config.icon;
 
 	return (
 		<Button
-			className="h-auto min-h-16 justify-start rounded-xl bg-emerald-600 px-5 py-3 text-left text-white hover:bg-emerald-700 xl:min-w-72.5"
+			className="h-auto justify-start rounded-xl bg-emerald-600 px-4 py-2 text-left text-white hover:bg-emerald-700"
 			onClick={config.onClick}
 		>
 			<div className="flex items-start gap-3">
@@ -329,14 +419,8 @@ function PrimaryAdminActionButton({
 					<Icon className="h-4 w-4" />
 				</div>
 				<div>
-					<p className="text-sm font-semibold leading-none">{action.label}</p>
-					<p className="mt-1 text-xs text-white/80">
-						{action.action === "confirm"
-							? "Aprobar pedido"
-							: action.action === "pickup"
-								? "Registrar retiro"
-								: "Completar devolución"}
-					</p>
+					<p className="text-sm font-semibold leading-none">{action?.label}</p>
+					<p className="mt-1 text-xs text-white/80">{config.description}</p>
 				</div>
 			</div>
 		</Button>
@@ -355,16 +439,16 @@ function OrderActionsMenu({
 					<Button
 						variant="outline"
 						size="icon"
-						className="size-11 rounded-xl border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
+						className="px-4 rounded-sm border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
 					>
-						<MoreHorizontal className="h-4 w-4" />
+						<MoreHorizontal className="size-4" />
 						<span className="sr-only">Más acciones</span>
 					</Button>
 				}
 			/>
 
 			<DropdownMenuContent align="end" className="w-56">
-				<DropdownMenuItem onClick={actions.handleEditOrder}>
+				<DropdownMenuItem onClick={actions.handleEditOrder} disabled>
 					<Pencil className="mr-2 h-4 w-4" />
 					Editar pedido
 				</DropdownMenuItem>

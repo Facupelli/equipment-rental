@@ -1,10 +1,17 @@
 import { useState } from "react";
+import { ProblemDetailsError } from "@/shared/errors";
 import type { ParsedOrderDetailResponseDto } from "@/features/orders/queries/get-order-by-id";
+import {
+	useMarkEquipmentAsRetired,
+	useMarkEquipmentAsReturned,
+} from "../orders.queries";
 
 type ContractErrorState = {
   status: number;
   message: string;
 } | null;
+
+type OrderLifecycleAction = "pickup" | "return" | null;
 
 function openPreviewWindow() {
   const previewWindow = window.open("", "_blank");
@@ -22,6 +29,15 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
   const [contractError, setContractError] = useState<ContractErrorState>(null);
   const [isContractBusinessErrorOpen, setIsContractBusinessErrorOpen] =
     useState(false);
+  const [pendingLifecycleAction, setPendingLifecycleAction] =
+    useState<OrderLifecycleAction>(null);
+  const [lifecycleActionError, setLifecycleActionError] = useState<string | null>(
+    null,
+  );
+  const { mutateAsync: markEquipmentAsRetired, isPending: isMarkingAsPickedUp } =
+    useMarkEquipmentAsRetired();
+  const { mutateAsync: markEquipmentAsReturned, isPending: isMarkingAsReturned } =
+    useMarkEquipmentAsReturned();
 
   const handleOpenContract = async () => {
     const previewWindow = openPreviewWindow();
@@ -86,11 +102,49 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
   };
 
   const handleMarkAsPickedUp = () => {
-    // TODO: trigger pickup order mutation, then invalidate order query
+    setLifecycleActionError(null);
+    setPendingLifecycleAction("pickup");
   };
 
   const handleMarkAsReturned = () => {
-    // TODO: trigger return order mutation, then invalidate order query
+    setLifecycleActionError(null);
+    setPendingLifecycleAction("return");
+  };
+
+  const handleConfirmLifecycleAction = async () => {
+    if (!pendingLifecycleAction) {
+      return;
+    }
+
+    setLifecycleActionError(null);
+
+    try {
+      if (pendingLifecycleAction === "pickup") {
+        await markEquipmentAsRetired({ orderId: order.id });
+      } else {
+        await markEquipmentAsReturned({ orderId: order.id });
+      }
+
+      setPendingLifecycleAction(null);
+    } catch (error) {
+      if (error instanceof ProblemDetailsError) {
+        setLifecycleActionError(
+          error.problemDetails.detail ??
+            error.problemDetails.title ??
+            "No pudimos actualizar el estado del pedido.",
+        );
+        return;
+      }
+
+      setLifecycleActionError("Ocurrio un error al actualizar el estado del pedido.");
+    }
+  };
+
+  const setIsLifecycleActionDialogOpen = (open: boolean) => {
+    if (!open) {
+      setLifecycleActionError(null);
+      setPendingLifecycleAction(null);
+    }
   };
 
   const handleReleaseEquipment = () => {
@@ -104,6 +158,7 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
   return {
     contractError,
     handleConfirmOrder,
+    handleConfirmLifecycleAction,
     handleDownloadContract,
     handleOpenContract,
     handleEditOrder,
@@ -113,9 +168,13 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
     handleProcessPayment,
     isContractBusinessErrorOpen,
     isDownloadingContract,
+    isLifecycleActionPending: isMarkingAsPickedUp || isMarkingAsReturned,
     isOpeningContract,
+    lifecycleActionError,
+    pendingLifecycleAction,
     setContractError,
     setIsContractBusinessErrorOpen,
+    setIsLifecycleActionDialogOpen,
   };
 }
 
