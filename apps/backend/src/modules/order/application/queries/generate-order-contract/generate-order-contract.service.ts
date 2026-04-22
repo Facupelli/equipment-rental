@@ -3,7 +3,12 @@ import { tenantConfigSchema } from '@repo/schemas';
 import { err, ok, Result } from 'neverthrow';
 import { ContractCustomerProfileMissingError } from 'src/modules/order/domain/errors/contract.errors';
 import { PrismaService } from 'src/core/database/prisma.service';
+import { BookingSnapshot } from 'src/modules/order/domain/value-objects/booking-snapshot.value-object';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
+import {
+  GetLocationContextQuery,
+  LocationContextReadModel,
+} from 'src/modules/tenant/public/queries/get-location-context.query';
 import { GetTenantAdminSignerProfileQuery } from 'src/modules/users/public/queries/get-tenant-admin-signer-profile.query';
 import { GenerateOrderContractQuery, GenerateOrderContractResult } from './generate-order-contract.query';
 import {
@@ -102,6 +107,17 @@ export class GenerateOrderContractService implements IQueryHandler<
     }
 
     const signerProfile = await this.queryBus.execute(new GetTenantAdminSignerProfileQuery(query.tenantId));
+    const locationContext = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+      new GetLocationContextQuery(query.tenantId, order.locationId),
+    );
+
+    if (!locationContext) {
+      throw new Error(`Location context not found for location "${order.locationId}"`);
+    }
+
+    const bookingSnapshot = hasBookingSnapshot(order.bookingSnapshot)
+      ? BookingSnapshot.fromJSON(order.bookingSnapshot)
+      : buildLegacyBookingSnapshot(order.periodStart, order.periodEnd, locationContext.effectiveTimezone);
 
     // ── Jornadas ─────────────────────────────────────────────────────────────
     // All items in an order share the same rental period, so totalUnits is
@@ -156,8 +172,8 @@ export class GenerateOrderContractService implements IQueryHandler<
     const contractData: ContractData = {
       remito: {
         number: remitoNumber,
-        pickupDate: formatLocalDate(order.periodStart),
-        returnDate: formatLocalDate(order.periodEnd),
+        pickupDate: formatLocalDateKey(bookingSnapshot.pickupDate),
+        returnDate: formatLocalDateKey(bookingSnapshot.returnDate),
         jornadas,
         agreedPrice,
         logoUrl: tenant.logoUrl,
@@ -186,9 +202,62 @@ export class GenerateOrderContractService implements IQueryHandler<
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Formats a Date as "D/M/YYYY" — matches the remito style in the PDF sample */
-function formatLocalDate(date: Date): string {
-  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+function hasBookingSnapshot(raw: unknown): raw is Record<string, unknown> {
+  if (!raw || typeof raw !== 'object') {
+    return false;
+  }
+
+  const data = raw as Record<string, unknown>;
+
+  return (
+    typeof data.pickupDate === 'string' &&
+    typeof data.pickupTime === 'number' &&
+    typeof data.returnDate === 'string' &&
+    typeof data.returnTime === 'number' &&
+    typeof data.timezone === 'string'
+  );
+}
+
+function buildLegacyBookingSnapshot(periodStart: Date, periodEnd: Date, timezone: string): BookingSnapshot {
+  return BookingSnapshot.reconstitute({
+    pickupDate: toLocalDateKey(periodStart, timezone),
+    pickupTime: toMinutesFromMidnight(periodStart, timezone),
+    returnDate: toLocalDateKey(periodEnd, timezone),
+    returnTime: toMinutesFromMidnight(periodEnd, timezone),
+    timezone,
+  });
+}
+
+/** Formats a YYYY-MM-DD local date key as D/M/YYYY — matches the remito style */
+function formatLocalDateKey(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return `${day}/${month}/${year}`;
+}
+
+function toLocalDateKey(date: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '00';
+
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+function toMinutesFromMidnight(date: Date, timezone: string): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? '0');
+
+  return get('hour') * 60 + get('minute');
 }
 
 function parseIncludedItems(value: unknown): IncludedItem[] {

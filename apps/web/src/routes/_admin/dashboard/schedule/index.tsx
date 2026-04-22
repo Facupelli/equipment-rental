@@ -1,44 +1,44 @@
+import { OrderItemType } from "@repo/types";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { z } from "zod";
-import { type Dayjs } from "dayjs";
-import { Calendar } from "@/components/ui/calendar";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { useSelectedLocation } from "@/shared/contexts/location/location.hooks";
-import { localDateToDateParam } from "@/lib/dates/parse";
+import type { Dayjs } from "dayjs";
 import {
+	ArrowRight,
+	CalendarDays,
+	Clock,
+	Mail,
+	MapPin,
+	Package,
+	Tag,
+	User,
+	X,
+} from "lucide-react";
+import { useCallback, useEffect } from "react";
+import { z } from "zod";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
+import { useScheduleParams } from "@/features/orders/hooks/use-schedule-params";
+import { formatOrderNumber } from "@/features/orders/order.utils";
+import {
+	type ParsedScheduleEvent,
 	useCalendarDots,
 	useUpcomingSchedule,
-	type ParsedScheduleEvent,
 } from "@/features/orders/orders.queries";
 import {
 	createOrderDetailQueryOptions,
 	type ParsedOrderDetailResponseDto,
 } from "@/features/orders/queries/get-order-by-id";
-import { formatDateShort } from "@/lib/dates/format";
-import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
-import { formatOrderNumber } from "@/features/orders/order.utils";
-import { OrderItemType } from "@repo/types";
-import {
-	CalendarDays,
-	X,
-	ArrowRight,
-	MapPin,
-	Clock,
-	User,
-	Mail,
-	Package,
-	Tag,
-} from "lucide-react";
-import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useCallback } from "react";
-import dayjs from "@/lib/dates/dayjs";
-import { useScheduleParams } from "@/features/orders/hooks/use-schedule-params";
 import { locationQueries } from "@/features/tenant/locations/locations.queries";
+import dayjs from "@/lib/dates/dayjs";
+import { formatDateShort } from "@/lib/dates/format";
+import { localDateToDateParam } from "@/lib/dates/parse";
+import { cn } from "@/lib/utils";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
+import { useSelectedLocation } from "@/shared/contexts/location/location.hooks";
 
 const searchSchema = z.object({
 	date: z.iso.date().optional(),
@@ -450,18 +450,18 @@ function OrderQuickPanel({
 
 					<PanelSection
 						icon={<Clock className="h-3.5 w-3.5" />}
-						label="Rental Period"
+						label="Periodo de alquiler"
 					>
 						<div className="grid grid-cols-2 gap-2">
 							<PeriodCell
 								label="Pickup"
-								date={order.pickupDate}
+								date={order.bookingSnapshot.pickupDate}
 								time={order.pickupAt}
 								timezone={timezone}
 							/>
 							<PeriodCell
 								label="Return"
-								date={order.returnDate}
+								date={order.bookingSnapshot.returnDate}
 								time={order.returnAt}
 								timezone={timezone}
 							/>

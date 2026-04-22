@@ -13,6 +13,7 @@ import {
 import { OrderStatus } from '@repo/types';
 import { OrderFinancialSnapshot } from '../value-objects/order-financial-snapshot.value-object';
 import { OrderDeliveryRequest } from '../value-objects/order-delivery-request.value-object';
+import { BookingSnapshot } from '../value-objects/booking-snapshot.value-object';
 
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.PENDING_REVIEW]: [OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.EXPIRED],
@@ -32,6 +33,7 @@ export interface CreateOrderProps {
   status: OrderStatus;
   fulfillmentMethod: FulfillmentMethod;
   deliveryRequest?: OrderDeliveryRequest | null;
+  bookingSnapshot: BookingSnapshot;
   insuranceSelected: boolean;
   insuranceRatePercent: number;
   customerId?: string;
@@ -47,6 +49,7 @@ export interface ReconstituteOrderProps {
   status: OrderStatus;
   fulfillmentMethod: FulfillmentMethod;
   deliveryRequest: OrderDeliveryRequest | null;
+  bookingSnapshot: BookingSnapshot | null;
   insuranceSelected: boolean;
   financialSnapshot: OrderFinancialSnapshot;
   notes: string | null;
@@ -63,6 +66,7 @@ export class Order {
     private status: OrderStatus,
     private readonly fulfillmentMethod: FulfillmentMethod,
     private readonly deliveryRequest: OrderDeliveryRequest | null,
+    private readonly bookingSnapshot: BookingSnapshot | null,
     private readonly insuranceSelected: boolean,
     private readonly insuranceRatePercent: number,
     private financialSnapshot: OrderFinancialSnapshot,
@@ -80,6 +84,7 @@ export class Order {
       props.status,
       props.fulfillmentMethod,
       Order.assertDeliveryRequest(props.fulfillmentMethod, props.deliveryRequest ?? null),
+      props.bookingSnapshot,
       props.insuranceSelected,
       props.insuranceRatePercent,
       OrderFinancialSnapshot.zero(props.currency, props.insuranceSelected, props.insuranceRatePercent),
@@ -98,6 +103,7 @@ export class Order {
       props.status,
       props.fulfillmentMethod,
       Order.assertDeliveryRequest(props.fulfillmentMethod, props.deliveryRequest),
+      props.bookingSnapshot,
       props.insuranceSelected,
       props.financialSnapshot.insuranceRatePercent,
       props.financialSnapshot,
@@ -124,6 +130,10 @@ export class Order {
 
   get currentDeliveryRequest(): OrderDeliveryRequest | null {
     return this.deliveryRequest;
+  }
+
+  get currentBookingSnapshot(): BookingSnapshot | null {
+    return this.bookingSnapshot;
   }
 
   get currentInsuranceSelected(): boolean {

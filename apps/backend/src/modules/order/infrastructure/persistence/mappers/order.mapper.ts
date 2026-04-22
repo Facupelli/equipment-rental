@@ -9,6 +9,7 @@ import { OrderItemOwnerSplit, SplitStatus } from 'src/modules/order/domain/entit
 import { OrderFinancialSnapshot } from 'src/modules/order/domain/value-objects/order-financial-snapshot.value-object';
 import { OrderDeliveryRequest } from 'src/modules/order/domain/value-objects/order-delivery-request.value-object';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
+import { BookingSnapshot } from 'src/modules/order/domain/value-objects/booking-snapshot.value-object';
 
 // ── Prisma row shapes (from include queries) ──────────────────────────────────
 
@@ -66,6 +67,7 @@ type OrderRow = {
   periodEnd: Date;
   status: string;
   fulfillmentMethod: string;
+  bookingSnapshot: JsonValue;
   insuranceSelected: boolean;
   financialSnapshot: JsonValue;
   notes: string | null;
@@ -158,6 +160,7 @@ export class OrderMapper {
             instructions: row.deliveryRequest.instructions,
           })
         : null,
+      bookingSnapshot: hasBookingSnapshot(row.bookingSnapshot) ? BookingSnapshot.fromJSON(row.bookingSnapshot) : null,
       insuranceSelected: row.insuranceSelected,
       financialSnapshot: OrderFinancialSnapshot.fromJSON(row.financialSnapshot),
       notes: row.notes,
@@ -175,6 +178,7 @@ export class OrderMapper {
       periodEnd: order.currentPeriod.end,
       status: order.currentStatus,
       fulfillmentMethod: order.currentFulfillmentMethod,
+      bookingSnapshot: order.currentBookingSnapshot?.toJSON() ?? {},
       insuranceSelected: order.currentInsuranceSelected,
       financialSnapshot: order.currentFinancialSnapshot.toJSON(),
       notes: order.currentNotes,
@@ -244,4 +248,20 @@ export class OrderMapper {
 
     return { orderRow, deliveryRequestRow, itemRows, snapshotRows, snapshotComponentRows, splitRows };
   }
+}
+
+function hasBookingSnapshot(raw: unknown): raw is Record<string, unknown> {
+  if (!raw || typeof raw !== 'object') {
+    return false;
+  }
+
+  const data = raw as Record<string, unknown>;
+
+  return (
+    typeof data.pickupDate === 'string' &&
+    typeof data.pickupTime === 'number' &&
+    typeof data.returnDate === 'string' &&
+    typeof data.returnTime === 'number' &&
+    typeof data.timezone === 'string'
+  );
 }

@@ -622,6 +622,7 @@ model Order {
   orderNumber       Int               @default(0) @map("order_number")
   notes             String?
   insuranceSelected Boolean           @default(false) @map("insurance_selected")
+  bookingSnapshot   Json              @default("{}") @map("booking_snapshot")
   financialSnapshot Json              @default("{}") @map("financial_snapshot")
   periodStart       DateTime          @map("period_start")
   periodEnd         DateTime          @map("period_end")

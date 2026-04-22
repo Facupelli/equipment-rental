@@ -30,6 +30,13 @@ describe('CreateOrderService', () => {
   function makeService(bookingMode: BookingMode) {
     let savedStatus: OrderStatus | null = null;
     let savedPeriod: DateRange | null = null;
+    let savedBookingSnapshot: {
+      pickupDate: string;
+      pickupTime: number;
+      returnDate: string;
+      returnTime: number;
+      timezone: string;
+    } | null = null;
     const savedAssignments: Array<{ stage: OrderAssignmentStage }> = [];
 
     const prisma = {
@@ -63,6 +70,13 @@ describe('CreateOrderService', () => {
       save: jest.fn(async (order) => {
         savedStatus = order.currentStatus;
         savedPeriod = order.currentPeriod;
+        savedBookingSnapshot = {
+          pickupDate: order.currentBookingSnapshot!.pickupDate,
+          pickupTime: order.currentBookingSnapshot!.pickupTime,
+          returnDate: order.currentBookingSnapshot!.returnDate,
+          returnTime: order.currentBookingSnapshot!.returnTime,
+          timezone: order.currentBookingSnapshot!.timezone,
+        };
         expect(order.currentInsuranceSelected).toBe(false);
         expect(order.currentFinancialSnapshot.total.toString()).toBe('100');
         expect(order.currentFinancialSnapshot.insuranceAmount.toString()).toBe('0');
@@ -134,7 +148,7 @@ describe('CreateOrderService', () => {
 
     return {
       service,
-      saved: () => ({ savedStatus, savedPeriod, savedAssignments }),
+      saved: () => ({ savedStatus, savedPeriod, savedBookingSnapshot, savedAssignments }),
     };
   }
 
@@ -178,6 +192,13 @@ describe('CreateOrderService', () => {
     expect(result.isOk()).toBe(true);
     expect(saved().savedStatus).toBe(OrderStatus.CONFIRMED);
     expect(saved().savedPeriod?.equals(period)).toBe(true);
+    expect(saved().savedBookingSnapshot).toEqual({
+      pickupDate: '2026-03-30',
+      pickupTime: 600,
+      returnDate: '2026-03-31',
+      returnTime: 900,
+      timezone: 'UTC',
+    });
     expect(saved().savedAssignments).toEqual([{ stage: OrderAssignmentStage.COMMITTED }]);
   });
 

@@ -90,7 +90,7 @@ function RouteComponent() {
 					{/* Right */}
 					<div className="space-y-4">
 						{order.customer && <OrderClientCard />}
-						<OrderLogisticsCard timezone={order.location.effectiveTimezone} />
+						<OrderLogisticsCard />
 						<OrderFinancialsCard />
 					</div>
 				</div>
@@ -507,14 +507,13 @@ function OrderClientCard() {
 
 // ─── Logistics Card ───────────────────────────────────────────────────────────
 
-function OrderLogisticsCard({ timezone }: { timezone: string }) {
+function OrderLogisticsCard() {
 	const { order } = useOrderDetailContext();
 	const {
+		bookingSnapshot,
 		deliveryRequest,
 		fulfillmentMethod,
 		location,
-		pickupDate,
-		returnDate,
 		pickupAt,
 		returnAt,
 	} = order;
@@ -529,10 +528,10 @@ function OrderLogisticsCard({ timezone }: { timezone: string }) {
 						Pickup Date
 					</p>
 					<p className="text-sm font-bold text-neutral-950">
-						{pickupDate.format("MMM DD, YYYY")}
+						{bookingSnapshot.pickupDate.format("MMM DD, YYYY")}
 					</p>
 					<p className="font-mono text-[10px] text-neutral-400 mt-0.5">
-						{pickupAt.tz(timezone).format("HH:mm")}
+						{pickupAt.tz(bookingSnapshot.timezone).format("HH:mm")}
 					</p>
 				</div>
 				<div>
@@ -540,10 +539,10 @@ function OrderLogisticsCard({ timezone }: { timezone: string }) {
 						Return Date
 					</p>
 					<p className="text-sm font-bold text-neutral-950">
-						{returnDate.format("MMM DD, YYYY")}
+						{bookingSnapshot.returnDate.format("MMM DD, YYYY")}
 					</p>
 					<p className="font-mono text-[10px] text-neutral-400 mt-0.5">
-						{returnAt.tz(timezone).format("HH:mm")}
+						{returnAt.tz(bookingSnapshot.timezone).format("HH:mm")}
 					</p>
 				</div>
 			</div>

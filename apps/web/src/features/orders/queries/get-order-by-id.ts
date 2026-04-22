@@ -1,11 +1,11 @@
-import { ProblemDetailsError } from "@/shared/errors";
 import type {
 	GetOrderByIdParamDto,
 	OrderDetailResponseDto,
 } from "@repo/schemas";
-import { useQuery, type UseSuspenseQueryOptions } from "@tanstack/react-query";
+import { type UseSuspenseQueryOptions, useQuery } from "@tanstack/react-query";
 import type { Dayjs } from "dayjs";
 import { fromDate, fromDateParam, parseTimestamp } from "@/lib/dates/parse";
+import type { ProblemDetailsError } from "@/shared/errors";
 import { getOrderById } from "../orders.api";
 
 // TODO: replace parseDailyBound with parseTimestamp for hourly orders once
@@ -17,12 +17,17 @@ export type ParsedOrderPeriod = {
 
 export type ParsedOrderDetailResponseDto = Omit<
 	OrderDetailResponseDto,
-	"period" | "createdAt" | "pickupDate" | "returnDate" | "pickupAt" | "returnAt"
+	"period" | "createdAt" | "bookingSnapshot" | "pickupAt" | "returnAt"
 > & {
 	period: ParsedOrderPeriod | null;
 	createdAt: Dayjs;
-	pickupDate: Dayjs;
-	returnDate: Dayjs;
+	bookingSnapshot: Omit<
+		OrderDetailResponseDto["bookingSnapshot"],
+		"pickupDate" | "returnDate"
+	> & {
+		pickupDate: Dayjs;
+		returnDate: Dayjs;
+	};
 	pickupAt: Dayjs;
 	returnAt: Dayjs;
 };
@@ -41,18 +46,21 @@ function parseOrderDetailResponse(
 ): ParsedOrderDetailResponseDto {
 	return {
 		...raw,
-		pickupDate: fromDateParam(raw.pickupDate),
-		returnDate: fromDateParam(raw.returnDate),
-		pickupAt: parseTimestamp(raw.pickupAt)!,
-		returnAt: parseTimestamp(raw.returnAt)!,
+		bookingSnapshot: {
+			...raw.bookingSnapshot,
+			pickupDate: fromDateParam(raw.bookingSnapshot.pickupDate),
+			returnDate: fromDateParam(raw.bookingSnapshot.returnDate),
+		},
+		pickupAt: requireDayjs(parseTimestamp(raw.pickupAt), "pickupAt"),
+		returnAt: requireDayjs(parseTimestamp(raw.returnAt), "returnAt"),
 		// TODO: route through parseTimestamp for hourly orders once rentalType is available
 		period: raw.period
 			? {
-					start: fromDate(raw.period.start)!,
-					end: fromDate(raw.period.end)!,
+					start: fromDate(raw.period.start),
+					end: fromDate(raw.period.end),
 				}
 			: null,
-		createdAt: parseTimestamp(raw.createdAt)!,
+		createdAt: requireDayjs(parseTimestamp(raw.createdAt), "createdAt"),
 	};
 }
 
@@ -81,4 +89,11 @@ export function useOrderDetail<TData = ParsedOrderDetailResponseDto>(
 	return useQuery({
 		...createOrderDetailQueryOptions(params, options),
 	});
+}
+
+function requireDayjs(value: Dayjs | null, field: string): Dayjs {
+	if (!value) {
+		throw new Error(`Invalid order detail date: ${field}`);
+	}
+	return value;
 }

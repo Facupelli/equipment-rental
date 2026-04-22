@@ -12,6 +12,7 @@ import { PrismaService } from 'src/core/database/prisma.service';
 import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
 import { Order } from '../../domain/entities/order.entity';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
+import { BookingSnapshot } from '../../domain/value-objects/booking-snapshot.value-object';
 
 function makeOrder(status: OrderStatus): Order {
   return Order.create({
@@ -22,6 +23,13 @@ function makeOrder(status: OrderStatus): Order {
     period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
     status,
     fulfillmentMethod: FulfillmentMethod.PICKUP,
+    bookingSnapshot: BookingSnapshot.create({
+      pickupDate: '2026-03-30',
+      pickupTime: 600,
+      returnDate: '2026-03-31',
+      returnTime: 600,
+      timezone: 'UTC',
+    }),
     insuranceSelected: false,
     insuranceRatePercent: 0,
   });

@@ -5,6 +5,7 @@ import {
 	PromotionAdjustmentType,
 } from "@repo/types";
 import { z } from "zod";
+import { minutesFromMidnightSchema } from "../shared/rental-temporal.schema";
 
 const CustomerSummarySchema = z.object({
 	id: z.uuid(),
@@ -23,6 +24,14 @@ const LocationSummarySchema = z.object({
 const RentalPeriodSchema = z.object({
 	start: z.date(),
 	end: z.date(),
+});
+
+const BookingSnapshotSchema = z.object({
+	pickupDate: z.iso.date(),
+	pickupTime: minutesFromMidnightSchema,
+	returnDate: z.iso.date(),
+	returnTime: minutesFromMidnightSchema,
+	timezone: z.string(),
 });
 
 const DeliveryRequestSchema = z.object({
@@ -121,8 +130,7 @@ export const orderDetailSchema = z.object({
 	fulfillmentMethod: z.enum(FulfillmentMethod),
 	number: z.number().int(),
 	createdAt: z.date(),
-	pickupDate: z.iso.date(),
-	returnDate: z.iso.date(),
+	bookingSnapshot: BookingSnapshotSchema,
 	pickupAt: z.date(),
 	returnAt: z.date(),
 	notes: z.string().nullable(),

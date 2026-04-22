@@ -5,6 +5,7 @@ import { DateRange } from 'src/core/domain/value-objects/date-range.value-object
 import { FulfillmentMethod, OrderItemType, OrderStatus } from '@repo/types';
 import { OrderFinancialSnapshot } from 'src/modules/order/domain/value-objects/order-financial-snapshot.value-object';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
+import { BookingSnapshot } from 'src/modules/order/domain/value-objects/booking-snapshot.value-object';
 import Decimal from 'decimal.js';
 import { OrderNotFoundException } from '../../../domain/exceptions/order.exceptions';
 import { GetOrderByIdResponseDto } from './get-order-by-id.response.dto';
@@ -112,6 +113,9 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
 
     const period = DateRange.create(order.periodStart, order.periodEnd);
     const financialSnapshot = OrderFinancialSnapshot.fromJSON(order.financialSnapshot);
+    const bookingSnapshot = hasBookingSnapshot(order.bookingSnapshot)
+      ? BookingSnapshot.fromJSON(order.bookingSnapshot)
+      : buildLegacyBookingSnapshot(order.periodStart, order.periodEnd, locationContext.effectiveTimezone);
 
     // ── Items ─────────────────────────────────────────────────────────────────
 
@@ -234,8 +238,13 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
       fulfillmentMethod: order.fulfillmentMethod as FulfillmentMethod,
       number: order.orderNumber,
       createdAt: order.createdAt,
-      pickupDate: toLocalDateKey(order.periodStart, locationContext.effectiveTimezone),
-      returnDate: toLocalDateKey(order.periodEnd, locationContext.effectiveTimezone),
+      bookingSnapshot: {
+        pickupDate: bookingSnapshot.pickupDate,
+        pickupTime: bookingSnapshot.pickupTime,
+        returnDate: bookingSnapshot.returnDate,
+        returnTime: bookingSnapshot.returnTime,
+        timezone: bookingSnapshot.timezone,
+      },
       pickupAt: order.periodStart,
       returnAt: order.periodEnd,
       notes: order.notes,
@@ -274,6 +283,32 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
   }
 }
 
+function hasBookingSnapshot(raw: unknown): raw is Record<string, unknown> {
+  if (!raw || typeof raw !== 'object') {
+    return false;
+  }
+
+  const data = raw as Record<string, unknown>;
+
+  return (
+    typeof data.pickupDate === 'string' &&
+    typeof data.pickupTime === 'number' &&
+    typeof data.returnDate === 'string' &&
+    typeof data.returnTime === 'number' &&
+    typeof data.timezone === 'string'
+  );
+}
+
+function buildLegacyBookingSnapshot(periodStart: Date, periodEnd: Date, timezone: string): BookingSnapshot {
+  return BookingSnapshot.reconstitute({
+    pickupDate: toLocalDateKey(periodStart, timezone),
+    pickupTime: toMinutesFromMidnight(periodStart, timezone),
+    returnDate: toLocalDateKey(periodEnd, timezone),
+    returnTime: toMinutesFromMidnight(periodEnd, timezone),
+    timezone,
+  });
+}
+
 function toLocalDateKey(date: Date, timezone: string): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
@@ -285,4 +320,17 @@ function toLocalDateKey(date: Date, timezone: string): string {
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '00';
 
   return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+function toMinutesFromMidnight(date: Date, timezone: string): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? '0');
+
+  return get('hour') * 60 + get('minute');
 }

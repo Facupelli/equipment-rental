@@ -37,6 +37,7 @@ import {
 import { Order } from 'src/modules/order/domain/entities/order.entity';
 import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
+import { BookingSnapshot } from 'src/modules/order/domain/value-objects/booking-snapshot.value-object';
 import { OrderDeliveryRequest } from 'src/modules/order/domain/value-objects/order-delivery-request.value-object';
 import { TenantConfig } from '@repo/schemas';
 
@@ -159,6 +160,13 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
           command.fulfillmentMethod === FulfillmentMethod.DELIVERY && command.deliveryRequest
             ? OrderDeliveryRequest.create(command.deliveryRequest)
             : null,
+        bookingSnapshot: BookingSnapshot.create({
+          pickupDate: command.pickupDate,
+          pickupTime: command.pickupTime,
+          returnDate: command.returnDate,
+          returnTime: command.returnTime,
+          timezone: bookingContext.timezone,
+        }),
         insuranceSelected: insuranceTerms.insuranceSelected,
         insuranceRatePercent: insuranceTerms.insuranceRatePercent,
       });
@@ -271,7 +279,13 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
 
   private async deriveBookingContext(
     command: CreateOrderCommand,
-  ): Promise<{ period: DateRange; bookingMode: BookingMode; insuranceEnabled: boolean; insuranceRatePercent: number }> {
+  ): Promise<{
+    period: DateRange;
+    bookingMode: BookingMode;
+    insuranceEnabled: boolean;
+    insuranceRatePercent: number;
+    timezone: string;
+  }> {
     const [locationContext, tenantConfig] = await Promise.all([
       this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
         new GetLocationContextQuery(command.tenantId, command.locationId),
@@ -298,6 +312,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
       bookingMode: tenantConfig.bookingMode,
       insuranceEnabled: tenantConfig.pricing.insuranceEnabled,
       insuranceRatePercent: tenantConfig.pricing.insuranceRatePercent,
+      timezone: locationContext.effectiveTimezone,
     };
   }
 

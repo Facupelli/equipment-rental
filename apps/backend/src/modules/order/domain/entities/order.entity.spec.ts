@@ -3,6 +3,7 @@ import { FulfillmentMethod, OrderStatus } from '@repo/types';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { OrderFinancialSnapshot } from '../value-objects/order-financial-snapshot.value-object';
 import { OrderDeliveryRequest } from '../value-objects/order-delivery-request.value-object';
+import { BookingSnapshot } from '../value-objects/booking-snapshot.value-object';
 
 import { Order } from './order.entity';
 import { InvalidOrderStatusTransitionException } from '../exceptions/order.exceptions';
@@ -13,12 +14,19 @@ function makeOrder(status: OrderStatus = OrderStatus.PENDING_REVIEW): Order {
     locationId: 'location-1',
     currency: 'ARS',
     customerId: 'customer-1',
-    period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
-    status,
-    fulfillmentMethod: FulfillmentMethod.PICKUP,
-    insuranceSelected: false,
-    insuranceRatePercent: 0,
-  });
+      period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
+      status,
+      fulfillmentMethod: FulfillmentMethod.PICKUP,
+      bookingSnapshot: BookingSnapshot.create({
+        pickupDate: '2026-03-30',
+        pickupTime: 600,
+        returnDate: '2026-03-31',
+        returnTime: 600,
+        timezone: 'UTC',
+      }),
+      insuranceSelected: false,
+      insuranceRatePercent: 0,
+    });
 }
 
 function makeDeliveryRequest(): OrderDeliveryRequest {
@@ -42,13 +50,20 @@ function makeReconstitutedOrder(status: OrderStatus = OrderStatus.PENDING_REVIEW
     customerId: 'customer-1',
     period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
     status,
-      fulfillmentMethod: FulfillmentMethod.PICKUP,
-      deliveryRequest: null,
-      insuranceSelected: false,
-      financialSnapshot: OrderFinancialSnapshot.zero('ARS', false, 0),
-      notes: null,
-      items: [],
-    });
+    fulfillmentMethod: FulfillmentMethod.PICKUP,
+    deliveryRequest: null,
+    bookingSnapshot: BookingSnapshot.reconstitute({
+      pickupDate: '2026-03-30',
+      pickupTime: 600,
+      returnDate: '2026-03-31',
+      returnTime: 600,
+      timezone: 'UTC',
+    }),
+    insuranceSelected: false,
+    financialSnapshot: OrderFinancialSnapshot.zero('ARS', false, 0),
+    notes: null,
+    items: [],
+  });
 }
 
 describe('Order', () => {
@@ -105,6 +120,7 @@ describe('Order', () => {
 
     expect(order.currentFinancialSnapshot.total.toString()).toBe('0');
     expect(order.currentInsuranceSelected).toBe(false);
+    expect(order.currentBookingSnapshot?.pickupDate).toBe('2026-03-30');
   });
 
   it('stores delivery request only for delivery fulfillment', () => {
@@ -117,6 +133,13 @@ describe('Order', () => {
       status: OrderStatus.PENDING_REVIEW,
       fulfillmentMethod: FulfillmentMethod.DELIVERY,
       deliveryRequest: makeDeliveryRequest(),
+      bookingSnapshot: BookingSnapshot.create({
+        pickupDate: '2026-03-30',
+        pickupTime: 600,
+        returnDate: '2026-03-31',
+        returnTime: 600,
+        timezone: 'UTC',
+      }),
       insuranceSelected: false,
       insuranceRatePercent: 0,
     });
