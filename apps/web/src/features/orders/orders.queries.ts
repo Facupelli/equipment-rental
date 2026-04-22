@@ -3,10 +3,13 @@ import type {
 	GetCalendarDotsQueryDto,
 	GetCalendarDotsResponseDto,
 	GetOrderByIdParamDto,
+	GetOrdersCalendarQueryDto,
+	GetOrdersCalendarResponse,
 	GetOrdersQueryDto,
 	GetOrdersResponseDto,
 	GetOrdersScheduleQuery,
 	GetOrdersScheduleResponse,
+	OrderCalendarItem,
 	OrderListItem,
 	OrderSummary,
 	ProblemDetails,
@@ -27,6 +30,7 @@ import {
 	createOrder,
 	getCalendarDots,
 	getOrders,
+	getOrdersCalendar,
 	getOrdersSchedule,
 	markEquipmentAsRetired,
 	markEquipmentAsReturned,
@@ -53,6 +57,20 @@ export type ParsedScheduleEvent = Omit<ScheduleEvent, "eventAt" | "order"> & {
 
 type ParsedGetOrdersScheduleResponse = {
 	events: ParsedScheduleEvent[];
+};
+
+export type ParsedOrderCalendarItem = Omit<
+	OrderCalendarItem,
+	"pickupAt" | "returnAt" | "pickupDate" | "returnDate"
+> & {
+	pickupAt: Dayjs;
+	returnAt: Dayjs;
+	pickupDate: Dayjs;
+	returnDate: Dayjs;
+};
+
+type ParsedGetOrdersCalendarResponse = {
+	orders: ParsedOrderCalendarItem[];
 };
 
 export type ParsedOrderListItem = Omit<
@@ -82,6 +100,9 @@ export const orderKeys = {
 	schedules: () => [...orderKeys.all(), "schedule"] as const,
 	schedule: (params: GetOrdersScheduleQuery) =>
 		[...orderKeys.schedules(), params] as const,
+	calendars: () => [...orderKeys.all(), "calendar"] as const,
+	calendar: (params: GetOrdersCalendarQueryDto) =>
+		[...orderKeys.calendars(), params] as const,
 	calendarDots: () => [...orderKeys.all(), "calendar-dots"] as const,
 	calendarDot: (params: GetCalendarDotsQueryDto) =>
 		[...orderKeys.calendarDots(), params] as const,
@@ -98,7 +119,6 @@ export const orderQueries = {
 			queryFn: () => getOrders({ data: params }),
 			placeholderData: keepPreviousData,
 			select: (raw) => {
-				console.log({ raw });
 				const parsed = parseOrdersResponse(raw);
 				return options?.select ? options.select(raw) : (parsed as TData);
 			},
@@ -119,6 +139,12 @@ type GetOrdersQueryOptions<TData = ParsedGetOrdersResponse> = Omit<
 	UseQueryOptions<GetOrdersResponseDto, ProblemDetailsError, TData>,
 	"queryKey" | "queryFn"
 >;
+
+type GetOrdersCalendarQueryOptions<TData = ParsedGetOrdersCalendarResponse> =
+	Omit<
+		UseQueryOptions<GetOrdersCalendarResponse, ProblemDetailsError, TData>,
+		"queryKey" | "queryFn"
+	>;
 
 type GetCalendarDotsQueryOptions<TData = GetCalendarDotsResponseDto> = Omit<
 	UseQueryOptions<GetCalendarDotsResponseDto, ProblemDetailsError, TData>,
@@ -153,6 +179,20 @@ function parseScheduleResponse(
 				pickupAt: requireDayjs(parseTimestamp(e.order.pickupAt), "pickupAt"),
 				returnAt: requireDayjs(parseTimestamp(e.order.returnAt), "returnAt"),
 			},
+		})),
+	};
+}
+
+function parseOrdersCalendarResponse(
+	raw: GetOrdersCalendarResponse,
+): ParsedGetOrdersCalendarResponse {
+	return {
+		orders: raw.orders.map((order) => ({
+			...order,
+			pickupAt: requireDayjs(parseTimestamp(order.pickupAt), "pickupAt"),
+			returnAt: requireDayjs(parseTimestamp(order.returnAt), "returnAt"),
+			pickupDate: fromDateParam(order.pickupDate),
+			returnDate: fromDateParam(order.returnDate),
 		})),
 	};
 }
@@ -205,6 +245,21 @@ export function useOrders<TData = ParsedGetOrdersResponse>(
 		queryFn,
 		select,
 		placeholderData,
+	});
+}
+
+export function useOrdersCalendar<TData = ParsedGetOrdersCalendarResponse>(
+	params: GetOrdersCalendarQueryDto,
+	options?: GetOrdersCalendarQueryOptions<TData>,
+) {
+	return useQuery({
+		...options,
+		queryKey: orderKeys.calendar(params),
+		queryFn: () => getOrdersCalendar({ data: params }),
+		select: (raw) => {
+			const parsed = parseOrdersCalendarResponse(raw);
+			return options?.select ? options.select(raw) : (parsed as TData);
+		},
 	});
 }
 

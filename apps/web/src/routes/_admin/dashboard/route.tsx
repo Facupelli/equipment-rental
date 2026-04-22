@@ -86,7 +86,12 @@ type SidebarItem = {
 
 const sidebarItems: SidebarItem[] = [
 	{ name: "Inicio", icon: LayoutGrid, href: "/dashboard" },
-	{ name: "Cronograma", icon: CalendarDays, href: "/dashboard/schedule" },
+	{
+		name: "Calendario",
+		icon: CalendarDays,
+		href: "/dashboard/calendar",
+		children: [{ name: "Cronograma Hoy", href: "/dashboard/schedule" }],
+	},
 	{ name: "Pedidos", icon: ShoppingBag, href: "/dashboard/orders" },
 	{
 		name: "Clientes",

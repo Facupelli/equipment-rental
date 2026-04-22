@@ -5,6 +5,9 @@ import {
 	GetCalendarDotsQuerySchema,
 	type GetCalendarDotsResponseDto,
 	type GetOrderByIdParamDto,
+	type GetOrdersCalendarQueryDto,
+	GetOrdersCalendarQuerySchema,
+	type GetOrdersCalendarResponse,
 	type GetOrdersQueryDto,
 	type GetOrdersResponseDto,
 	type GetOrdersScheduleQuery,
@@ -60,6 +63,22 @@ export const getCalendarDots = createServerFn({ method: "GET" })
 	.handler(async ({ data }): Promise<GetCalendarDotsResponseDto> => {
 		const result = await apiFetch<GetCalendarDotsResponseDto>(
 			`${apiUrl}/calendar-dots`,
+			{
+				method: "GET",
+				params: data,
+			},
+		);
+
+		return result;
+	});
+
+export const getOrdersCalendar = createServerFn({ method: "GET" })
+	.inputValidator((data: GetOrdersCalendarQueryDto) =>
+		GetOrdersCalendarQuerySchema.parse(data),
+	)
+	.handler(async ({ data }): Promise<GetOrdersCalendarResponse> => {
+		const result = await apiFetch<GetOrdersCalendarResponse>(
+			`${apiUrl}/calendar`,
 			{
 				method: "GET",
 				params: data,
