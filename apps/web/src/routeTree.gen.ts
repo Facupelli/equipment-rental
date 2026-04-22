@@ -34,6 +34,7 @@ import { Route as AdminDashboardOwnersIndexRouteImport } from './routes/_admin/d
 import { Route as AdminDashboardOrdersIndexRouteImport } from './routes/_admin/dashboard/orders/index'
 import { Route as AdminDashboardLocationsIndexRouteImport } from './routes/_admin/dashboard/locations/index'
 import { Route as AdminDashboardCustomersIndexRouteImport } from './routes/_admin/dashboard/customers/index'
+import { Route as AdminDashboardCalendarIndexRouteImport } from './routes/_admin/dashboard/calendar/index'
 import { Route as ApiOrdersOrderIdContractRouteImport } from './routes/api/orders/$orderId/contract'
 import { Route as ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport } from './routes/api/customer-profiles/$customerProfileId/identity-document'
 import { Route as PortalAuthGoogleFinalizeRouteImport } from './routes/_portal/auth/google/finalize'
@@ -187,6 +188,12 @@ const AdminDashboardCustomersIndexRoute =
   AdminDashboardCustomersIndexRouteImport.update({
     id: '/customers/',
     path: '/customers/',
+    getParentRoute: () => AdminDashboardRouteRoute,
+  } as any)
+const AdminDashboardCalendarIndexRoute =
+  AdminDashboardCalendarIndexRouteImport.update({
+    id: '/calendar/',
+    path: '/calendar/',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
 const ApiOrdersOrderIdContractRoute =
@@ -343,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
+  '/dashboard/calendar/': typeof AdminDashboardCalendarIndexRoute
   '/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/orders/': typeof AdminDashboardOrdersIndexRoute
@@ -389,6 +397,7 @@ export interface FileRoutesByTo {
   '/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
+  '/dashboard/calendar': typeof AdminDashboardCalendarIndexRoute
   '/dashboard/customers': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations': typeof AdminDashboardLocationsIndexRoute
   '/dashboard/orders': typeof AdminDashboardOrdersIndexRoute
@@ -439,6 +448,7 @@ export interface FileRoutesById {
   '/_portal/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
+  '/_admin/dashboard/calendar/': typeof AdminDashboardCalendarIndexRoute
   '/_admin/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/_admin/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
   '/_admin/dashboard/orders/': typeof AdminDashboardOrdersIndexRoute
@@ -488,6 +498,7 @@ export interface FileRouteTypes {
     | '/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/api/orders/$orderId/contract'
+    | '/dashboard/calendar/'
     | '/dashboard/customers/'
     | '/dashboard/locations/'
     | '/dashboard/orders/'
@@ -534,6 +545,7 @@ export interface FileRouteTypes {
     | '/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/api/orders/$orderId/contract'
+    | '/dashboard/calendar'
     | '/dashboard/customers'
     | '/dashboard/locations'
     | '/dashboard/orders'
@@ -583,6 +595,7 @@ export interface FileRouteTypes {
     | '/_portal/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
     | '/api/orders/$orderId/contract'
+    | '/_admin/dashboard/calendar/'
     | '/_admin/dashboard/customers/'
     | '/_admin/dashboard/locations/'
     | '/_admin/dashboard/orders/'
@@ -802,6 +815,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardCustomersIndexRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
+    '/_admin/dashboard/calendar/': {
+      id: '/_admin/dashboard/calendar/'
+      path: '/calendar'
+      fullPath: '/dashboard/calendar/'
+      preLoaderRoute: typeof AdminDashboardCalendarIndexRouteImport
+      parentRoute: typeof AdminDashboardRouteRoute
+    }
     '/api/orders/$orderId/contract': {
       id: '/api/orders/$orderId/contract'
       path: '/api/orders/$orderId/contract'
@@ -1002,6 +1022,7 @@ interface AdminDashboardRouteRouteChildren {
   AdminDashboardOrdersOrderIdRoute: typeof AdminDashboardOrdersOrderIdRoute
   AdminDashboardOwnersOwnerIdRoute: typeof AdminDashboardOwnersOwnerIdRoute
   AdminDashboardPromotionsNewRoute: typeof AdminDashboardPromotionsNewRoute
+  AdminDashboardCalendarIndexRoute: typeof AdminDashboardCalendarIndexRoute
   AdminDashboardCustomersIndexRoute: typeof AdminDashboardCustomersIndexRoute
   AdminDashboardLocationsIndexRoute: typeof AdminDashboardLocationsIndexRoute
   AdminDashboardOrdersIndexRoute: typeof AdminDashboardOrdersIndexRoute
@@ -1033,6 +1054,7 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
   AdminDashboardOrdersOrderIdRoute: AdminDashboardOrdersOrderIdRoute,
   AdminDashboardOwnersOwnerIdRoute: AdminDashboardOwnersOwnerIdRoute,
   AdminDashboardPromotionsNewRoute: AdminDashboardPromotionsNewRoute,
+  AdminDashboardCalendarIndexRoute: AdminDashboardCalendarIndexRoute,
   AdminDashboardCustomersIndexRoute: AdminDashboardCustomersIndexRoute,
   AdminDashboardLocationsIndexRoute: AdminDashboardLocationsIndexRoute,
   AdminDashboardOrdersIndexRoute: AdminDashboardOrdersIndexRoute,
