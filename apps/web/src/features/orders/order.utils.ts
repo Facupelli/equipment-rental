@@ -199,6 +199,36 @@ export type OrderOperationalPhase =
 	| "rejected"
 	| "expired";
 
+export type OrderTemporalState =
+	| "upcoming"
+	| "active"
+	| "overdue"
+	| "finished"
+	| "cancelled"
+	| "rejected"
+	| "expired";
+
+export type OrderNextStep = "confirm" | "pickup" | "return" | null;
+
+export type OrderTemporalInsight = {
+	state: OrderTemporalState;
+	title: string;
+	description: string;
+	deadline: string;
+};
+
+export type OrderNextStepGuidance = {
+	step: OrderNextStep;
+	label: string;
+	description: string;
+};
+
+export type OrderPrimaryAdminAction = {
+	action: OrderNextStep;
+	label: string;
+	description: string;
+};
+
 export function getOrderOperationalPhase(
 	order: Pick<ParsedOrderListItem, "status" | "pickupAt" | "returnAt">,
 	referenceDate: Dayjs,
@@ -221,4 +251,248 @@ export function getOrderOperationalPhase(
 	}
 
 	return "active";
+}
+
+export function getOrderTemporalInsight(
+	order: Pick<ParsedOrderDetailResponseDto, "status" | "pickupAt" | "returnAt">,
+	referenceDate: Dayjs,
+	timezone: string,
+): OrderTemporalInsight {
+	switch (order.status) {
+		case OrderStatus.CANCELLED:
+			return {
+				state: "cancelled",
+				title: "Cancelado",
+				description: "Este pedido ya no requiere gestión operativa.",
+				deadline: "Pedido cancelado",
+			};
+		case OrderStatus.REJECTED:
+			return {
+				state: "rejected",
+				title: "Rechazado",
+				description: "El pedido fue rechazado y no seguirá avanzando.",
+				deadline: "Pedido rechazado",
+			};
+		case OrderStatus.EXPIRED:
+			return {
+				state: "expired",
+				title: "Expirado",
+				description: "El pedido venció antes de completarse.",
+				deadline: "Reserva vencida",
+			};
+		case OrderStatus.COMPLETED:
+			return {
+				state: "finished",
+				title: "Finalizado",
+				description: "El pedido ya fue devuelto y cerrado.",
+				deadline: `Devuelto ${formatRelativeDistance(referenceDate.diff(order.returnAt, "minute"), true)}`,
+			};
+	}
+
+	if (referenceDate.isBefore(order.pickupAt)) {
+		return {
+			state: "upcoming",
+			title: "Próximo a iniciar",
+			description: `${formatRelativeStartLabel(order.pickupAt, referenceDate)}.`,
+			deadline: `Retiro ${formatOrderDateTime(order.pickupAt, timezone)}`,
+		};
+	}
+
+	if (referenceDate.isAfter(order.returnAt)) {
+		return {
+			state: "overdue",
+			title: "Atrasado",
+			description: `${formatRelativeOverdueLabel(order.returnAt, referenceDate)}.`,
+			deadline: `Debía volver ${formatOrderDateTime(order.returnAt, timezone)}`,
+		};
+	}
+
+	return {
+		state: "active",
+		title: "Activo",
+		description: `${formatRelativeDueLabel(order.returnAt, referenceDate)}.`,
+		deadline: `Devolver ${formatOrderDateTime(order.returnAt, timezone)}`,
+	};
+}
+
+export function getOrderNextStepGuidance(
+	status: OrderStatus,
+): OrderNextStepGuidance {
+	switch (status) {
+		case OrderStatus.PENDING_REVIEW:
+			return {
+				step: "confirm",
+				label: "Próximo paso: confirmar pedido",
+				description:
+					"Revisa el pedido y confírmalo para dejarlo listo para operación.",
+			};
+		case OrderStatus.CONFIRMED:
+			return {
+				step: "pickup",
+				label: "Próximo paso: marcar retiro",
+				description:
+					"Cuando el cliente retire el equipo, regístralo para iniciar el alquiler.",
+			};
+		case OrderStatus.ACTIVE:
+			return {
+				step: "return",
+				label: "Próximo paso: marcar devolución",
+				description:
+					"Cuando el equipo vuelva, completa la devolución para cerrar el pedido.",
+			};
+		case OrderStatus.COMPLETED:
+			return {
+				step: null,
+				label: "Pedido cerrado",
+				description: "No hay acciones operativas pendientes para este pedido.",
+			};
+		case OrderStatus.CANCELLED:
+			return {
+				step: null,
+				label: "Pedido cancelado",
+				description: "No hay acciones operativas pendientes para este pedido.",
+			};
+		case OrderStatus.REJECTED:
+			return {
+				step: null,
+				label: "Pedido rechazado",
+				description: "No hay acciones operativas pendientes para este pedido.",
+			};
+		case OrderStatus.EXPIRED:
+			return {
+				step: null,
+				label: "Pedido expirado",
+				description: "No hay acciones operativas pendientes para este pedido.",
+			};
+		default:
+			return {
+				step: null,
+				label: "Sin siguiente paso",
+				description: "No pudimos determinar la próxima acción operativa.",
+			};
+	}
+}
+
+export function getOrderPrimaryAdminAction(
+	status: OrderStatus,
+): OrderPrimaryAdminAction | null {
+	switch (status) {
+		case OrderStatus.PENDING_REVIEW:
+			return {
+				action: "confirm",
+				label: "Confirmar pedido",
+				description: "Aprobar pedido",
+			};
+		case OrderStatus.CONFIRMED:
+			return {
+				action: "pickup",
+				label: "Marcar equipo retirado",
+				description: "Seguimiento interno",
+			};
+		case OrderStatus.ACTIVE:
+			return {
+				action: "return",
+				label: "Marcar equipo devuelto",
+				description: "Seguimiento interno",
+			};
+		default:
+			return null;
+	}
+}
+
+function formatRelativeStartLabel(target: Dayjs, referenceDate: Dayjs): string {
+	return formatRelativeLabel(target.diff(referenceDate, "minute"), {
+		immediate: "Empieza pronto",
+		singularDay: "Empieza mañana",
+		pluralDay: (value) => `Empieza en ${value} días`,
+		singularHour: "Empieza en 1 hora",
+		pluralHour: (value) => `Empieza en ${value} horas`,
+		singularMinute: "Empieza en 1 minuto",
+		pluralMinute: (value) => `Empieza en ${value} minutos`,
+	});
+}
+
+function formatRelativeDueLabel(target: Dayjs, referenceDate: Dayjs): string {
+	return formatRelativeLabel(target.diff(referenceDate, "minute"), {
+		immediate: "Vence muy pronto",
+		singularDay: "Vence mañana",
+		pluralDay: (value) => `Vence en ${value} días`,
+		singularHour: "Vence en 1 hora",
+		pluralHour: (value) => `Vence en ${value} horas`,
+		singularMinute: "Vence en 1 minuto",
+		pluralMinute: (value) => `Vence en ${value} minutos`,
+	});
+}
+
+function formatRelativeOverdueLabel(
+	target: Dayjs,
+	referenceDate: Dayjs,
+): string {
+	return formatRelativeLabel(referenceDate.diff(target, "minute"), {
+		immediate: "Atrasado hace instantes",
+		singularDay: "Atrasado por 1 día",
+		pluralDay: (value) => `Atrasado por ${value} días`,
+		singularHour: "Atrasado por 1 hora",
+		pluralHour: (value) => `Atrasado por ${value} horas`,
+		singularMinute: "Atrasado por 1 minuto",
+		pluralMinute: (value) => `Atrasado por ${value} minutos`,
+	});
+}
+
+function formatRelativeDistance(
+	minutes: number,
+	includeSuffix = false,
+): string {
+	const normalizedMinutes = Math.abs(minutes);
+	let valueLabel = "hace instantes";
+
+	if (normalizedMinutes >= 60 * 24) {
+		const days = Math.floor(normalizedMinutes / (60 * 24));
+		valueLabel = days === 1 ? "1 día" : `${days} días`;
+	} else if (normalizedMinutes >= 60) {
+		const hours = Math.floor(normalizedMinutes / 60);
+		valueLabel = hours === 1 ? "1 hora" : `${hours} horas`;
+	} else if (normalizedMinutes > 0) {
+		valueLabel =
+			normalizedMinutes === 1 ? "1 minuto" : `${normalizedMinutes} minutos`;
+	}
+
+	if (!includeSuffix || valueLabel === "hace instantes") {
+		return valueLabel;
+	}
+
+	return `hace ${valueLabel}`;
+}
+
+function formatOrderDateTime(value: Dayjs, timezone: string): string {
+	return `${value.tz(timezone).format("MMM D, YYYY")} · ${value.tz(timezone).format("HH:mm")}`;
+}
+
+function formatRelativeLabel(
+	minutes: number,
+	labels: {
+		immediate: string;
+		singularDay: string;
+		pluralDay: (value: number) => string;
+		singularHour: string;
+		pluralHour: (value: number) => string;
+		singularMinute: string;
+		pluralMinute: (value: number) => string;
+	},
+): string {
+	if (minutes <= 0) {
+		return labels.immediate;
+	}
+
+	const days = Math.floor(minutes / (60 * 24));
+	if (days >= 1) {
+		return days === 1 ? labels.singularDay : labels.pluralDay(days);
+	}
+
+	const hours = Math.floor(minutes / 60);
+	if (hours >= 1) {
+		return hours === 1 ? labels.singularHour : labels.pluralHour(hours);
+	}
+
+	return minutes === 1 ? labels.singularMinute : labels.pluralMinute(minutes);
 }

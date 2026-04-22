@@ -3,8 +3,8 @@ import { FulfillmentMethod, OrderStatus } from '@repo/types';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { BookingSnapshot } from '../../../domain/value-objects/booking-snapshot.value-object';
 
-import { ActivateOrderCommand } from './activate-order.command';
-import { ActivateOrderService } from './activate-order.service';
+import { MarkEquipmentAsReturnedCommand } from './mark-equipment-as-returned.command';
+import { MarkEquipmentAsReturnedService } from './mark-equipment-as-returned.service';
 import { Order } from '../../../domain/entities/order.entity';
 import { OrderNotFoundError, OrderStatusTransitionNotAllowedError } from '../../../domain/errors/order.errors';
 import { OrderRepository } from '../../../infrastructure/persistence/repositories/order.repository';
@@ -30,19 +30,19 @@ function makeOrder(status: OrderStatus): Order {
   });
 }
 
-describe('ActivateOrderService', () => {
-  it('activates a confirmed order', async () => {
-    const order = makeOrder(OrderStatus.CONFIRMED);
+describe('MarkEquipmentAsReturnedService', () => {
+  it('marks equipment as returned by completing an active order', async () => {
+    const order = makeOrder(OrderStatus.ACTIVE);
     const orderRepository = {
       load: jest.fn(async () => order),
       save: jest.fn(async () => order.id),
     } as unknown as OrderRepository;
 
-    const service = new ActivateOrderService(orderRepository);
-    const result = await service.execute(new ActivateOrderCommand('tenant-1', order.id));
+    const service = new MarkEquipmentAsReturnedService(orderRepository);
+    const result = await service.execute(new MarkEquipmentAsReturnedCommand('tenant-1', order.id));
 
     expect(result.isOk()).toBe(true);
-    expect(order.currentStatus).toBe(OrderStatus.ACTIVE);
+    expect(order.currentStatus).toBe(OrderStatus.COMPLETED);
     expect(orderRepository.save).toHaveBeenCalledWith(order);
   });
 
@@ -52,23 +52,23 @@ describe('ActivateOrderService', () => {
       save: jest.fn(),
     } as unknown as OrderRepository;
 
-    const service = new ActivateOrderService(orderRepository);
-    const result = await service.execute(new ActivateOrderCommand('tenant-1', 'missing-order'));
+    const service = new MarkEquipmentAsReturnedService(orderRepository);
+    const result = await service.execute(new MarkEquipmentAsReturnedCommand('tenant-1', 'missing-order'));
 
     expect(result.isErr()).toBe(true);
     expect(result._unsafeUnwrapErr()).toBeInstanceOf(OrderNotFoundError);
     expect(orderRepository.save).not.toHaveBeenCalled();
   });
 
-  it('returns invalid transition when the order is not confirmed', async () => {
-    const order = makeOrder(OrderStatus.PENDING_REVIEW);
+  it('returns invalid transition when the order is not active', async () => {
+    const order = makeOrder(OrderStatus.CONFIRMED);
     const orderRepository = {
       load: jest.fn(async () => order),
       save: jest.fn(),
     } as unknown as OrderRepository;
 
-    const service = new ActivateOrderService(orderRepository);
-    const result = await service.execute(new ActivateOrderCommand('tenant-1', order.id));
+    const service = new MarkEquipmentAsReturnedService(orderRepository);
+    const result = await service.execute(new MarkEquipmentAsReturnedCommand('tenant-1', order.id));
 
     expect(result.isErr()).toBe(true);
     expect(result._unsafeUnwrapErr()).toBeInstanceOf(OrderStatusTransitionNotAllowedError);

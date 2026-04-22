@@ -2,13 +2,16 @@ import { FulfillmentMethod } from "@repo/types";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+	CheckCircle2,
 	Clock,
 	ExternalLink,
 	FileText,
 	Mail,
 	MapPin,
+	MoreHorizontal,
 	Package,
 	Pencil,
+	RotateCcw,
 	Truck,
 	User2Icon,
 } from "lucide-react";
@@ -23,6 +26,13 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	getCustomerContactName,
@@ -41,13 +51,16 @@ import {
 	getExternalOwnersByProductType,
 	getItemQty,
 	getItemSerialNumber,
+	getOrderPrimaryAdminAction,
+	getOrderTemporalInsight,
 	getOwnerDisplay,
 } from "@/features/orders/order.utils";
+import { ordersListSearchSchema } from "@/features/orders/orders-list.search";
 import {
 	createOrderDetailQueryOptions,
 	type ParsedOrderDetailResponseDto,
 } from "@/features/orders/queries/get-order-by-id";
-import { ordersListSearchSchema } from "@/features/orders/orders-list.search";
+import { nowUtc } from "@/lib/dates/parse";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
@@ -104,57 +117,41 @@ function RouteComponent() {
 
 function OrderHeader() {
 	const { order, actions } = useOrderDetailContext();
+	const temporalInsight = getOrderTemporalInsight(
+		order,
+		nowUtc(),
+		order.location.effectiveTimezone,
+	);
+	const primaryAction = getOrderPrimaryAdminAction(order.status);
 
 	return (
-		<header className="border-b border-neutral-200">
-			<div className="flex items-start justify-between gap-6">
-				{/* Title + meta */}
+		<header className="border-b border-neutral-200 pb-8">
+			<div className="flex flex-col gap-6 py-4 xl:flex-row xl:items-center xl:justify-between">
 				<div>
-					<div className="flex items-center gap-3 mb-1.5">
-						<h1 className="text-3xl font-bold tracking-tight leading-none">
-							Pedido <span>#{formatOrderNumber(order.number)}</span>
-						</h1>
-						<OrderStatusBadge status={order.status} />
+					<div className="flex flex-wrap items-center gap-3 mb-1.5">
+						<div>
+							<span className="uppercase text-neutral-500 text-xs">Pedido</span>
+							<h1 className="text-3xl font-bold tracking-tight leading-none">
+								<span>#{formatOrderNumber(order.number)}</span>
+							</h1>
+						</div>
 					</div>
 					<p className="text-sm text-neutral-400 mt-2">
-						Creado el {order.createdAt.format("MMM DD, YYYY")} ·{" "}
+						Creado el {order.createdAt.format("DD MMM, YYYY")} ·{" "}
 						{order.createdAt.format("HH:mm A")}
 					</p>
 				</div>
 
-				{/* Actions */}
-				<div className="flex items-center gap-2 shrink-0">
-					<Button
-						variant="outline"
-						size="sm"
-						className="text-sm text-neutral-700 border-neutral-300 hover:bg-neutral-100 rounded-md h-9 px-4"
-						onClick={actions.handleOpenContract}
-						disabled={actions.isOpeningContract}
-					>
-						<FileText className="w-4 h-4 mr-1.5" />
-						{actions.isOpeningContract ? "Abriendo..." : "Ver remito"}
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						className="text-sm text-neutral-700 border-neutral-300 hover:bg-neutral-100 rounded-md h-9 px-4"
-						onClick={actions.handleDownloadContract}
-						disabled={actions.isDownloadingContract}
-					>
-						<FileText className="w-4 h-4 mr-1.5" />
-						{actions.isDownloadingContract
-							? "Descargando..."
-							: "Descargar remito"}
-					</Button>
-					<Button
-						size="sm"
-						className="text-sm rounded-md bg-neutral-950 text-white hover:bg-neutral-800 h-9 px-4"
-						onClick={actions.handleEditOrder}
-						disabled
-					>
-						<Pencil className="w-4 h-4 mr-1.5" />
-						Editar pedido
-					</Button>
+				<div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-end">
+					<OrderStatusCard status={order.status} />
+					<OperationalStateCard
+						title={temporalInsight.title}
+						description={temporalInsight.description}
+						deadline={temporalInsight.deadline}
+						state={temporalInsight.state}
+					/>
+					<PrimaryAdminActionButton action={primaryAction} actions={actions} />
+					<OrderActionsMenu actions={actions} />
 				</div>
 			</div>
 
@@ -207,6 +204,189 @@ function OrderHeader() {
 				</AlertDialogContent>
 			</AlertDialog>
 		</header>
+	);
+}
+
+const OPERATIONAL_STATE_STYLES = {
+	upcoming: {
+		panelClassName: "border-sky-200 bg-sky-50/80",
+		dotClassName: "bg-sky-500",
+	},
+	active: {
+		panelClassName: "border-emerald-200 bg-emerald-50/80",
+		dotClassName: "bg-emerald-500",
+	},
+	overdue: {
+		panelClassName: "border-amber-200 bg-amber-50/80",
+		dotClassName: "bg-amber-500",
+	},
+	finished: {
+		panelClassName: "border-neutral-200 bg-neutral-100/80",
+		dotClassName: "bg-neutral-500",
+	},
+	cancelled: {
+		panelClassName: "border-red-200 bg-red-50/80",
+		dotClassName: "bg-red-500",
+	},
+	rejected: {
+		panelClassName: "border-rose-200 bg-rose-50/80",
+		dotClassName: "bg-rose-500",
+	},
+	expired: {
+		panelClassName: "border-orange-200 bg-orange-50/80",
+		dotClassName: "bg-orange-500",
+	},
+} as const;
+
+function OperationalStateCard({
+	title,
+	description,
+	deadline,
+	state,
+}: {
+	title: string;
+	description: string;
+	deadline: string;
+	state: keyof typeof OPERATIONAL_STATE_STYLES;
+}) {
+	const config = OPERATIONAL_STATE_STYLES[state];
+
+	return (
+		<section
+			className={`min-w-70 rounded-xl border p-2 ${config.panelClassName}`}
+		>
+			<div className="flex items-start gap-4">
+				<span
+					className={`mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full ${config.dotClassName}`}
+				/>
+				<div className="space-y-1">
+					<p className="font-semibold tracking-tight text-neutral-950">
+						{title}
+					</p>
+					<p className="text-sm font-medium text-neutral-700 line-clamp-1">
+						{description}
+					</p>
+					<p className="text-xs text-neutral-500 line-clamp-1">{deadline}</p>
+				</div>
+			</div>
+		</section>
+	);
+}
+
+function OrderStatusCard({
+	status,
+}: {
+	status: ParsedOrderDetailResponseDto["status"];
+}) {
+	return (
+		<section className="xl:min-w-45">
+			<p className="mb-2 text-[10px] font-mono uppercase text-neutral-400">
+				Estado del pedido
+			</p>
+			<div className="flex items-center">
+				<OrderStatusBadge status={status} />
+			</div>
+		</section>
+	);
+}
+
+function PrimaryAdminActionButton({
+	action,
+	actions,
+}: {
+	action: ReturnType<typeof getOrderPrimaryAdminAction>;
+	actions: ReturnType<typeof useOrderDetailContext>["actions"];
+}) {
+	if (!action) {
+		return null;
+	}
+
+	const config =
+		action.action === "confirm"
+			? {
+					icon: CheckCircle2,
+					onClick: actions.handleConfirmOrder,
+				}
+			: action.action === "pickup"
+				? {
+						icon: Truck,
+						onClick: actions.handleMarkAsPickedUp,
+					}
+				: {
+						icon: RotateCcw,
+						onClick: actions.handleMarkAsReturned,
+					};
+
+	const Icon = config.icon;
+
+	return (
+		<Button
+			className="h-auto min-h-16 justify-start rounded-xl bg-emerald-600 px-5 py-3 text-left text-white hover:bg-emerald-700 xl:min-w-72.5"
+			onClick={config.onClick}
+		>
+			<div className="flex items-start gap-3">
+				<div className="mt-0.5 rounded-full bg-white/15 p-1.5">
+					<Icon className="h-4 w-4" />
+				</div>
+				<div>
+					<p className="text-sm font-semibold leading-none">{action.label}</p>
+					<p className="mt-1 text-xs text-white/80">
+						{action.action === "confirm"
+							? "Aprobar pedido"
+							: action.action === "pickup"
+								? "Registrar retiro"
+								: "Completar devolución"}
+					</p>
+				</div>
+			</div>
+		</Button>
+	);
+}
+
+function OrderActionsMenu({
+	actions,
+}: {
+	actions: ReturnType<typeof useOrderDetailContext>["actions"];
+}) {
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger
+				render={
+					<Button
+						variant="outline"
+						size="icon"
+						className="size-11 rounded-xl border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
+					>
+						<MoreHorizontal className="h-4 w-4" />
+						<span className="sr-only">Más acciones</span>
+					</Button>
+				}
+			/>
+
+			<DropdownMenuContent align="end" className="w-56">
+				<DropdownMenuItem onClick={actions.handleEditOrder}>
+					<Pencil className="mr-2 h-4 w-4" />
+					Editar pedido
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					onClick={actions.handleOpenContract}
+					disabled={actions.isOpeningContract}
+				>
+					<FileText className="mr-2 h-4 w-4" />
+					{actions.isOpeningContract ? "Abriendo remito..." : "Ver remito"}
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={actions.handleDownloadContract}
+					disabled={actions.isDownloadingContract}
+				>
+					<FileText className="mr-2 h-4 w-4" />
+					{actions.isDownloadingContract
+						? "Descargando remito..."
+						: "Descargar remito"}
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
 
@@ -470,14 +650,14 @@ function OrderClientCard() {
 			{/* Header */}
 			<div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-100">
 				<span className="font-mono text-[10px] tracking-[0.15em] uppercase text-neutral-400">
-					Customer Information
+					Información del Cliente
 				</span>
 				<Link
 					to="/dashboard/customers/$customerId"
 					params={{ customerId: customer.id }}
 					className="flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-950 transition-colors"
 				>
-					View Profile
+					Ver Perfil
 					<ExternalLink className="w-3 h-3" />
 				</Link>
 			</div>
@@ -528,7 +708,7 @@ function OrderLogisticsCard() {
 			<div className="grid grid-cols-2 gap-4 mb-4">
 				<div>
 					<p className="font-mono text-[9px] tracking-[0.12em] uppercase text-neutral-400 mb-1">
-						Pickup Date
+						Fecha de retiro
 					</p>
 					<p className="text-sm font-bold text-neutral-950">
 						{bookingSnapshot.pickupDate.format("MMM DD, YYYY")}
@@ -539,7 +719,7 @@ function OrderLogisticsCard() {
 				</div>
 				<div>
 					<p className="font-mono text-[9px] tracking-[0.12em] uppercase text-neutral-400 mb-1">
-						Return Date
+						Fecha de devolución
 					</p>
 					<p className="text-sm font-bold text-neutral-950">
 						{bookingSnapshot.returnDate.format("MMM DD, YYYY")}
@@ -554,7 +734,7 @@ function OrderLogisticsCard() {
 				<MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
 				<div>
 					<p className="font-mono text-[9px] tracking-widest uppercase text-neutral-400 mb-0.5">
-						Location
+						Ubicación Depósito
 					</p>
 					<p className="text-sm font-semibold text-neutral-950">
 						{location.name}
@@ -579,7 +759,7 @@ function OrderLogisticsCard() {
 			{deliveryRequest && (
 				<div className="mt-4 rounded-md border border-neutral-200 bg-white p-4">
 					<p className="font-mono text-[9px] tracking-widest uppercase text-neutral-400 mb-3">
-						Delivery Request
+						Pedido de Delivery
 					</p>
 
 					<div className="space-y-2 text-sm text-neutral-700">

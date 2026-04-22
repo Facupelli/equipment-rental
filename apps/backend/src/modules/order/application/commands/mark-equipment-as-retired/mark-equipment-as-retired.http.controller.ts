@@ -7,19 +7,22 @@ import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ProblemException } from 'src/core/exceptions/problem.exception';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { ActivateOrderCommand } from './activate-order.command';
-import { ActivateOrderRequestDto } from './activate-order.request.dto';
+import { MarkEquipmentAsRetiredCommand } from './mark-equipment-as-retired.command';
+import { MarkEquipmentAsRetiredRequestDto } from './mark-equipment-as-retired.request.dto';
 import { OrderNotFoundError, OrderStatusTransitionNotAllowedError } from '../../../domain/errors/order.errors';
 
 @StaffRoute(Permission.CONFIRM_ORDERS)
-@Controller('orders/:orderId/activate')
-export class ActivateOrderHttpController {
+@Controller('orders/:orderId/mark-equipment-retired')
+export class MarkEquipmentAsRetiredHttpController {
   constructor(private readonly commandBus: CommandBus) {}
 
   @Post()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async activate(@CurrentUser() user: AuthenticatedUser, @Param() dto: ActivateOrderRequestDto): Promise<void> {
-    const result = await this.commandBus.execute(new ActivateOrderCommand(user.tenantId, dto.orderId));
+  async markEquipmentAsRetired(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() dto: MarkEquipmentAsRetiredRequestDto,
+  ): Promise<void> {
+    const result = await this.commandBus.execute(new MarkEquipmentAsRetiredCommand(user.tenantId, dto.orderId));
 
     if (result.isErr()) {
       const error = result.error;

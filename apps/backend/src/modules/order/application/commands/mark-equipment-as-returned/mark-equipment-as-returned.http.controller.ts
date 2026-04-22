@@ -7,19 +7,22 @@ import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { ProblemException } from 'src/core/exceptions/problem.exception';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
-import { CompleteOrderCommand } from './complete-order.command';
-import { CompleteOrderRequestDto } from './complete-order.request.dto';
+import { MarkEquipmentAsReturnedCommand } from './mark-equipment-as-returned.command';
+import { MarkEquipmentAsReturnedRequestDto } from './mark-equipment-as-returned.request.dto';
 import { OrderNotFoundError, OrderStatusTransitionNotAllowedError } from '../../../domain/errors/order.errors';
 
 @StaffRoute(Permission.CONFIRM_ORDERS)
-@Controller('orders/:orderId/complete')
-export class CompleteOrderHttpController {
+@Controller('orders/:orderId/mark-equipment-returned')
+export class MarkEquipmentAsReturnedHttpController {
   constructor(private readonly commandBus: CommandBus) {}
 
   @Post()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async complete(@CurrentUser() user: AuthenticatedUser, @Param() dto: CompleteOrderRequestDto): Promise<void> {
-    const result = await this.commandBus.execute(new CompleteOrderCommand(user.tenantId, dto.orderId));
+  async markEquipmentAsReturned(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() dto: MarkEquipmentAsReturnedRequestDto,
+  ): Promise<void> {
+    const result = await this.commandBus.execute(new MarkEquipmentAsReturnedCommand(user.tenantId, dto.orderId));
 
     if (result.isErr()) {
       const error = result.error;

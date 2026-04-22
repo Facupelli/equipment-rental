@@ -19,7 +19,7 @@ interface PageBreadcrumbProps {
 
 export function PageBreadcrumb({ parent, current }: PageBreadcrumbProps) {
 	return (
-		<Breadcrumb className="py-6">
+		<Breadcrumb className="pt-6 pb-4">
 			<BreadcrumbList>
 				<BreadcrumbItem>
 					<BreadcrumbLink

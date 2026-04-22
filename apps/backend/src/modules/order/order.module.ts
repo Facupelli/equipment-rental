@@ -5,8 +5,8 @@ import { CreateOrderService } from './application/commands/create-order/create-o
 import { ConfirmOrderService } from './application/commands/confirm-order/confirm-order.service';
 import { RejectOrderService } from './application/commands/reject-order/reject-order.service';
 import { CancelOrderService } from './application/commands/cancel-order/cancel-order.service';
-import { ActivateOrderService } from './application/commands/activate-order/activate-order.service';
-import { CompleteOrderService } from './application/commands/complete-order/complete-order.service';
+import { MarkEquipmentAsRetiredService } from './application/commands/mark-equipment-as-retired/mark-equipment-as-retired.service';
+import { MarkEquipmentAsReturnedService } from './application/commands/mark-equipment-as-returned/mark-equipment-as-returned.service';
 import { ExpireOrderService } from './application/commands/expire-order/expire-order.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { GetOrdersScheduleQueryHandler } from './application/queries/get-orders-schedule/get-orders-schedule.query-handler';
@@ -21,8 +21,8 @@ import { CreateOrderHttpController } from './application/commands/create-order/c
 import { ConfirmOrderHttpController } from './application/commands/confirm-order/confirm-order.http.controller';
 import { RejectOrderHttpController } from './application/commands/reject-order/reject-order.http.controller';
 import { CancelOrderHttpController } from './application/commands/cancel-order/cancel-order.http.controller';
-import { ActivateOrderHttpController } from './application/commands/activate-order/activate-order.http.controller';
-import { CompleteOrderHttpController } from './application/commands/complete-order/complete-order.http.controller';
+import { MarkEquipmentAsRetiredHttpController } from './application/commands/mark-equipment-as-retired/mark-equipment-as-retired.http.controller';
+import { MarkEquipmentAsReturnedHttpController } from './application/commands/mark-equipment-as-returned/mark-equipment-as-returned.http.controller';
 import { GetOrdersScheduleHttpController } from './application/queries/get-orders-schedule/get-orders-schedule.http.controller';
 import { GetCalendarDotsHttpController } from './application/queries/get-calendar-dots/get-calendar-dots.http.controller';
 import { GetOrderByIdHttpController } from './application/queries/get-order-by-id/get-order-by-id.http.controller';
@@ -40,8 +40,8 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
     ConfirmOrderHttpController,
     RejectOrderHttpController,
     CancelOrderHttpController,
-    ActivateOrderHttpController,
-    CompleteOrderHttpController,
+    MarkEquipmentAsRetiredHttpController,
+    MarkEquipmentAsReturnedHttpController,
     GetOrdersHttpController,
     GetPendingReviewOrdersHttpController,
     GetOrdersScheduleHttpController,
@@ -57,8 +57,8 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
     ConfirmOrderService,
     RejectOrderService,
     CancelOrderService,
-    ActivateOrderService,
-    CompleteOrderService,
+    MarkEquipmentAsRetiredService,
+    MarkEquipmentAsReturnedService,
     ExpireOrderService,
     GetOrdersScheduleQueryHandler,
     GetCalendarDotsQueryHandler,

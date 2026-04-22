@@ -3,17 +3,19 @@ import { OrderStatus } from '@repo/types';
 import { err, ok, Result } from 'neverthrow';
 
 import { OrderRepository } from 'src/modules/order/infrastructure/persistence/repositories/order.repository';
-import { CompleteOrderCommand } from './complete-order.command';
+import { MarkEquipmentAsRetiredCommand } from './mark-equipment-as-retired.command';
 import { InvalidOrderStatusTransitionException } from '../../../domain/exceptions/order.exceptions';
 import { OrderNotFoundError, OrderStatusTransitionNotAllowedError } from '../../../domain/errors/order.errors';
 
-type CompleteOrderError = OrderNotFoundError | OrderStatusTransitionNotAllowedError;
+type MarkEquipmentAsRetiredError = OrderNotFoundError | OrderStatusTransitionNotAllowedError;
 
-@CommandHandler(CompleteOrderCommand)
-export class CompleteOrderService implements ICommandHandler<CompleteOrderCommand, Result<void, CompleteOrderError>> {
+@CommandHandler(MarkEquipmentAsRetiredCommand)
+export class MarkEquipmentAsRetiredService
+  implements ICommandHandler<MarkEquipmentAsRetiredCommand, Result<void, MarkEquipmentAsRetiredError>>
+{
   constructor(private readonly orderRepository: OrderRepository) {}
 
-  async execute(command: CompleteOrderCommand): Promise<Result<void, CompleteOrderError>> {
+  async execute(command: MarkEquipmentAsRetiredCommand): Promise<Result<void, MarkEquipmentAsRetiredError>> {
     const order = await this.orderRepository.load(command.orderId, command.tenantId);
 
     if (!order) {
@@ -21,10 +23,10 @@ export class CompleteOrderService implements ICommandHandler<CompleteOrderComman
     }
 
     try {
-      order.complete();
+      order.activate();
     } catch (error) {
       if (error instanceof InvalidOrderStatusTransitionException) {
-        return err(new OrderStatusTransitionNotAllowedError(order.currentStatus, OrderStatus.COMPLETED));
+        return err(new OrderStatusTransitionNotAllowedError(order.currentStatus, OrderStatus.ACTIVE));
       }
 
       throw error;

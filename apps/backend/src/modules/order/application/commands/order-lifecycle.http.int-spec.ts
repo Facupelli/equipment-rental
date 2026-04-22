@@ -124,19 +124,19 @@ describe('Order lifecycle HTTP integration', () => {
       await expectAssignmentStages(orderId, []);
     });
 
-    it('activates a confirmed order without mutating assignments', async () => {
+    it('marks equipment as retired by activating a confirmed order without mutating assignments', async () => {
       const { orderId } = await createOrderFixture(OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED);
 
-      await operatorRequest(`/orders/${orderId}/activate`).expect(204);
+      await operatorRequest(`/orders/${orderId}/mark-equipment-retired`).expect(204);
 
       await expectOrderStatus(orderId, OrderStatus.ACTIVE);
       await expectAssignmentStages(orderId, [OrderAssignmentStage.COMMITTED]);
     });
 
-    it('completes an active order and preserves assignment history', async () => {
+    it('marks equipment as returned by completing an active order and preserves assignment history', async () => {
       const { orderId } = await createOrderFixture(OrderStatus.ACTIVE, OrderAssignmentStage.COMMITTED);
 
-      await operatorRequest(`/orders/${orderId}/complete`).expect(204);
+      await operatorRequest(`/orders/${orderId}/mark-equipment-returned`).expect(204);
 
       await expectOrderStatus(orderId, OrderStatus.COMPLETED);
       await expectAssignmentStages(orderId, [OrderAssignmentStage.COMMITTED]);
@@ -148,8 +148,8 @@ describe('Order lifecycle HTTP integration', () => {
       ['confirm', OrderStatus.PENDING_REVIEW, OrderAssignmentStage.HOLD],
       ['reject', OrderStatus.PENDING_REVIEW, OrderAssignmentStage.HOLD],
       ['cancel', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
-      ['activate', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
-      ['complete', OrderStatus.ACTIVE, OrderAssignmentStage.COMMITTED],
+      ['mark-equipment-retired', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
+      ['mark-equipment-returned', OrderStatus.ACTIVE, OrderAssignmentStage.COMMITTED],
     ])('forbids customer access to %s endpoint', async (action, status, stage) => {
       const { orderId } = await createOrderFixture(status, stage);
 
@@ -163,8 +163,8 @@ describe('Order lifecycle HTTP integration', () => {
       ['confirm', OrderStatus.PENDING_REVIEW, OrderAssignmentStage.HOLD],
       ['reject', OrderStatus.PENDING_REVIEW, OrderAssignmentStage.HOLD],
       ['cancel', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
-      ['activate', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
-      ['complete', OrderStatus.ACTIVE, OrderAssignmentStage.COMMITTED],
+      ['mark-equipment-retired', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
+      ['mark-equipment-returned', OrderStatus.ACTIVE, OrderAssignmentStage.COMMITTED],
     ])('forbids operators without permission from %s endpoint', async (action, status, stage) => {
       const { orderId } = await createOrderFixture(status, stage);
 
@@ -180,8 +180,8 @@ describe('Order lifecycle HTTP integration', () => {
       ['confirm', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
       ['reject', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
       ['cancel', OrderStatus.PENDING_REVIEW, OrderAssignmentStage.HOLD],
-      ['activate', OrderStatus.ACTIVE, OrderAssignmentStage.COMMITTED],
-      ['complete', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
+      ['mark-equipment-retired', OrderStatus.ACTIVE, OrderAssignmentStage.COMMITTED],
+      ['mark-equipment-returned', OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED],
     ])('returns 422 for invalid %s transitions', async (action, status, stage) => {
       const { orderId } = await createOrderFixture(status, stage);
 
@@ -191,7 +191,7 @@ describe('Order lifecycle HTTP integration', () => {
       expect(response.body.title).toBe('Invalid Order Transition');
     });
 
-    it.each(['confirm', 'reject', 'cancel', 'activate', 'complete'])(
+    it.each(['confirm', 'reject', 'cancel', 'mark-equipment-retired', 'mark-equipment-returned'])(
       'returns 404 when %s target is missing',
       async (action) => {
         const missingOrderId = randomUUID();

@@ -81,6 +81,18 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
     // TODO: navigate to edit order page or open edit modal
   };
 
+  const handleConfirmOrder = () => {
+    // TODO: trigger confirm order mutation, then invalidate order query
+  };
+
+  const handleMarkAsPickedUp = () => {
+    // TODO: trigger pickup order mutation, then invalidate order query
+  };
+
+  const handleMarkAsReturned = () => {
+    // TODO: trigger return order mutation, then invalidate order query
+  };
+
   const handleReleaseEquipment = () => {
     // TODO: trigger release equipment mutation, then invalidate order query
   };
@@ -91,9 +103,12 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 
   return {
     contractError,
+    handleConfirmOrder,
     handleDownloadContract,
     handleOpenContract,
     handleEditOrder,
+    handleMarkAsPickedUp,
+    handleMarkAsReturned,
     handleReleaseEquipment,
     handleProcessPayment,
     isContractBusinessErrorOpen,
