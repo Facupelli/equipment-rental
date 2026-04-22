@@ -6,6 +6,7 @@ import {
 	type Table as TanStackTable,
 	useReactTable,
 } from "@tanstack/react-table";
+import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,11 +18,13 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { hasOrderTodayEvent } from "@/features/orders/order.utils";
 import type { ParsedOrderListItem } from "@/features/orders/orders.queries";
 import {
 	getEffectiveOrdersSort,
 	type OrdersListSearch,
 } from "@/features/orders/orders-list.search";
+import { cn } from "@/lib/utils";
 import { createOrdersColumns } from "./orders-columns";
 
 interface OrdersTableProps {
@@ -157,6 +160,7 @@ function TableBodyContent({
 	onRowClick: (order: ParsedOrderListItem) => void;
 }) {
 	const colSpan = table.getAllColumns().length;
+	const referenceDate = dayjs();
 
 	if (isLoading) {
 		return <SkeletonRows columns={colSpan} rows={pageLimit} />;
@@ -191,7 +195,11 @@ function TableBodyContent({
 	return table.getRowModel().rows.map((row) => (
 		<TableRow
 			key={row.id}
-			className="cursor-pointer"
+			className={cn(
+				"cursor-pointer",
+				hasOrderTodayEvent(row.original, referenceDate) &&
+					"bg-amber-50/60 hover:bg-amber-100/60",
+			)}
 			onClick={() => onRowClick(row.original)}
 		>
 			{row.getVisibleCells().map((cell) => {

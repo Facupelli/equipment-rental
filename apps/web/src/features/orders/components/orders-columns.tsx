@@ -1,12 +1,17 @@
 import type { OrderListDateLens, OrderListSortBy } from "@repo/schemas";
 import { FulfillmentMethod } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
+import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, ArrowUpDown, Building2, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
-import { formatOrderNumber } from "@/features/orders/order.utils";
+import {
+	formatOrderNumber,
+	getRelativeOrderDateContext,
+} from "@/features/orders/order.utils";
 import type { ParsedOrderListItem } from "@/features/orders/orders.queries";
+import { cn } from "@/lib/utils";
 
 type OrdersSortState = {
 	sortBy: OrderListSortBy;
@@ -121,7 +126,7 @@ export function createOrdersColumns({
 					onSortChange={onSortChange}
 				/>
 			),
-			cell: ({ row }) => formatTimestamp(row.original.pickupAt),
+			cell: ({ row }) => <OrderDateCell value={row.original.pickupAt} />,
 			meta: { align: "right" },
 		},
 		{
@@ -135,7 +140,7 @@ export function createOrdersColumns({
 					onSortChange={onSortChange}
 				/>
 			),
-			cell: ({ row }) => formatTimestamp(row.original.returnAt),
+			cell: ({ row }) => <OrderDateCell value={row.original.returnAt} />,
 			meta: { align: "right" },
 		},
 	];
@@ -180,6 +185,28 @@ function SortableHeader({
 				<ArrowUpDown className="ml-1 h-3.5 w-3.5" />
 			)}
 		</Button>
+	);
+}
+
+function OrderDateCell({ value }: { value: ParsedOrderListItem["pickupAt"] }) {
+	const relativeContext = getRelativeOrderDateContext(value, dayjs());
+
+	return (
+		<div className="space-y-1 text-right">
+			<p className="text-sm text-foreground">{formatTimestamp(value)}</p>
+			<p
+				className={cn(
+					"text-xs font-medium",
+					relativeContext.isToday && "text-amber-700",
+					relativeContext.isFuture &&
+						!relativeContext.isToday &&
+						"text-sky-700",
+					relativeContext.isPast && "text-muted-foreground",
+				)}
+			>
+				{relativeContext.label}
+			</p>
+		</div>
 	);
 }
 

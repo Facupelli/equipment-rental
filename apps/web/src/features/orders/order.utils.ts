@@ -1,4 +1,6 @@
 import { OrderItemType } from "@repo/types";
+import type { Dayjs } from "dayjs";
+import type { ParsedOrderListItem } from "./orders.queries";
 import type { ParsedOrderDetailResponseDto } from "./queries/get-order-by-id";
 
 type OrderItem = ParsedOrderDetailResponseDto["items"][number];
@@ -119,4 +121,72 @@ export function getExternalOwnersByProductType(
 	}
 
 	return entries;
+}
+
+export type RelativeOrderDateContext = {
+	label: string;
+	isToday: boolean;
+	isPast: boolean;
+	isFuture: boolean;
+};
+
+export function getRelativeOrderDateContext(
+	value: Dayjs,
+	referenceDate: Dayjs,
+): RelativeOrderDateContext {
+	const diffDays = value
+		.startOf("day")
+		.diff(referenceDate.startOf("day"), "day");
+
+	if (diffDays === 0) {
+		return {
+			label: "Hoy",
+			isToday: true,
+			isPast: false,
+			isFuture: false,
+		};
+	}
+
+	if (diffDays === 1) {
+		return {
+			label: "Mañana",
+			isToday: false,
+			isPast: false,
+			isFuture: true,
+		};
+	}
+
+	if (diffDays === -1) {
+		return {
+			label: "Ayer",
+			isToday: false,
+			isPast: true,
+			isFuture: false,
+		};
+	}
+
+	if (diffDays > 1) {
+		return {
+			label: `En ${diffDays} días`,
+			isToday: false,
+			isPast: false,
+			isFuture: true,
+		};
+	}
+
+	return {
+		label: `Hace ${Math.abs(diffDays)} días`,
+		isToday: false,
+		isPast: true,
+		isFuture: false,
+	};
+}
+
+export function hasOrderTodayEvent(
+	order: Pick<ParsedOrderListItem, "pickupAt" | "returnAt">,
+	referenceDate: Dayjs,
+): boolean {
+	return [order.pickupAt, order.returnAt].some(
+		(value) => getRelativeOrderDateContext(value, referenceDate).isToday,
+	);
 }
