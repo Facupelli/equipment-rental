@@ -1,4 +1,4 @@
-import { OrderItemType } from "@repo/types";
+import { OrderItemType, OrderStatus } from "@repo/types";
 import type { Dayjs } from "dayjs";
 import type { ParsedOrderListItem } from "./orders.queries";
 import type { ParsedOrderDetailResponseDto } from "./queries/get-order-by-id";
@@ -189,4 +189,36 @@ export function hasOrderTodayEvent(
 	return [order.pickupAt, order.returnAt].some(
 		(value) => getRelativeOrderDateContext(value, referenceDate).isToday,
 	);
+}
+
+export type OrderOperationalPhase =
+	| "pending"
+	| "active"
+	| "returned"
+	| "cancelled"
+	| "rejected"
+	| "expired";
+
+export function getOrderOperationalPhase(
+	order: Pick<ParsedOrderListItem, "status" | "pickupAt" | "returnAt">,
+	referenceDate: Dayjs,
+): OrderOperationalPhase {
+	switch (order.status) {
+		case OrderStatus.CANCELLED:
+			return "cancelled";
+		case OrderStatus.REJECTED:
+			return "rejected";
+		case OrderStatus.EXPIRED:
+			return "expired";
+	}
+
+	if (referenceDate.isBefore(order.pickupAt)) {
+		return "pending";
+	}
+
+	if (referenceDate.isAfter(order.returnAt)) {
+		return "returned";
+	}
+
+	return "active";
 }

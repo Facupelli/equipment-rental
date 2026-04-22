@@ -1,10 +1,11 @@
-import type { OrderListDateLens, OrderListSortBy } from "@repo/schemas";
-import { FulfillmentMethod } from "@repo/types";
+import type { OrderListSortBy } from "@repo/schemas";
+import { FulfillmentMethod, OrderStatus } from "@repo/types";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, ArrowUpDown, Building2, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { OrderOperationalPhaseBadge } from "@/features/orders/components/order-operational-phase-badge";
 import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
 import {
 	formatOrderNumber,
@@ -20,7 +21,6 @@ type OrdersSortState = {
 
 type CreateOrderColumnsOptions = {
 	currentSort: OrdersSortState;
-	dateLens?: OrderListDateLens;
 	onSortChange: (
 		sortBy: OrderListSortBy,
 		nextDirection?: "asc" | "desc",
@@ -29,7 +29,6 @@ type CreateOrderColumnsOptions = {
 
 export function createOrdersColumns({
 	currentSort,
-	dateLens,
 	onSortChange,
 }: CreateOrderColumnsOptions): ColumnDef<ParsedOrderListItem>[] {
 	return [
@@ -41,7 +40,7 @@ export function createOrdersColumns({
 					<p className="font-medium text-foreground">
 						#{formatOrderNumber(row.original.number)}
 					</p>
-					<p className="text-xs text-muted-foreground font-mono">
+					<p className="font-mono text-[11px] text-muted-foreground/80">
 						{row.original.id}
 					</p>
 				</div>
@@ -50,7 +49,12 @@ export function createOrdersColumns({
 		{
 			accessorKey: "status",
 			header: "Estado",
-			cell: ({ row }) => <OrderStatusBadge status={row.original.status} />,
+			cell: ({ row }) =>
+				row.original.status === OrderStatus.CONFIRMED ? (
+					<OrderOperationalPhaseBadge order={row.original} />
+				) : (
+					<OrderStatusBadge status={row.original.status} />
+				),
 		},
 		{
 			accessorKey: "fulfillmentMethod",
@@ -102,6 +106,38 @@ export function createOrdersColumns({
 			),
 		},
 		{
+			accessorKey: "pickupAt",
+			id: "pickupDate",
+			header: () => (
+				<SortableHeader
+					label="Retira"
+					sortBy="pickupDate"
+					currentSort={currentSort}
+					onSortChange={onSortChange}
+				/>
+			),
+			cell: ({ row }) => (
+				<OrderDateCell value={row.original.pickupAt} emphasis="primary" />
+			),
+			meta: { align: "right" },
+		},
+		{
+			accessorKey: "returnAt",
+			id: "returnDate",
+			header: () => (
+				<SortableHeader
+					label="Devuelve"
+					sortBy="returnDate"
+					currentSort={currentSort}
+					onSortChange={onSortChange}
+				/>
+			),
+			cell: ({ row }) => (
+				<OrderDateCell value={row.original.returnAt} emphasis="secondary" />
+			),
+			meta: { align: "right" },
+		},
+		{
 			accessorKey: "createdAt",
 			id: "createdAt",
 			header: () => (
@@ -112,35 +148,11 @@ export function createOrdersColumns({
 					onSortChange={onSortChange}
 				/>
 			),
-			cell: ({ row }) => row.original.createdAt.format("MMM D, YYYY"),
-			meta: { align: "right" },
-		},
-		{
-			accessorKey: "pickupAt",
-			id: "pickupDate",
-			header: () => (
-				<SortableHeader
-					label={dateLens === "UPCOMING" ? "Retiro" : "Retira"}
-					sortBy="pickupDate"
-					currentSort={currentSort}
-					onSortChange={onSortChange}
-				/>
+			cell: ({ row }) => (
+				<p className="text-xs text-muted-foreground tabular-nums">
+					{row.original.createdAt.format("MMM D, YYYY")}
+				</p>
 			),
-			cell: ({ row }) => <OrderDateCell value={row.original.pickupAt} />,
-			meta: { align: "right" },
-		},
-		{
-			accessorKey: "returnAt",
-			id: "returnDate",
-			header: () => (
-				<SortableHeader
-					label={dateLens === "PAST" ? "Devuelto" : "Devuelve"}
-					sortBy="returnDate"
-					currentSort={currentSort}
-					onSortChange={onSortChange}
-				/>
-			),
-			cell: ({ row }) => <OrderDateCell value={row.original.returnAt} />,
 			meta: { align: "right" },
 		},
 	];
@@ -188,12 +200,27 @@ function SortableHeader({
 	);
 }
 
-function OrderDateCell({ value }: { value: ParsedOrderListItem["pickupAt"] }) {
+function OrderDateCell({
+	value,
+	emphasis,
+}: {
+	value: ParsedOrderListItem["pickupAt"];
+	emphasis: "primary" | "secondary";
+}) {
 	const relativeContext = getRelativeOrderDateContext(value, dayjs());
 
 	return (
 		<div className="space-y-1 text-right">
-			<p className="text-sm text-foreground">{formatTimestamp(value)}</p>
+			<p
+				className={cn(
+					"tabular-nums",
+					emphasis === "primary"
+						? "text-sm font-semibold text-foreground"
+						: "text-sm text-muted-foreground",
+				)}
+			>
+				{formatTimestamp(value)}
+			</p>
 			<p
 				className={cn(
 					"text-xs font-medium",

@@ -1,4 +1,3 @@
-import type { OrderListDateLens } from "@repo/schemas";
 import {
 	flexRender,
 	getCoreRowModel,
@@ -57,7 +56,6 @@ export function OrdersTable({
 	const currentSort = getEffectiveOrdersSort(search);
 	const columns = createOrdersColumns({
 		currentSort,
-		dateLens: search.dateLens as OrderListDateLens | undefined,
 		onSortChange,
 	});
 
