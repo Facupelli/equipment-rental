@@ -86,7 +86,7 @@ function TodaySchedulePage() {
 	} = useScheduleParams(Route, timezone);
 
 	const displayLabel = isToday
-		? "Today"
+		? `Hoy ${dayjs(selectedDate, "YYYY-MM-DD").format("D MMMM")}`
 		: dayjs(selectedDate, "YYYY-MM-DD").format("MMMM D, YYYY");
 
 	// Deselect on Escape
@@ -113,7 +113,7 @@ function TodaySchedulePage() {
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<p className="text-muted-foreground text-sm">Schedule</p>
+					<p className="text-muted-foreground text-sm">Cronograma</p>
 					<h1 className="text-2xl font-semibold tracking-tight">
 						{displayLabel}
 					</h1>
@@ -204,21 +204,21 @@ function ScheduleContent({
 	return (
 		<div className="flex flex-col gap-6 overflow-y-auto">
 			<EventSection
-				title="Pickups"
+				title="Retiros"
 				count={pickups.length}
 				events={pickups}
 				isPending={isPending}
-				emptyMessage="No pickups scheduled"
+				emptyMessage="No hay retiros programados"
 				selectedOrderId={selectedOrderId}
 				onOrderSelect={onOrderSelect}
 				timezone={timezone}
 			/>
 			<EventSection
-				title="Returns"
+				title="Devoluciones"
 				count={returns.length}
 				events={returns}
 				isPending={isPending}
-				emptyMessage="No returns scheduled"
+				emptyMessage="No hay devoluciones programadas"
 				selectedOrderId={selectedOrderId}
 				onOrderSelect={onOrderSelect}
 				timezone={timezone}
@@ -679,11 +679,11 @@ function ScheduleSidebar({
 			<div className="flex items-center gap-4 px-1">
 				<div className="flex items-center gap-1.5">
 					<span className="bg-primary h-2 w-2 rounded-full" />
-					<span className="text-muted-foreground text-xs">Pickups</span>
+					<span className="text-muted-foreground text-xs">Retiros</span>
 				</div>
 				<div className="flex items-center gap-1.5">
 					<span className="bg-emerald-500 h-2 w-2 rounded-full" />
-					<span className="text-muted-foreground text-xs">Returns</span>
+					<span className="text-muted-foreground text-xs">Devoluciones</span>
 				</div>
 			</div>
 		</div>
