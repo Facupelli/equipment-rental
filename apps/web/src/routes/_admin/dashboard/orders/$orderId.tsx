@@ -47,9 +47,11 @@ import {
 	createOrderDetailQueryOptions,
 	type ParsedOrderDetailResponseDto,
 } from "@/features/orders/queries/get-order-by-id";
+import { ordersListSearchSchema } from "@/features/orders/orders-list.search";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
 
 export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
+	validateSearch: ordersListSearchSchema,
 	loader: ({ context: { queryClient }, params: { orderId } }) => {
 		queryClient.ensureQueryData(createOrderDetailQueryOptions({ orderId }));
 	},
@@ -67,6 +69,7 @@ export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
 
 function RouteComponent() {
 	const { orderId } = Route.useParams();
+	const search = Route.useSearch();
 	const { data: order } = useSuspenseQuery(
 		createOrderDetailQueryOptions({ orderId }),
 	);
@@ -75,7 +78,7 @@ function RouteComponent() {
 		<OrderDetailProvider order={order}>
 			<div className="min-h-screen bg-neutral-50 text-neutral-950 px-8">
 				<PageBreadcrumb
-					parent={{ label: "Pedidos", to: "/dashboard/schedule" }}
+					parent={{ label: "Pedidos", to: "/dashboard/orders", search }}
 					current={String(order.number)}
 				/>
 

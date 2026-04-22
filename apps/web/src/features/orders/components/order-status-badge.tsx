@@ -1,4 +1,4 @@
-import { OrderStatus } from "@repo/types";
+import type { OrderStatus } from "@repo/types";
 import { ORDER_STATUS_MAP } from "../orders.constants";
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {

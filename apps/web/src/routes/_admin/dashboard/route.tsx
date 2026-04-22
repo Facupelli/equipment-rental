@@ -17,6 +17,7 @@ import {
 	LogOut,
 	Package,
 	Settings,
+	ShoppingBag,
 	Tags,
 	User,
 	Users,
@@ -86,7 +87,7 @@ type SidebarItem = {
 const sidebarItems: SidebarItem[] = [
 	{ name: "Inicio", icon: LayoutGrid, href: "/dashboard" },
 	{ name: "Cronograma", icon: CalendarDays, href: "/dashboard/schedule" },
-	// { name: "Orders", href: "/dashboard/orders" },
+	{ name: "Pedidos", icon: ShoppingBag, href: "/dashboard/orders" },
 	{
 		name: "Clientes",
 		icon: Users,

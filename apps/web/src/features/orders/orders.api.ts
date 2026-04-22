@@ -1,11 +1,18 @@
-import { authenticatedApiFetch as apiFetch } from "@/lib/api-auth";
+import {
+	authenticatedApiFetch as apiFetch,
+	authenticatedApiFetchPaginated as apiFetchPaginated,
+} from "@/lib/api-auth";
 import { ProblemDetailsError } from "@/shared/errors";
 import {
 	createOrderSchema,
+	getOrdersQuerySchema,
 	GetCalendarDotsQuerySchema,
 	getOrderByIdParamSchema,
 	GetOrdersScheduleQuerySchema,
 	type CreateOrderDto,
+	type GetOrdersQueryDto,
+	type OrderListItem,
+	type GetOrdersResponseDto,
 	type GetCalendarDotsQueryDto,
 	type GetCalendarDotsResponseDto,
 	type GetOrderByIdParamDto,
@@ -18,6 +25,17 @@ import { ActorType } from "@repo/types";
 import { createServerFn } from "@tanstack/react-start";
 
 const apiUrl = "/orders";
+
+export const getOrders = createServerFn({ method: "GET" })
+	.inputValidator((data: GetOrdersQueryDto) => getOrdersQuerySchema.parse(data))
+	.handler(async ({ data }): Promise<GetOrdersResponseDto> => {
+		const result = await apiFetchPaginated<OrderListItem>(apiUrl, {
+			method: "GET",
+			params: data,
+		});
+
+		return result;
+	});
 
 export const getOrdersSchedule = createServerFn({ method: "GET" })
 	.inputValidator((data: GetOrdersScheduleQuery) =>

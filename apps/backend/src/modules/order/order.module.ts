@@ -13,6 +13,7 @@ import { GetOrdersScheduleQueryHandler } from './application/queries/get-orders-
 import { GetOrderByIdQueryHandler } from './application/queries/get-order-by-id/get-order-by-id.query-handler';
 import { GetCalendarDotsQueryHandler } from './application/queries/get-calendar-dots/get-calendar-dots.query-handler';
 import { GetPendingReviewOrdersQueryHandler } from './application/queries/get-pending-review-orders/get-pending-review-orders.query-handler';
+import { GetOrdersQueryHandler } from './application/queries/get-orders/get-orders.query-handler';
 import { TenantModule } from '../tenant/tenant.module';
 import { CreateOrderAssetResolver } from './application/commands/create-order/create-order-asset-resolver';
 import { CreateOrderOwnerContractResolver } from './application/commands/create-order/create-order-owner-contract-resolver';
@@ -26,6 +27,7 @@ import { GetOrdersScheduleHttpController } from './application/queries/get-order
 import { GetCalendarDotsHttpController } from './application/queries/get-calendar-dots/get-calendar-dots.http.controller';
 import { GetOrderByIdHttpController } from './application/queries/get-order-by-id/get-order-by-id.http.controller';
 import { GetPendingReviewOrdersHttpController } from './application/queries/get-pending-review-orders/get-pending-review-orders.http.controller';
+import { GetOrdersHttpController } from './application/queries/get-orders/get-orders.http.controller';
 import { GenerateOrderContractHttpController } from './application/queries/generate-order-contract/generate-order-contract.http.controller';
 import { GenerateOrderContractService } from './application/queries/generate-order-contract/generate-order-contract.service';
 import { ContractRendererAdapter } from './infrastructure/pdf/contract-renderer.adapter';
@@ -40,6 +42,7 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
     CancelOrderHttpController,
     ActivateOrderHttpController,
     CompleteOrderHttpController,
+    GetOrdersHttpController,
     GetPendingReviewOrdersHttpController,
     GetOrdersScheduleHttpController,
     GetCalendarDotsHttpController,
@@ -61,6 +64,7 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
     GetCalendarDotsQueryHandler,
     GetOrderByIdQueryHandler,
     GetPendingReviewOrdersQueryHandler,
+    GetOrdersQueryHandler,
     GenerateOrderContractService,
     {
       provide: ContractRendererPort,

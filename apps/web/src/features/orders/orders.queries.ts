@@ -1,22 +1,32 @@
-import { ProblemDetailsError } from "@/shared/errors";
 import type {
 	CreateOrderDto,
 	GetCalendarDotsQueryDto,
 	GetCalendarDotsResponseDto,
+	GetOrdersQueryDto,
+	GetOrdersResponseDto,
 	GetOrdersScheduleQuery,
 	GetOrdersScheduleResponse,
+	OrderListItem,
 	OrderSummary,
 	ScheduleEvent,
 } from "@repo/schemas";
 import {
-	useMutation,
-	useQuery,
+	keepPreviousData,
+	queryOptions,
 	type UseMutationOptions,
 	type UseQueryOptions,
+	useMutation,
+	useQuery,
 } from "@tanstack/react-query";
 import type { Dayjs } from "dayjs";
 import { fromDateParam, parseTimestamp } from "@/lib/dates/parse";
-import { createOrder, getCalendarDots, getOrdersSchedule } from "./orders.api";
+import { ProblemDetailsError } from "@/shared/errors";
+import {
+	createOrder,
+	getCalendarDots,
+	getOrders,
+	getOrdersSchedule,
+} from "./orders.api";
 
 // -----------------------------------------------------
 // Parsed Types
@@ -41,18 +51,51 @@ type ParsedGetOrdersScheduleResponse = {
 	events: ParsedScheduleEvent[];
 };
 
+export type ParsedOrderListItem = Omit<
+	OrderListItem,
+	"createdAt" | "pickupAt" | "returnAt"
+> & {
+	createdAt: Dayjs;
+	pickupAt: Dayjs;
+	returnAt: Dayjs;
+};
+
+type ParsedGetOrdersResponse = Omit<GetOrdersResponseDto, "data"> & {
+	data: ParsedOrderListItem[];
+};
+
 // -----------------------------------------------------
 // Key Factory
 // -----------------------------------------------------
 
 export const orderKeys = {
 	all: () => ["orders"] as const,
+	lists: () => [...orderKeys.all(), "list"] as const,
+	list: (params: GetOrdersQueryDto) => [...orderKeys.lists(), params] as const,
 	schedules: () => [...orderKeys.all(), "schedule"] as const,
 	schedule: (params: GetOrdersScheduleQuery) =>
 		[...orderKeys.schedules(), params] as const,
 	calendarDots: () => [...orderKeys.all(), "calendar-dots"] as const,
 	calendarDot: (params: GetCalendarDotsQueryDto) =>
 		[...orderKeys.calendarDots(), params] as const,
+};
+
+export const orderQueries = {
+	list: <TData = ParsedGetOrdersResponse>(
+		params: GetOrdersQueryDto,
+		options?: GetOrdersQueryOptions<TData>,
+	) =>
+		queryOptions<GetOrdersResponseDto, ProblemDetailsError, TData>({
+			...options,
+			queryKey: orderKeys.list(params),
+			queryFn: () => getOrders({ data: params }),
+			placeholderData: keepPreviousData,
+			select: (raw) => {
+				console.log({ raw });
+				const parsed = parseOrdersResponse(raw);
+				return options?.select ? options.select(raw) : (parsed as TData);
+			},
+		}),
 };
 
 // -----------------------------------------------------
@@ -64,6 +107,11 @@ type GetOrdersScheduleQueryOptions<TData = ParsedGetOrdersScheduleResponse> =
 		UseQueryOptions<GetOrdersScheduleResponse, ProblemDetailsError, TData>,
 		"queryKey" | "queryFn"
 	>;
+
+type GetOrdersQueryOptions<TData = ParsedGetOrdersResponse> = Omit<
+	UseQueryOptions<GetOrdersResponseDto, ProblemDetailsError, TData>,
+	"queryKey" | "queryFn"
+>;
 
 type GetCalendarDotsQueryOptions<TData = GetCalendarDotsResponseDto> = Omit<
 	UseQueryOptions<GetCalendarDotsResponseDto, ProblemDetailsError, TData>,
@@ -85,14 +133,28 @@ function parseScheduleResponse(
 	return {
 		events: raw.events.map((e) => ({
 			...e,
-			eventAt: parseTimestamp(e.eventAt)!,
+			eventAt: requireDayjs(parseTimestamp(e.eventAt), "eventAt"),
 			order: {
 				...e.order,
 				pickupDate: fromDateParam(e.order.pickupDate),
 				returnDate: fromDateParam(e.order.returnDate),
-				pickupAt: parseTimestamp(e.order.pickupAt)!,
-				returnAt: parseTimestamp(e.order.returnAt)!,
+				pickupAt: requireDayjs(parseTimestamp(e.order.pickupAt), "pickupAt"),
+				returnAt: requireDayjs(parseTimestamp(e.order.returnAt), "returnAt"),
 			},
+		})),
+	};
+}
+
+function parseOrdersResponse(
+	raw: GetOrdersResponseDto,
+): ParsedGetOrdersResponse {
+	return {
+		...raw,
+		data: raw.data.map((order) => ({
+			...order,
+			createdAt: requireDayjs(parseTimestamp(order.createdAt), "createdAt"),
+			pickupAt: requireDayjs(parseTimestamp(order.pickupAt), "pickupAt"),
+			returnAt: requireDayjs(parseTimestamp(order.returnAt), "returnAt"),
 		})),
 	};
 }
@@ -113,6 +175,24 @@ export function useUpcomingSchedule<TData = ParsedGetOrdersScheduleResponse>(
 			const parsed = parseScheduleResponse(raw);
 			return options?.select ? options.select(raw) : (parsed as TData);
 		},
+	});
+}
+
+export function useOrders<TData = ParsedGetOrdersResponse>(
+	params: GetOrdersQueryDto,
+	options?: GetOrdersQueryOptions<TData>,
+) {
+	const { queryKey, queryFn, select, placeholderData } = orderQueries.list(
+		params,
+		options,
+	);
+
+	return useQuery({
+		...options,
+		queryKey,
+		queryFn,
+		select,
+		placeholderData,
 	});
 }
 
@@ -141,4 +221,12 @@ export function useCreateOrder(options?: OrderMutationOptions) {
 			invalidates: orderKeys.all(),
 		},
 	});
+}
+
+function requireDayjs(value: Dayjs | null, field: string): Dayjs {
+	if (!value) {
+		throw new Error(`Invalid order list date: ${field}`);
+	}
+
+	return value;
 }
