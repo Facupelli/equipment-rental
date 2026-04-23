@@ -3,6 +3,7 @@ import { z } from "zod";
 
 export const roundingRuleSchema = z.enum(RoundingRule);
 export const bookingModeSchema = z.enum(BookingMode);
+export const notificationChannelSchema = z.enum(["EMAIL"]);
 
 export const tenantPricingConfigSchema = z.object({
 	overRentalEnabled: z.boolean(),
@@ -15,8 +16,15 @@ export const tenantPricingConfigSchema = z.object({
 	insuranceRatePercent: z.number().min(0).max(100),
 });
 
+export const tenantNotificationsConfigSchema = z.object({
+	enabledChannels: z.array(notificationChannelSchema),
+});
+
 export const tenantConfigSchema = z.object({
 	pricing: tenantPricingConfigSchema,
+	notifications: tenantNotificationsConfigSchema.default({
+		enabledChannels: ["EMAIL"],
+	}),
 	timezone: z.string(),
 	newArrivalsWindowDays: z.number().int().positive(),
 	bookingMode: bookingModeSchema.default(BookingMode.INSTANT_BOOK),
@@ -42,6 +50,7 @@ export const tenantResponseSchema = z.object({
 });
 
 export type TenantPricingConfig = z.infer<typeof tenantPricingConfigSchema>;
+export type TenantNotificationsConfig = z.infer<typeof tenantNotificationsConfigSchema>;
 export type TenantConfig = z.infer<typeof tenantConfigSchema>;
 
 export type TenantResponse = z.infer<typeof tenantResponseSchema>;

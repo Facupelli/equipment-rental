@@ -1,6 +1,6 @@
 import { RoundingRule } from "@repo/types";
 import { z } from "zod";
-import { bookingModeSchema } from "./tenant-response.schema";
+import { bookingModeSchema, notificationChannelSchema } from "./tenant-response.schema";
 
 const roundingRuleSchema = z.enum(RoundingRule);
 
@@ -18,8 +18,13 @@ const pricingPatchSchema = z.object({
   insuranceRatePercent: z.number().min(0).max(100).optional(),
 });
 
+const notificationsPatchSchema = z.object({
+  enabledChannels: z.array(notificationChannelSchema).optional(),
+});
+
 export const updateTenantConfigSchema = z.object({
   pricing: pricingPatchSchema.optional(),
+  notifications: notificationsPatchSchema.optional(),
   timezone: z.string().optional(),
   newArrivalsWindowDays: z.number().int().positive().optional(),
   bookingMode: bookingModeSchema.optional(),

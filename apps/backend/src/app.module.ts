@@ -20,6 +20,7 @@ import { BillingUnitModule } from './modules/billing-unit/billing-unit.module';
 import { PricingModule } from './modules/pricing/pricing.module';
 import { InternalModule } from './modules/internal/internal.module';
 import { SharedModule } from './modules/shared/shared.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { HealthController } from './health/health.controller';
 import { DomainEventsModule } from './core/domain/events/domain-events.module';
 
@@ -34,6 +35,7 @@ import { DomainEventsModule } from './core/domain/events/domain-events.module';
     CqrsModule.forRoot(),
     InternalModule,
     TenantModule,
+    NotificationsModule,
     AuthModule,
     UsersModule,
     CatalogModule,

@@ -8,6 +8,8 @@ import {
 } from '../exceptions/tenant.exceptions';
 import { assertValidIanaTimezone } from '../utils/timezone.validation';
 
+export type TenantNotificationChannel = 'EMAIL';
+
 export interface TenantPricingConfigProps {
   overRentalEnabled: boolean;
   maxOverRentThreshold: number;
@@ -19,8 +21,13 @@ export interface TenantPricingConfigProps {
   insuranceRatePercent: number;
 }
 
+export interface TenantNotificationsConfigProps {
+  enabledChannels: TenantNotificationChannel[];
+}
+
 export interface TenantConfigProps {
   pricing: TenantPricingConfigProps;
+  notifications?: TenantNotificationsConfigProps;
   timezone: string;
   newArrivalsWindowDays: number;
   bookingMode?: BookingMode;
@@ -31,6 +38,7 @@ type LegacyRoundingRule = 'ROUND_UP' | 'SPLIT';
 // Deep partial for merge — all fields optional at every level
 export type TenantConfigPatch = {
   pricing?: Partial<TenantPricingConfigProps>;
+  notifications?: Partial<TenantNotificationsConfigProps>;
   timezone?: string;
   newArrivalsWindowDays?: number;
   bookingMode?: BookingMode;
@@ -38,12 +46,14 @@ export type TenantConfigPatch = {
 
 export class TenantConfig {
   public readonly pricing: Readonly<TenantPricingConfigProps>;
+  public readonly notifications: Readonly<TenantNotificationsConfigProps>;
   public readonly timezone: string;
   public readonly newArrivalsWindowDays: number;
   public readonly bookingMode: BookingMode;
 
   private constructor(props: TenantConfigProps) {
     this.pricing = Object.freeze({ ...props.pricing });
+    this.notifications = Object.freeze({ ...props.notifications! });
     this.timezone = props.timezone;
     this.newArrivalsWindowDays = props.newArrivalsWindowDays;
     this.bookingMode = props.bookingMode!;
@@ -82,6 +92,9 @@ export class TenantConfig {
         insuranceEnabled: false,
         insuranceRatePercent: 0,
       },
+      notifications: {
+        enabledChannels: ['EMAIL'],
+      },
       timezone: 'UTC',
       newArrivalsWindowDays: 30,
       bookingMode: BookingMode.INSTANT_BOOK,
@@ -99,6 +112,10 @@ export class TenantConfig {
         ...this.pricing,
         ...patch.pricing,
       },
+      notifications: {
+        ...this.notifications,
+        ...patch.notifications,
+      },
     });
   }
 
@@ -110,6 +127,7 @@ export class TenantConfig {
       newArrivalsWindowDays: this.newArrivalsWindowDays,
       bookingMode: this.bookingMode,
       pricing: { ...this.pricing },
+      notifications: { ...this.notifications },
     };
   }
 
@@ -119,6 +137,9 @@ export class TenantConfig {
       pricing: {
         ...props.pricing,
         roundingRule: TenantConfig.normalizeRoundingRule(props.pricing.roundingRule),
+      },
+      notifications: {
+        enabledChannels: props.notifications?.enabledChannels ?? ['EMAIL'],
       },
       bookingMode: props.bookingMode ?? BookingMode.INSTANT_BOOK,
     };
