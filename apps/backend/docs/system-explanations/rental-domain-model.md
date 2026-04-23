@@ -11,6 +11,11 @@ The rental business is easier to understand if you keep four concerns separate:
 - fulfillment: how a commercial commitment gets backed by actual units
 - pricing: how duration and discounts turn into charged amounts
 
+One additional distinction matters in the current model:
+
+- booking mode controls whether a new order is accepted immediately or held for review
+- assignment stage controls whether physical units are tentatively held or fully committed
+
 ---
 
 ## Core Mental Model
@@ -55,14 +60,6 @@ It answers questions like:
 - what category does it belong to?
 - how is it billed?
 - is it tracked as individually identifiable units or interchangeable pooled units?
-
-Important fields in the schema:
-
-- `categoryId` - optional product categorization
-- `billingUnitId` - required billing unit for pricing
-- `trackingMode` - `IDENTIFIED` or `POOLED`
-- `attributes` - structured product-specific data
-- `includedItems` - descriptive included content shown to users
 
 `ProductType` is a catalog definition. It is not a physical unit and it is not itself what gets assigned to an order.
 
@@ -111,30 +108,54 @@ Even for pooled products, the schema still uses concrete `Asset` records. Poolin
 
 ### Locations
 
-`Location` is an operational base where assets live and orders are fulfilled.
+`Location` is the operational booking and fulfillment context for a rental.
 
 Location-scoped behavior includes:
 
 - assets belong to a location
 - orders are placed against a location
 - pricing tiers may optionally vary by location
-- schedules define operational pickup/return windows
+- schedules define operational pickup and return windows
+- delivery capability is configured per location
+- timezone behavior is resolved through the location context
 
 Catalog is tenant-scoped, but stock is location-specific because assets are location-specific.
+
+### Location context
+
+The persisted location record is only part of the story. The rest of the system usually works with a derived location context:
+
+- `supportsDelivery` determines whether delivery bookings are allowed at that location
+- `effectiveTimezone` is the timezone used for booking-period and calendar calculations
+- the effective timezone may come from the location itself or fall back to the tenant timezone
+
+That means location affects more than stock placement. It also affects whether a booking is valid and how local pickup and return times are interpreted.
+
+### Schedules and slot types
+
+Location schedules are not generic opening hours. They define bookable operational slots.
+
+Each schedule row is typed as either:
+
+- `PICKUP`
+- `RETURN`
+
+This matters because the system validates requested pickup and return times against the location's configured slots before creating an order.
+
+### Delivery capability
+
+Locations can opt into delivery fulfillment.
+
+- if a location does not support delivery, delivery bookings for that location are invalid
+- if a location does support delivery, delivery defaults such as country, state/region, city, and postal code can be stored on the location
+
+So a location is both a stock base and a booking-policy boundary.
 
 ### Asset assignments are the source of truth
 
 `AssetAssignment` is the source of truth for physical availability.
 
 An asset is unavailable for a requested period if it has any overlapping assignment in that period.
-
-Important fields:
-
-- `assetId` - which physical unit is blocked or reserved
-- `orderItemId` / `orderId` - which rental commitment it fulfills, if any
-- `type` - why the asset is blocked
-- `source` - whether fulfillment came from an owned or externally sourced asset
-- `period` - the reserved time window stored as `tstzrange`
 
 ### Assignment types
 
@@ -171,7 +192,16 @@ An order belongs to:
 - one location
 - optionally one customer
 
-It contains `OrderItem[]` and moves through the fulfillment lifecycle.
+It contains `OrderItem[]`, one shared booking period, and booking metadata that preserves how the rental was requested.
+
+The important shape is:
+
+- one order has one rental period
+- all order items share that order-level period
+- an order may mix product items and bundle items
+- the order stores a booking snapshot so the original local pickup and return details remain stable even if derived views change later
+
+This is why the order is the commercial commitment boundary. Items describe what was bought, but the booking window belongs to the order as a whole.
 
 ### Order items
 
@@ -186,27 +216,70 @@ An order item references either `productTypeId` or `bundleId`, and stores `price
 
 Asset assignments attach at the order-item level. That is important because one order may contain multiple independently fulfilled items.
 
+For bundle items, fulfillment still expands into the component product types behind the bundle. The customer buys one bundle line, but physical fulfillment still happens through concrete assets.
+
+### Booking snapshot and fulfillment method
+
+Orders keep a booking snapshot that preserves the local booking inputs used at checkout:
+
+- pickup date
+- pickup time
+- return date
+- return time
+- timezone used to interpret those values
+
+Orders also carry a fulfillment method:
+
+- `PICKUP`
+- `DELIVERY`
+
+If the order uses delivery, it also carries an `OrderDeliveryRequest` with the recipient and address details needed to fulfill that delivery.
+
 ### Order lifecycle
 
-The schema status model is:
+The current status model is:
 
-- `PENDING_SOURCING`
-- `SOURCED`
+- `PENDING_REVIEW`
 - `CONFIRMED`
+- `REJECTED`
+- `EXPIRED`
 - `ACTIVE`
 - `COMPLETED`
 - `CANCELLED`
 
-This reflects a rental workflow where taking the order and sourcing physical equipment are separate concerns.
+The initial status depends on tenant booking mode:
 
-### Fulfillment paths
+- `INSTANT_BOOK` creates the order as `CONFIRMED`
+- `REQUEST_TO_BOOK` creates the order as `PENDING_REVIEW`
 
-There are two important fulfillment paths:
+The valid transition shape is:
 
-- owned fulfillment: an available owned asset is assigned
-- external fulfillment: the business accepts the order first and later fulfills it with externally sourced equipment
+- `PENDING_REVIEW -> CONFIRMED | REJECTED | EXPIRED`
+- `CONFIRMED -> ACTIVE | CANCELLED`
+- `ACTIVE -> COMPLETED`
 
-This is why an order may exist with no assignment yet. That is not necessarily a bug or overbooking. It can represent an intentional procurement-backed commitment.
+This reflects a workflow where review and acceptance may be separate from final operational execution.
+
+### Assignment stage and fulfillment
+
+Asset assignments are still the physical availability primitive, but the current model adds an assignment stage:
+
+- `HOLD`
+- `COMMITTED`
+
+Assignment stage is driven by booking mode:
+
+- request-to-book orders start with `HOLD` assignments while the booking is still pending review
+- instant-book orders start with `COMMITTED` assignments because the booking is already accepted
+
+Later lifecycle actions update the order and the physical reservation together:
+
+- confirming a pending-review order promotes assignments from `HOLD` to `COMMITTED`
+- rejecting or expiring a pending-review order releases held assignments
+- cancelling a confirmed order releases committed assignments
+- activating and completing an order do not create a new reservation primitive; they advance the lifecycle around already committed fulfillment
+
+So the current fulfillment story is less about a generic "sourcing" state and more about whether physical reservations are tentative or committed.
 
 ### Assignment source
 
@@ -215,7 +288,7 @@ This is why an order may exist with no assignment yet. That is not necessarily a
 - `OWNED`
 - `EXTERNAL`
 
-This supports procurement tracking and later downstream financial logic.
+This is still useful for procurement tracking and downstream financial logic, but it is secondary to the main availability model. The primary operational question is still whether the order's demand has matching asset assignments, and whether those assignments are held or committed.
 
 ---
 
@@ -264,18 +337,6 @@ Pricing in the rental domain has three main layers:
 - base price lookup
 - discount rule evaluation
 
-### Billing units and duration
-
-Each product type or bundle picks a `BillingUnit`.
-
-Conceptually:
-
-- rental period -> duration in minutes
-- duration minutes / billing unit duration -> billable units
-- partial units round up
-
-This is why short overruns or partial days still bill as a full unit under the chosen unit system.
-
 ### Pricing tiers
 
 `PricingTier` defines the base step-function price for a product type or bundle.
@@ -291,15 +352,6 @@ The mental model is: once the system knows the billable unit count, it resolves 
 ### Promotions
 
 `Promotion` defines discounts or adjustments that apply on top of the base price.
-
-Key dimensions:
-
-- `type` - coupon, seasonal, or customer-specific
-- `priority`
-- `stackable` behavior
-- `condition` and `effect` stored as JSON
-
-Detailed coupon behavior is explained separately in `docs/system-explanations/coupon-discount-system.md`.
 
 ---
 
@@ -324,56 +376,3 @@ This is downstream of fulfillment:
 Ownership affects payouts and reporting, but it is not the primitive used to determine basic physical availability. Availability still comes from assets plus asset assignments.
 
 ---
-
-## Scope Boundaries
-
-### Tenant-scoped concepts
-
-These live at the tenant level:
-
-- product categories
-- product types
-- bundles
-- promotions
-- tenant-enabled billing units
-- owners
-
-### Location-scoped concepts
-
-These are operationally location-specific:
-
-- assets
-- orders
-- schedules
-- optional pricing tier overrides
-
-Request-time tenant resolution is explained in `docs/system-explanations/tenant-context-resolution.md`.
-
----
-
-## Common Misunderstandings
-
-- `ProductType` is not a physical unit. `Asset` is the physical unit.
-- `Order` is not the same thing as `AssetAssignment`. The order is the commitment; the assignment is the physical reservation.
-- Bundles are catalog constructs, not special inventory entities.
-- Availability is not a quantity field lookup. It is derived from whether enough assets exist without conflicting assignments.
-- Query-side reads do not need to instantiate aggregates just to answer reporting or list-view questions.
-
----
-
-## Entity Cheat Sheet
-
-| Concept                        | Prisma model(s)                                 | Role                                       |
-| ------------------------------ | ----------------------------------------------- | ------------------------------------------ |
-| Catalog grouping               | `ProductCategory`                               | Groups related product types               |
-| Rentable catalog item          | `ProductType`                                   | Defines what can be rented                 |
-| Physical rentable unit         | `Asset`                                         | Concrete inventory unit                    |
-| Operational base               | `Location`                                      | Where assets live and orders are fulfilled |
-| Time unit for pricing          | `BillingUnit`, `TenantBillingUnit`              | Controls billable duration units           |
-| Sellable package               | `Bundle`, `BundleComponent`                     | Bundle of product types sold together      |
-| Commercial commitment          | `Order`, `OrderItem`                            | Accepted rental and its line items         |
-| Physical reservation/block     | `AssetAssignment`                               | Source of truth for availability           |
-| Historical booked bundle state | `BundleSnapshot`, `BundleSnapshotComponent`     | Preserves booked bundle composition        |
-| Base pricing                   | `PricingTier`                                   | Duration-based price lookup                |
-| Discounting                    | `Promotion`, `Coupon`, `CouponRedemption`       | Pricing adjustments and redemption control |
-| Ownership economics            | `Owner`, `OwnerContract`, `OrderItemOwnerSplit` | Revenue sharing and payouts                |
