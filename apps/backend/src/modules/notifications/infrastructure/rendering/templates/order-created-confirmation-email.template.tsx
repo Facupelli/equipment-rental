@@ -12,6 +12,7 @@ export async function renderOrderCreatedConfirmationEmailTemplate(
     subject: `Tu pedido #${payload.orderNumber} fue creado`,
     component: (
       <EmailLayout
+        brandName={payload.tenantName}
         headerLabel="Confirmación de pedido"
         previewText={`Tu pedido #${payload.orderNumber} fue creado y está siendo procesado.`}
       >

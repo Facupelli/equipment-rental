@@ -7,6 +7,7 @@ import { OrderCreatedConfirmationEmailContent } from '../src/modules/notificatio
 export default function OrderCreatedConfirmationPreview() {
   return (
     <EmailLayout
+      brandName="Alquileres Centro"
       headerLabel="Confirmación de pedido"
       previewText="Tu pedido #12345 fue creado y está siendo procesado."
     >

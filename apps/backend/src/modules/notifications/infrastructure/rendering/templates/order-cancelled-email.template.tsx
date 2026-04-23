@@ -9,7 +9,11 @@ export async function renderOrderCancelledEmailTemplate(payload: OrderCancelledE
   return await renderReactEmail({
     subject: 'Tu pedido fue cancelado',
     component: (
-      <EmailLayout headerLabel="Información importante" previewText="Te informamos que tu pedido ha sido cancelado.">
+      <EmailLayout
+        brandName={payload.tenantName}
+        headerLabel="Información importante"
+        previewText="Te informamos que tu pedido ha sido cancelado."
+      >
         <OrderCancelledEmailContent tenantName={payload.tenantName} recipientName={payload.recipientName} />
       </EmailLayout>
     ),

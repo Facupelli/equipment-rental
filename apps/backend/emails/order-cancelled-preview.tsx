@@ -5,7 +5,11 @@ import { OrderCancelledEmailContent } from '../src/modules/notifications/infrast
 
 export default function OrderCancelledPreview() {
   return (
-    <EmailLayout headerLabel="Información importante" previewText="Te informamos que tu pedido ha sido cancelado.">
+    <EmailLayout
+      brandName="Alquileres Centro"
+      headerLabel="Información importante"
+      previewText="Te informamos que tu pedido ha sido cancelado."
+    >
       <OrderCancelledEmailContent tenantName="Depiqo" recipientName="Facu" />
     </EmailLayout>
   );

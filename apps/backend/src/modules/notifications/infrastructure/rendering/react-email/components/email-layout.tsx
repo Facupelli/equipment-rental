@@ -5,11 +5,12 @@ import { sharedEmailStyles } from '../email-theme';
 
 type EmailLayoutProps = {
   previewText?: string;
+  brandName?: string;
   headerLabel: string;
   children: React.ReactNode;
 };
 
-export function EmailLayout({ previewText, headerLabel, children }: EmailLayoutProps) {
+export function EmailLayout({ previewText, brandName, headerLabel, children }: EmailLayoutProps) {
   return (
     <Html lang="es">
       <Head />
@@ -20,7 +21,7 @@ export function EmailLayout({ previewText, headerLabel, children }: EmailLayoutP
             <Section style={sharedEmailStyles.sectionPadding}>
               <Row>
                 <Column>
-                  <Text style={sharedEmailStyles.headerBrand}>Depiqo</Text>
+                  <Text style={sharedEmailStyles.headerBrand}>{brandName ?? 'Depiqo'}</Text>
                 </Column>
                 <Column align="right">
                   <Text style={sharedEmailStyles.headerLabel}>{headerLabel}</Text>
