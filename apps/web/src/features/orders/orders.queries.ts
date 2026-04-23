@@ -27,6 +27,7 @@ import type { Dayjs } from "dayjs";
 import { fromDateParam, parseTimestamp } from "@/lib/dates/parse";
 import { ProblemDetailsError } from "@/shared/errors";
 import {
+	cancelOrder,
 	createOrder,
 	getCalendarDots,
 	getOrders,
@@ -297,6 +298,21 @@ export function useMarkEquipmentAsReturned(
 		...options,
 		mutationFn: async (data) => {
 			const result = await markEquipmentAsReturned({ data });
+			if (hasMutationError(result)) {
+				throw new ProblemDetailsError(result.error);
+			}
+		},
+		meta: {
+			invalidates: orderKeys.all(),
+		},
+	});
+}
+
+export function useCancelOrder(options?: OrderDetailMutationOptions) {
+	return useMutation<void, ProblemDetailsError, GetOrderByIdParamDto>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await cancelOrder({ data });
 			if (hasMutationError(result)) {
 				throw new ProblemDetailsError(result.error);
 			}

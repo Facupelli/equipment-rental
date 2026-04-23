@@ -143,6 +143,24 @@ export const markEquipmentAsReturned = createServerFn({ method: "POST" })
 		}
 	});
 
+export const cancelOrder = createServerFn({ method: "POST" })
+	.inputValidator((data: GetOrderByIdParamDto) =>
+		getOrderByIdParamSchema.parse(data),
+	)
+	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+		try {
+			await apiFetch<void>(`${apiUrl}/${data.orderId}/cancel`, {
+				method: "POST",
+			});
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+
+			throw error;
+		}
+	});
+
 export const markEquipmentAsRetired = createServerFn({ method: "POST" })
 	.inputValidator((data: GetOrderByIdParamDto) =>
 		getOrderByIdParamSchema.parse(data),

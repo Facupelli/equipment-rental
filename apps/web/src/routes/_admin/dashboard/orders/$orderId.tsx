@@ -3,6 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	CheckCircle2,
+	CircleSlash,
 	Clock,
 	ExternalLink,
 	FileText,
@@ -205,6 +206,42 @@ function OrderHeader() {
 				</AlertDialogContent>
 			</AlertDialog>
 
+			<AlertDialog
+				open={actions.isCancelOrderDialogOpen}
+				onOpenChange={actions.setIsCancelOrderDialogOpen}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Cancelar pedido</AlertDialogTitle>
+						<AlertDialogDescription>
+							Estas por cancelar este pedido. Esta acción no se puede deshacer.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+
+					{actions.cancelOrderError ? (
+						<p className="text-sm text-destructive">
+							{actions.cancelOrderError}
+						</p>
+					) : null}
+
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={actions.isCancelOrderPending}>
+							Volver
+						</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							onClick={(event) => {
+								event.preventDefault();
+								void actions.handleConfirmCancelOrder();
+							}}
+							disabled={actions.isCancelOrderPending}
+						>
+							{actions.isCancelOrderPending ? "Cancelando..." : "Cancelar"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
 			<OrderLifecycleActionDialog actions={actions} />
 		</header>
 	);
@@ -224,21 +261,21 @@ function OrderLifecycleActionDialog({
 	const copy =
 		action === "pickup"
 			? {
-				title: "Marcar equipo retirado",
-				description:
-					"Confirma que el cliente ya retiró el equipo en la sucursal. El pedido pasará a estar activo.",
-				confirmLabel: actions.isLifecycleActionPending
-					? "Marcando retiro..."
-					: "Marcar retirado",
-			}
+					title: "Marcar equipo retirado",
+					description:
+						"Confirma que el cliente ya retiró el equipo en la sucursal. El pedido pasará a estar activo.",
+					confirmLabel: actions.isLifecycleActionPending
+						? "Marcando retiro..."
+						: "Marcar retirado",
+				}
 			: {
-				title: "Marcar equipo devuelto",
-				description:
-					"Confirma que el cliente ya devolvió el equipo. El pedido pasará a estar completado.",
-				confirmLabel: actions.isLifecycleActionPending
-					? "Marcando devolucion..."
-					: "Marcar devuelto",
-			};
+					title: "Marcar equipo devuelto",
+					description:
+						"Confirma que el cliente ya devolvió el equipo. El pedido pasará a estar completado.",
+					confirmLabel: actions.isLifecycleActionPending
+						? "Marcando devolucion..."
+						: "Marcar devuelto",
+				};
 
 	return (
 		<AlertDialog
@@ -401,13 +438,13 @@ function PrimaryAdminActionButton({
 	action: ReturnType<typeof getOrderPrimaryAdminAction>;
 	actions: ReturnType<typeof useOrderDetailContext>["actions"];
 }) {
-const config = getPrimaryAdminButtonConfig(action, actions);
+	const config = getPrimaryAdminButtonConfig(action, actions);
 
-if (!config) {
-	return null;
-}
+	if (!config) {
+		return null;
+	}
 
-const Icon = config.icon;
+	const Icon = config.icon;
 
 	return (
 		<Button
@@ -468,6 +505,14 @@ function OrderActionsMenu({
 					{actions.isDownloadingContract
 						? "Descargando remito..."
 						: "Descargar remito"}
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					variant="destructive"
+					onClick={actions.handleOpenCancelOrder}
+				>
+					<CircleSlash className="mr-2 h-4 w-4" />
+					Cancelar
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
