@@ -1,3 +1,4 @@
 export enum NotificationType {
+  ORDER_CANCELLED = 'ORDER_CANCELLED',
   PASSWORD_RESET = 'PASSWORD_RESET',
 }

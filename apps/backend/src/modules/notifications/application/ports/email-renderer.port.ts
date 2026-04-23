@@ -7,7 +7,13 @@ export interface PasswordResetEmailPayload {
   expiresAt?: Date;
 }
 
+export interface OrderCancelledEmailPayload {
+  tenantName?: string;
+  recipientName?: string;
+}
+
 export interface NotificationEmailPayloadMap {
+  [NotificationType.ORDER_CANCELLED]: OrderCancelledEmailPayload;
   [NotificationType.PASSWORD_RESET]: PasswordResetEmailPayload;
 }
 

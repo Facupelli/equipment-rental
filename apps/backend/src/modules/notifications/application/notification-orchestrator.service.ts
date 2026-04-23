@@ -6,6 +6,7 @@ import { EmailRenderer } from './ports/email-renderer.port';
 import { EmailSenderResolver } from './ports/email-sender.resolver';
 import { NotificationDispatchRequest } from './types/notification-dispatch-request';
 import { NotificationDispatchResult } from './types/notification-dispatch-result';
+import { NotificationType } from '../domain/notification-type.enum';
 import { NotificationChannel } from '../domain/notification-channel.enum';
 
 @Injectable()
@@ -17,7 +18,9 @@ export class NotificationOrchestrator {
     private readonly emailSenderResolver: EmailSenderResolver,
   ) {}
 
-  async dispatch<T extends NotificationDispatchRequest>(request: T): Promise<NotificationDispatchResult> {
+  async dispatch<T extends NotificationType>(
+    request: NotificationDispatchRequest<T>,
+  ): Promise<NotificationDispatchResult> {
     const channels = await this.channelPolicyResolver.resolveChannels(request.tenantId, request.notificationType);
 
     const result: NotificationDispatchResult = {

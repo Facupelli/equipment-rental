@@ -1,8 +1,10 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { OrderAssignmentStage, OrderStatus } from '@repo/types';
 import { err, ok, Result } from 'neverthrow';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
+import { OrderCancelledEvent } from 'src/modules/order/public/events/order-cancelled.event';
 import { PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
 
 import { OrderRepository } from 'src/modules/order/infrastructure/persistence/repositories/order.repository';
@@ -25,6 +27,7 @@ type CancelOrderError =
 @CommandHandler(CancelOrderCommand)
 export class CancelOrderService implements ICommandHandler<CancelOrderCommand, Result<void, CancelOrderError>> {
   constructor(
+    private readonly eventEmitter: EventEmitter2,
     private readonly prisma: PrismaService,
     private readonly orderRepository: OrderRepository,
     private readonly inventoryApi: InventoryPublicApi,
@@ -57,6 +60,15 @@ export class CancelOrderService implements ICommandHandler<CancelOrderCommand, R
       await this.inventoryApi.releaseOrderAssignments(order.id, OrderAssignmentStage.COMMITTED, tx);
       await this.pricingApi.voidCouponRedemptionWithinTransaction(order.id, tx);
     });
+
+    await this.eventEmitter.emitAsync(
+      OrderCancelledEvent.EVENT_NAME,
+      new OrderCancelledEvent({
+        orderId: order.id,
+        tenantId: order.tenantId,
+        customerId: order.customerId,
+      }),
+    );
 
     return ok(undefined);
   }
