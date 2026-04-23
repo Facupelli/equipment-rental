@@ -2,6 +2,8 @@ import { NotificationChannel } from './notification-channel.enum';
 import { NotificationType } from './notification-type.enum';
 
 const notificationChannelRegistry: Record<NotificationType, readonly NotificationChannel[]> = {
+  [NotificationType.ORDER_CREATED_CONFIRMATION]: [NotificationChannel.EMAIL],
+  [NotificationType.ORDER_CREATED_BY_CUSTOMER]: [NotificationChannel.EMAIL],
   [NotificationType.ORDER_CANCELLED]: [NotificationChannel.EMAIL],
   [NotificationType.PASSWORD_RESET]: [NotificationChannel.EMAIL],
 };

@@ -1,4 +1,5 @@
 import { NotificationType } from '../../domain/notification-type.enum';
+import { FulfillmentMethod, OrderStatus } from '@repo/types';
 
 export interface PasswordResetEmailPayload {
   resetUrl: string;
@@ -12,7 +13,34 @@ export interface OrderCancelledEmailPayload {
   recipientName?: string;
 }
 
+export interface OrderCreatedByCustomerEmailPayload {
+  tenantName?: string;
+  orderNumber: number;
+  customerEmail: string;
+  status: OrderStatus;
+  fulfillmentMethod: FulfillmentMethod;
+  pickupDate: string;
+  pickupTime: string;
+  returnDate: string;
+  returnTime: string;
+  locationName?: string;
+  timezone?: string;
+}
+
+export interface OrderCreatedConfirmationEmailPayload {
+  tenantName?: string;
+  orderNumber: number;
+  status: OrderStatus;
+  fulfillmentMethod: FulfillmentMethod;
+  pickupDate: string;
+  pickupTime: string;
+  returnDate: string;
+  returnTime: string;
+}
+
 export interface NotificationEmailPayloadMap {
+  [NotificationType.ORDER_CREATED_CONFIRMATION]: OrderCreatedConfirmationEmailPayload;
+  [NotificationType.ORDER_CREATED_BY_CUSTOMER]: OrderCreatedByCustomerEmailPayload;
   [NotificationType.ORDER_CANCELLED]: OrderCancelledEmailPayload;
   [NotificationType.PASSWORD_RESET]: PasswordResetEmailPayload;
 }

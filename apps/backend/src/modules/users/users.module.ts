@@ -9,6 +9,7 @@ import { UsersFacade } from './application/users.facade';
 import { GetUserHttpController } from './application/queries/get-user/get-user.http.controller';
 import { GetUserProfileHttpController } from './application/queries/get-user-profile/get-user-profile.http.controller';
 import { FindCredentialsByEmailQueryHandler } from './application/queries/find-credentials-by-email/find-credentials-by-email.query-handler';
+import { FindTenantAdminNotificationRecipientsQueryHandler } from './application/queries/find-tenant-admin-notification-recipients/find-tenant-admin-notification-recipients.query-handler';
 import { GetUserQueryHandler } from './application/queries/get-user/get-user.query-handler';
 import { GetUserProfileQueryHandler } from './application/queries/get-user-profile/get-user-profile.query-handler';
 import { GetUserPermissionsQueryHandler } from './application/queries/get-user-permissions/get-user-permissions.query-handler';
@@ -47,6 +48,7 @@ const commandHandlers = [
 ];
 const queryHandlers = [
   FindCredentialsByEmailQueryHandler,
+  FindTenantAdminNotificationRecipientsQueryHandler,
   IsEmailTakenQueryHandler,
   GetUserQueryHandler,
   GetUserProfileQueryHandler,

@@ -1,4 +1,5 @@
 import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   AssignmentSource,
   AssignmentType,
@@ -57,10 +58,12 @@ import {
   ProductTypeNotFoundError,
 } from '../../../domain/errors/order.errors';
 import { TenantConfigNotFoundException } from '../../../domain/exceptions/order.exceptions';
+import { OrderCreatedByCustomerEvent } from 'src/modules/order/public/events/order-created-by-customer.event';
 
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderService implements ICommandHandler<CreateOrderCommand, Result<string, CreateOrderError>> {
   constructor(
+    private readonly eventEmitter: EventEmitter2,
     private readonly prisma: PrismaService,
     private readonly queryBus: QueryBus,
     private readonly orderRepository: OrderRepository,
@@ -147,7 +150,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
       throw error;
     }
 
-    return this.prisma.client.$transaction(async (tx) => {
+    const result = await this.prisma.client.$transaction(async (tx) => {
       const order = Order.create({
         tenantId: command.tenantId,
         locationId: command.locationId,
@@ -222,8 +225,49 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
         );
       }
 
-      return ok(order.id);
+      return ok({
+        orderId: order.id,
+        status: order.currentStatus,
+        fulfillmentMethod: order.currentFulfillmentMethod,
+      });
     });
+
+    if (result.isErr()) {
+      return err(result.error);
+    }
+
+    const persistedOrder = await this.prisma.client.order.findFirst({
+      where: {
+        id: result.value.orderId,
+        tenantId: command.tenantId,
+      },
+      select: {
+        orderNumber: true,
+      },
+    });
+
+    if (!persistedOrder) {
+      throw new Error(`Persisted order "${result.value.orderId}" not found after creation.`);
+    }
+
+    await this.eventEmitter.emitAsync(
+      OrderCreatedByCustomerEvent.EVENT_NAME,
+      new OrderCreatedByCustomerEvent({
+        orderId: result.value.orderId,
+        tenantId: command.tenantId,
+        customerId: command.customerId!,
+        locationId: command.locationId,
+        orderNumber: persistedOrder.orderNumber,
+        status: result.value.status,
+        fulfillmentMethod: result.value.fulfillmentMethod,
+        pickupDate: command.pickupDate,
+        pickupTime: command.pickupTime,
+        returnDate: command.returnDate,
+        returnTime: command.returnTime,
+      }),
+    );
+
+    return ok(result.value.orderId);
   }
 
   private async validateLocation(
@@ -277,9 +321,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
     return ok(undefined);
   }
 
-  private async deriveBookingContext(
-    command: CreateOrderCommand,
-  ): Promise<{
+  private async deriveBookingContext(command: CreateOrderCommand): Promise<{
     period: DateRange;
     bookingMode: BookingMode;
     insuranceEnabled: boolean;
