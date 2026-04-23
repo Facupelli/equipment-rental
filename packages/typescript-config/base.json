@@ -8,7 +8,6 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "inlineSources": false,
-    "isolatedModules": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "preserveWatchOutput": true,

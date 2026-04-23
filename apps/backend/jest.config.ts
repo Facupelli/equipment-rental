@@ -1,9 +1,19 @@
-import unitConfig from '@repo/jest-config/jest.config.unit';
+import { unitConfig } from '@repo/jest-config';
 import type { Config } from '@jest/types';
 
 const config: Config.InitialOptions = {
   ...unitConfig,
-  rootDir: 'src',
+  rootDir: '.',
+  moduleNameMapper: {
+    ...unitConfig.moduleNameMapper,
+    '^@generated/prisma$': '<rootDir>/src/generated/prisma',
+  },
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/tsconfig.json',
+      diagnostics: false,
+    },
+  },
 };
 
 export default config;

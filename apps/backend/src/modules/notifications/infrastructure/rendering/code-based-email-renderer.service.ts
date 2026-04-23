@@ -13,7 +13,7 @@ import { renderOrderCancelledEmailTemplate } from './templates/order-cancelled-e
 import { renderPasswordResetEmailTemplate } from './templates/password-reset-email.template';
 
 const emailTemplateRenderers: {
-  [T in NotificationType]: (payload: NotificationEmailPayloadMap[T]) => RenderedEmail;
+  [T in NotificationType]: (payload: NotificationEmailPayloadMap[T]) => Promise<RenderedEmail> | RenderedEmail;
 } = {
   [NotificationType.ORDER_CREATED_CONFIRMATION]: renderOrderCreatedConfirmationEmailTemplate,
   [NotificationType.ORDER_CREATED_BY_CUSTOMER]: renderOrderCreatedByCustomerEmailTemplate,
@@ -26,6 +26,6 @@ export class CodeBasedEmailRendererService implements EmailRenderer {
   async render<T extends NotificationType>(input: RenderEmailInput<T>): Promise<RenderedEmail> {
     const renderTemplate = emailTemplateRenderers[input.notificationType];
 
-    return renderTemplate(input.payload);
+    return await renderTemplate(input.payload);
   }
 }

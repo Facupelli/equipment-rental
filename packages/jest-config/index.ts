@@ -2,16 +2,15 @@ import type { Config } from "@jest/types";
 
 /**
  * Base config shared by all presets.
- * Each preset spreads this and overrides what it needs.
+ * - No tsconfig path here: each consuming app injects its own via globals.
+ * - No diagnostics: type-checking is the compiler's job, not the test runner's.
  */
 const base: Config.InitialOptions = {
   moduleFileExtensions: ["js", "json", "ts"],
   transform: {
-    "^.+\\.(t|j)s$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.json" }],
+    "^.+\\.(t|j)s$": "ts-jest",
   },
   moduleNameMapper: {
-    // Resolves `src/`-prefixed absolute imports used throughout the codebase.
-    // Each app's rootDir is set to its own root, so src/ maps correctly.
     "^src/(.*)$": "<rootDir>/src/$1",
   },
   testEnvironment: "node",
@@ -19,43 +18,32 @@ const base: Config.InitialOptions = {
 
 /**
  * Unit test preset.
- * - Scoped to src/ only
- * - Picks up *.spec.ts files
- * - Fast: no DB, no HTTP, no timeouts needed
+ * Fast: no DB, no HTTP, no timeouts needed.
  */
 export const unitConfig: Config.InitialOptions = {
   ...base,
   rootDir: ".",
   testRegex: ".*\\.spec\\.ts$",
-  // Override moduleNameMapper so src/ resolves inside src/ subdirectory
-  moduleNameMapper: {
-    "^src/(.*)$": "<rootDir>/src/$1",
-  },
   collectCoverageFrom: ["src/**/*.(t|j)s"],
   coverageDirectory: "coverage",
 };
 
 /**
  * Integration test preset.
- * - Picks up *.integration-spec.ts files
- * - Runs sequentially (shares a real DB instance)
- * - Longer timeout for DB round-trips
+ * Runs sequentially — test files share a real DB instance
+ * and rely on per-test cleanup, not parallel isolation.
  */
 export const integrationConfig: Config.InitialOptions = {
   ...base,
   rootDir: ".",
   testRegex: ".*\\.integration-spec\\.ts$",
   testTimeout: 30_000,
-  // Sequential: test files share the same DB and rely on per-test cleanup,
-  // not parallel isolation.
   maxWorkers: 1,
 };
 
 /**
  * E2E test preset.
- * - Picks up *.e2e-spec.ts files
- * - Runs sequentially (boots a real NestJS app + DB)
- * - Longer timeout for full app bootstrap
+ * Runs sequentially — boots a real NestJS app + DB.
  */
 export const e2eConfig: Config.InitialOptions = {
   ...base,

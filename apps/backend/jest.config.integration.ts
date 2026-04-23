@@ -1,11 +1,21 @@
-import integrationConfig from '@repo/jest-config/jest.config.integration';
+import { integrationConfig } from '@repo/jest-config';
 import type { Config } from '@jest/types';
 
 const config: Config.InitialOptions = {
   ...integrationConfig,
-  rootDir: 'src',
-  globalSetup: '<rootDir>/../test/setup/global-setup.ts',
-  globalTeardown: '<rootDir>/../test/setup/global-teardown.ts',
+  rootDir: '.',
+  globalSetup: '<rootDir>/test/setup/global-setup.ts',
+  globalTeardown: '<rootDir>/test/setup/global-teardown.ts',
+  moduleNameMapper: {
+    ...integrationConfig.moduleNameMapper,
+    '^@generated/prisma$': '<rootDir>/src/generated/prisma',
+  },
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/tsconfig.json',
+      diagnostics: false,
+    },
+  },
 };
 
 export default config;
