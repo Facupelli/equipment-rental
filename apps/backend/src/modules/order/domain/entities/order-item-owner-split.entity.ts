@@ -97,6 +97,10 @@ export class OrderItemOwnerSplit {
     return this._status;
   }
 
+  isSettled(): boolean {
+    return this._status === SplitStatus.SETTLED;
+  }
+
   void(): void {
     if (this._status === SplitStatus.VOID) {
       throw new OwnerSplitAlreadyVoidedException();

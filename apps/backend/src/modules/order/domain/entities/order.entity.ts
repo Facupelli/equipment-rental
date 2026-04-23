@@ -9,6 +9,7 @@ import {
   MissingOrderDeliveryRequestException,
   OrderItemNotAllowedException,
   OrderItemNotFoundException,
+  SettledOwnerSplitCancellationBlockedException,
 } from '../exceptions/order.exceptions';
 import { OrderStatus } from '@repo/types';
 import { OrderFinancialSnapshot } from '../value-objects/order-financial-snapshot.value-object';
@@ -183,6 +184,7 @@ export class Order {
   }
 
   cancel(): void {
+    this.assertCanCancel();
     this.items.forEach((item) => item.voidAllOwnerSplits());
     this.transitionTo(OrderStatus.CANCELLED);
   }
@@ -234,6 +236,18 @@ export class Order {
       insuranceAmount: insurance.insuranceAmount,
       total: itemsSubtotal.plus(insurance.insuranceAmount),
     });
+  }
+
+  private assertCanCancel(): void {
+    const allowed = ALLOWED_TRANSITIONS[this.status];
+    if (!allowed.includes(OrderStatus.CANCELLED)) {
+      throw new InvalidOrderStatusTransitionException(this.status, OrderStatus.CANCELLED);
+    }
+
+    const hasSettledOwnerSplits = this.items.some((item) => item.ownerSplits.some((split) => split.isSettled()));
+    if (hasSettledOwnerSplits) {
+      throw new SettledOwnerSplitCancellationBlockedException();
+    }
   }
 
   private static assertDeliveryRequest(

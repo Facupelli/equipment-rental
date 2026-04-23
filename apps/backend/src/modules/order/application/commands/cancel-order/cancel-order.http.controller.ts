@@ -9,7 +9,11 @@ import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { CancelOrderCommand } from './cancel-order.command';
 import { CancelOrderRequestDto } from './cancel-order.request.dto';
-import { OrderNotFoundError, OrderStatusTransitionNotAllowedError } from '../../../domain/errors/order.errors';
+import {
+  OrderCancellationBlockedBySettledOwnerSplitsError,
+  OrderNotFoundError,
+  OrderStatusTransitionNotAllowedError,
+} from '../../../domain/errors/order.errors';
 
 @StaffRoute(Permission.CANCEL_ORDERS)
 @Controller('orders/:orderId/cancel')
@@ -34,6 +38,15 @@ export class CancelOrderHttpController {
           'Invalid Order Transition',
           error.message,
           'errors://invalid-order-transition',
+        );
+      }
+
+      if (error instanceof OrderCancellationBlockedBySettledOwnerSplitsError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Order Cancellation Blocked',
+          error.message,
+          'errors://order-cancellation-blocked',
         );
       }
 

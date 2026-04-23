@@ -105,4 +105,5 @@ export abstract class PricingPublicApi {
     dto: RedeemCouponDto,
     tx: PrismaTransactionClient,
   ): Promise<Result<void, RedeemCouponError>>;
+  abstract voidCouponRedemptionWithinTransaction(orderId: string, tx: PrismaTransactionClient): Promise<void>;
 }

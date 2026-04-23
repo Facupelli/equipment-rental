@@ -63,6 +63,12 @@ export class OrderStatusTransitionNotAllowedError extends OrderError {
   }
 }
 
+export class OrderCancellationBlockedBySettledOwnerSplitsError extends OrderError {
+  constructor() {
+    super('Cannot cancel an order with settled owner payouts.');
+  }
+}
+
 export type UnavailableItem = { type: 'PRODUCT'; productTypeId: string } | { type: 'BUNDLE'; bundleId: string };
 
 export type ConflictGroup = {

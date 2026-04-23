@@ -31,6 +31,7 @@ import {
 } from '../infrastructure/read-services/pricing-computation-read.service';
 import { RedeemCouponService } from './services/redeem-coupon.service';
 import { ResolveCouponForPricingService } from './services/resolve-coupon-for-pricing.service';
+import { VoidCouponRedemptionService } from './services/void-coupon-redemption.service';
 import {
   GetLocationContextQuery,
   LocationContextReadModel,
@@ -53,6 +54,7 @@ export class PricingApplicationService implements PricingPublicApi {
     private readonly pricingRead: PricingComputationReadService,
     private readonly resolveCouponForPricingService: ResolveCouponForPricingService,
     private readonly redeemCouponService: RedeemCouponService,
+    private readonly voidCouponRedemptionService: VoidCouponRedemptionService,
   ) {}
 
   async priceBasket(dto: PriceBasketDto): Promise<PriceBasketResultDto> {
@@ -254,6 +256,10 @@ export class PricingApplicationService implements PricingPublicApi {
   ): Promise<Result<void, RedeemCouponError>> {
     const result = await this.redeemCouponService.redeemWithinTransaction(dto, tx);
     return result.isErr() ? err(result.error) : ok(undefined);
+  }
+
+  async voidCouponRedemptionWithinTransaction(orderId: string, tx: PrismaTransactionClient): Promise<void> {
+    await this.voidCouponRedemptionService.voidRedemption(orderId, tx);
   }
 
   private async loadPricingContext(tenantId: string, locationId: string): Promise<PricingContext> {

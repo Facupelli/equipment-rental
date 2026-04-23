@@ -69,3 +69,10 @@ export class OwnerSplitAlreadyAssignedException extends Error {
     this.name = 'OwnerSplitAlreadyAssignedException';
   }
 }
+
+export class SettledOwnerSplitCancellationBlockedException extends Error {
+  constructor() {
+    super('Cannot cancel an order with settled owner splits.');
+    this.name = 'SettledOwnerSplitCancellationBlockedException';
+  }
+}

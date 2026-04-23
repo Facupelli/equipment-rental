@@ -10,13 +10,16 @@ import {
   ActorType,
   AssignmentSource,
   AssignmentType,
+  ContractBasis,
   OrderAssignmentStage,
   OrderItemType,
   OrderStatus,
   Permission,
+  PromotionType,
   TrackingMode,
 } from '@repo/types';
 import request from 'supertest';
+import { SplitStatus } from '../../domain/entities/order-item-owner-split.entity';
 
 import { AppModule } from 'src/app.module';
 import { PrismaService } from 'src/core/database/prisma.service';
@@ -34,6 +37,10 @@ const adminRoleId = '10000000-0000-0000-0000-000000000006';
 const limitedRoleId = '10000000-0000-0000-0000-000000000007';
 const operatorUserId = '10000000-0000-0000-0000-000000000008';
 const limitedOperatorUserId = '10000000-0000-0000-0000-000000000009';
+const ownerId = '10000000-0000-0000-0000-000000000010';
+const ownerContractId = '10000000-0000-0000-0000-000000000011';
+const promotionId = '10000000-0000-0000-0000-000000000012';
+const couponId = '10000000-0000-0000-0000-000000000013';
 
 const TEST_PERIOD = {
   start: new Date('2026-04-02T10:00:00.000Z'),
@@ -75,6 +82,8 @@ describe('Order lifecycle HTTP integration', () => {
 
     if (orderIds.length > 0) {
       await prisma.client.assetAssignment.deleteMany({ where: { orderId: { in: orderIds } } });
+      await prisma.client.couponRedemption.deleteMany({ where: { orderId: { in: orderIds } } });
+      await prisma.client.orderItemOwnerSplit.deleteMany({ where: { orderItemId: { in: orderItemIds } } });
       await prisma.client.orderItem.deleteMany({ where: { id: { in: orderItemIds } } });
       await prisma.client.order.deleteMany({ where: { id: { in: orderIds } } });
       createdOrders.splice(0, createdOrders.length);
@@ -83,7 +92,11 @@ describe('Order lifecycle HTTP integration', () => {
 
   afterAll(async () => {
     await prisma.client.assetAssignment.deleteMany({ where: { assetId } });
+    await prisma.client.ownerContract.deleteMany({ where: { id: ownerContractId } });
     await prisma.client.asset.deleteMany({ where: { id: assetId } });
+    await prisma.client.owner.deleteMany({ where: { id: ownerId } });
+    await prisma.client.coupon.deleteMany({ where: { id: couponId } });
+    await prisma.client.promotion.deleteMany({ where: { id: promotionId } });
     await prisma.client.productType.deleteMany({ where: { id: productTypeId } });
     await prisma.client.location.deleteMany({ where: { id: locationId } });
     await prisma.client.userRole.deleteMany({ where: { userId: { in: [operatorUserId, limitedOperatorUserId] } } });
@@ -115,13 +128,18 @@ describe('Order lifecycle HTTP integration', () => {
       await expectAssignmentStages(orderId, []);
     });
 
-    it('cancels a confirmed order and releases COMMITTED assignments', async () => {
-      const { orderId } = await createOrderFixture(OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED);
+    it('cancels a confirmed order, releases COMMITTED assignments, voids owner splits, and voids coupon redemption', async () => {
+      const { orderId, orderItemId } = await createOrderFixture(OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED, {
+        couponApplied: true,
+        ownerSplitStatus: SplitStatus.PENDING,
+      });
 
       await operatorRequest(`/orders/${orderId}/cancel`).expect(204);
 
       await expectOrderStatus(orderId, OrderStatus.CANCELLED);
       await expectAssignmentStages(orderId, []);
+      await expectOwnerSplitStatuses(orderItemId, [SplitStatus.VOID]);
+      await expectCouponRedemptionVoided(orderId, true);
     });
 
     it('marks equipment as retired by activating a confirmed order without mutating assignments', async () => {
@@ -203,6 +221,21 @@ describe('Order lifecycle HTTP integration', () => {
         expect(response.body.detail).toBe(`Order "${missingOrderId}" was not found.`);
       },
     );
+
+    it('returns 422 when cancellation is blocked by settled owner payouts', async () => {
+      const { orderId, orderItemId } = await createOrderFixture(OrderStatus.CONFIRMED, OrderAssignmentStage.COMMITTED, {
+        ownerSplitStatus: SplitStatus.SETTLED,
+      });
+
+      const response = await operatorRequest(`/orders/${orderId}/cancel`).expect(422);
+
+      expect(response.body.type).toBe('errors://order-cancellation-blocked');
+      expect(response.body.title).toBe('Order Cancellation Blocked');
+
+      await expectOrderStatus(orderId, OrderStatus.CONFIRMED);
+      await expectAssignmentStages(orderId, [OrderAssignmentStage.COMMITTED]);
+      await expectOwnerSplitStatuses(orderItemId, [SplitStatus.SETTLED]);
+    });
   });
 
   async function seedBaseData() {
@@ -283,6 +316,12 @@ describe('Order lifecycle HTTP integration', () => {
       create: { id: locationId, tenantId, name: 'Lifecycle Location' },
     });
 
+    await prisma.client.owner.upsert({
+      where: { id: ownerId },
+      update: { tenantId, name: 'Lifecycle Owner' },
+      create: { id: ownerId, tenantId, name: 'Lifecycle Owner' },
+    });
+
     await prisma.client.productType.upsert({
       where: { id: productTypeId },
       update: {},
@@ -298,12 +337,85 @@ describe('Order lifecycle HTTP integration', () => {
 
     await prisma.client.asset.upsert({
       where: { id: assetId },
-      update: {},
-      create: { id: assetId, locationId, productTypeId, isActive: true },
+      update: { ownerId },
+      create: { id: assetId, locationId, productTypeId, ownerId, isActive: true },
+    });
+
+    await prisma.client.ownerContract.upsert({
+      where: { id: ownerContractId },
+      update: {
+        tenantId,
+        ownerId,
+        assetId,
+        ownerShare: '0.70',
+        rentalShare: '0.30',
+        basis: ContractBasis.NET_COLLECTED,
+        validFrom: new Date('2026-01-01T00:00:00.000Z'),
+        validUntil: null,
+        isActive: true,
+      },
+      create: {
+        id: ownerContractId,
+        tenantId,
+        ownerId,
+        assetId,
+        ownerShare: '0.70',
+        rentalShare: '0.30',
+        basis: ContractBasis.NET_COLLECTED,
+        validFrom: new Date('2026-01-01T00:00:00.000Z'),
+        validUntil: null,
+        isActive: true,
+      },
+    });
+
+    await prisma.client.promotion.upsert({
+      where: { id: promotionId },
+      update: {
+        tenantId,
+        name: 'Lifecycle Promotion',
+        type: PromotionType.COUPON,
+        priority: 1,
+        stackable: false,
+        isActive: true,
+        condition: {},
+        effect: {},
+      },
+      create: {
+        id: promotionId,
+        tenantId,
+        name: 'Lifecycle Promotion',
+        type: PromotionType.COUPON,
+        priority: 1,
+        stackable: false,
+        isActive: true,
+        condition: {},
+        effect: {},
+      },
+    });
+
+    await prisma.client.coupon.upsert({
+      where: { id: couponId },
+      update: {
+        tenantId,
+        promotionId,
+        code: 'LIFECYCLE-COUPON',
+        isActive: true,
+      },
+      create: {
+        id: couponId,
+        tenantId,
+        promotionId,
+        code: 'LIFECYCLE-COUPON',
+        isActive: true,
+      },
     });
   }
 
-  async function createOrderFixture(status: OrderStatus, assignmentStage: OrderAssignmentStage): Promise<CreatedOrder> {
+  async function createOrderFixture(
+    status: OrderStatus,
+    assignmentStage: OrderAssignmentStage,
+    options: { couponApplied?: boolean; ownerSplitStatus?: SplitStatus } = {},
+  ): Promise<CreatedOrder> {
     const orderId = randomUUID();
     const orderItemId = randomUUID();
 
@@ -314,6 +426,7 @@ describe('Order lifecycle HTTP integration', () => {
         id: orderId,
         tenantId,
         locationId,
+        couponId: options.couponApplied ? couponId : null,
         status,
         orderNumber: 800000 + createdOrders.length,
         periodStart: TEST_PERIOD.start,
@@ -337,6 +450,34 @@ describe('Order lifecycle HTTP integration', () => {
         },
       },
     });
+
+    if (options.couponApplied) {
+      await prisma.client.couponRedemption.create({
+        data: {
+          couponId,
+          orderId,
+        },
+      });
+    }
+
+    if (options.ownerSplitStatus) {
+      await prisma.client.orderItemOwnerSplit.create({
+        data: {
+          orderItemId,
+          assetId,
+          ownerId,
+          contractId: ownerContractId,
+          status: options.ownerSplitStatus,
+          ownerShare: '0.70',
+          rentalShare: '0.30',
+          basis: ContractBasis.NET_COLLECTED,
+          grossAmount: '100',
+          netAmount: '100',
+          ownerAmount: '70',
+          rentalAmount: '30',
+        },
+      });
+    }
 
     await prisma.client.$executeRaw`
       INSERT INTO asset_assignments (
@@ -384,6 +525,30 @@ describe('Order lifecycle HTTP integration', () => {
     });
 
     expect(assignments.map((assignment) => assignment.stage)).toEqual(expectedStages);
+  }
+
+  async function expectOwnerSplitStatuses(orderItemId: string, expectedStatuses: SplitStatus[]) {
+    const splits = await prisma.client.orderItemOwnerSplit.findMany({
+      where: { orderItemId },
+      select: { status: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    expect(splits.map((split) => split.status)).toEqual(expectedStatuses);
+  }
+
+  async function expectCouponRedemptionVoided(orderId: string, expectedVoided: boolean) {
+    const redemption = await prisma.client.couponRedemption.findUnique({
+      where: { orderId },
+      select: { voidedAt: true },
+    });
+
+    if (expectedVoided) {
+      expect(redemption?.voidedAt).not.toBeNull();
+      return;
+    }
+
+    expect(redemption?.voidedAt ?? null).toBeNull();
   }
 
   function operatorRequest(url: string) {

@@ -3,13 +3,24 @@ import { OrderAssignmentStage, OrderStatus } from '@repo/types';
 import { err, ok, Result } from 'neverthrow';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
+import { PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
 
 import { OrderRepository } from 'src/modules/order/infrastructure/persistence/repositories/order.repository';
 import { CancelOrderCommand } from './cancel-order.command';
-import { InvalidOrderStatusTransitionException } from '../../../domain/exceptions/order.exceptions';
-import { OrderNotFoundError, OrderStatusTransitionNotAllowedError } from '../../../domain/errors/order.errors';
+import {
+  InvalidOrderStatusTransitionException,
+  SettledOwnerSplitCancellationBlockedException,
+} from '../../../domain/exceptions/order.exceptions';
+import {
+  OrderCancellationBlockedBySettledOwnerSplitsError,
+  OrderNotFoundError,
+  OrderStatusTransitionNotAllowedError,
+} from '../../../domain/errors/order.errors';
 
-type CancelOrderError = OrderNotFoundError | OrderStatusTransitionNotAllowedError;
+type CancelOrderError =
+  | OrderCancellationBlockedBySettledOwnerSplitsError
+  | OrderNotFoundError
+  | OrderStatusTransitionNotAllowedError;
 
 @CommandHandler(CancelOrderCommand)
 export class CancelOrderService implements ICommandHandler<CancelOrderCommand, Result<void, CancelOrderError>> {
@@ -17,6 +28,7 @@ export class CancelOrderService implements ICommandHandler<CancelOrderCommand, R
     private readonly prisma: PrismaService,
     private readonly orderRepository: OrderRepository,
     private readonly inventoryApi: InventoryPublicApi,
+    private readonly pricingApi: PricingPublicApi,
   ) {}
 
   async execute(command: CancelOrderCommand): Promise<Result<void, CancelOrderError>> {
@@ -33,12 +45,17 @@ export class CancelOrderService implements ICommandHandler<CancelOrderCommand, R
         return err(new OrderStatusTransitionNotAllowedError(order.currentStatus, OrderStatus.CANCELLED));
       }
 
+      if (error instanceof SettledOwnerSplitCancellationBlockedException) {
+        return err(new OrderCancellationBlockedBySettledOwnerSplitsError());
+      }
+
       throw error;
     }
 
     await this.prisma.client.$transaction(async (tx) => {
       await this.orderRepository.save(order, tx);
       await this.inventoryApi.releaseOrderAssignments(order.id, OrderAssignmentStage.COMMITTED, tx);
+      await this.pricingApi.voidCouponRedemptionWithinTransaction(order.id, tx);
     });
 
     return ok(undefined);
