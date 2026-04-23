@@ -20,17 +20,24 @@ TypeScript expectations:
 - Reuse shared DTOs and response types from `@repo/schemas` when the backend contract already exists.
 - Add explicit helper return types when inference is unclear.
 
-Structure and naming:
+Naming and file conventions:
 
-- Keep route definitions in `src/routes/` and follow existing TanStack Start file naming.
-- Put feature-specific queries, hooks, schemas, API helpers, and components under the owning `src/features/<feature>/` directory.
-- Keep reusable primitives in `src/components/ui/`.
-- Keep cross-feature helpers in `src/shared/` or `src/lib/` based on whether they are domain-shared or infrastructural.
-- Use `*.queries.ts` for React Query query factories and hooks.
+- Use `*.queries.ts` for feature query factories and hooks when that pattern already exists.
 - Use `*.api.ts` for server function wrappers and API calls.
 - Use `*.schema.ts` for Zod schemas.
 - Use `*.utils.ts` for general helpers.
 - Keep components in PascalCase, exported hooks as `useX`, schemas ending in `Schema`, and types in PascalCase.
 - Match nearby constant naming instead of introducing `SCREAMING_SNAKE_CASE` where the feature does not already use it.
+
+Representative examples:
+
+- route file shape: `src/routes/__root.tsx`
+- feature-owned API and query patterns: `src/features/`
+- shared UI primitives: `src/components/ui/`
+- shared workspace contracts: `@repo/schemas` and `@repo/types`
+
+For React feature structure, layering, and component responsibility boundaries, use the `react-modular-architecture` skill.
+
+For TanStack Query-specific structure and query key rules, use the `tanstack-query` skill.
 
 For new shadcn components, use the latest CLI form: `pnpm dlx shadcn@latest add <component>`.

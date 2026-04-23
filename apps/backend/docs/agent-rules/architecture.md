@@ -111,9 +111,19 @@ Forbidden:
 - `internal -> tenant/application/...`
 - cross-module imports from `auth/infrastructure/...`
 
+Representative repository examples:
+
+- command-side collaboration through a public query contract: `src/modules/order/application/commands/create-order/create-order.service.ts`
+- location context exposed from a public query: `src/modules/tenant/public/queries/get-location-context.query.ts`
+- explicit public events under a module public surface: `src/modules/order/public/events/order-created-by-customer.event.ts`
+
 ### Vertical slicing
 
 Inside each module, code is organized by use case rather than by generic technical layer folders alone. A use case typically owns its command or query, Application Service or Query Handler, controller, and DTOs. Shared domain artifacts live in the module's domain area.
+
+Representative repository example:
+
+- order create flow under one use-case slice: `src/modules/order/application/commands/create-order/`
 
 ---
 

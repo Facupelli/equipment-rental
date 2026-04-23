@@ -4,6 +4,12 @@
 
 This is a multi-tenant equipment rental SaaS. Two distinct actor types exist in the system:
 
+Related docs:
+
+- `tenant-context-resolution.md` for how the system resolves admin versus portal requests before authentication
+- `rental-orders-and-fulfillment.md` for order flows that depend on customer versus admin actors
+- `rental-domain-model.md` for the overall rental-domain overview
+
 - **User** — tenant back-office staff (admins, collaborators). Invited by the tenant owner, managed with roles and permissions.
 - **Customer** — end-users who register on the booking portal to make rental orders. Self-registered, no roles.
 

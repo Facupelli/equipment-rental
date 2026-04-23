@@ -7,7 +7,7 @@ API and contract expectations:
 - Prefer `apiFetch` and related shared helpers over raw `fetch` when calling the backend.
 - Keep authentication and session behavior consistent with the existing helpers in `src/lib/` and auth-related features.
 - Reuse backend response contracts instead of reshaping them unnecessarily.
-- Parse and validate boundary inputs with Zod.
+- Validate boundary inputs with the existing schema layer rather than ad hoc parsing.
 
 Error handling expectations:
 
@@ -18,3 +18,5 @@ Error handling expectations:
 - Keep error messages actionable and specific.
 
 For TanStack Query structure, query key design, and mutation patterns, use the `tanstack-query` skill.
+
+For React-side effect decisions, use the `react-use-effect-guard` skill.

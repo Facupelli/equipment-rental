@@ -4,6 +4,12 @@
 
 This is a multi-tenant equipment rental SaaS. Each tenant is an independent business (a rental company) that uses the platform to manage their equipment and serve their own customers.
 
+Related docs:
+
+- `rental-domain-model.md` for the overview of rental concepts that tenant context enables
+- `rental-locations-and-availability.md` for location context inside the rental domain after tenant resolution succeeds
+- `user-customer-auth.md` for actor-boundary enforcement after face and tenant resolution
+
 The system exposes two distinct faces:
 
 - **Portal** — the customer-facing booking interface, accessed by the tenant's end-users

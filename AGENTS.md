@@ -21,4 +21,8 @@ When working inside an app, follow that app's local `AGENTS.md` for package-spec
 - `apps/backend/AGENTS.md`
 - `apps/web/AGENTS.md`
 
+When working inside shared packages, follow `packages/AGENTS.md` and any package-local `AGENTS.md` files.
+
+Use `docs/agent-rules/review.md` for repo-wide review expectations.
+
 Use nearby package code and config as the source of truth for package-specific conventions and commands.

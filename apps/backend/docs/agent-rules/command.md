@@ -77,6 +77,11 @@ export class CreateBookingCommand {
 
 ## Examples
 
+Local repository examples:
+
+- `src/modules/order/application/commands/create-order/create-order.command.ts`
+- `src/modules/tenant/location/application/commands/create-location/create-location.command.ts`
+
 ### ✅ Correct: controller builds domain type before constructing the command
 
 ```typescript

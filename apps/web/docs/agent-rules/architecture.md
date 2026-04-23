@@ -9,9 +9,10 @@ Core expectations:
 - Treat each feature as a vertical slice that owns its UI, data access, schemas, and local hooks.
 - Keep reusable primitives and domain-agnostic helpers in shared locations rather than duplicating them per feature.
 - Prefer feature public APIs over reaching into another feature's internals.
-- Keep rendering concerns in components and move data access or side effects into feature query, API, or server-function modules.
 - Do not apply backend NestJS layering or naming patterns to this app.
 - Do not edit generated files unless the task explicitly requires it.
+
+For substantial React feature work, use the `react-modular-architecture` skill.
 
 Folder roles:
 
