@@ -63,6 +63,12 @@ export class OrderStatusTransitionNotAllowedError extends OrderError {
   }
 }
 
+export class OrderCustomerRequiredForConfirmationError extends OrderError {
+  constructor(orderId: string) {
+    super(`Order "${orderId}" must be linked to a customer before it can be confirmed.`);
+  }
+}
+
 export class OrderCancellationBlockedBySettledOwnerSplitsError extends OrderError {
   constructor() {
     super('Cannot cancel an order with settled owner payouts.');

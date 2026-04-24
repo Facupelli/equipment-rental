@@ -9,7 +9,12 @@ import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 
 import { ConfirmOrderCommand } from './confirm-order.command';
 import { ConfirmOrderRequestDto } from './confirm-order.request.dto';
-import { OrderNotFoundError, OrderStatusTransitionNotAllowedError } from '../../../domain/errors/order.errors';
+import {
+  OrderCustomerRequiredForConfirmationError,
+  OrderItemUnavailableError,
+  OrderNotFoundError,
+  OrderStatusTransitionNotAllowedError,
+} from '../../../domain/errors/order.errors';
 
 @StaffRoute(Permission.CONFIRM_ORDERS)
 @Controller('orders/:orderId/confirm')
@@ -34,6 +39,25 @@ export class ConfirmOrderHttpController {
           'Invalid Order Transition',
           error.message,
           'errors://invalid-order-transition',
+        );
+      }
+
+      if (error instanceof OrderCustomerRequiredForConfirmationError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Customer Required',
+          error.message,
+          'errors://order-customer-required',
+        );
+      }
+
+      if (error instanceof OrderItemUnavailableError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Order Items Unavailable',
+          error.message,
+          'errors://order-items-unavailable',
+          { unavailableItems: error.unavailableItems, conflictGroups: error.conflictGroups },
         );
       }
 

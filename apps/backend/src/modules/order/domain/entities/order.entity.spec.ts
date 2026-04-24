@@ -139,6 +139,14 @@ describe('Order', () => {
     expect(order.currentStatus).toBe(OrderStatus.CONFIRMED);
   });
 
+  it('confirms a draft order', () => {
+    const order = makeOrder(OrderStatus.DRAFT);
+
+    order.confirm();
+
+    expect(order.currentStatus).toBe(OrderStatus.CONFIRMED);
+  });
+
   it('rejects a pending review order', () => {
     const order = makeOrder();
 
@@ -157,6 +165,14 @@ describe('Order', () => {
 
   it('cancels only confirmed orders', () => {
     const order = makeOrder(OrderStatus.CONFIRMED);
+
+    order.cancel();
+
+    expect(order.currentStatus).toBe(OrderStatus.CANCELLED);
+  });
+
+  it('cancels draft orders', () => {
+    const order = makeOrder(OrderStatus.DRAFT);
 
     order.cancel();
 

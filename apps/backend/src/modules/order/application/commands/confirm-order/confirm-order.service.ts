@@ -1,22 +1,35 @@
-import { OrderAssignmentStage } from '@repo/types';
+import { Injectable } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { err, ok, Result } from 'neverthrow';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
+import { OrderStatus } from '@repo/types';
+import { err, Result } from 'neverthrow';
 
 import { OrderRepository } from 'src/modules/order/infrastructure/persistence/repositories/order.repository';
+
 import { ConfirmOrderCommand } from './confirm-order.command';
-import { InvalidOrderStatusTransitionException } from '../../../domain/exceptions/order.exceptions';
-import { OrderNotFoundError, OrderStatusTransitionNotAllowedError } from '../../../domain/errors/order.errors';
+import { ConfirmDraftOrderFlow } from './confirm-draft-order.flow';
+import { ConfirmPendingReviewOrderFlow } from './confirm-pending-review-order.flow';
+import {
+  NoActiveContractForAssetError,
+  OrderCustomerRequiredForConfirmationError,
+  OrderItemUnavailableError,
+  OrderNotFoundError,
+  OrderStatusTransitionNotAllowedError,
+} from '../../../domain/errors/order.errors';
 
-type ConfirmOrderError = OrderNotFoundError | OrderStatusTransitionNotAllowedError;
+type ConfirmOrderError =
+  | NoActiveContractForAssetError
+  | OrderCustomerRequiredForConfirmationError
+  | OrderItemUnavailableError
+  | OrderNotFoundError
+  | OrderStatusTransitionNotAllowedError;
 
+@Injectable()
 @CommandHandler(ConfirmOrderCommand)
 export class ConfirmOrderService implements ICommandHandler<ConfirmOrderCommand, Result<void, ConfirmOrderError>> {
   constructor(
-    private readonly prisma: PrismaService,
     private readonly orderRepository: OrderRepository,
-    private readonly inventoryApi: InventoryPublicApi,
+    private readonly confirmPendingReviewOrderFlow: ConfirmPendingReviewOrderFlow,
+    private readonly confirmDraftOrderFlow: ConfirmDraftOrderFlow,
   ) {}
 
   async execute(command: ConfirmOrderCommand): Promise<Result<void, ConfirmOrderError>> {
@@ -26,26 +39,10 @@ export class ConfirmOrderService implements ICommandHandler<ConfirmOrderCommand,
       return err(new OrderNotFoundError(command.orderId));
     }
 
-    try {
-      order.confirm();
-    } catch (error) {
-      if (error instanceof InvalidOrderStatusTransitionException) {
-        return err(new OrderStatusTransitionNotAllowedError(order.currentStatus, 'CONFIRMED' as never));
-      }
-
-      throw error;
+    if (order.currentStatus === OrderStatus.DRAFT) {
+      return this.confirmDraftOrderFlow.execute(order);
     }
 
-    await this.prisma.client.$transaction(async (tx) => {
-      await this.orderRepository.save(order, tx);
-      await this.inventoryApi.transitionOrderAssignmentsStage(
-        order.id,
-        OrderAssignmentStage.HOLD,
-        OrderAssignmentStage.COMMITTED,
-        tx,
-      );
-    });
-
-    return ok(undefined);
+    return this.confirmPendingReviewOrderFlow.execute(order);
   }
 }

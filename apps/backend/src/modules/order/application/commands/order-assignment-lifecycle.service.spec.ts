@@ -1,5 +1,14 @@
-import { ContractBasis, FulfillmentMethod, OrderAssignmentStage, OrderItemType, OrderStatus } from '@repo/types';
+import {
+  ContractBasis,
+  FulfillmentMethod,
+  OrderAssignmentStage,
+  OrderItemType,
+  OrderStatus,
+  PromotionAdjustmentType,
+} from '@repo/types';
 import { ConfirmOrderService } from './confirm-order/confirm-order.service';
+import { ConfirmDraftOrderFlow } from './confirm-order/confirm-draft-order.flow';
+import { ConfirmPendingReviewOrderFlow } from './confirm-order/confirm-pending-review-order.flow';
 import { RejectOrderService } from './reject-order/reject-order.service';
 import { CancelOrderService } from './cancel-order/cancel-order.service';
 import { ExpireOrderService } from './expire-order/expire-order.service';
@@ -19,7 +28,14 @@ import { PriceSnapshot } from '../../domain/value-objects/price-snapshot.value-o
 import { OrderItem } from '../../domain/entities/order-item.entity';
 import { OrderItemOwnerSplit, SplitStatus } from '../../domain/entities/order-item-owner-split.entity';
 import { OrderFinancialSnapshot } from '../../domain/value-objects/order-financial-snapshot.value-object';
-import { OrderCancellationBlockedBySettledOwnerSplitsError } from '../../domain/errors/order.errors';
+import {
+  OrderCancellationBlockedBySettledOwnerSplitsError,
+  OrderCustomerRequiredForConfirmationError,
+} from '../../domain/errors/order.errors';
+import { CreateOrderAssetResolver } from './create-order/create-order-asset-resolver';
+import { CreateOrderOwnerContractResolver } from './create-order/create-order-owner-contract-resolver';
+import { ok } from 'neverthrow';
+import { PricingAdjustmentSourceKind } from 'src/modules/pricing/domain/types/pricing-adjustment.types';
 
 function makeOrder(status: OrderStatus): Order {
   return Order.create({
@@ -119,8 +135,18 @@ describe('Order assignment lifecycle services', () => {
     const inventoryApi = {
       transitionOrderAssignmentsStage: jest.fn(async () => undefined),
     } as unknown as InventoryPublicApi;
+    const assetResolver = {
+      resolveDemand: jest.fn(),
+    } as unknown as CreateOrderAssetResolver;
+    const ownerContractResolver = {
+      resolve: jest.fn(),
+    } as unknown as CreateOrderOwnerContractResolver;
+    const pendingReviewFlow = new ConfirmPendingReviewOrderFlow(prisma, orderRepository, inventoryApi);
+    const draftFlow = {
+      execute: jest.fn(),
+    } as unknown as ConfirmDraftOrderFlow;
 
-    const service = new ConfirmOrderService(prisma, orderRepository, inventoryApi);
+    const service = new ConfirmOrderService(orderRepository, pendingReviewFlow, draftFlow);
     const result = await service.execute(new ConfirmOrderCommand('tenant-1', order.id));
 
     expect(result.isOk()).toBe(true);
@@ -129,6 +155,150 @@ describe('Order assignment lifecycle services', () => {
       order.id,
       OrderAssignmentStage.HOLD,
       OrderAssignmentStage.COMMITTED,
+      { tx: true },
+    );
+  });
+
+  it('confirm requires a customer for draft orders', async () => {
+    const prisma = makeTransactionPrisma();
+    const order = Order.create({
+      tenantId: 'tenant-1',
+      locationId: 'location-1',
+      currency: 'ARS',
+      period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
+      status: OrderStatus.DRAFT,
+      fulfillmentMethod: FulfillmentMethod.PICKUP,
+      bookingSnapshot: BookingSnapshot.create({
+        pickupDate: '2026-03-30',
+        pickupTime: 600,
+        returnDate: '2026-03-31',
+        returnTime: 600,
+        timezone: 'UTC',
+      }),
+      insuranceSelected: false,
+      insuranceRatePercent: 0,
+    });
+    const orderRepository = {
+      load: jest.fn(async () => order),
+      save: jest.fn(async () => order.id),
+    } as unknown as OrderRepository;
+    const inventoryApi = {
+      transitionOrderAssignmentsStage: jest.fn(async () => undefined),
+      saveOrderAssignment: jest.fn(async () => ok(undefined)),
+    } as unknown as InventoryPublicApi;
+    const assetResolver = {
+      resolveDemand: jest.fn(),
+    } as unknown as CreateOrderAssetResolver;
+    const ownerContractResolver = {
+      resolve: jest.fn(),
+    } as unknown as CreateOrderOwnerContractResolver;
+    const pendingReviewFlow = {
+      execute: jest.fn(),
+    } as unknown as ConfirmPendingReviewOrderFlow;
+    const draftFlow = new ConfirmDraftOrderFlow(prisma, orderRepository, inventoryApi, assetResolver, ownerContractResolver);
+
+    const service = new ConfirmOrderService(orderRepository, pendingReviewFlow, draftFlow);
+    const result = await service.execute(new ConfirmOrderCommand('tenant-1', order.id));
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(OrderCustomerRequiredForConfirmationError);
+    expect(orderRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('confirm operationalizes draft orders with committed assignments and owner splits', async () => {
+    const prisma = makeTransactionPrisma();
+    const order = Order.create({
+      tenantId: 'tenant-1',
+      locationId: 'location-1',
+      currency: 'ARS',
+      customerId: 'customer-1',
+      period: DateRange.create(new Date('2026-03-30T10:00:00.000Z'), new Date('2026-03-31T10:00:00.000Z')),
+      status: OrderStatus.DRAFT,
+      fulfillmentMethod: FulfillmentMethod.PICKUP,
+      bookingSnapshot: BookingSnapshot.create({
+        pickupDate: '2026-03-30',
+        pickupTime: 600,
+        returnDate: '2026-03-31',
+        returnTime: 600,
+        timezone: 'UTC',
+      }),
+      insuranceSelected: false,
+      insuranceRatePercent: 0,
+    });
+    order.addItem(
+      OrderItem.create({
+        orderId: order.id,
+        type: OrderItemType.PRODUCT,
+        productTypeId: 'product-type-1',
+        priceSnapshot: PriceSnapshot.create({
+          currency: 'ARS',
+          basePrice: new Decimal(100),
+          finalPrice: new Decimal(80),
+          totalUnits: 1,
+          pricePerBillingUnit: new Decimal(100),
+          discounts: [
+            {
+              sourceKind: PricingAdjustmentSourceKind.PROMOTION,
+              sourceId: 'promo-1',
+              label: 'Manual discount',
+              type: PromotionAdjustmentType.PERCENTAGE,
+              value: 20,
+              discountAmount: new Decimal(20),
+            },
+          ],
+        }),
+      }),
+    );
+
+    const orderRepository = {
+      load: jest.fn(async () => order),
+      save: jest.fn(async () => order.id),
+    } as unknown as OrderRepository;
+    const inventoryApi = {
+      transitionOrderAssignmentsStage: jest.fn(async () => undefined),
+      saveOrderAssignment: jest.fn(async () => ok(undefined)),
+    } as unknown as InventoryPublicApi;
+    const assetResolver = {
+      resolveDemand: jest.fn(async (demandUnits) => {
+        demandUnits[0].resolvedAssetId = 'asset-1';
+        return { unavailableItems: [], conflictGroups: [] };
+      }),
+    } as unknown as CreateOrderAssetResolver;
+    const ownerContractResolver = {
+      resolve: jest.fn(
+        async () =>
+          new Map([
+            [
+              'asset-1',
+              {
+                ownerId: 'owner-1',
+                contractId: 'contract-1',
+                ownerShare: '0.7',
+                rentalShare: '0.3',
+                basis: ContractBasis.NET_COLLECTED,
+              },
+            ],
+          ]),
+      ),
+    } as unknown as CreateOrderOwnerContractResolver;
+    const pendingReviewFlow = {
+      execute: jest.fn(),
+    } as unknown as ConfirmPendingReviewOrderFlow;
+    const draftFlow = new ConfirmDraftOrderFlow(prisma, orderRepository, inventoryApi, assetResolver, ownerContractResolver);
+
+    const service = new ConfirmOrderService(orderRepository, pendingReviewFlow, draftFlow);
+    const result = await service.execute(new ConfirmOrderCommand('tenant-1', order.id));
+
+    expect(result.isOk()).toBe(true);
+    expect(order.currentStatus).toBe(OrderStatus.CONFIRMED);
+    expect(order.getItems()[0].ownerSplits[0]?.ownerAmount.toString()).toBe('56');
+    expect(inventoryApi.saveOrderAssignment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assetId: 'asset-1',
+        orderId: order.id,
+        orderItemId: order.getItems()[0].id,
+        stage: OrderAssignmentStage.COMMITTED,
+      }),
       { tx: true },
     );
   });

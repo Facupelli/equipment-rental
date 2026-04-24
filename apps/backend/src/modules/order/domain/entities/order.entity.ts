@@ -17,7 +17,7 @@ import { OrderDeliveryRequest } from '../value-objects/order-delivery-request.va
 import { BookingSnapshot } from '../value-objects/booking-snapshot.value-object';
 
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  [OrderStatus.DRAFT]: [],
+  [OrderStatus.DRAFT]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
   [OrderStatus.PENDING_REVIEW]: [OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.EXPIRED],
   [OrderStatus.CONFIRMED]: [OrderStatus.ACTIVE, OrderStatus.CANCELLED],
   [OrderStatus.REJECTED]: [],

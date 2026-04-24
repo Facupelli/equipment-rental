@@ -4,6 +4,8 @@ import { PricingModule } from '../pricing/pricing.module';
 import { CreateOrderService } from './application/commands/create-order/create-order.service';
 import { CreateDraftOrderService } from './application/commands/create-draft-order/create-draft-order.service';
 import { ConfirmOrderService } from './application/commands/confirm-order/confirm-order.service';
+import { ConfirmDraftOrderFlow } from './application/commands/confirm-order/confirm-draft-order.flow';
+import { ConfirmPendingReviewOrderFlow } from './application/commands/confirm-order/confirm-pending-review-order.flow';
 import { RejectOrderService } from './application/commands/reject-order/reject-order.service';
 import { CancelOrderService } from './application/commands/cancel-order/cancel-order.service';
 import { MarkEquipmentAsRetiredService } from './application/commands/mark-equipment-as-retired/mark-equipment-as-retired.service';
@@ -61,6 +63,8 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
     CreateOrderOwnerContractResolver,
     CreateOrderService,
     CreateDraftOrderService,
+    ConfirmDraftOrderFlow,
+    ConfirmPendingReviewOrderFlow,
     ConfirmOrderService,
     RejectOrderService,
     CancelOrderService,
