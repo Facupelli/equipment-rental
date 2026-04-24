@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { OrderRepository } from './infrastructure/persistence/repositories/order.repository';
 import { PricingModule } from '../pricing/pricing.module';
 import { CreateOrderService } from './application/commands/create-order/create-order.service';
+import { CreateDraftOrderService } from './application/commands/create-draft-order/create-draft-order.service';
 import { ConfirmOrderService } from './application/commands/confirm-order/confirm-order.service';
 import { RejectOrderService } from './application/commands/reject-order/reject-order.service';
 import { CancelOrderService } from './application/commands/cancel-order/cancel-order.service';
@@ -19,6 +20,7 @@ import { TenantModule } from '../tenant/tenant.module';
 import { CreateOrderAssetResolver } from './application/commands/create-order/create-order-asset-resolver';
 import { CreateOrderOwnerContractResolver } from './application/commands/create-order/create-order-owner-contract-resolver';
 import { CreateOrderHttpController } from './application/commands/create-order/create-order.http.controller';
+import { CreateDraftOrderHttpController } from './application/commands/create-draft-order/create-draft-order.http.controller';
 import { ConfirmOrderHttpController } from './application/commands/confirm-order/confirm-order.http.controller';
 import { RejectOrderHttpController } from './application/commands/reject-order/reject-order.http.controller';
 import { CancelOrderHttpController } from './application/commands/cancel-order/cancel-order.http.controller';
@@ -39,6 +41,7 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
   imports: [PricingModule, InventoryModule, TenantModule],
   controllers: [
     CreateOrderHttpController,
+    CreateDraftOrderHttpController,
     ConfirmOrderHttpController,
     RejectOrderHttpController,
     CancelOrderHttpController,
@@ -57,6 +60,7 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
     CreateOrderAssetResolver,
     CreateOrderOwnerContractResolver,
     CreateOrderService,
+    CreateDraftOrderService,
     ConfirmOrderService,
     RejectOrderService,
     CancelOrderService,

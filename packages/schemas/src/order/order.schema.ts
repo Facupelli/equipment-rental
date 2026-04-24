@@ -34,21 +34,21 @@ export const deliveryRequestSchema = z.object({
   instructions: z.string().trim().optional().nullable(),
 });
 
-export const createOrderSchema = z
-  .object({
-    locationId: z.uuid(),
-    pickupDate: localDateSchema,
-    returnDate: localDateSchema,
-    pickupTime: minutesFromMidnightSchema,
-    returnTime: minutesFromMidnightSchema,
-    items: z.array(orderItemSchema).min(1, "At least one item is required"),
-    currency: z.string().min(1, "Currency is required"),
-    insuranceSelected: z.boolean().default(false),
-    couponCode: z.string().trim().min(1).optional(),
-    fulfillmentMethod: z.enum(FulfillmentMethod),
-    deliveryRequest: deliveryRequestSchema.optional().nullable(),
-  })
-  .superRefine((value, ctx) => {
+const createOrderSchemaBase = z.object({
+  locationId: z.uuid(),
+  pickupDate: localDateSchema,
+  returnDate: localDateSchema,
+  pickupTime: minutesFromMidnightSchema,
+  returnTime: minutesFromMidnightSchema,
+  items: z.array(orderItemSchema).min(1, "At least one item is required"),
+  currency: z.string().min(1, "Currency is required"),
+  insuranceSelected: z.boolean().default(false),
+  couponCode: z.string().trim().min(1).optional(),
+  fulfillmentMethod: z.enum(FulfillmentMethod),
+  deliveryRequest: deliveryRequestSchema.optional().nullable(),
+});
+
+export const createOrderSchema = createOrderSchemaBase.superRefine((value, ctx) => {
     if (
       value.fulfillmentMethod === FulfillmentMethod.DELIVERY &&
       !value.deliveryRequest
@@ -74,8 +74,37 @@ export const createOrderSchema = z
     }
   });
 
+export const createDraftOrderSchema = createOrderSchemaBase.extend({
+  customerId: z.uuid().optional().nullable(),
+}).superRefine((value, ctx) => {
+  if (
+    value.fulfillmentMethod === FulfillmentMethod.DELIVERY &&
+    !value.deliveryRequest
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Delivery request is required when fulfillment method is DELIVERY",
+      path: ["deliveryRequest"],
+    });
+  }
+
+  if (
+    value.fulfillmentMethod === FulfillmentMethod.PICKUP &&
+    value.deliveryRequest
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Delivery request must be omitted when fulfillment method is PICKUP",
+      path: ["deliveryRequest"],
+    });
+  }
+});
+
 export type ProductOrderItemDto = z.infer<typeof productOrderItemSchema>;
 export type BundleOrderItemDto = z.infer<typeof bundleOrderItemSchema>;
 export type OrderItemDto = z.infer<typeof orderItemSchema>;
 export type DeliveryRequestDto = z.infer<typeof deliveryRequestSchema>;
 export type CreateOrderDto = z.infer<typeof createOrderSchema>;
+export type CreateDraftOrderDto = z.infer<typeof createDraftOrderSchema>;
