@@ -1,14 +1,18 @@
 import dayjs from "dayjs";
-import type { ParsedOrderListItem } from "@/features/orders/orders.queries";
 import {
 	getOrderOperationalPhase,
 	type OrderOperationalPhase,
 } from "@/features/orders/order.utils";
+import type { ParsedOrderListItem } from "@/features/orders/orders.queries";
 
 const ORDER_OPERATIONAL_PHASE_MAP: Record<
 	OrderOperationalPhase,
 	{ label: string; className: string }
 > = {
+	draft: {
+		label: "Borrador",
+		className: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+	},
 	pending: {
 		label: "Pendiente",
 		className: "bg-sky-50 text-sky-700 ring-1 ring-sky-200",

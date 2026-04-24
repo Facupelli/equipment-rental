@@ -192,6 +192,7 @@ export function hasOrderTodayEvent(
 }
 
 export type OrderOperationalPhase =
+	| "draft"
 	| "pending"
 	| "active"
 	| "returned"
@@ -200,6 +201,7 @@ export type OrderOperationalPhase =
 	| "expired";
 
 export type OrderTemporalState =
+	| "draft"
 	| "upcoming"
 	| "active"
 	| "overdue"
@@ -234,6 +236,8 @@ export function getOrderOperationalPhase(
 	referenceDate: Dayjs,
 ): OrderOperationalPhase {
 	switch (order.status) {
+		case OrderStatus.DRAFT:
+			return "draft";
 		case OrderStatus.CANCELLED:
 			return "cancelled";
 		case OrderStatus.REJECTED:
@@ -259,6 +263,13 @@ export function getOrderTemporalInsight(
 	timezone: string,
 ): OrderTemporalInsight {
 	switch (order.status) {
+		case OrderStatus.DRAFT:
+			return {
+				state: "draft",
+				title: "Borrador",
+				description: "Este pedido todavía no ingresó al flujo operativo.",
+				deadline: "Pendiente de confirmación",
+			};
 		case OrderStatus.CANCELLED:
 			return {
 				state: "cancelled",
@@ -319,6 +330,13 @@ export function getOrderNextStepGuidance(
 	status: OrderStatus,
 ): OrderNextStepGuidance {
 	switch (status) {
+		case OrderStatus.DRAFT:
+			return {
+				step: null,
+				label: "Borrador en preparación",
+				description:
+					"Completa los datos del pedido y confírmalo cuando pase al flujo operativo.",
+			};
 		case OrderStatus.PENDING_REVIEW:
 			return {
 				step: "confirm",
@@ -377,6 +395,8 @@ export function getOrderPrimaryAdminAction(
 	status: OrderStatus,
 ): OrderPrimaryAdminAction | null {
 	switch (status) {
+		case OrderStatus.DRAFT:
+			return null;
 		case OrderStatus.PENDING_REVIEW:
 			return {
 				action: "confirm",

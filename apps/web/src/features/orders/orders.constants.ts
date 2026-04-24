@@ -5,7 +5,12 @@ export type StatusConfig = {
 	className: string;
 };
 
+// TODO: i already have a order-operational-phase-badge. what is the difference?
 export const ORDER_STATUS_MAP: Record<OrderStatus, StatusConfig> = {
+	[OrderStatus.DRAFT]: {
+		label: "Borrador",
+		className: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+	},
 	[OrderStatus.PENDING_REVIEW]: {
 		label: "Pendiente Revisión",
 		className: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",

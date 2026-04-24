@@ -1,4 +1,5 @@
 export enum OrderStatus {
+  DRAFT = "DRAFT",
   PENDING_REVIEW = "PENDING_REVIEW",
   CONFIRMED = "CONFIRMED",
   REJECTED = "REJECTED",

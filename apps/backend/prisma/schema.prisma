@@ -13,6 +13,7 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 enum OrderStatus {
+  DRAFT
   PENDING_REVIEW
   CONFIRMED
   REJECTED
