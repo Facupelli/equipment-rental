@@ -15,7 +15,7 @@
     {
       "binding": "CUSTOMERS_BUCKET",
       "bucket_name": "customers",
-      "remote": true,
+      // "remote": true,
     },
   ],
   "vars": {

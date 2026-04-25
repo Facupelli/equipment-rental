@@ -239,7 +239,8 @@ export function DraftOrderItemPicker() {
 	if (!isPeriodReady) {
 		return (
 			<PickerNotice>
-				Completá el rental period compartido antes de buscar productos o combos.
+				Completá el período de alquiler compartido antes de buscar productos o
+				combos.
 			</PickerNotice>
 		);
 	}

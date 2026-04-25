@@ -46,11 +46,6 @@ export function useDraftOrderCustomer() {
 		customer: state.customer,
 		setCustomer: actions.setCustomer,
 		setCustomerField: actions.setCustomerField,
-		loadDemoCustomer: () =>
-			actions.setCustomer({
-				id: crypto.randomUUID(),
-				displayName: "Acme Producciones",
-			}),
 		clearCustomer: () => actions.setCustomer(null),
 	} satisfies {
 		customer: DraftOrderCustomerRef | null;
@@ -59,7 +54,6 @@ export function useDraftOrderCustomer() {
 			field: keyof DraftOrderCustomerRef,
 			value: string,
 		) => void;
-		loadDemoCustomer: () => void;
 		clearCustomer: () => void;
 	};
 }
@@ -70,12 +64,6 @@ export function useDraftOrderRentalPeriod() {
 	return {
 		rentalPeriod: state.rentalPeriod,
 		setRentalPeriodField: actions.setRentalPeriodField,
-		loadDemoPeriod: () => {
-			actions.setRentalPeriodField("pickupDate", "2026-04-28");
-			actions.setRentalPeriodField("returnDate", "2026-04-30");
-			actions.setRentalPeriodField("pickupTime", 540);
-			actions.setRentalPeriodField("returnTime", 1080);
-		},
 		clearRentalPeriod: () => {
 			actions.setRentalPeriodField("pickupDate", null);
 			actions.setRentalPeriodField("returnDate", null);

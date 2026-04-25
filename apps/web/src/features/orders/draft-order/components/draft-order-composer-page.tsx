@@ -1,8 +1,11 @@
 import type { CustomerResponseDto } from "@repo/schemas";
 import { FulfillmentMethod } from "@repo/types";
-import { Loader2, Search, UserRound, X } from "lucide-react";
+import { es } from "date-fns/locale";
+import { CalendarIcon, Loader2, Search, UserRound, X } from "lucide-react";
 import { useState } from "react";
+import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
 	Card,
 	CardContent,
@@ -11,6 +14,11 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
 	Table,
@@ -41,6 +49,8 @@ import {
 	normalizeMoneyAmount,
 } from "@/features/orders/draft-order/utils/draft-order-pricing";
 import { formatMoney } from "@/features/orders/order.utils";
+import dayjs from "@/lib/dates/dayjs";
+import { dateParamToLocalDate, localDateToDateParam } from "@/lib/dates/parse";
 import useDebounce from "@/shared/hooks/use-debounce";
 
 export function DraftOrderComposerPage() {
@@ -63,9 +73,9 @@ function DraftSetupSection() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Draft setup</CardTitle>
+				<CardTitle>Configuración del borrador</CardTitle>
 				<CardDescription>
-					Cliente opcional, periodo compartido y logística base para todo el
+					Cliente opcional, período compartido y logística base para todo el
 					pedido.
 				</CardDescription>
 			</CardHeader>
@@ -79,8 +89,7 @@ function DraftSetupSection() {
 }
 
 function CustomerLinkSection() {
-	const { customer, setCustomer, loadDemoCustomer, clearCustomer } =
-		useDraftOrderCustomer();
+	const { customer, setCustomer, clearCustomer } = useDraftOrderCustomer();
 	const [search, setSearch] = useState("");
 	const debouncedSearch = useDebounce(search, 300);
 	const normalizedSearch = debouncedSearch.trim();
@@ -104,15 +113,12 @@ function CustomerLinkSection() {
 		<div className="space-y-4">
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-1">
-					<h2 className="text-base font-semibold">Customer</h2>
+					<h2 className="text-base font-semibold">Cliente</h2>
 					<p className="text-sm text-muted-foreground">
 						Podés crear el borrador sin cliente y vincularlo más tarde.
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
-					<Button type="button" variant="outline" onClick={loadDemoCustomer}>
-						Cargar cliente demo
-					</Button>
 					{customer ? (
 						<Button type="button" variant="ghost" onClick={clearCustomer}>
 							Limpiar cliente
@@ -120,31 +126,6 @@ function CustomerLinkSection() {
 					) : null}
 				</div>
 			</div>
-
-			{customer ? (
-				<div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-muted/20 p-4">
-					<div className="min-w-0 space-y-1">
-						<p className="font-medium">{customer.displayName}</p>
-						<p className="text-sm text-muted-foreground break-all">
-							{customer.id}
-						</p>
-					</div>
-					<Button
-						type="button"
-						variant="ghost"
-						size="sm"
-						onClick={clearCustomer}
-					>
-						<X className="size-4" />
-						Quitar
-					</Button>
-				</div>
-			) : (
-				<div className="flex items-center gap-3 rounded-lg border border-dashed border-border bg-muted/10 p-4 text-sm text-muted-foreground">
-					<UserRound className="size-4 shrink-0" />
-					<span>Sin cliente vinculado.</span>
-				</div>
-			)}
 
 			<div className="space-y-2">
 				<div className="relative">
@@ -192,56 +173,69 @@ function CustomerLinkSection() {
 					</p>
 				)}
 			</div>
+
+			{customer ? (
+				<div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-muted/20 p-4">
+					<div className="min-w-0 space-y-1">
+						<p className="font-medium">{customer.displayName}</p>
+						<p className="text-sm text-muted-foreground break-all">
+							{customer.id}
+						</p>
+					</div>
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onClick={clearCustomer}
+					>
+						<X className="size-4" />
+						Quitar
+					</Button>
+				</div>
+			) : (
+				<div className="flex items-center gap-3 rounded-lg border border-dashed border-border bg-muted/10 p-4 text-sm text-muted-foreground">
+					<UserRound className="size-4 shrink-0" />
+					<span>Sin cliente vinculado.</span>
+				</div>
+			)}
 		</div>
 	);
 }
 
 function RentalPeriodSection() {
-	const {
-		rentalPeriod,
-		setRentalPeriodField,
-		loadDemoPeriod,
-		clearRentalPeriod,
-	} = useDraftOrderRentalPeriod();
+	const { rentalPeriod, setRentalPeriodField, clearRentalPeriod } =
+		useDraftOrderRentalPeriod();
 
 	return (
 		<div className="space-y-4 border-t pt-8">
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-1">
-					<h2 className="text-base font-semibold">Rental period</h2>
-					<p className="text-sm text-muted-foreground">
-						Este periodo se compartirá entre todos los items del futuro draft.
-					</p>
+					<h2 className="text-base font-semibold">Período de alquiler</h2>
 				</div>
 				<div className="flex flex-wrap gap-2">
-					<Button type="button" variant="outline" onClick={loadDemoPeriod}>
-						Cargar periodo demo
-					</Button>
 					<Button type="button" variant="ghost" onClick={clearRentalPeriod}>
-						Limpiar periodo
+						Limpiar período
 					</Button>
 				</div>
 			</div>
 
-			<div className="grid gap-3 md:grid-cols-2">
-				<PeriodField
-					label="Pickup date"
-					type="date"
-					value={rentalPeriod.pickupDate ?? ""}
-					onChange={(value) =>
-						setRentalPeriodField("pickupDate", value || null)
-					}
+			<div className="flex items-center gap-4">
+				<RentalPeriodDateRangeField
+					pickupDate={rentalPeriod.pickupDate}
+					returnDate={rentalPeriod.returnDate}
+					onChange={(range) => {
+						setRentalPeriodField(
+							"pickupDate",
+							range?.from ? localDateToDateParam(range.from) : null,
+						);
+						setRentalPeriodField(
+							"returnDate",
+							range?.to ? localDateToDateParam(range.to) : null,
+						);
+					}}
 				/>
 				<PeriodField
-					label="Return date"
-					type="date"
-					value={rentalPeriod.returnDate ?? ""}
-					onChange={(value) =>
-						setRentalPeriodField("returnDate", value || null)
-					}
-				/>
-				<PeriodField
-					label="Pickup time"
+					label="Hora de retiro"
 					type="time"
 					value={minutesToTimeInput(rentalPeriod.pickupTime)}
 					onChange={(value) =>
@@ -249,7 +243,7 @@ function RentalPeriodSection() {
 					}
 				/>
 				<PeriodField
-					label="Return time"
+					label="Hora de devolución"
 					type="time"
 					value={minutesToTimeInput(rentalPeriod.returnTime)}
 					onChange={(value) =>
@@ -272,9 +266,10 @@ function FulfillmentSection() {
 	return (
 		<div className="space-y-4 border-t pt-8">
 			<div className="space-y-1">
-				<h2 className="text-base font-semibold">Fulfillment</h2>
+				<h2 className="text-base font-semibold">Logística</h2>
 				<p className="text-sm text-muted-foreground">
-					Si elegís entrega, el draft necesita un delivery request completo.
+					Si elegís entrega, el borrador necesita una solicitud de entrega
+					completa.
 				</p>
 			</div>
 
@@ -287,62 +282,62 @@ function FulfillmentSection() {
 			>
 				<FulfillmentMethodOption
 					value={FulfillmentMethod.PICKUP}
-					label="Pickup"
-					description="No incluye delivery request en el payload local."
+					label="Retiro"
+					description="No incluye una solicitud de entrega en los datos locales."
 				/>
 				<FulfillmentMethodOption
 					value={FulfillmentMethod.DELIVERY}
-					label="Delivery"
+					label="Entrega"
 					description="Solicita dirección y datos del destinatario."
 				/>
 			</RadioGroup>
 
-			{fulfillmentMethod === FulfillmentMethod.DELIVERY ? (
+			{fulfillmentMethod === FulfillmentMethod.DELIVERY && (
 				<div className="grid gap-3 md:grid-cols-2">
 					<DeliveryField
-						label="Recipient name"
+						label="Nombre del destinatario"
 						value={deliveryRequest?.recipientName ?? ""}
 						onChange={(value) =>
 							setDeliveryRequestField("recipientName", value)
 						}
 					/>
 					<DeliveryField
-						label="Phone"
+						label="Teléfono"
 						value={deliveryRequest?.phone ?? ""}
 						onChange={(value) => setDeliveryRequestField("phone", value)}
 					/>
 					<DeliveryField
-						label="Address line 1"
+						label="Dirección línea 1"
 						value={deliveryRequest?.addressLine1 ?? ""}
 						onChange={(value) => setDeliveryRequestField("addressLine1", value)}
 					/>
 					<DeliveryField
-						label="Address line 2"
+						label="Dirección línea 2"
 						value={deliveryRequest?.addressLine2 ?? ""}
 						onChange={(value) => setDeliveryRequestField("addressLine2", value)}
 					/>
 					<DeliveryField
-						label="City"
+						label="Ciudad"
 						value={deliveryRequest?.city ?? ""}
 						onChange={(value) => setDeliveryRequestField("city", value)}
 					/>
 					<DeliveryField
-						label="State / region"
+						label="Provincia / región"
 						value={deliveryRequest?.stateRegion ?? ""}
 						onChange={(value) => setDeliveryRequestField("stateRegion", value)}
 					/>
 					<DeliveryField
-						label="Postal code"
+						label="Código postal"
 						value={deliveryRequest?.postalCode ?? ""}
 						onChange={(value) => setDeliveryRequestField("postalCode", value)}
 					/>
 					<DeliveryField
-						label="Country"
+						label="País"
 						value={deliveryRequest?.country ?? ""}
 						onChange={(value) => setDeliveryRequestField("country", value)}
 					/>
 					<div className="space-y-2 md:col-span-2">
-						<p className="text-sm font-medium">Instructions</p>
+						<p className="text-sm font-medium">Indicaciones</p>
 						<Textarea
 							value={deliveryRequest?.instructions ?? ""}
 							onChange={(event) =>
@@ -352,11 +347,6 @@ function FulfillmentSection() {
 						/>
 					</div>
 				</div>
-			) : (
-				<p className="rounded-lg border border-dashed border-border bg-muted/10 px-4 py-3 text-sm text-muted-foreground">
-					El draft está configurado para pickup, así que no mantiene delivery
-					request en memoria.
-				</p>
 			)}
 		</div>
 	);
@@ -369,10 +359,10 @@ function ItemsSection() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Items</CardTitle>
+				<CardTitle>Ítems</CardTitle>
 				<CardDescription>
-					Buscá items disponibles para este contexto y agregalos al borrador con
-					pricing calculado como baseline local.
+					Buscá ítems disponibles para este contexto y agregalos al borrador con
+					un precio calculado como referencia local.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
@@ -380,18 +370,18 @@ function ItemsSection() {
 
 				{items.length === 0 ? (
 					<div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
-						Todavía no hay items en el borrador local.
+						Todavía no hay ítems en el borrador local.
 					</div>
 				) : (
 					<div className="rounded-lg border border-border">
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Item</TableHead>
+									<TableHead>Ítem</TableHead>
 									<TableHead>Tipo</TableHead>
 									<TableHead>Cantidad</TableHead>
-									<TableHead>Pricing</TableHead>
-									<TableHead>Override manual</TableHead>
+									<TableHead>Precio</TableHead>
+									<TableHead>Ajuste manual</TableHead>
 									<TableHead className="text-right">Acciones</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -410,7 +400,7 @@ function ItemsSection() {
 														</p>
 													) : (
 														<p className="text-xs text-muted-foreground">
-															Usando pricing calculado
+															Usando el precio calculado
 														</p>
 													)}
 												</div>
@@ -456,11 +446,6 @@ function ItemsSection() {
 						</Table>
 					</div>
 				)}
-
-				<p className="text-sm text-muted-foreground">
-					El snapshot calculado queda fijo. Cualquier cambio del admin vive en
-					la capa de override manual y redefine el precio efectivo mostrado.
-				</p>
 			</CardContent>
 		</Card>
 	);
@@ -472,10 +457,10 @@ function PricingSummarySection() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Pricing summary</CardTitle>
+				<CardTitle>Resumen de precios</CardTitle>
 				<CardDescription>
-					La vista usa override manual si existe; si no, muestra el snapshot
-					calculado.
+					La vista usa el ajuste manual si existe; si no, muestra la referencia
+					calculada.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
@@ -489,11 +474,11 @@ function PricingSummarySection() {
 						value={formatMoney(totals.effectiveSubtotal, currency)}
 					/>
 					<SummaryRow
-						label="Overrides manuales"
+						label="Ajustes manuales"
 						value={
 							totals.hasManualOverrides
 								? `${totals.manualOverrideCount} activos`
-								: "Sin overrides"
+								: "Sin ajustes"
 						}
 					/>
 					<SummaryRow
@@ -523,10 +508,10 @@ function ActionsSection() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Actions</CardTitle>
+				<CardTitle>Acciones</CardTitle>
 				<CardDescription>
-					Acciones locales solamente. El draft sigue en memoria hasta
-					implementar `Save draft`.
+					Acciones locales solamente. El borrador sigue en memoria hasta
+					implementar `Guardar borrador`.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
@@ -535,10 +520,13 @@ function ActionsSection() {
 						label="Cliente"
 						value={customer?.displayName || "Sin seleccionar"}
 					/>
-					<SummaryRow label="Items" value={String(itemCount)} />
-					<SummaryRow label="Fulfillment" value={fulfillmentMethod} />
+					<SummaryRow label="Ítems" value={String(itemCount)} />
 					<SummaryRow
-						label="Pickup"
+						label="Logística"
+						value={getFulfillmentMethodLabel(fulfillmentMethod)}
+					/>
+					<SummaryRow
+						label="Retiro"
 						value={
 							rentalPeriod.pickupDate && rentalPeriod.pickupTime !== null
 								? `${rentalPeriod.pickupDate} ${minutesToTimeInput(rentalPeriod.pickupTime)}`
@@ -547,7 +535,9 @@ function ActionsSection() {
 					/>
 				</div>
 
-				{saveError ? <p className="text-sm text-destructive">{saveError}</p> : null}
+				{saveError ? (
+					<p className="text-sm text-destructive">{saveError}</p>
+				) : null}
 
 				<div className="flex flex-wrap gap-2">
 					<Button
@@ -555,7 +545,7 @@ function ActionsSection() {
 						onClick={() => void handleSaveDraft()}
 						disabled={isSaving}
 					>
-						{isSaving ? "Guardando..." : "Save draft"}
+						{isSaving ? "Guardando..." : "Guardar borrador"}
 					</Button>
 					<Button
 						type="button"
@@ -563,16 +553,16 @@ function ActionsSection() {
 						onClick={resetDraft}
 						disabled={isSaving}
 					>
-						Reset local draft
+						Reiniciar borrador local
 					</Button>
 				</div>
 
 				<p className="text-sm text-muted-foreground">
 					{isReadyForSave
 						? hasManualOverrides
-							? "Al guardar se crea el draft y luego se persisten los overrides manuales por item."
-							: "El borrador ya tiene la forma minima para guardarse sin pasos extra de pricing."
-						: "Falta completar periodo o items antes de pensar en guardar."}
+							? "Al guardar se crea el borrador y luego se persisten los ajustes manuales por ítem."
+							: "El borrador ya tiene la forma mínima para guardarse sin pasos extra de precio."
+						: "Falta completar el período o los ítems antes de guardar."}
 				</p>
 			</CardContent>
 		</Card>
@@ -642,6 +632,65 @@ function DeliveryField({
 	return <LabeledInput label={label} value={value} onChange={onChange} />;
 }
 
+function RentalPeriodDateRangeField({
+	pickupDate,
+	returnDate,
+	onChange,
+}: {
+	pickupDate: string | null;
+	returnDate: string | null;
+	onChange: (range: DateRange | undefined) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const value = {
+		from: pickupDate ? dateParamToLocalDate(pickupDate) : undefined,
+		to: returnDate ? dateParamToLocalDate(returnDate) : undefined,
+	};
+
+	const fromLabel = value.from
+		? dayjs(value.from).format("DD MMM YYYY")
+		: "Seleccionar";
+	const toLabel = value.to
+		? dayjs(value.to).format("DD MMM YYYY")
+		: "Seleccionar";
+
+	return (
+		<div className="space-y-2 md:col-span-2">
+			<p className="text-sm font-medium">Fechas</p>
+			<Popover open={open} onOpenChange={setOpen}>
+				<PopoverTrigger>
+					<Button
+						type="button"
+						variant="outline"
+						className="w-full justify-start gap-2 text-left"
+					>
+						<CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+						{value.from && value.to ? (
+							<span className="text-sm font-medium text-foreground tabular-nums">
+								{fromLabel} - {toLabel}
+							</span>
+						) : (
+							<span className="text-sm font-medium text-foreground">
+								Seleccionar período de alquiler
+							</span>
+						)}
+					</Button>
+				</PopoverTrigger>
+				<PopoverContent className="w-auto p-0" align="start">
+					<Calendar
+						locale={es}
+						mode="range"
+						defaultMonth={value.from}
+						selected={value}
+						onSelect={onChange}
+						numberOfMonths={2}
+					/>
+				</PopoverContent>
+			</Popover>
+		</div>
+	);
+}
+
 function PeriodField({
 	label,
 	type,
@@ -709,7 +758,7 @@ function ItemPricingSummary({
 					/>
 				) : null}
 				<PricingLine
-					label="Final calculado"
+					label="Total calculado"
 					value={formatMoney(item.pricingSnapshot.finalPrice, currency)}
 				/>
 			</div>
@@ -728,8 +777,8 @@ function ItemPricingSummary({
 				/>
 				<p className="mt-1 text-xs text-muted-foreground">
 					{hasManualOverride
-						? "Se muestra el override manual por encima del snapshot calculado."
-						: "Todavía coincide con el pricing calculado."}
+						? "Se muestra el ajuste manual por encima de la referencia calculada."
+						: "Todavía coincide con el precio calculado."}
 				</p>
 				{hasManualOverride && manualAdjustmentDirection !== "NONE" ? (
 					<p
@@ -801,7 +850,7 @@ function ManualOverrideEditor({
 		<div className="space-y-3">
 			<div className="space-y-1">
 				<p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-					Final manual
+					Precio manual
 				</p>
 				<Input
 					inputMode="decimal"
@@ -816,7 +865,7 @@ function ManualOverrideEditor({
 					placeholder={item.pricingSnapshot.finalPrice}
 				/>
 				<p className="text-xs text-muted-foreground">
-					Efectivo actual:{" "}
+					Precio actual:{" "}
 					{formatMoney(effectiveFinalPrice, item.pricingSnapshot.currency)}
 				</p>
 				{error ? <p className="text-xs text-destructive">{error}</p> : null}
@@ -844,28 +893,28 @@ function ProposalPlaceholder({ currency }: { currency: string }) {
 	return (
 		<div className="space-y-4 rounded-lg border border-dashed border-border bg-muted/10 p-4">
 			<div className="space-y-1">
-				<h3 className="text-sm font-semibold">Proposal flow</h3>
+				<h3 className="text-sm font-semibold">Flujo de presupuesto</h3>
 				<p className="text-sm text-muted-foreground">
-					La distribucion proporcional del target total sigue reservada al
-					backend. Esta vista todavia no la ejecuta mientras el draft sea local
-					y no persistido.
+					La distribución proporcional del total objetivo sigue reservada al
+					backend. Esta vista todavía no la ejecuta mientras el borrador sea
+					local y no persistido.
 				</p>
 			</div>
 
 			<div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
 				<div className="space-y-2">
-					<p className="text-sm font-medium">Target total</p>
+					<p className="text-sm font-medium">Total objetivo</p>
 					<Input value={formatMoney("0.00", currency)} disabled />
 				</div>
 				<Button type="button" disabled>
-					Generar propuesta
+					Generar presupuesto
 				</Button>
 			</div>
 
 			<p className="text-xs text-muted-foreground">
-				Se conectara cuando exista un endpoint de propuesta para drafts no
-				persistidos, o despues de `Save draft` en una revision posterior del
-				flujo.
+				Se conectará cuando exista un endpoint de propuesta para borradores no
+				persistidos, o después de `Guardar borrador` en una revisión posterior
+				del flujo.
 			</p>
 		</div>
 	);
@@ -920,6 +969,10 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 			<span className="font-medium text-right">{value}</span>
 		</div>
 	);
+}
+
+function getFulfillmentMethodLabel(value: FulfillmentMethod): string {
+	return value === FulfillmentMethod.DELIVERY ? "Entrega" : "Retiro";
 }
 
 function getCustomerDisplayName(customer: CustomerResponseDto): string {

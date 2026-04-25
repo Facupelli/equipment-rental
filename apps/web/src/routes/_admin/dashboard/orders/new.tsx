@@ -20,8 +20,8 @@ function NewDraftOrderPage() {
 					Nuevo borrador
 				</h1>
 				<p className="text-sm text-muted-foreground">
-					Composer local para un draft order admin. El estado vive sólo en
-					memoria hasta implementar `Save draft`.
+					Flujo local de creación de pedidos para administración. El estado
+					vive solo en memoria hasta implementar `Guardar borrador`.
 				</p>
 			</div>
 
