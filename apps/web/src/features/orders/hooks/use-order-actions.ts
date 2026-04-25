@@ -1,3 +1,4 @@
+import type { GenerateOrderBudgetRequestDto } from "@repo/schemas";
 import { useState } from "react";
 import type { ParsedOrderDetailResponseDto } from "@/features/orders/queries/get-order-by-id";
 import { ProblemDetailsError } from "@/shared/errors";
@@ -9,21 +10,22 @@ import {
 } from "../orders.queries";
 
 type ContractErrorState = {
- 	status: number;
+	status: number;
 	message: string;
 	action: "open" | "download";
 } | null;
 
 type OrderLifecycleAction = "pickup" | "return" | null;
+type BudgetDocumentIntent = "open" | "download" | null;
 
 function openPreviewWindow() {
- 	const previewWindow = window.open("", "_blank");
+	const previewWindow = window.open("", "_blank");
 
- 	if (previewWindow) {
+	if (previewWindow) {
 		previewWindow.opener = null;
 	}
 
- 	return previewWindow;
+	return previewWindow;
 }
 
 export function useOrderActions(order: ParsedOrderDetailResponseDto) {
@@ -31,6 +33,10 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 	const [isDownloadingContract, setIsDownloadingContract] = useState(false);
 	const [isOpeningBudget, setIsOpeningBudget] = useState(false);
 	const [isDownloadingBudget, setIsDownloadingBudget] = useState(false);
+	const [isBudgetCustomerDialogOpen, setIsBudgetCustomerDialogOpen] =
+		useState(false);
+	const [budgetDocumentIntent, setBudgetDocumentIntent] =
+		useState<BudgetDocumentIntent>(null);
 	const [contractError, setContractError] = useState<ContractErrorState>(null);
 	const [contractBusinessErrorMessage, setContractBusinessErrorMessage] =
 		useState<string | null>(null);
@@ -114,7 +120,9 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		setIsDownloadingContract(false);
 	};
 
-	const handleOpenBudget = async () => {
+	const executeOpenBudget = async (
+		body: GenerateOrderBudgetRequestDto,
+	): Promise<boolean> => {
 		const previewWindow = openPreviewWindow();
 
 		setIsOpeningBudget(true);
@@ -123,9 +131,10 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		const result = await fetchDocumentBlob({
 			url: `/api/orders/${order.id}/budget`,
 			method: "POST",
-			body: {},
+			body,
 			fallbackMessage: "No pudimos abrir el presupuesto. Intenta nuevamente.",
-			notFoundMessage: "No pudimos encontrar el pedido para generar el presupuesto.",
+			notFoundMessage:
+				"No pudimos encontrar el pedido para generar el presupuesto.",
 		});
 
 		if (result.ok) {
@@ -138,12 +147,16 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 			}
 
 			window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
-		} else if (result.isBusinessError) {
-			previewWindow?.close();
+			setIsOpeningBudget(false);
+			return true;
+		}
+
+		previewWindow?.close();
+
+		if (result.isBusinessError) {
 			setContractBusinessErrorMessage(result.message);
 			setIsContractBusinessErrorOpen(true);
 		} else {
-			previewWindow?.close();
 			setContractError({
 				status: result.status,
 				message: result.message,
@@ -152,18 +165,23 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		}
 
 		setIsOpeningBudget(false);
+		return false;
 	};
 
-	const handleDownloadBudget = async () => {
+	const executeDownloadBudget = async (
+		body: GenerateOrderBudgetRequestDto,
+	): Promise<boolean> => {
 		setIsDownloadingBudget(true);
 		setContractError(null);
 
 		const result = await fetchDocumentBlob({
 			url: `/api/orders/${order.id}/budget/download`,
 			method: "POST",
-			body: {},
-			fallbackMessage: "No pudimos descargar el presupuesto. Intenta nuevamente.",
-			notFoundMessage: "No pudimos encontrar el pedido para generar el presupuesto.",
+			body,
+			fallbackMessage:
+				"No pudimos descargar el presupuesto. Intenta nuevamente.",
+			notFoundMessage:
+				"No pudimos encontrar el pedido para generar el presupuesto.",
 		});
 
 		if (result.ok) {
@@ -171,12 +189,17 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 			const link = document.createElement("a");
 			link.href = objectUrl;
 			link.download =
-				result.fileName ?? `presupuesto-${String(order.number).padStart(4, "0")}.pdf`;
+				result.fileName ??
+				`presupuesto-${String(order.number).padStart(4, "0")}.pdf`;
 			document.body.append(link);
 			link.click();
 			link.remove();
 			URL.revokeObjectURL(objectUrl);
-		} else if (result.isBusinessError) {
+			setIsDownloadingBudget(false);
+			return true;
+		}
+
+		if (result.isBusinessError) {
 			setContractBusinessErrorMessage(result.message);
 			setIsContractBusinessErrorOpen(true);
 		} else {
@@ -188,6 +211,27 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		}
 
 		setIsDownloadingBudget(false);
+		return false;
+	};
+
+	const handleOpenBudget = async () => {
+		if (order.customer) {
+			await executeOpenBudget({});
+			return;
+		}
+
+		setBudgetDocumentIntent("open");
+		setIsBudgetCustomerDialogOpen(true);
+	};
+
+	const handleDownloadBudget = async () => {
+		if (order.customer) {
+			await executeDownloadBudget({});
+			return;
+		}
+
+		setBudgetDocumentIntent("download");
+		setIsBudgetCustomerDialogOpen(true);
 	};
 
 	const handleEditOrder = () => {
@@ -282,7 +326,32 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 				return;
 			}
 
-			setLifecycleActionError("Ocurrio un error al actualizar el estado del pedido.");
+			setLifecycleActionError(
+				"Ocurrio un error al actualizar el estado del pedido.",
+			);
+		}
+	};
+
+	const handleSubmitBudgetCustomer = async (
+		intent: Exclude<BudgetDocumentIntent, null>,
+		body: GenerateOrderBudgetRequestDto,
+	) => {
+		if (intent === "open") {
+			const didOpen = await executeOpenBudget(body);
+
+			if (didOpen) {
+				handleBudgetCustomerDialogOpenChange(false);
+			}
+
+			return;
+		}
+
+		if (intent === "download") {
+			const didDownload = await executeDownloadBudget(body);
+
+			if (didDownload) {
+				handleBudgetCustomerDialogOpenChange(false);
+			}
 		}
 	};
 
@@ -309,6 +378,14 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		setIsConfirmOrderDialogOpen(open);
 	};
 
+	const handleBudgetCustomerDialogOpenChange = (open: boolean) => {
+		setIsBudgetCustomerDialogOpen(open);
+
+		if (!open) {
+			setBudgetDocumentIntent(null);
+		}
+	};
+
 	const handleReleaseEquipment = () => {
 		// TODO: trigger release equipment mutation, then invalidate order query
 	};
@@ -318,24 +395,28 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 	};
 
 	return {
+		budgetDocumentIntent,
 		cancelOrderError,
+		contractBusinessErrorMessage,
 		contractError,
 		confirmOrderError,
-		contractBusinessErrorMessage,
-		handleConfirmOrderSubmission,
+		handleBudgetCustomerDialogOpenChange,
 		handleConfirmCancelOrder,
-		handleConfirmOrder,
 		handleConfirmLifecycleAction,
+		handleConfirmOrder,
+		handleConfirmOrderSubmission,
 		handleDownloadBudget,
 		handleDownloadContract,
-		handleOpenBudget,
-		handleOpenCancelOrder,
-		handleOpenContract,
 		handleEditOrder,
 		handleMarkAsPickedUp,
 		handleMarkAsReturned,
-		handleReleaseEquipment,
+		handleOpenBudget,
+		handleOpenCancelOrder,
+		handleOpenContract,
 		handleProcessPayment,
+		handleReleaseEquipment,
+		handleSubmitBudgetCustomer,
+		isBudgetCustomerDialogOpen,
 		isCancelOrderDialogOpen,
 		isCancelOrderPending: isCancellingOrder,
 		isConfirmOrderDialogOpen,
@@ -441,7 +522,7 @@ async function fetchDocumentBlob({
 }: {
 	url: string;
 	method: "POST";
-	body: Record<string, never>;
+	body: GenerateOrderBudgetRequestDto;
 	fallbackMessage: string;
 	notFoundMessage: string;
 }): Promise<

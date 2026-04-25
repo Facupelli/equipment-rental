@@ -42,6 +42,7 @@ import {
 	getCustomerInitials,
 } from "@/features/customer/customer.utils";
 import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
+import { OrderBudgetCustomerDialog } from "@/features/orders/components/order-budget-customer-dialog";
 import {
 	OrderDetailProvider,
 	useOrderDetailContext,
@@ -261,6 +262,13 @@ function OrderHeader() {
 
 			<OrderLifecycleActionDialog actions={actions} />
 			<OrderConfirmDialog actions={actions} />
+			<OrderBudgetCustomerDialog
+				open={actions.isBudgetCustomerDialogOpen}
+				onOpenChange={actions.handleBudgetCustomerDialogOpenChange}
+				onSubmit={actions.handleSubmitBudgetCustomer}
+				isOpeningBudget={actions.isOpeningBudget}
+				isDownloadingBudget={actions.isDownloadingBudget}
+			/>
 		</header>
 	);
 }
