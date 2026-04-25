@@ -71,7 +71,7 @@ export class GenerateOrderContractHttpController {
 
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `${disposition}; filename="remito-${downloadFileName}.pdf"`,
+      'Content-Disposition': `${disposition}; filename="${downloadFileName}.pdf"`,
       'Content-Length': buffer.length,
     });
 

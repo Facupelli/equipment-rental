@@ -7,6 +7,6 @@ export class GenerateOrderContractQuery {
 
 export interface GenerateOrderContractResult {
   buffer: Buffer;
-  remitoNumber: string;
+  documentNumber: string;
   downloadFileName: string;
 }

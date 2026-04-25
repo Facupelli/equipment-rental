@@ -36,7 +36,11 @@ export function createContractDocument({ data }: ContractDocumentProps): React.R
       {continuationPages.map((columns, index) => (
         <RemitoPage key={`continuation-${index}`} data={data} columns={columns} isContinuation />
       ))}
-      <AnexoPage logoUrl={data.remito.logoUrl} rentalSignatureUrl={data.remito.rentalSignatureUrl} />
+      <AnexoPage
+        logoUrl={data.document.logoUrl}
+        rentalSignatureUrl={data.document.rentalSignatureUrl}
+        showRentalSignatureBlock={data.document.showRentalSignatureBlock}
+      />
     </Document>
   );
 }

@@ -18,9 +18,13 @@ export interface ContractPartyData {
 }
 
 export interface ContractData {
-  remito: {
+  document: {
+    /** e.g. "REMITO" or "PRESUPUESTO" */
+    label: string;
     /** e.g. "Guarida-0001" — tenant name + order number */
     number: string;
+    /** Section title shown above the equipment list */
+    equipmentTitle: string;
     /** Formatted local date string — e.g. "20/3/2026" */
     pickupDate: string;
     /** Formatted local date string — e.g. "23/3/2026" */
@@ -33,6 +37,8 @@ export interface ContractData {
     logoUrl: string | null;
     /** Tenant admin signer signature image used in the rental signature block */
     rentalSignatureUrl: string | null;
+    /** Whether the rental signature block should be rendered */
+    showRentalSignatureBlock: boolean;
     /** Landlord identity block shown on the remito header */
     landlord: ContractPartyData;
     /** Tenant identity block shown on the remito header */

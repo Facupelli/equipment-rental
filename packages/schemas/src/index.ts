@@ -14,6 +14,7 @@ export * from "./inventory/asset-response.schema";
 export * from "./inventory/product-timeline.schema";
 export * from "./order/get-order-by-id-response.schema";
 export * from "./order/draft-order-pricing.schema";
+export * from "./order/generate-order-budget.schema";
 export * from "./order/get-orders-calendar.schema";
 export * from "./order/get-orders.schema";
 export * from "./order/get-orders-schedule-response.schema";

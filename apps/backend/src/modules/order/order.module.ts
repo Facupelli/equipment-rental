@@ -38,11 +38,14 @@ import { GetOrderByIdHttpController } from './application/queries/get-order-by-i
 import { GetPendingReviewOrdersHttpController } from './application/queries/get-pending-review-orders/get-pending-review-orders.http.controller';
 import { GetOrdersHttpController } from './application/queries/get-orders/get-orders.http.controller';
 import { GenerateOrderContractHttpController } from './application/queries/generate-order-contract/generate-order-contract.http.controller';
+import { GenerateOrderBudgetHttpController } from './application/queries/generate-order-budget/generate-order-budget.http.controller';
 import { GetDraftOrderPricingProposalHttpController } from './application/queries/get-draft-order-pricing-proposal/get-draft-order-pricing-proposal.http.controller';
 import { GenerateOrderContractService } from './application/queries/generate-order-contract/generate-order-contract.service';
+import { GenerateOrderBudgetService } from './application/queries/generate-order-budget/generate-order-budget.service';
 import { ContractRendererAdapter } from './infrastructure/pdf/contract-renderer.adapter';
 import { ContractRendererPort } from './domain/ports/contract-render.port';
 import { DraftOrderPricingService } from './domain/services/draft-order-pricing.service';
+import { OrderDocumentRendererService } from './application/pdf/order-document-renderer.service';
 
 @Module({
   imports: [PricingModule, InventoryModule, TenantModule],
@@ -63,6 +66,7 @@ import { DraftOrderPricingService } from './domain/services/draft-order-pricing.
     GetOrderByIdHttpController,
     GetDraftOrderPricingProposalHttpController,
     GenerateOrderContractHttpController,
+    GenerateOrderBudgetHttpController,
   ],
   providers: [
     OrderRepository,
@@ -87,7 +91,9 @@ import { DraftOrderPricingService } from './domain/services/draft-order-pricing.
     GetDraftOrderPricingProposalQueryHandler,
     GetPendingReviewOrdersQueryHandler,
     GetOrdersQueryHandler,
+    OrderDocumentRendererService,
     GenerateOrderContractService,
+    GenerateOrderBudgetService,
     {
       provide: ContractRendererPort,
       useClass: ContractRendererAdapter,

@@ -250,7 +250,7 @@ interface RemitoPageProps {
 // ---------------------------------------------------------------------------
 
 export function RemitoPage({ data, columns, isContinuation = false }: RemitoPageProps) {
-  const { remito } = data;
+  const { document } = data;
 
   return (
     <Page size={A4_PAGE_SIZE} style={s.page} wrap={false}>
@@ -259,7 +259,9 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
           <View />
           <View style={s.headerRight}>
             <View style={s.headerRightContent}>
-              <Text style={s.remitoNumber}>REMITO N° {remito.number}</Text>
+               <Text style={s.remitoNumber}>
+                 {document.label} N° {document.number}
+               </Text>
             </View>
           </View>
         </View>
@@ -274,8 +276,8 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
               <View style={s.infoSection}>
                 <View style={s.partySection}>
                   <View style={s.partyRowGrid}>
-                    <PartyInfoBlock title="ARRENDADOR" party={remito.landlord} />
-                    <PartyInfoBlock title="ARRENDATARIO" party={remito.tenant} />
+                    <PartyInfoBlock title="ARRENDADOR" party={document.landlord} />
+                    <PartyInfoBlock title="ARRENDATARIO" party={document.tenant} />
                   </View>
                 </View>
 
@@ -286,13 +288,13 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
                     <View style={s.infoCell}>
                       <View style={s.infoInline}>
                         <Text style={s.infoLabel}>FECHA DE RETIRO:</Text>
-                        <Text style={s.infoValue}>{remito.pickupDate}</Text>
+                         <Text style={s.infoValue}>{document.pickupDate}</Text>
                       </View>
                     </View>
                     <View style={s.infoCell}>
                       <View style={s.infoInline}>
                         <Text style={s.infoLabel}>PRECIO ACORDADO:</Text>
-                        <Text style={s.infoValue}>{remito.agreedPrice}</Text>
+                         <Text style={s.infoValue}>{document.agreedPrice}</Text>
                       </View>
                     </View>
                   </View>
@@ -301,7 +303,7 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
                     <View style={s.infoCell}>
                       <View style={s.infoInline}>
                         <Text style={s.infoLabel}>FECHA DE DEVOLUCIÓN:</Text>
-                        <Text style={s.infoValue}>{remito.returnDate}</Text>
+                         <Text style={s.infoValue}>{document.returnDate}</Text>
                       </View>
                     </View>
                     <View style={s.infoCell}>
@@ -313,7 +315,7 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
                     <View style={s.infoCell}>
                       <View style={s.infoInline}>
                         <Text style={s.infoLabel}>CANTIDAD DE JORNADAS:</Text>
-                        <Text style={s.infoValue}>{remito.jornadas}</Text>
+                         <Text style={s.infoValue}>{document.jornadas}</Text>
                       </View>
                     </View>
                     <View style={s.infoCell} />
@@ -325,7 +327,7 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
             {!isContinuation && <View style={s.divider} />}
 
             <View style={s.equipmentSection}>
-              {!isContinuation && <Text style={s.equipmentTitle}>LISTA DE EQUIPOS RETIRADOS</Text>}
+              {!isContinuation && <Text style={s.equipmentTitle}>{document.equipmentTitle}</Text>}
               <View style={s.equipmentGrid}>
                 <View style={s.equipmentColumn}>
                   {columns.left.map((line, index) => (
@@ -348,17 +350,19 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
               </View>
               <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DE PRODUCCIÓN</Text>
             </View>
-            <View style={s.signatureBlock}>
-              <View style={s.signatureVisual}>
-                <View style={s.signatureLine} />
-                {remito.rentalSignatureUrl && (
-                  <View style={s.signatureImageFrame}>
-                    <Image src={remito.rentalSignatureUrl} style={s.signatureImage} />
-                  </View>
-                )}
+            {document.showRentalSignatureBlock && (
+              <View style={s.signatureBlock}>
+                <View style={s.signatureVisual}>
+                  <View style={s.signatureLine} />
+                  {document.rentalSignatureUrl && (
+                    <View style={s.signatureImageFrame}>
+                      <Image src={document.rentalSignatureUrl} style={s.signatureImage} />
+                    </View>
+                  )}
+                </View>
+                <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DEL RENTAL</Text>
               </View>
-              <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DEL RENTAL</Text>
-            </View>
+            )}
           </View>
         </View>
       </View>
@@ -394,7 +398,7 @@ function EquipmentLineItem({ line }: { line: EquipmentLine }) {
   );
 }
 
-function PartyInfoBlock({ title, party }: { title: string; party: ContractData['remito']['landlord'] }) {
+function PartyInfoBlock({ title, party }: { title: string; party: ContractData['document']['landlord'] }) {
   return (
     <View style={s.partyCell}>
       <Text style={s.partyTitle}>{title}</Text>

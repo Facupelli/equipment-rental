@@ -186,9 +186,10 @@ const DATA_PROTECTION_TEXT =
 interface AnexoPageProps {
   logoUrl: string | null;
   rentalSignatureUrl: string | null;
+  showRentalSignatureBlock: boolean;
 }
 
-export function AnexoPage({ logoUrl: _logoUrl, rentalSignatureUrl }: AnexoPageProps) {
+export function AnexoPage({ logoUrl: _logoUrl, rentalSignatureUrl, showRentalSignatureBlock }: AnexoPageProps) {
   return (
     <Page size={A4_PAGE_SIZE} style={s.page} wrap={false}>
       <View style={s.headerRow}>
@@ -233,17 +234,19 @@ export function AnexoPage({ logoUrl: _logoUrl, rentalSignatureUrl }: AnexoPagePr
               </View>
               <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DE PRODUCCIÓN</Text>
             </View>
-            <View style={s.signatureBlock}>
-              <View style={s.signatureVisual}>
-                <View style={s.signatureLine} />
-                {rentalSignatureUrl && (
-                  <View style={s.signatureImageFrame}>
-                    <Image src={rentalSignatureUrl} style={s.signatureImage} />
-                  </View>
-                )}
+            {showRentalSignatureBlock && (
+              <View style={s.signatureBlock}>
+                <View style={s.signatureVisual}>
+                  <View style={s.signatureLine} />
+                  {rentalSignatureUrl && (
+                    <View style={s.signatureImageFrame}>
+                      <Image src={rentalSignatureUrl} style={s.signatureImage} />
+                    </View>
+                  )}
+                </View>
+                <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DEL RENTAL</Text>
               </View>
-              <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DEL RENTAL</Text>
-            </View>
+            )}
           </View>
         </View>
       </View>
