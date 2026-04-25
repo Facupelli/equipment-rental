@@ -1,4 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { OrdersTable } from "@/features/orders/components/orders-table";
 import { OrdersToolbar } from "@/features/orders/components/orders-toolbar";
 import { useOrders } from "@/features/orders/orders.queries";
@@ -61,12 +62,16 @@ function OrdersPage() {
 
 	return (
 		<div className="space-y-6 p-6">
-			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">Pedidos</h1>
-				<p className="mt-1 text-sm text-muted-foreground">
-					Lista operativa para revisar, filtrar y entrar rápido al detalle del
-					pedido.
-				</p>
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+				<div>
+					<h1 className="text-2xl font-semibold tracking-tight">Pedidos</h1>
+					<p className="mt-1 text-sm text-muted-foreground">
+						Lista operativa para revisar, filtrar y entrar rápido al detalle del
+						pedido.
+					</p>
+				</div>
+
+				<Button render={<Link to="/dashboard/orders/new">Nuevo borrador</Link>} />
 			</div>
 
 			<OrdersToolbar

@@ -480,6 +480,7 @@ export class CreateOrderService implements ICommandHandler<CreateOrderCommand, R
         orderId: orderItem.orderId,
         type: orderItem.type,
         priceSnapshot: orderItem.priceSnapshot,
+        manualPricingOverride: null,
         productTypeId: orderItem.productTypeId,
         bundleId: orderItem.bundleId,
         bundleSnapshot: snapshot,

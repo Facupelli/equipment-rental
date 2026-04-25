@@ -63,6 +63,38 @@ export class OrderStatusTransitionNotAllowedError extends OrderError {
   }
 }
 
+export class OrderPricingAdjustmentNotAllowedError extends OrderError {
+  constructor(status: OrderStatus) {
+    super(`Cannot adjust pricing for an order in '${status}' status.`);
+  }
+}
+
+export class OrderPricingItemNotFoundError extends OrderError {
+  constructor(orderItemId: string) {
+    super(`Order item '${orderItemId}' was not found for pricing adjustment.`);
+  }
+}
+
+export class OrderPricingTargetTotalInvalidError extends OrderError {
+  constructor(targetTotal: string) {
+    super(`Target total '${targetTotal}' is invalid. It must be greater than zero.`);
+  }
+}
+
+export class OrderPricingItemFinalPriceInvalidError extends OrderError {
+  constructor(orderItemId: string, finalPrice: string) {
+    super(
+      `Final price '${finalPrice}' for order item '${orderItemId}' is invalid. It must be greater than or equal to zero.`,
+    );
+  }
+}
+
+export class OrderPricingItemsPayloadMismatchError extends OrderError {
+  constructor() {
+    super('Draft pricing updates must include exactly one final price for each order item.');
+  }
+}
+
 export class OrderCustomerRequiredForConfirmationError extends OrderError {
   constructor(orderId: string) {
     super(`Order "${orderId}" must be linked to a customer before it can be confirmed.`);

@@ -1,7 +1,7 @@
 import { TenantConfig } from '@repo/schemas';
 import { Injectable } from '@nestjs/common';
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
-import { PromotionAdjustmentType } from '@repo/types';
+import { PricingAdjustmentSourceKind, PromotionAdjustmentType } from '@repo/types';
 import { err, ok, Result } from 'neverthrow';
 import { InsuranceCalculationService } from 'src/core/domain/services/insurance-calculation.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
@@ -152,16 +152,18 @@ export class CalculateCartPricesQueryHandler implements IQueryHandler<
         quantity: item.quantity,
         pricePerBillingUnit: item.price.pricePerBillingUnit.toDecimal().toNumber(),
         subtotal: item.price.finalPrice.toDecimal().mul(item.quantity).toNumber(),
-        discounts: item.price.appliedAdjustments.map((adjustment) => ({
-          sourceKind: adjustment.sourceKind,
-          sourceId: adjustment.sourceId,
-          label: adjustment.label,
-          promotionId: adjustment.sourceId,
-          promotionLabel: adjustment.label,
-          type: adjustment.effectType,
-          value: adjustment.configuredValue,
-          discountAmount: adjustment.discountAmount.toDecimal().mul(item.quantity).toNumber(),
-        })),
+        discounts: item.price.appliedAdjustments
+          .filter((adjustment) => adjustment.sourceKind === PricingAdjustmentSourceKind.PROMOTION)
+          .map((adjustment) => ({
+            sourceKind: PricingAdjustmentSourceKind.PROMOTION,
+            sourceId: adjustment.sourceId,
+            label: adjustment.label,
+            promotionId: adjustment.sourceId,
+            promotionLabel: adjustment.label,
+            type: adjustment.effectType,
+            value: adjustment.configuredValue,
+            discountAmount: adjustment.discountAmount.toDecimal().mul(item.quantity).toNumber(),
+          })),
       }));
 
       const insuranceTerms = InsuranceCalculationService.resolveTerms(

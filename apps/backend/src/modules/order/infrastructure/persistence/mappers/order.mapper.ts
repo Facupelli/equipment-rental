@@ -8,8 +8,10 @@ import { Order } from 'src/modules/order/domain/entities/order.entity';
 import { OrderItemOwnerSplit, SplitStatus } from 'src/modules/order/domain/entities/order-item-owner-split.entity';
 import { OrderFinancialSnapshot } from 'src/modules/order/domain/value-objects/order-financial-snapshot.value-object';
 import { OrderDeliveryRequest } from 'src/modules/order/domain/value-objects/order-delivery-request.value-object';
+import { ManualPricingOverride } from 'src/modules/order/domain/value-objects/manual-pricing-override.value-object';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
 import { BookingSnapshot } from 'src/modules/order/domain/value-objects/booking-snapshot.value-object';
+import { Prisma } from 'src/generated/prisma/client';
 
 // ── Prisma row shapes (from include queries) ──────────────────────────────────
 
@@ -52,6 +54,7 @@ type OrderItemRow = {
   orderId: string;
   type: string;
   priceSnapshot: JsonValue;
+  manualPricingOverride: JsonValue | null;
   productTypeId: string | null;
   bundleId: string | null;
   bundleSnapshot: BundleSnapshotRow | null;
@@ -132,6 +135,9 @@ export class OrderMapper {
         orderId: itemRow.orderId,
         type: itemRow.type as OrderItemType,
         priceSnapshot: PriceSnapshot.fromJSON(itemRow.priceSnapshot),
+        manualPricingOverride: itemRow.manualPricingOverride
+          ? ManualPricingOverride.fromJSON(itemRow.manualPricingOverride)
+          : null,
         productTypeId: itemRow.productTypeId,
         bundleId: itemRow.bundleId,
         bundleSnapshot,
@@ -202,6 +208,7 @@ export class OrderMapper {
         orderId: item.orderId,
         type: item.type,
         priceSnapshot: item.priceSnapshot.toJSON(),
+        manualPricingOverride: item.manualPricingOverride?.toJSON() ?? Prisma.JsonNull,
         productTypeId: item.productTypeId,
         bundleId: item.bundleId,
       });

@@ -1,7 +1,11 @@
 import type {
+	CreateDraftOrderDto,
 	CreateOrderDto,
+	DraftOrderPricingProposalRequestDto,
+	DraftOrderPricingProposalResponseDto,
 	GetCalendarDotsQueryDto,
 	GetCalendarDotsResponseDto,
+	GetDraftOrderPricingParamDto,
 	GetOrderByIdParamDto,
 	GetOrdersCalendarQueryDto,
 	GetOrdersCalendarResponse,
@@ -14,6 +18,7 @@ import type {
 	OrderSummary,
 	ProblemDetails,
 	ScheduleEvent,
+	UpdateDraftOrderPricingRequestDto,
 } from "@repo/schemas";
 import {
 	keepPreviousData,
@@ -28,13 +33,17 @@ import { fromDateParam, parseTimestamp } from "@/lib/dates/parse";
 import { ProblemDetailsError } from "@/shared/errors";
 import {
 	cancelOrder,
+	confirmOrder,
+	createDraftOrder,
 	createOrder,
 	getCalendarDots,
+	getDraftOrderPricingProposal,
 	getOrders,
 	getOrdersCalendar,
 	getOrdersSchedule,
 	markEquipmentAsRetired,
 	markEquipmentAsReturned,
+	updateDraftOrderPricing,
 } from "./orders.api";
 
 // -----------------------------------------------------
@@ -107,6 +116,18 @@ export const orderKeys = {
 	calendarDots: () => [...orderKeys.all(), "calendar-dots"] as const,
 	calendarDot: (params: GetCalendarDotsQueryDto) =>
 		[...orderKeys.calendarDots(), params] as const,
+	drafts: () => [...orderKeys.all(), "drafts"] as const,
+	draft: (params: GetDraftOrderPricingParamDto) =>
+		[...orderKeys.drafts(), params] as const,
+	draftPricingProposals: () =>
+		[...orderKeys.all(), "draft-pricing-proposals"] as const,
+	draftPricingProposal: (
+		params: GetDraftOrderPricingParamDto,
+		dto: DraftOrderPricingProposalRequestDto,
+	) => [...orderKeys.draftPricingProposals(), params, dto] as const,
+	draftPricingUpdates: () => [...orderKeys.all(), "draft-pricing-updates"] as const,
+	draftPricingUpdate: (params: GetDraftOrderPricingParamDto) =>
+		[...orderKeys.draftPricingUpdates(), params] as const,
 };
 
 export const orderQueries = {
@@ -159,6 +180,35 @@ type OrderDetailMutationOptions = Omit<
 
 type OrderMutationOptions = Omit<
 	UseMutationOptions<string, ProblemDetailsError, CreateOrderDto>,
+	"mutationFn"
+>;
+
+type DraftOrderMutationOptions = Omit<
+	UseMutationOptions<string, ProblemDetailsError, CreateDraftOrderDto>,
+	"mutationFn"
+>;
+
+type DraftOrderPricingProposalMutationOptions = Omit<
+	UseMutationOptions<
+		DraftOrderPricingProposalResponseDto,
+		ProblemDetailsError,
+		{
+			params: GetDraftOrderPricingParamDto;
+			dto: DraftOrderPricingProposalRequestDto;
+		}
+	>,
+	"mutationFn"
+>;
+
+type UpdateDraftOrderPricingMutationOptions = Omit<
+	UseMutationOptions<
+		void,
+		ProblemDetailsError,
+		{
+			params: GetDraftOrderPricingParamDto;
+			dto: UpdateDraftOrderPricingRequestDto;
+		}
+	>,
 	"mutationFn"
 >;
 
@@ -291,6 +341,91 @@ export function useCreateOrder(options?: OrderMutationOptions) {
 	});
 }
 
+export function useCreateDraftOrder(options?: DraftOrderMutationOptions) {
+	return useMutation<string, ProblemDetailsError, CreateDraftOrderDto>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await createDraftOrder({ data });
+			if (typeof result === "object" && "error" in result) {
+				throw new ProblemDetailsError(result.error);
+			}
+			return result;
+		},
+		meta: {
+			invalidates: orderKeys.all(),
+		},
+	});
+}
+
+export function useDraftOrderPricingProposal(
+	options?: DraftOrderPricingProposalMutationOptions,
+) {
+	return useMutation<
+		DraftOrderPricingProposalResponseDto,
+		ProblemDetailsError,
+		{
+			params: GetDraftOrderPricingParamDto;
+			dto: DraftOrderPricingProposalRequestDto;
+		}
+	>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await getDraftOrderPricingProposal({ data });
+			if (hasMutationError(result)) {
+				throw new ProblemDetailsError(result.error);
+			}
+			return result;
+		},
+		meta: {
+			invalidates: (variables) =>
+				orderKeys.draftPricingProposal(variables.params, variables.dto),
+		},
+	});
+}
+
+export function useUpdateDraftOrderPricing(
+	options?: UpdateDraftOrderPricingMutationOptions,
+) {
+	return useMutation<
+		void,
+		ProblemDetailsError,
+		{
+			params: GetDraftOrderPricingParamDto;
+			dto: UpdateDraftOrderPricingRequestDto;
+		}
+	>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await updateDraftOrderPricing({ data });
+			if (hasMutationError(result)) {
+				throw new ProblemDetailsError(result.error);
+			}
+		},
+		meta: {
+			invalidates: (variables) => [
+				orderKeys.all(),
+				orderKeys.draft(variables.params),
+				orderKeys.draftPricingUpdate(variables.params),
+			],
+		},
+	});
+}
+
+export function useConfirmOrder(options?: OrderDetailMutationOptions) {
+	return useMutation<void, ProblemDetailsError, GetOrderByIdParamDto>({
+		...options,
+		mutationFn: async (data) => {
+			const result = await confirmOrder({ data });
+			if (hasMutationError(result)) {
+				throw new ProblemDetailsError(result.error);
+			}
+		},
+		meta: {
+			invalidates: orderKeys.all(),
+		},
+	});
+}
+
 export function useMarkEquipmentAsReturned(
 	options?: OrderDetailMutationOptions,
 ) {
@@ -340,9 +475,7 @@ export function useMarkEquipmentAsRetired(
 	});
 }
 
-function hasMutationError(
-	result: void | { error: ProblemDetails },
-): result is { error: ProblemDetails } {
+function hasMutationError(result: unknown): result is { error: ProblemDetails } {
 	return typeof result === "object" && result !== null && "error" in result;
 }
 

@@ -1,9 +1,5 @@
-import { PromotionAdjustmentType } from '@repo/types';
+import { PricingAdjustmentSourceKind, PromotionAdjustmentType } from '@repo/types';
 import { Money } from 'src/core/domain/value-objects/money.value-object';
-
-export enum PricingAdjustmentSourceKind {
-  PROMOTION = 'PROMOTION',
-}
 
 export type PricingTargetExclusions = {
   productTypeIds: string[];

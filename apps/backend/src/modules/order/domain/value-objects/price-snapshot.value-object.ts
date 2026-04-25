@@ -1,6 +1,5 @@
-import { PromotionAdjustmentType } from '@repo/types';
+import { PricingAdjustmentSourceKind, PromotionAdjustmentType } from '@repo/types';
 import Decimal from 'decimal.js';
-import { PricingAdjustmentSourceKind } from 'src/modules/pricing/domain/types/pricing-adjustment.types';
 
 // ---------------------------------------------------------------------------
 // PriceSnapshot — Value Object

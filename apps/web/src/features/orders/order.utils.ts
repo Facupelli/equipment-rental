@@ -202,6 +202,7 @@ export type OrderOperationalPhase =
 
 export type OrderTemporalState =
 	| "draft"
+	| "pending-review"
 	| "upcoming"
 	| "active"
 	| "overdue"
@@ -268,6 +269,13 @@ export function getOrderTemporalInsight(
 				state: "draft",
 				title: "Borrador",
 				description: "Este pedido todavía no ingresó al flujo operativo.",
+				deadline: "Pendiente de confirmación",
+			};
+		case OrderStatus.PENDING_REVIEW:
+			return {
+				state: "pending-review",
+				title: "Pendiente de revisión",
+				description: "Este pedido espera aprobación antes de pasar a operación.",
 				deadline: "Pendiente de confirmación",
 			};
 		case OrderStatus.CANCELLED:
@@ -396,7 +404,11 @@ export function getOrderPrimaryAdminAction(
 ): OrderPrimaryAdminAction | null {
 	switch (status) {
 		case OrderStatus.DRAFT:
-			return null;
+			return {
+				action: "confirm",
+				label: "Confirmar borrador",
+				description: "Usa los precios guardados",
+			};
 		case OrderStatus.PENDING_REVIEW:
 			return {
 				action: "confirm",

@@ -668,14 +668,15 @@ model OrderDeliveryRequest {
 }
 
 model OrderItem {
-  id            String        @id @default(uuid())
-  orderId       String        @map("order_id")
-  type          OrderItemType
-  productTypeId String?       @map("product_type_id")
-  bundleId      String?       @map("bundle_id")
-  priceSnapshot Json          @map("price_snapshot")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  id                    String        @id @default(uuid())
+  orderId               String        @map("order_id")
+  type                  OrderItemType
+  productTypeId         String?       @map("product_type_id")
+  bundleId              String?       @map("bundle_id")
+  priceSnapshot         Json          @map("price_snapshot")
+  manualPricingOverride Json? @map("manual_pricing_override")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
 
   order            Order                 @relation(fields: [orderId], references: [id])
   productType      ProductType?          @relation(fields: [productTypeId], references: [id])

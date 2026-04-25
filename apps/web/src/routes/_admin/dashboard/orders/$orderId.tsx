@@ -1,4 +1,4 @@
-import { FulfillmentMethod } from "@repo/types";
+import { FulfillmentMethod, OrderStatus } from "@repo/types";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -56,6 +56,7 @@ import {
 	getOrderPrimaryAdminAction,
 	getOrderTemporalInsight,
 	getOwnerDisplay,
+	type OrderTemporalState,
 } from "@/features/orders/order.utils";
 import { ordersListSearchSchema } from "@/features/orders/orders-list.search";
 import {
@@ -89,6 +90,8 @@ function RouteComponent() {
 		createOrderDetailQueryOptions({ orderId }),
 	);
 
+	console.log({ order });
+
 	return (
 		<OrderDetailProvider order={order}>
 			<div className="min-h-screen bg-neutral-50 text-neutral-950 px-8">
@@ -107,6 +110,9 @@ function RouteComponent() {
 
 					{/* Right */}
 					<div className="space-y-4">
+						{order.status === OrderStatus.DRAFT && (
+							<DraftOrderOperationalCard />
+						)}
 						{order.customer && <OrderClientCard />}
 						<OrderLogisticsCard />
 						<OrderFinancialsCard />
@@ -243,7 +249,72 @@ function OrderHeader() {
 			</AlertDialog>
 
 			<OrderLifecycleActionDialog actions={actions} />
+			<OrderConfirmDialog actions={actions} />
 		</header>
+	);
+}
+
+function OrderConfirmDialog({
+	actions,
+}: {
+	actions: ReturnType<typeof useOrderDetailContext>["actions"];
+}) {
+	const { order } = useOrderDetailContext();
+	const isDraft = order.status === OrderStatus.DRAFT;
+	const hasCustomer = Boolean(order.customer);
+
+	return (
+		<AlertDialog
+			open={actions.isConfirmOrderDialogOpen}
+			onOpenChange={actions.setIsConfirmOrderDialogOpen}
+		>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>
+						{isDraft ? "Confirmar borrador" : "Confirmar pedido"}
+					</AlertDialogTitle>
+					<AlertDialogDescription>
+						{isDraft
+							? "Vas a confirmar este borrador con los precios ya guardados. La confirmacion no recalcula importes."
+							: "Confirma este pedido para dejarlo listo para operación."}
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+
+				{isDraft && !hasCustomer ? (
+					<p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+						Este borrador no tiene cliente vinculado. No puede confirmarse hasta
+						completar ese paso fuera de esta pantalla.
+					</p>
+				) : null}
+
+				{actions.confirmOrderError ? (
+					<p className="text-sm text-destructive">
+						{actions.confirmOrderError}
+					</p>
+				) : null}
+
+				<AlertDialogFooter>
+					<AlertDialogCancel disabled={actions.isConfirmOrderPending}>
+						Cancelar
+					</AlertDialogCancel>
+					<AlertDialogAction
+						onClick={(event) => {
+							event.preventDefault();
+							void actions.handleConfirmOrderSubmission();
+						}}
+						disabled={actions.isConfirmOrderPending}
+					>
+						{actions.isConfirmOrderPending
+							? isDraft
+								? "Confirmando borrador..."
+								: "Confirmando pedido..."
+							: isDraft
+								? "Confirmar borrador"
+								: "Confirmar pedido"}
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }
 
@@ -313,7 +384,18 @@ function OrderLifecycleActionDialog({
 	);
 }
 
-const OPERATIONAL_STATE_STYLES = {
+const OPERATIONAL_STATE_STYLES: Record<
+	OrderTemporalState,
+	{ panelClassName: string; dotClassName: string }
+> = {
+	draft: {
+		panelClassName: "border-amber-200 bg-amber-50/80",
+		dotClassName: "bg-amber-500",
+	},
+	"pending-review": {
+		panelClassName: "border-violet-200 bg-violet-50/80",
+		dotClassName: "bg-violet-500",
+	},
 	upcoming: {
 		panelClassName: "border-sky-200 bg-sky-50/80",
 		dotClassName: "bg-sky-500",
@@ -353,7 +435,7 @@ function OperationalStateCard({
 	title: string;
 	description: string;
 	deadline: string;
-	state: keyof typeof OPERATIONAL_STATE_STYLES;
+	state: OrderTemporalState;
 }) {
 	const config = OPERATIONAL_STATE_STYLES[state];
 
@@ -412,19 +494,16 @@ function getPrimaryAdminButtonConfig(
 			return {
 				icon: CheckCircle2,
 				onClick: actions.handleConfirmOrder,
-				description: "Aprobar pedido",
 			};
 		case "pickup":
 			return {
 				icon: Truck,
 				onClick: actions.handleMarkAsPickedUp,
-				description: "Registrar retiro",
 			};
 		case "return":
 			return {
 				icon: RotateCcw,
 				onClick: actions.handleMarkAsReturned,
-				description: "Completar devolución",
 			};
 		default:
 			return null;
@@ -457,7 +536,7 @@ function PrimaryAdminActionButton({
 				</div>
 				<div>
 					<p className="text-sm font-semibold leading-none">{action?.label}</p>
-					<p className="mt-1 text-xs text-white/80">{config.description}</p>
+					<p className="mt-1 text-xs text-white/80">{action?.description}</p>
 				</div>
 			</div>
 		</Button>
@@ -643,6 +722,12 @@ function OrderItemRow({
 						{item.name}
 					</span>
 
+					{financialLine?.pricing.isOverridden && (
+						<span className="text-[11px] font-medium text-amber-700">
+							Precio ajustado manualmente
+						</span>
+					)}
+
 					{/* Product item: single owner line */}
 					{productOwner && (
 						<span className="text-[11px] text-neutral-500 flex items-center gap-1">
@@ -687,14 +772,14 @@ function OrderItemRow({
 			{/* Base price */}
 			<div className="text-right">
 				<span className="font-mono text-sm text-neutral-500">
-					{financialLine ? `${financialLine.basePrice}` : `—`}
+					{financialLine ? formatMoney(financialLine.basePrice) : "—"}
 				</span>
 			</div>
 
 			{/* Final price */}
 			<div className="text-right">
 				<span className="font-mono text-sm font-bold text-neutral-950">
-					{financialLine ? `${financialLine.finalPrice}` : `—`}
+					{financialLine ? formatMoney(financialLine.finalPrice) : "—"}
 				</span>
 			</div>
 		</div>
@@ -933,6 +1018,17 @@ function OrderFinancialsCard() {
 			<div>
 				{financial.items.map((line) => (
 					<div key={line.orderItemId} className="border-b border-neutral-100">
+						{line.pricing.isOverridden && (
+							<div className="mb-2 flex items-center justify-between rounded-md bg-amber-50 px-3 py-2">
+								<span className="text-[11px] font-medium text-amber-800">
+									Precio ajustado manualmente
+								</span>
+								<span className="font-mono text-[11px] text-amber-700">
+									{formatMoney(line.finalPrice)}
+								</span>
+							</div>
+						)}
+
 						{/* Item label + base price */}
 						<div className="flex items-center justify-between">
 							<span className="text-sm text-neutral-500">{line.label}</span>
@@ -973,6 +1069,8 @@ function OrderFinancialsCard() {
 								</span>
 							</div>
 						)}
+
+						{line.pricing.isOverridden && <PricingAuditSection line={line} />}
 
 						{/* Owner split breakdown — only shown for external-owned items */}
 						{line.ownerSplit && (
@@ -1058,6 +1156,37 @@ function OrderFinancialsCard() {
 	);
 }
 
+function DraftOrderOperationalCard() {
+	const { order } = useOrderDetailContext();
+
+	return (
+		<section className="rounded-lg border border-amber-200 bg-amber-50/70 p-5">
+			<p className="font-mono text-[10px] tracking-[0.15em] uppercase text-amber-700">
+				Borrador persistido
+			</p>
+			<div className="mt-3 space-y-3 text-sm text-neutral-700">
+				<p className="font-semibold text-neutral-950">
+					Este pedido sigue guardado como borrador operativo.
+				</p>
+				<p>
+					Al confirmar, se usan los precios guardados actualmente. Esta acción
+					no vuelve a cotizar ni recalcula importes.
+				</p>
+				<p>
+					{order.customer
+						? "El cliente ya está vinculado y el borrador puede avanzar a confirmación."
+						: "Falta vincular un cliente antes de poder confirmar este borrador."}
+				</p>
+				{!order.customer ? (
+					<div className="rounded-md border border-amber-300 bg-white/70 px-3 py-2 text-sm font-medium text-amber-900">
+						Confirmación bloqueada: este borrador no tiene cliente asociado.
+					</div>
+				) : null}
+			</div>
+		</section>
+	);
+}
+
 function FinancialSummaryRow({
 	label,
 	value,
@@ -1085,6 +1214,84 @@ function FinancialSummaryRow({
 			</span>
 		</div>
 	);
+}
+
+function PricingAuditSection({
+	line,
+}: {
+	line: ParsedOrderDetailResponseDto["financial"]["items"][number];
+}) {
+	const manualOverride = line.pricing.manualOverride;
+	const manualAdjustment = line.pricing.manualAdjustment;
+
+	return (
+		<div className="mt-2 rounded-md border border-amber-200 bg-amber-50/60 p-3">
+			<p className="font-mono text-[9px] uppercase tracking-[0.14em] text-amber-700">
+				Auditoria de precio manual
+			</p>
+			<div className="mt-2 space-y-1.5">
+				<PricingAuditRow
+					label="Precio final calculado"
+					value={formatMoney(line.pricing.calculated.finalPrice)}
+				/>
+				<PricingAuditRow
+					label="Precio final efectivo"
+					value={formatMoney(
+						manualOverride?.finalPrice ?? line.pricing.effective.finalPrice,
+					)}
+				/>
+				{manualAdjustment && (
+					<PricingAuditRow
+						label="Monto de ajuste manual"
+						value={formatSignedMoney(manualAdjustment.adjustmentAmount)}
+					/>
+				)}
+				{manualOverride?.setByUserId && (
+					<PricingAuditRow
+						label="Actualizado por"
+						value={manualOverride.setByUserId}
+					/>
+				)}
+				{manualOverride?.setAt && (
+					<PricingAuditRow
+						label="Actualizado el"
+						value={manualOverride.setAt.format("MMM DD, YYYY [at] HH:mm")}
+					/>
+				)}
+				{manualOverride?.previousFinalPrice && (
+					<PricingAuditRow
+						label="Precio manual previo"
+						value={formatMoney(manualOverride.previousFinalPrice)}
+					/>
+				)}
+			</div>
+		</div>
+	);
+}
+
+function PricingAuditRow({ label, value }: { label: string; value: string }) {
+	return (
+		<div className="flex items-center justify-between gap-4">
+			<span className="text-[11px] text-neutral-600">{label}</span>
+			<span className="text-right font-mono text-[11px] text-neutral-950">
+				{value}
+			</span>
+		</div>
+	);
+}
+
+function formatSignedMoney(amount: string): string {
+	const value = Number(amount);
+
+	if (Number.isNaN(value)) {
+		return formatMoney(amount);
+	}
+
+	if (value === 0) {
+		return formatMoney(amount);
+	}
+
+	return `${value > 0 ? "+" : "-"}${formatMoney(String(Math.abs(value)))}`;
 }
 
 // ─── Shared Sidebar Primitives ────────────────────────────────────────────────

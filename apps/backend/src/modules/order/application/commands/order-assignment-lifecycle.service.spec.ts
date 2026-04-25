@@ -4,6 +4,7 @@ import {
   OrderAssignmentStage,
   OrderItemType,
   OrderStatus,
+  PricingAdjustmentSourceKind,
   PromotionAdjustmentType,
 } from '@repo/types';
 import { ConfirmOrderService } from './confirm-order/confirm-order.service';
@@ -35,7 +36,6 @@ import {
 import { CreateOrderAssetResolver } from './create-order/create-order-asset-resolver';
 import { CreateOrderOwnerContractResolver } from './create-order/create-order-owner-contract-resolver';
 import { ok } from 'neverthrow';
-import { PricingAdjustmentSourceKind } from 'src/modules/pricing/domain/types/pricing-adjustment.types';
 
 function makeOrder(status: OrderStatus): Order {
   return Order.create({
@@ -91,6 +91,7 @@ function makeOrderWithSplit(orderStatus: OrderStatus, splitStatus: SplitStatus):
           pricePerBillingUnit: new Decimal(100),
           discounts: [],
         }),
+        manualPricingOverride: null,
         productTypeId: 'product-type-1',
         bundleId: null,
         bundleSnapshot: null,

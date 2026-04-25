@@ -9,12 +9,14 @@ import {
   MissingOrderDeliveryRequestException,
   OrderItemNotAllowedException,
   OrderItemNotFoundException,
+  OrderPriceAdjustmentNotAllowedException,
   SettledOwnerSplitCancellationBlockedException,
 } from '../exceptions/order.exceptions';
 import { OrderStatus } from '@repo/types';
 import { OrderFinancialSnapshot } from '../value-objects/order-financial-snapshot.value-object';
 import { OrderDeliveryRequest } from '../value-objects/order-delivery-request.value-object';
 import { BookingSnapshot } from '../value-objects/booking-snapshot.value-object';
+import { ManualPricingOverride } from '../value-objects/manual-pricing-override.value-object';
 
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.DRAFT]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
@@ -176,6 +178,18 @@ export class Order {
     this.recalculateFinancialSnapshot();
   }
 
+  replaceItemManualPricingOverride(itemId: string, manualPricingOverride: ManualPricingOverride | null): void {
+    this.assertCanAdjustPricing();
+
+    const item = this.items.find((candidate) => candidate.id === itemId);
+    if (!item) {
+      throw new OrderItemNotFoundException(itemId);
+    }
+
+    item.replaceManualPricingOverride(manualPricingOverride);
+    this.recalculateFinancialSnapshot();
+  }
+
   transitionTo(next: OrderStatus): void {
     const allowed = ALLOWED_TRANSITIONS[this.status];
     if (!allowed.includes(next)) {
@@ -211,17 +225,14 @@ export class Order {
   }
 
   private recalculateFinancialSnapshot(): void {
-    const currency = this.items[0]?.priceSnapshot.currency ?? this.financialSnapshot.currency;
+    const currency = this.items[0]?.calculatedPriceSnapshot.currency ?? this.financialSnapshot.currency;
 
     const subtotalBeforeDiscounts = this.items.reduce(
-      (sum, item) => sum.plus(item.priceSnapshot.basePrice),
+      (sum, item) => sum.plus(item.calculatedPriceSnapshot.basePrice),
       new Decimal(0),
     );
-    const itemsDiscountTotal = this.items.reduce(
-      (sum, item) => sum.plus(item.priceSnapshot.totalDiscountAmount()),
-      new Decimal(0),
-    );
-    const itemsSubtotal = this.items.reduce((sum, item) => sum.plus(item.priceSnapshot.finalPrice), new Decimal(0));
+    const itemsSubtotal = this.items.reduce((sum, item) => sum.plus(item.effectiveFinalPrice), new Decimal(0));
+    const itemsDiscountTotal = subtotalBeforeDiscounts.minus(itemsSubtotal);
     const insurance = InsuranceCalculationService.calculate(subtotalBeforeDiscounts, {
       insuranceSelected: this.insuranceSelected,
       insuranceRatePercent: this.insuranceRatePercent,
@@ -248,6 +259,12 @@ export class Order {
     const hasSettledOwnerSplits = this.items.some((item) => item.ownerSplits.some((split) => split.isSettled()));
     if (hasSettledOwnerSplits) {
       throw new SettledOwnerSplitCancellationBlockedException();
+    }
+  }
+
+  private assertCanAdjustPricing(): void {
+    if (this.status !== OrderStatus.DRAFT) {
+      throw new OrderPriceAdjustmentNotAllowedException(this.status);
     }
   }
 

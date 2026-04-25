@@ -46,7 +46,10 @@ import {
 import { TenantConfigNotFoundException } from '../../../domain/exceptions/order.exceptions';
 
 @CommandHandler(CreateDraftOrderCommand)
-export class CreateDraftOrderService implements ICommandHandler<CreateDraftOrderCommand, Result<string, CreateOrderError>> {
+export class CreateDraftOrderService implements ICommandHandler<
+  CreateDraftOrderCommand,
+  Result<string, CreateOrderError>
+> {
   constructor(
     private readonly prisma: PrismaService,
     private readonly queryBus: QueryBus,
@@ -324,6 +327,7 @@ export class CreateDraftOrderService implements ICommandHandler<CreateDraftOrder
           orderId: orderItem.orderId,
           type: orderItem.type,
           priceSnapshot: orderItem.priceSnapshot,
+          manualPricingOverride: null,
           productTypeId: orderItem.productTypeId,
           bundleId: orderItem.bundleId,
           bundleSnapshot: BundleSnapshot.create({

@@ -11,6 +11,7 @@ import { CancelOrderService } from './application/commands/cancel-order/cancel-o
 import { MarkEquipmentAsRetiredService } from './application/commands/mark-equipment-as-retired/mark-equipment-as-retired.service';
 import { MarkEquipmentAsReturnedService } from './application/commands/mark-equipment-as-returned/mark-equipment-as-returned.service';
 import { ExpireOrderService } from './application/commands/expire-order/expire-order.service';
+import { UpdateDraftOrderPricingService } from './application/commands/update-draft-order-pricing/update-draft-order-pricing.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { GetOrdersScheduleQueryHandler } from './application/queries/get-orders-schedule/get-orders-schedule.query-handler';
 import { GetOrderByIdQueryHandler } from './application/queries/get-order-by-id/get-order-by-id.query-handler';
@@ -18,12 +19,14 @@ import { GetCalendarDotsQueryHandler } from './application/queries/get-calendar-
 import { GetOrdersCalendarQueryHandler } from './application/queries/get-orders-calendar/get-orders-calendar.query-handler';
 import { GetPendingReviewOrdersQueryHandler } from './application/queries/get-pending-review-orders/get-pending-review-orders.query-handler';
 import { GetOrdersQueryHandler } from './application/queries/get-orders/get-orders.query-handler';
+import { GetDraftOrderPricingProposalQueryHandler } from './application/queries/get-draft-order-pricing-proposal/get-draft-order-pricing-proposal.query-handler';
 import { TenantModule } from '../tenant/tenant.module';
 import { CreateOrderAssetResolver } from './application/commands/create-order/create-order-asset-resolver';
 import { CreateOrderOwnerContractResolver } from './application/commands/create-order/create-order-owner-contract-resolver';
 import { CreateOrderHttpController } from './application/commands/create-order/create-order.http.controller';
 import { CreateDraftOrderHttpController } from './application/commands/create-draft-order/create-draft-order.http.controller';
 import { ConfirmOrderHttpController } from './application/commands/confirm-order/confirm-order.http.controller';
+import { UpdateDraftOrderPricingHttpController } from './application/commands/update-draft-order-pricing/update-draft-order-pricing.http.controller';
 import { RejectOrderHttpController } from './application/commands/reject-order/reject-order.http.controller';
 import { CancelOrderHttpController } from './application/commands/cancel-order/cancel-order.http.controller';
 import { MarkEquipmentAsRetiredHttpController } from './application/commands/mark-equipment-as-retired/mark-equipment-as-retired.http.controller';
@@ -35,9 +38,11 @@ import { GetOrderByIdHttpController } from './application/queries/get-order-by-i
 import { GetPendingReviewOrdersHttpController } from './application/queries/get-pending-review-orders/get-pending-review-orders.http.controller';
 import { GetOrdersHttpController } from './application/queries/get-orders/get-orders.http.controller';
 import { GenerateOrderContractHttpController } from './application/queries/generate-order-contract/generate-order-contract.http.controller';
+import { GetDraftOrderPricingProposalHttpController } from './application/queries/get-draft-order-pricing-proposal/get-draft-order-pricing-proposal.http.controller';
 import { GenerateOrderContractService } from './application/queries/generate-order-contract/generate-order-contract.service';
 import { ContractRendererAdapter } from './infrastructure/pdf/contract-renderer.adapter';
 import { ContractRendererPort } from './domain/ports/contract-render.port';
+import { DraftOrderPricingService } from './domain/services/draft-order-pricing.service';
 
 @Module({
   imports: [PricingModule, InventoryModule, TenantModule],
@@ -45,6 +50,7 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
     CreateOrderHttpController,
     CreateDraftOrderHttpController,
     ConfirmOrderHttpController,
+    UpdateDraftOrderPricingHttpController,
     RejectOrderHttpController,
     CancelOrderHttpController,
     MarkEquipmentAsRetiredHttpController,
@@ -55,6 +61,7 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
     GetCalendarDotsHttpController,
     GetOrdersCalendarHttpController,
     GetOrderByIdHttpController,
+    GetDraftOrderPricingProposalHttpController,
     GenerateOrderContractHttpController,
   ],
   providers: [
@@ -63,9 +70,11 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
     CreateOrderOwnerContractResolver,
     CreateOrderService,
     CreateDraftOrderService,
+    DraftOrderPricingService,
     ConfirmDraftOrderFlow,
     ConfirmPendingReviewOrderFlow,
     ConfirmOrderService,
+    UpdateDraftOrderPricingService,
     RejectOrderService,
     CancelOrderService,
     MarkEquipmentAsRetiredService,
@@ -75,6 +84,7 @@ import { ContractRendererPort } from './domain/ports/contract-render.port';
     GetCalendarDotsQueryHandler,
     GetOrdersCalendarQueryHandler,
     GetOrderByIdQueryHandler,
+    GetDraftOrderPricingProposalQueryHandler,
     GetPendingReviewOrdersQueryHandler,
     GetOrdersQueryHandler,
     GenerateOrderContractService,

@@ -40,6 +40,7 @@ import { Route as ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImpor
 import { Route as PortalAuthGoogleFinalizeRouteImport } from './routes/_portal/auth/google/finalize'
 import { Route as AdminDashboardPromotionsNewRouteImport } from './routes/_admin/dashboard/promotions/new'
 import { Route as AdminDashboardOwnersOwnerIdRouteImport } from './routes/_admin/dashboard/owners/$ownerId'
+import { Route as AdminDashboardOrdersNewRouteImport } from './routes/_admin/dashboard/orders/new'
 import { Route as AdminDashboardOrdersOrderIdRouteImport } from './routes/_admin/dashboard/orders/$orderId'
 import { Route as AdminDashboardLocationsLocationIdRouteImport } from './routes/_admin/dashboard/locations/$locationId'
 import { Route as AdminDashboardCustomersCustomerIdRouteImport } from './routes/_admin/dashboard/customers/$customerId'
@@ -226,6 +227,11 @@ const AdminDashboardOwnersOwnerIdRoute =
     path: '/owners/$ownerId',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
+const AdminDashboardOrdersNewRoute = AdminDashboardOrdersNewRouteImport.update({
+  id: '/orders/new',
+  path: '/orders/new',
+  getParentRoute: () => AdminDashboardRouteRoute,
+} as any)
 const AdminDashboardOrdersOrderIdRoute =
   AdminDashboardOrdersOrderIdRouteImport.update({
     id: '/orders/$orderId',
@@ -345,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
+  '/dashboard/orders/new': typeof AdminDashboardOrdersNewRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
@@ -392,6 +399,7 @@ export interface FileRoutesByTo {
   '/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
+  '/dashboard/orders/new': typeof AdminDashboardOrdersNewRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
@@ -443,6 +451,7 @@ export interface FileRoutesById {
   '/_admin/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/_admin/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
   '/_admin/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
+  '/_admin/dashboard/orders/new': typeof AdminDashboardOrdersNewRoute
   '/_admin/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/_admin/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/_portal/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
@@ -493,6 +502,7 @@ export interface FileRouteTypes {
     | '/dashboard/customers/$customerId'
     | '/dashboard/locations/$locationId'
     | '/dashboard/orders/$orderId'
+    | '/dashboard/orders/new'
     | '/dashboard/owners/$ownerId'
     | '/dashboard/promotions/new'
     | '/auth/google/finalize'
@@ -540,6 +550,7 @@ export interface FileRouteTypes {
     | '/dashboard/customers/$customerId'
     | '/dashboard/locations/$locationId'
     | '/dashboard/orders/$orderId'
+    | '/dashboard/orders/new'
     | '/dashboard/owners/$ownerId'
     | '/dashboard/promotions/new'
     | '/auth/google/finalize'
@@ -590,6 +601,7 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/customers/$customerId'
     | '/_admin/dashboard/locations/$locationId'
     | '/_admin/dashboard/orders/$orderId'
+    | '/_admin/dashboard/orders/new'
     | '/_admin/dashboard/owners/$ownerId'
     | '/_admin/dashboard/promotions/new'
     | '/_portal/auth/google/finalize'
@@ -857,6 +869,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardOwnersOwnerIdRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
+    '/_admin/dashboard/orders/new': {
+      id: '/_admin/dashboard/orders/new'
+      path: '/orders/new'
+      fullPath: '/dashboard/orders/new'
+      preLoaderRoute: typeof AdminDashboardOrdersNewRouteImport
+      parentRoute: typeof AdminDashboardRouteRoute
+    }
     '/_admin/dashboard/orders/$orderId': {
       id: '/_admin/dashboard/orders/$orderId'
       path: '/orders/$orderId'
@@ -1020,6 +1039,7 @@ interface AdminDashboardRouteRouteChildren {
   AdminDashboardCustomersCustomerIdRoute: typeof AdminDashboardCustomersCustomerIdRoute
   AdminDashboardLocationsLocationIdRoute: typeof AdminDashboardLocationsLocationIdRoute
   AdminDashboardOrdersOrderIdRoute: typeof AdminDashboardOrdersOrderIdRoute
+  AdminDashboardOrdersNewRoute: typeof AdminDashboardOrdersNewRoute
   AdminDashboardOwnersOwnerIdRoute: typeof AdminDashboardOwnersOwnerIdRoute
   AdminDashboardPromotionsNewRoute: typeof AdminDashboardPromotionsNewRoute
   AdminDashboardCalendarIndexRoute: typeof AdminDashboardCalendarIndexRoute
@@ -1052,6 +1072,7 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
   AdminDashboardLocationsLocationIdRoute:
     AdminDashboardLocationsLocationIdRoute,
   AdminDashboardOrdersOrderIdRoute: AdminDashboardOrdersOrderIdRoute,
+  AdminDashboardOrdersNewRoute: AdminDashboardOrdersNewRoute,
   AdminDashboardOwnersOwnerIdRoute: AdminDashboardOwnersOwnerIdRoute,
   AdminDashboardPromotionsNewRoute: AdminDashboardPromotionsNewRoute,
   AdminDashboardCalendarIndexRoute: AdminDashboardCalendarIndexRoute,

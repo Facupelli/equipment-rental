@@ -15,9 +15,16 @@ export class OrderItemNotAllowedException extends Error {
 }
 
 export class OrderItemNotFoundException extends Error {
-  constructor(itemId: string) {
+  constructor(public readonly itemId: string) {
     super(`Order item '${itemId}' not found.`);
     this.name = 'OrderItemNotFoundException';
+  }
+}
+
+export class OrderPriceAdjustmentNotAllowedException extends Error {
+  constructor(status: OrderStatus) {
+    super(`Cannot adjust pricing for an order in '${status}' status.`);
+    this.name = 'OrderPriceAdjustmentNotAllowedException';
   }
 }
 

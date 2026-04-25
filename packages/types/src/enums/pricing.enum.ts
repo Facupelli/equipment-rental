@@ -15,4 +15,10 @@ export enum PricingRuleScope {
 
 export enum PromotionAdjustmentType {
   PERCENTAGE = "PERCENTAGE",
+  FLAT = "FLAT",
+}
+
+export enum PricingAdjustmentSourceKind {
+  PROMOTION = "PROMOTION",
+  MANUAL = "MANUAL",
 }

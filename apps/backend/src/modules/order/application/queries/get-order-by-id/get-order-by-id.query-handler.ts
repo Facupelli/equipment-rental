@@ -4,6 +4,7 @@ import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
 import { FulfillmentMethod, OrderItemType, OrderStatus } from '@repo/types';
 import { OrderFinancialSnapshot } from 'src/modules/order/domain/value-objects/order-financial-snapshot.value-object';
+import { ManualPricingOverride } from 'src/modules/order/domain/value-objects/manual-pricing-override.value-object';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
 import { BookingSnapshot } from 'src/modules/order/domain/value-objects/booking-snapshot.value-object';
 import Decimal from 'decimal.js';
@@ -160,6 +161,11 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
 
     const financialItems = order.items.map((item) => {
       const snapshot = PriceSnapshot.fromJSON(item.priceSnapshot);
+      const manualPricingOverride = item.manualPricingOverride
+        ? ManualPricingOverride.fromJSON(item.manualPricingOverride)
+        : null;
+      const effectiveFinalPrice = manualPricingOverride?.finalPrice ?? snapshot.finalPrice;
+      const manualAdjustmentAmount = snapshot.finalPrice.minus(effectiveFinalPrice);
       const label = item.type === OrderItemType.PRODUCT ? item.productType!.name : item.bundle!.name;
 
       let ownerSplitLine: GetOrderByIdResponseDto['financial']['items'][number]['ownerSplit'] = null;
@@ -215,17 +221,35 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
         label,
         currency: snapshot.currency,
         basePrice: snapshot.basePrice.toString(),
-        finalPrice: snapshot.finalPrice.toString(),
-        discounts: snapshot.discounts.map((d) => ({
-          sourceKind: d.sourceKind,
-          sourceId: d.sourceId,
-          label: d.label,
-          promotionId: d.sourceId,
-          promotionLabel: d.label,
-          type: d.type,
-          value: d.value,
-          discountAmount: d.discountAmount.toString(),
-        })),
+        finalPrice: effectiveFinalPrice.toString(),
+        discounts: toDiscountLineDtos(snapshot.discounts),
+        pricing: {
+          isOverridden: manualPricingOverride !== null,
+          effective: {
+            finalPrice: effectiveFinalPrice.toString(),
+            pricePerBillingUnit: toPricePerBillingUnit(snapshot, effectiveFinalPrice).toString(),
+            discounts: toDiscountLineDtos(snapshot.discounts),
+          },
+          calculated: {
+            basePrice: snapshot.basePrice.toString(),
+            finalPrice: snapshot.finalPrice.toString(),
+            pricePerBillingUnit: snapshot.pricePerBillingUnit.toString(),
+            discounts: toDiscountLineDtos(snapshot.discounts),
+          },
+          manualOverride: manualPricingOverride
+            ? {
+                finalPrice: manualPricingOverride.finalPrice.toString(),
+                setByUserId: manualPricingOverride.setByUserId,
+                setAt: manualPricingOverride.setAt,
+                previousFinalPrice: manualPricingOverride.previousFinalPrice?.toString() ?? null,
+              }
+            : null,
+          manualAdjustment: manualPricingOverride
+            ? {
+                adjustmentAmount: manualAdjustmentAmount.toString(),
+              }
+            : null,
+        },
         ownerSplit: ownerSplitLine,
       };
     });
@@ -281,6 +305,27 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
       },
     };
   }
+}
+
+function toDiscountLineDtos(discounts: PriceSnapshot['discounts']) {
+  return discounts.map((d) => ({
+    sourceKind: d.sourceKind,
+    sourceId: d.sourceId,
+    label: d.label,
+    promotionId: d.sourceKind === 'PROMOTION' ? d.sourceId : null,
+    promotionLabel: d.sourceKind === 'PROMOTION' ? d.label : null,
+    type: d.type,
+    value: d.value,
+    discountAmount: d.discountAmount.toString(),
+  }));
+}
+
+function toPricePerBillingUnit(snapshot: PriceSnapshot, finalPrice: Decimal): Decimal {
+  if (snapshot.totalUnits <= 0) {
+    return snapshot.pricePerBillingUnit;
+  }
+
+  return finalPrice.div(snapshot.totalUnits).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 }
 
 function hasBookingSnapshot(raw: unknown): raw is Record<string, unknown> {

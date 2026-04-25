@@ -83,6 +83,7 @@ function makeOrderItemWithSplit(status: SplitStatus): OrderItem {
       pricePerBillingUnit: new Decimal(100),
       discounts: [],
     }),
+    manualPricingOverride: null,
     productTypeId: 'product-type-1',
     bundleId: null,
     bundleSnapshot: null,

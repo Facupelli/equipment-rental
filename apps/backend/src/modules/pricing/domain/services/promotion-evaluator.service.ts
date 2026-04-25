@@ -1,5 +1,6 @@
 import Decimal from 'decimal.js';
 import {
+  PricingAdjustmentSourceKind,
   PromotionActivationType,
   PromotionAdjustmentType,
   PromotionConditionType,
@@ -9,11 +10,7 @@ import {
 import { Money } from 'src/core/domain/value-objects/money.value-object';
 import { Promotion } from '../entities/promotion.entity';
 import { NewPricingContext } from '../types/new-pricing.types';
-import {
-  PricingAdjustment,
-  PricingAdjustmentSourceKind,
-  PricingTargetContext,
-} from '../types/pricing-adjustment.types';
+import { PricingAdjustment, PricingTargetContext } from '../types/pricing-adjustment.types';
 
 type PromotionCandidate = {
   promotion: Promotion;

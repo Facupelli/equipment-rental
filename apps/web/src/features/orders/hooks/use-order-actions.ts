@@ -3,6 +3,7 @@ import type { ParsedOrderDetailResponseDto } from "@/features/orders/queries/get
 import { ProblemDetailsError } from "@/shared/errors";
 import {
 	useCancelOrder,
+	useConfirmOrder,
 	useMarkEquipmentAsRetired,
 	useMarkEquipmentAsReturned,
 } from "../orders.queries";
@@ -35,10 +36,14 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 	const [lifecycleActionError, setLifecycleActionError] = useState<string | null>(
 		null,
 	);
+	const [isConfirmOrderDialogOpen, setIsConfirmOrderDialogOpen] = useState(false);
+	const [confirmOrderError, setConfirmOrderError] = useState<string | null>(null);
 	const [isCancelOrderDialogOpen, setIsCancelOrderDialogOpen] = useState(false);
 	const [cancelOrderError, setCancelOrderError] = useState<string | null>(null);
 	const { mutateAsync: cancelOrder, isPending: isCancellingOrder } =
 		useCancelOrder();
+	const { mutateAsync: confirmOrder, isPending: isConfirmingOrder } =
+		useConfirmOrder();
 	const { mutateAsync: markEquipmentAsRetired, isPending: isMarkingAsPickedUp } =
 		useMarkEquipmentAsRetired();
 	const { mutateAsync: markEquipmentAsReturned, isPending: isMarkingAsReturned } =
@@ -98,13 +103,37 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		setIsDownloadingContract(false);
 	};
 
-  const handleEditOrder = () => {
-    // TODO: navigate to edit order page or open edit modal
-  };
+	const handleEditOrder = () => {
+		// TODO: navigate to edit order page or open edit modal
+	};
 
-  const handleConfirmOrder = () => {
-    // TODO: trigger confirm order mutation, then invalidate order query
-  };
+	const handleConfirmOrder = () => {
+		setConfirmOrderError(null);
+		setIsConfirmOrderDialogOpen(true);
+	};
+
+	const handleConfirmOrderSubmission = async () => {
+		setConfirmOrderError(null);
+
+		if (!order.customer) {
+			setConfirmOrderError(
+				"Este borrador necesita un cliente vinculado antes de poder confirmarse.",
+			);
+			return;
+		}
+
+		try {
+			await confirmOrder({ orderId: order.id });
+			setIsConfirmOrderDialogOpen(false);
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				setConfirmOrderError(getConfirmOrderErrorMessage(error));
+				return;
+			}
+
+			setConfirmOrderError("Ocurrio un error al confirmar el pedido.");
+		}
+	};
 
   const handleMarkAsPickedUp = () => {
     setLifecycleActionError(null);
@@ -185,6 +214,14 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		setIsCancelOrderDialogOpen(open);
 	};
 
+	const setIsConfirmOrderDialogOpenWithReset = (open: boolean) => {
+		if (!open) {
+			setConfirmOrderError(null);
+		}
+
+		setIsConfirmOrderDialogOpen(open);
+	};
+
   const handleReleaseEquipment = () => {
     // TODO: trigger release equipment mutation, then invalidate order query
   };
@@ -196,6 +233,8 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 	return {
 		cancelOrderError,
 		contractError,
+		confirmOrderError,
+		handleConfirmOrderSubmission,
 		handleConfirmCancelOrder,
 		handleConfirmOrder,
 		handleConfirmLifecycleAction,
@@ -209,6 +248,8 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		handleProcessPayment,
 		isCancelOrderDialogOpen,
 		isCancelOrderPending: isCancellingOrder,
+		isConfirmOrderDialogOpen,
+		isConfirmOrderPending: isConfirmingOrder,
 		isContractBusinessErrorOpen,
 		isDownloadingContract,
 		isLifecycleActionPending: isMarkingAsPickedUp || isMarkingAsReturned,
@@ -217,9 +258,29 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		pendingLifecycleAction,
 		setContractError,
 		setIsCancelOrderDialogOpen: setIsCancelOrderDialogOpenWithReset,
+		setIsConfirmOrderDialogOpen: setIsConfirmOrderDialogOpenWithReset,
 		setIsContractBusinessErrorOpen,
 		setIsLifecycleActionDialogOpen,
 	};
+}
+
+function getConfirmOrderErrorMessage(error: ProblemDetailsError): string {
+	const fallbackMessage =
+		error.problemDetails.detail ??
+		error.problemDetails.title ??
+		"No pudimos confirmar el pedido.";
+
+	switch (error.problemDetails.type) {
+		case "errors://order-customer-required":
+			return "Este borrador necesita un cliente vinculado antes de poder confirmarse.";
+		case "errors://order-items-unavailable":
+			return (
+				error.problemDetails.detail ??
+				"No pudimos confirmar el borrador porque uno o más equipos ya no estan disponibles para este periodo."
+			);
+		default:
+			return fallbackMessage;
+	}
 }
 
 async function preflightContractRequest({

@@ -18,7 +18,12 @@ export type ParsedOrderPeriod = {
 
 export type ParsedOrderDetailResponseDto = Omit<
 	OrderDetailResponseDto,
-	"period" | "createdAt" | "bookingSnapshot" | "pickupAt" | "returnAt"
+	| "period"
+	| "createdAt"
+	| "bookingSnapshot"
+	| "pickupAt"
+	| "returnAt"
+	| "financial"
 > & {
 	period: ParsedOrderPeriod | null;
 	createdAt: Dayjs;
@@ -31,6 +36,27 @@ export type ParsedOrderDetailResponseDto = Omit<
 	};
 	pickupAt: Dayjs;
 	returnAt: Dayjs;
+	financial: Omit<OrderDetailResponseDto["financial"], "items"> & {
+		items: Array<
+			Omit<OrderDetailResponseDto["financial"]["items"][number], "pricing"> & {
+				pricing: Omit<
+					OrderDetailResponseDto["financial"]["items"][number]["pricing"],
+					"manualOverride"
+				> & {
+					manualOverride:
+						| (Omit<
+								NonNullable<
+									OrderDetailResponseDto["financial"]["items"][number]["pricing"]["manualOverride"]
+								>,
+								"setAt"
+							> & {
+								setAt: Dayjs | null;
+							})
+						| null;
+				};
+			}
+		>;
+	};
 };
 
 // -----------------------------------------------------
@@ -62,6 +88,21 @@ function parseOrderDetailResponse(
 				}
 			: null,
 		createdAt: requireDayjs(parseTimestamp(raw.createdAt), "createdAt"),
+		financial: {
+			...raw.financial,
+			items: raw.financial.items.map((item) => ({
+				...item,
+				pricing: {
+					...item.pricing,
+					manualOverride: item.pricing.manualOverride
+						? {
+							...item.pricing.manualOverride,
+							setAt: parseTimestamp(item.pricing.manualOverride.setAt),
+						}
+						: null,
+				},
+			})),
+		},
 	};
 }
 

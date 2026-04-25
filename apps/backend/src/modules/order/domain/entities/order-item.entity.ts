@@ -3,12 +3,14 @@ import Decimal from 'decimal.js';
 import { ContractBasis, OrderItemType } from '@repo/types';
 import { BundleSnapshot } from './bundle-snapshot.entity';
 import { OrderItemOwnerSplit, SplitStatus } from './order-item-owner-split.entity';
+import { ManualPricingOverride } from '../value-objects/manual-pricing-override.value-object';
 import { PriceSnapshot } from '../value-objects/price-snapshot.value-object';
 
 export interface CreateOrderItemProps {
   orderId: string;
   type: OrderItemType;
   priceSnapshot: PriceSnapshot;
+  manualPricingOverride?: ManualPricingOverride | null;
   productTypeId?: string;
   bundleId?: string;
   bundleSnapshot?: BundleSnapshot;
@@ -19,6 +21,7 @@ export interface ReconstituteOrderItemProps {
   orderId: string;
   type: OrderItemType;
   priceSnapshot: PriceSnapshot;
+  manualPricingOverride: ManualPricingOverride | null;
   productTypeId: string | null;
   bundleId: string | null;
   bundleSnapshot: BundleSnapshot | null;
@@ -40,7 +43,8 @@ export class OrderItem {
     public readonly id: string,
     public readonly orderId: string,
     public readonly type: OrderItemType,
-    public readonly priceSnapshot: PriceSnapshot,
+    private _priceSnapshot: PriceSnapshot,
+    private _manualPricingOverride: ManualPricingOverride | null,
     public readonly productTypeId: string | null,
     public readonly bundleId: string | null,
     public readonly bundleSnapshot: BundleSnapshot | null,
@@ -53,6 +57,7 @@ export class OrderItem {
       props.orderId,
       props.type,
       props.priceSnapshot,
+      props.manualPricingOverride ?? null,
       props.productTypeId ?? null,
       props.bundleId ?? null,
       props.bundleSnapshot ?? null,
@@ -66,6 +71,7 @@ export class OrderItem {
       props.orderId,
       props.type,
       props.priceSnapshot,
+      props.manualPricingOverride,
       props.productTypeId,
       props.bundleId,
       props.bundleSnapshot,
@@ -75,6 +81,38 @@ export class OrderItem {
 
   get ownerSplits(): OrderItemOwnerSplit[] {
     return [...this._ownerSplits];
+  }
+
+  get priceSnapshot(): PriceSnapshot {
+    return this._priceSnapshot;
+  }
+
+  get calculatedPriceSnapshot(): PriceSnapshot {
+    return this._priceSnapshot;
+  }
+
+  get manualPricingOverride(): ManualPricingOverride | null {
+    return this._manualPricingOverride;
+  }
+
+  get hasManualPricingOverride(): boolean {
+    return this._manualPricingOverride !== null;
+  }
+
+  get effectiveFinalPrice(): Decimal {
+    return this._manualPricingOverride?.finalPrice ?? this._priceSnapshot.finalPrice;
+  }
+
+  get effectivePricePerBillingUnit(): Decimal {
+    if (this._priceSnapshot.totalUnits <= 0) {
+      return this._priceSnapshot.pricePerBillingUnit;
+    }
+
+    return this.effectiveFinalPrice.div(this._priceSnapshot.totalUnits).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  }
+
+  effectiveDiscountAmount(): Decimal {
+    return this._priceSnapshot.basePrice.minus(this.effectiveFinalPrice);
   }
 
   isBundle(): boolean {
@@ -88,7 +126,7 @@ export class OrderItem {
   /**
    * Assigns an owner split for a specific asset on this order item.
    *
-   * For PRODUCT items: netAmount is the item's finalPrice directly.
+   * For PRODUCT items: netAmount is the item's effective final price directly.
    * For BUNDLE items: netAmount is the pro-rata attributed price for the
    * specific component (productTypeId), computed from the bundle snapshot.
    *
@@ -97,14 +135,15 @@ export class OrderItem {
    * re-check this — it would require loading all existing splits.
    *
    * grossAmount is always the item's basePrice — before discounts.
-   * The owner shares the discount burden in both cases.
+   * The owner shares any discount or surcharge burden in both cases.
    */
   assignOwnerSplit(props: AssignOwnerSplitProps): void {
     const grossAmount = this.priceSnapshot.basePrice;
+    const effectiveFinalPrice = this.effectiveFinalPrice;
 
     const netAmount = this.isBundle()
-      ? this.bundleSnapshot!.attributedPriceFor(props.productTypeId, this.priceSnapshot.finalPrice)
-      : this.priceSnapshot.finalPrice;
+      ? this.bundleSnapshot!.attributedPriceFor(props.productTypeId, effectiveFinalPrice)
+      : effectiveFinalPrice;
 
     const ownerAmount = netAmount.times(props.ownerShare);
     const rentalAmount = netAmount.times(props.rentalShare);
@@ -147,5 +186,9 @@ export class OrderItem {
         s.void();
       }
     });
+  }
+
+  replaceManualPricingOverride(manualPricingOverride: ManualPricingOverride | null): void {
+    this._manualPricingOverride = manualPricingOverride;
   }
 }

@@ -1,9 +1,16 @@
 import {
+	type CreateDraftOrderDto,
 	type CreateOrderDto,
+	createDraftOrderSchema,
 	createOrderSchema,
+	type DraftOrderPricingProposalRequestDto,
+	type DraftOrderPricingProposalResponseDto,
+	draftOrderPricingProposalRequestSchema,
+	draftOrderPricingProposalResponseSchema,
 	type GetCalendarDotsQueryDto,
 	GetCalendarDotsQuerySchema,
 	type GetCalendarDotsResponseDto,
+	type GetDraftOrderPricingParamDto,
 	type GetOrderByIdParamDto,
 	type GetOrdersCalendarQueryDto,
 	GetOrdersCalendarQuerySchema,
@@ -13,14 +20,18 @@ import {
 	type GetOrdersScheduleQuery,
 	GetOrdersScheduleQuerySchema,
 	type GetOrdersScheduleResponse,
+	getDraftOrderPricingParamSchema,
 	getOrderByIdParamSchema,
 	getOrdersQuerySchema,
 	type OrderDetailResponseDto,
 	type OrderListItem,
 	type ProblemDetails,
+	type UpdateDraftOrderPricingRequestDto,
+	updateDraftOrderPricingRequestSchema,
 } from "@repo/schemas";
 import { ActorType } from "@repo/types";
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import {
 	authenticatedApiFetch as apiFetch,
 	authenticatedApiFetchPaginated as apiFetchPaginated,
@@ -118,6 +129,108 @@ export const createOrder = createServerFn({ method: "POST" })
 			if (error instanceof ProblemDetailsError) {
 				return { error: error.problemDetails };
 			}
+			throw error;
+		}
+	});
+
+export const createDraftOrder = createServerFn({ method: "POST" })
+	.inputValidator((data: CreateDraftOrderDto) =>
+		createDraftOrderSchema.parse(data),
+	)
+	.handler(async ({ data }): Promise<string | { error: ProblemDetails }> => {
+		try {
+			return await apiFetch<string>(`${apiUrl}/drafts`, {
+				method: "POST",
+				body: data,
+			});
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+
+			throw error;
+		}
+	});
+
+const draftOrderPricingProposalInputSchema = z.object({
+	params: getDraftOrderPricingParamSchema,
+	dto: draftOrderPricingProposalRequestSchema,
+});
+
+export const getDraftOrderPricingProposal = createServerFn({ method: "POST" })
+	.inputValidator(
+		(data: {
+			params: GetDraftOrderPricingParamDto;
+			dto: DraftOrderPricingProposalRequestDto;
+		}) => draftOrderPricingProposalInputSchema.parse(data),
+	)
+	.handler(
+		async ({
+			data,
+		}): Promise<
+			DraftOrderPricingProposalResponseDto | { error: ProblemDetails }
+		> => {
+			try {
+				const result = await apiFetch<DraftOrderPricingProposalResponseDto>(
+					`${apiUrl}/${data.params.orderId}/draft-pricing/proposal`,
+					{
+						method: "POST",
+						body: data.dto,
+					},
+				);
+
+				return draftOrderPricingProposalResponseSchema.parse(result);
+			} catch (error) {
+				if (error instanceof ProblemDetailsError) {
+					return { error: error.problemDetails };
+				}
+
+				throw error;
+			}
+		},
+	);
+
+const updateDraftOrderPricingInputSchema = z.object({
+	params: getDraftOrderPricingParamSchema,
+	dto: updateDraftOrderPricingRequestSchema,
+});
+
+export const updateDraftOrderPricing = createServerFn({ method: "POST" })
+	.inputValidator(
+		(data: {
+			params: GetDraftOrderPricingParamDto;
+			dto: UpdateDraftOrderPricingRequestDto;
+		}) => updateDraftOrderPricingInputSchema.parse(data),
+	)
+	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+		try {
+			await apiFetch<void>(`${apiUrl}/${data.params.orderId}/draft-pricing`, {
+				method: "POST",
+				body: data.dto,
+			});
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+
+			throw error;
+		}
+	});
+
+export const confirmOrder = createServerFn({ method: "POST" })
+	.inputValidator((data: GetOrderByIdParamDto) =>
+		getOrderByIdParamSchema.parse(data),
+	)
+	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+		try {
+			await apiFetch<void>(`${apiUrl}/${data.orderId}/confirm`, {
+				method: "POST",
+			});
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+
 			throw error;
 		}
 	});
