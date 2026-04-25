@@ -5,6 +5,19 @@ import {
   minutesFromMidnightSchema,
 } from "../shared/rental-temporal.schema";
 
+const moneyAmountStringSchema = z
+  .string()
+  .trim()
+  .regex(
+    /^(0|[1-9]\d*)(\.\d{1,2})?$/,
+    "Amount must be a valid positive decimal with up to 2 decimals",
+  );
+
+const createDraftOrderInitialPricingAdjustmentSchema = z.object({
+  mode: z.literal("TARGET_TOTAL"),
+  targetTotal: moneyAmountStringSchema,
+});
+
 export const productOrderItemSchema = z.object({
   type: z.literal("PRODUCT"),
   productTypeId: z.uuid(),
@@ -76,6 +89,8 @@ export const createOrderSchema = createOrderSchemaBase.superRefine((value, ctx) 
 
 export const createDraftOrderSchema = createOrderSchemaBase.extend({
   customerId: z.uuid().optional().nullable(),
+  initialPricingAdjustment:
+    createDraftOrderInitialPricingAdjustmentSchema.optional().nullable(),
 }).superRefine((value, ctx) => {
   if (
     value.fulfillmentMethod === FulfillmentMethod.DELIVERY &&

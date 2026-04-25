@@ -24,6 +24,7 @@ import {
   InvalidPickupSlotError,
   InvalidReturnSlotError,
   OrderMustContainItemsError,
+  OrderPricingTargetTotalInvalidError,
   ProductTypeNotFoundError,
 } from '../../../domain/errors/order.errors';
 
@@ -51,6 +52,8 @@ export class CreateDraftOrderHttpController {
         currency: dto.currency,
         insuranceSelected: dto.insuranceSelected,
         couponCode: dto.couponCode,
+        setByUserId: user.id,
+        initialPricingAdjustment: dto.initialPricingAdjustment ?? undefined,
         fulfillmentMethod: dto.fulfillmentMethod as FulfillmentMethod,
         deliveryRequest: dto.deliveryRequest ?? undefined,
       }),
@@ -120,6 +123,15 @@ export class CreateDraftOrderHttpController {
           error.message,
           'errors://coupon-validation-failed',
           { reason: error.reason },
+        );
+      }
+
+      if (error instanceof OrderPricingTargetTotalInvalidError) {
+        throw new ProblemException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Invalid Draft Pricing Target',
+          error.message,
+          'errors://invalid-draft-pricing-target',
         );
       }
 

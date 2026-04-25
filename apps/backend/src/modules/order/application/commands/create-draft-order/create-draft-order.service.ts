@@ -30,6 +30,8 @@ import { OrderItem } from 'src/modules/order/domain/entities/order-item.entity';
 import { BundleSnapshot, BundleSnapshotComponent } from 'src/modules/order/domain/entities/bundle-snapshot.entity';
 import { BookingSnapshot } from 'src/modules/order/domain/value-objects/booking-snapshot.value-object';
 import { OrderDeliveryRequest } from 'src/modules/order/domain/value-objects/order-delivery-request.value-object';
+import { ManualPricingOverride } from 'src/modules/order/domain/value-objects/manual-pricing-override.value-object';
+import { DraftOrderPricingService } from 'src/modules/order/domain/services/draft-order-pricing.service';
 
 import { CreateDraftOrderCommand } from './create-draft-order.command';
 import { toPriceSnapshot } from '../create-order/create-order-pricing-snapshot.mapper';
@@ -41,6 +43,7 @@ import {
   InvalidReturnSlotError,
   BundleNotFoundError,
   OrderMustContainItemsError,
+  OrderPricingTargetTotalInvalidError,
   ProductTypeNotFoundError,
 } from '../../../domain/errors/order.errors';
 import { TenantConfigNotFoundException } from '../../../domain/exceptions/order.exceptions';
@@ -55,6 +58,7 @@ export class CreateDraftOrderService implements ICommandHandler<
     private readonly queryBus: QueryBus,
     private readonly orderRepository: OrderRepository,
     private readonly pricingApi: PricingPublicApi,
+    private readonly draftOrderPricingService: DraftOrderPricingService,
   ) {}
 
   async execute(command: CreateDraftOrderCommand): Promise<Result<string, CreateOrderError>> {
@@ -131,35 +135,47 @@ export class CreateDraftOrderService implements ICommandHandler<
       throw error;
     }
 
-    const orderId = await this.prisma.client.$transaction(async (tx) => {
-      const order = Order.create({
-        tenantId: command.tenantId,
-        locationId: command.locationId,
-        currency: command.currency,
-        customerId: command.customerId,
-        period: bookingContext.period,
-        status: OrderStatus.DRAFT,
-        fulfillmentMethod: command.fulfillmentMethod,
-        deliveryRequest:
-          command.fulfillmentMethod === FulfillmentMethod.DELIVERY && command.deliveryRequest
-            ? OrderDeliveryRequest.create(command.deliveryRequest)
-            : null,
-        bookingSnapshot: BookingSnapshot.create({
-          pickupDate: command.pickupDate,
-          pickupTime: command.pickupTime,
-          returnDate: command.returnDate,
-          returnTime: command.returnTime,
-          timezone: bookingContext.timezone,
-        }),
-        insuranceSelected: insuranceTerms.insuranceSelected,
-        insuranceRatePercent: insuranceTerms.insuranceRatePercent,
+    let orderId: string;
+
+    try {
+      orderId = await this.prisma.client.$transaction(async (tx) => {
+        const setAt = new Date();
+        const order = Order.create({
+          tenantId: command.tenantId,
+          locationId: command.locationId,
+          currency: command.currency,
+          customerId: command.customerId,
+          period: bookingContext.period,
+          status: OrderStatus.DRAFT,
+          fulfillmentMethod: command.fulfillmentMethod,
+          deliveryRequest:
+            command.fulfillmentMethod === FulfillmentMethod.DELIVERY && command.deliveryRequest
+              ? OrderDeliveryRequest.create(command.deliveryRequest)
+              : null,
+          bookingSnapshot: BookingSnapshot.create({
+            pickupDate: command.pickupDate,
+            pickupTime: command.pickupTime,
+            returnDate: command.returnDate,
+            returnTime: command.returnTime,
+            timezone: bookingContext.timezone,
+          }),
+          insuranceSelected: insuranceTerms.insuranceSelected,
+          insuranceRatePercent: insuranceTerms.insuranceRatePercent,
+        });
+
+        this.attachResolvedItemsToOrder(order, resolvedItems);
+        this.applyInitialPricingAdjustment(order, command, setAt);
+        await this.orderRepository.save(order, tx);
+
+        return order.id;
       });
+    } catch (error) {
+      if (error instanceof OrderPricingTargetTotalInvalidError) {
+        return err(error);
+      }
 
-      this.attachResolvedItemsToOrder(order, resolvedItems);
-      await this.orderRepository.save(order, tx);
-
-      return order.id;
-    });
+      throw error;
+    }
 
     return ok(orderId);
   }
@@ -339,6 +355,36 @@ export class CreateDraftOrderService implements ICommandHandler<
           }),
           ownerSplits: [],
         }),
+      );
+    }
+  }
+
+  private applyInitialPricingAdjustment(order: Order, command: CreateDraftOrderCommand, setAt: Date): void {
+    if (command.initialPricingAdjustment?.mode !== 'TARGET_TOTAL') {
+      return;
+    }
+
+    const finalPriceByItemId = this.draftOrderPricingService.buildFinalPriceMapFromTargetTotal(
+      order,
+      new Decimal(command.initialPricingAdjustment.targetTotal),
+    );
+
+    for (const [orderItemId, finalPrice] of finalPriceByItemId) {
+      const item = order.getItems().find((candidate) => candidate.id === orderItemId);
+      if (!item) {
+        throw new Error(`Order item '${orderItemId}' was not found during draft pricing initialization.`);
+      }
+
+      order.replaceItemManualPricingOverride(
+        orderItemId,
+        finalPrice.eq(item.calculatedPriceSnapshot.finalPrice)
+          ? null
+          : ManualPricingOverride.create({
+              finalPrice,
+              setByUserId: command.setByUserId,
+              setAt,
+              previousFinalPrice: item.effectiveFinalPrice,
+            }),
       );
     }
   }

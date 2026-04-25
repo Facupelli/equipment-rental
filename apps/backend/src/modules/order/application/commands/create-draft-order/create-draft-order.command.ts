@@ -16,6 +16,13 @@ export class CreateDraftOrderCommand {
   public readonly fulfillmentMethod: FulfillmentMethod;
   public readonly deliveryRequest: CreateOrderDeliveryRequestCommand | undefined;
   public readonly couponCode?: string;
+  public readonly setByUserId: string;
+  public readonly initialPricingAdjustment:
+    | {
+        mode: 'TARGET_TOTAL';
+        targetTotal: string;
+      }
+    | undefined;
 
   constructor(props: {
     tenantId: string;
@@ -31,6 +38,11 @@ export class CreateDraftOrderCommand {
     fulfillmentMethod: FulfillmentMethod;
     deliveryRequest?: CreateOrderDeliveryRequestCommand;
     couponCode?: string;
+    setByUserId: string;
+    initialPricingAdjustment?: {
+      mode: 'TARGET_TOTAL';
+      targetTotal: string;
+    };
   }) {
     this.tenantId = props.tenantId;
     this.locationId = props.locationId;
@@ -45,5 +57,7 @@ export class CreateDraftOrderCommand {
     this.fulfillmentMethod = props.fulfillmentMethod;
     this.deliveryRequest = props.deliveryRequest;
     this.couponCode = props.couponCode;
+    this.setByUserId = props.setByUserId;
+    this.initialPricingAdjustment = props.initialPricingAdjustment;
   }
 }

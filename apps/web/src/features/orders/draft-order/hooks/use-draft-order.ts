@@ -4,8 +4,8 @@ import { useReducer } from "react";
 import type {
 	DraftOrderCustomerRef,
 	DraftOrderItem,
+	DraftOrderBudgetState,
 	DraftOrderPricingSnapshot,
-	DraftOrderProposalPricingState,
 	DraftOrderSelectedBundleItem,
 	DraftOrderSelectedProductItem,
 	DraftOrderState,
@@ -15,10 +15,11 @@ import {
 	EMPTY_DRAFT_ORDER_RENTAL_PERIOD,
 } from "@/features/orders/draft-order/types/draft-order.types";
 import {
+	buildDraftOrderBudget,
 	fromMoneyCents,
-	getEffectiveFinalPrice,
-	getManualAdjustmentAmount,
-	getManualAdjustmentDirection,
+	getBudgetAdjustmentAmount,
+	getBudgetAdjustmentDirection,
+	getBudgetPreviewFinalPrice,
 	normalizeMoneyAmount,
 	toMoneyCents,
 } from "@/features/orders/draft-order/utils/draft-order-pricing";
@@ -50,14 +51,8 @@ type DraftOrderAction =
 	  }
 	| { type: "remove_item"; draftItemId: string }
 	| {
-			type: "set_item_manual_override";
-			draftItemId: string;
-			finalPrice: string | null;
-			reason?: string;
-	  }
-	| {
-			type: "set_proposal_pricing";
-			proposalPricing: DraftOrderProposalPricingState | null;
+			type: "set_budget_target_total";
+			targetTotal: string | null;
 	  }
 	| { type: "reset" };
 
@@ -69,15 +64,23 @@ export function createInitialDraftOrderState(): DraftOrderState {
 		fulfillmentMethod: FulfillmentMethod.PICKUP,
 		deliveryRequest: null,
 		items: [],
-		proposalPricing: null,
+		budget: null,
 	};
 }
 
-function clearProposalState(state: DraftOrderState): DraftOrderState {
+function recalculateBudget(state: DraftOrderState): DraftOrderState {
+	const targetTotal = state.budget?.targetTotal ?? null;
+	const budget = buildDraftOrderBudget(state.items, targetTotal);
+
 	return {
 		...state,
-		items: state.items.map((item) => ({ ...item, proposalPricing: null })),
-		proposalPricing: null,
+		budget,
+		items: state.items.map((item) => ({
+			...item,
+			budgetPreview:
+				budget?.items.find((preview) => preview.draftItemId === item.draftItemId) ??
+				null,
+		})),
 	};
 }
 
@@ -132,64 +135,35 @@ function draftOrderReducer(
 			};
 
 		case "add_item":
-			return clearProposalState({
+			return recalculateBudget({
 				...state,
 				currency: action.item.pricingSnapshot.currency,
 				items: [...state.items, action.item],
 			});
 
 		case "remove_item":
-			return clearProposalState({
+			return recalculateBudget({
 				...state,
 				items: state.items.filter(
 					(item) => item.draftItemId !== action.draftItemId,
 				),
 			});
 
-		case "set_item_manual_override": {
-			const normalizedFinalPrice =
-				action.finalPrice === null
-					? null
-					: normalizeMoneyAmount(action.finalPrice);
+		case "set_budget_target_total": {
+			const normalizedTargetTotal =
+				action.targetTotal === null ? null : normalizeMoneyAmount(action.targetTotal);
 
-			if (action.finalPrice !== null && normalizedFinalPrice === null) {
+			if (action.targetTotal !== null && normalizedTargetTotal === null) {
 				return state;
 			}
 
-			return clearProposalState({
+			return recalculateBudget({
 				...state,
-				items: state.items.map((item) =>
-					item.draftItemId === action.draftItemId
-						? {
-								...item,
-								manualOverride:
-									normalizedFinalPrice === null ||
-									normalizedFinalPrice === item.pricingSnapshot.finalPrice
-										? null
-										: {
-												finalPrice: normalizedFinalPrice,
-												reason: action.reason,
-											},
-							}
-						: item,
-				),
+				budget:
+					normalizedTargetTotal === null
+						? null
+						: ({ targetTotal: normalizedTargetTotal } as DraftOrderBudgetState),
 			});
-		}
-
-		case "set_proposal_pricing": {
-			const proposalItemsById = new Map(
-				action.proposalPricing?.items.map((item) => [item.orderItemId, item]) ??
-					[],
-			);
-
-			return {
-				...state,
-				proposalPricing: action.proposalPricing,
-				items: state.items.map((item) => ({
-					...item,
-					proposalPricing: proposalItemsById.get(item.draftItemId) ?? null,
-				})),
-			};
 		}
 
 		case "reset":
@@ -208,8 +182,7 @@ function createDraftItem(
 		draftItemId: crypto.randomUUID(),
 		selection,
 		pricingSnapshot: pricing,
-		manualOverride: null,
-		proposalPricing: null,
+		budgetPreview: null,
 	};
 }
 
@@ -244,44 +217,37 @@ export function useDraftOrder() {
 	const calculatedSubtotalCents = state.items.reduce((sum, item) => {
 		return sum + (toMoneyCents(item.pricingSnapshot.finalPrice) ?? 0);
 	}, 0);
-	const effectiveSubtotalCents = state.items.reduce((sum, item) => {
-		return sum + (toMoneyCents(getEffectiveFinalPrice(item)) ?? 0);
+	const budgetSubtotalCents = state.items.reduce((sum, item) => {
+		return sum + (toMoneyCents(getBudgetPreviewFinalPrice(item)) ?? 0);
 	}, 0);
-	const manualAdjustmentDeltaCents =
-		effectiveSubtotalCents - calculatedSubtotalCents;
+	const budgetAdjustmentDeltaCents = budgetSubtotalCents - calculatedSubtotalCents;
 
 	return {
 		state,
 		derived: {
 			totals: {
 				calculatedSubtotal: fromMoneyCents(calculatedSubtotalCents),
-				effectiveSubtotal: fromMoneyCents(effectiveSubtotalCents),
-				proposalSubtotal: state.proposalPricing?.targetTotal ?? null,
-				manualAdjustmentTotal: fromMoneyCents(
-					Math.abs(manualAdjustmentDeltaCents),
+				budgetSubtotal: fromMoneyCents(budgetSubtotalCents),
+				targetTotal: state.budget?.targetTotal ?? null,
+				budgetAdjustmentTotal: fromMoneyCents(
+					Math.abs(budgetAdjustmentDeltaCents),
 				),
-				manualAdjustmentDirection:
-					manualAdjustmentDeltaCents < 0
+				budgetAdjustmentDirection:
+					budgetAdjustmentDeltaCents < 0
 						? "DISCOUNT"
-						: manualAdjustmentDeltaCents > 0
+						: budgetAdjustmentDeltaCents > 0
 							? "SURCHARGE"
 							: ("NONE" as "DISCOUNT" | "SURCHARGE" | "NONE"),
-				hasManualOverrides: state.items.some(
-					(item) => item.manualOverride !== null,
-				),
-				manualOverrideCount: state.items.filter(
-					(item) => item.manualOverride !== null,
-				).length,
-				hasProposalPricing: Boolean(state.proposalPricing),
+				hasBudget: Boolean(state.budget),
 			},
 			pricingByItemId: Object.fromEntries(
 				state.items.map((item) => [
 					item.draftItemId,
 					{
-						effectiveFinalPrice: getEffectiveFinalPrice(item),
-						manualAdjustmentAmount: getManualAdjustmentAmount(item),
-						manualAdjustmentDirection: getManualAdjustmentDirection(item),
-						isManualOverrideActive: item.manualOverride !== null,
+						budgetPreviewFinalPrice: getBudgetPreviewFinalPrice(item),
+						budgetAdjustmentAmount: getBudgetAdjustmentAmount(item),
+						budgetAdjustmentDirection: getBudgetAdjustmentDirection(item),
+						hasBudgetPreview: item.budgetPreview !== null,
 					},
 				]),
 			),
@@ -370,19 +336,8 @@ export function useDraftOrder() {
 				}),
 			removeItem: (draftItemId: string) =>
 				dispatch({ type: "remove_item", draftItemId }),
-			setItemManualOverride: (
-				draftItemId: string,
-				finalPrice: string | null,
-				reason?: string,
-			) =>
-				dispatch({
-					type: "set_item_manual_override",
-					draftItemId,
-					finalPrice,
-					reason,
-				}),
-			clearProposalPricing: () =>
-				dispatch({ type: "set_proposal_pricing", proposalPricing: null }),
+			setBudgetTargetTotal: (targetTotal: string | null) =>
+				dispatch({ type: "set_budget_target_total", targetTotal }),
 			resetDraft: () => dispatch({ type: "reset" }),
 		},
 	};

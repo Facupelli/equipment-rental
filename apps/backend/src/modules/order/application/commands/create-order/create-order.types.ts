@@ -18,6 +18,7 @@ import {
   NoActiveContractForAssetError,
   OrderMustContainItemsError,
   OrderItemUnavailableError,
+  OrderPricingTargetTotalInvalidError,
   ProductTypeNotFoundError,
   UnavailableItem,
 } from '../../../domain/errors/order.errors';
@@ -79,7 +80,8 @@ export type CreateOrderError =
   | ProductTypeNotBookableAtLocationError
   | BundleNotBookableAtLocationError
   | CouponNotFoundError
-  | CouponValidationError;
+  | CouponValidationError
+  | OrderPricingTargetTotalInvalidError;
 
 export type ResolveDemandResult = {
   unavailableItems: UnavailableItem[];

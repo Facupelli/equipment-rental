@@ -98,7 +98,6 @@ export function useDraftOrderItems() {
 		addDemoProductItem: actions.addDemoProductItem,
 		addDemoBundleItem: actions.addDemoBundleItem,
 		removeItem: actions.removeItem,
-		setItemManualOverride: actions.setItemManualOverride,
 	};
 }
 
@@ -117,10 +116,10 @@ export function useDraftOrderPricing() {
 
 	return {
 		currency: state.currency,
-		proposalPricing: state.proposalPricing,
+		budget: state.budget,
 		pricingByItemId: derived.pricingByItemId,
 		totals: derived.totals,
-		clearProposalPricing: actions.clearProposalPricing,
+		setBudgetTargetTotal: actions.setBudgetTargetTotal,
 	};
 }
 

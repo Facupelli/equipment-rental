@@ -2,7 +2,7 @@ import type { CustomerResponseDto } from "@repo/schemas";
 import { FulfillmentMethod } from "@repo/types";
 import { es } from "date-fns/locale";
 import { CalendarIcon, Loader2, Search, UserRound, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -41,10 +41,6 @@ import {
 } from "@/features/orders/draft-order/draft-order.context";
 import { useSaveDraftOrder } from "@/features/orders/draft-order/hooks/use-save-draft-order";
 import {
-	getEffectiveFinalPrice,
-	getManualAdjustmentAmount,
-	getManualAdjustmentDirection,
-	isManualOverrideActive,
 	isValidNonNegativeMoneyAmount,
 	normalizeMoneyAmount,
 } from "@/features/orders/draft-order/utils/draft-order-pricing";
@@ -61,9 +57,8 @@ export function DraftOrderComposerPage() {
 				<ItemsSection />
 			</div>
 
-			<div className="space-y-4">
-				<PricingSummarySection />
-				<ActionsSection />
+			<div className="xl:sticky xl:top-6 xl:self-start">
+				<DraftSidebarSection />
 			</div>
 		</div>
 	);
@@ -74,10 +69,7 @@ function DraftSetupSection() {
 		<Card>
 			<CardHeader>
 				<CardTitle>Configuración del borrador</CardTitle>
-				<CardDescription>
-					Cliente opcional, período compartido y logística base para todo el
-					pedido.
-				</CardDescription>
+				<CardDescription>Cliente, período y logística.</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-8">
 				<CustomerLinkSection />
@@ -114,9 +106,7 @@ function CustomerLinkSection() {
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-1">
 					<h2 className="text-base font-semibold">Cliente</h2>
-					<p className="text-sm text-muted-foreground">
-						Podés crear el borrador sin cliente y vincularlo más tarde.
-					</p>
+					<p className="text-sm text-muted-foreground">Opcional.</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
 					{customer ? (
@@ -168,9 +158,7 @@ function CustomerLinkSection() {
 						</div>
 					)
 				) : (
-					<p className="text-sm text-muted-foreground">
-						Escribí para buscar y vincular un cliente opcionalmente.
-					</p>
+					<p className="text-sm text-muted-foreground">Escribí para buscar.</p>
 				)}
 			</div>
 
@@ -353,17 +341,14 @@ function FulfillmentSection() {
 }
 
 function ItemsSection() {
-	const { items, removeItem, setItemManualOverride } = useDraftOrderItems();
+	const { items, removeItem } = useDraftOrderItems();
 	const { pricingByItemId } = useDraftOrderPricing();
 
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>Ítems</CardTitle>
-				<CardDescription>
-					Buscá ítems disponibles para este contexto y agregalos al borrador con
-					un precio calculado como referencia local.
-				</CardDescription>
+				<CardDescription>Agregá ítems al borrador.</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<DraftOrderItemPicker />
@@ -381,7 +366,7 @@ function ItemsSection() {
 									<TableHead>Tipo</TableHead>
 									<TableHead>Cantidad</TableHead>
 									<TableHead>Precio</TableHead>
-									<TableHead>Ajuste manual</TableHead>
+									<TableHead>Presupuesto</TableHead>
 									<TableHead className="text-right">Acciones</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -394,15 +379,11 @@ function ItemsSection() {
 											<TableCell>
 												<div className="space-y-1">
 													<p className="font-medium">{item.selection.label}</p>
-													{isManualOverrideActive(item) ? (
-														<p className="text-xs font-medium text-amber-700">
-															Precio ajustado manualmente
-														</p>
-													) : (
-														<p className="text-xs text-muted-foreground">
-															Usando el precio calculado
-														</p>
-													)}
+													<p className="text-xs text-muted-foreground">
+														{pricing?.hasBudgetPreview
+															? "Vista previa proporcional"
+															: "Precio calculado"}
+													</p>
 												</div>
 											</TableCell>
 											<TableCell>
@@ -419,15 +400,19 @@ function ItemsSection() {
 												<ItemPricingSummary item={item} />
 											</TableCell>
 											<TableCell>
-												<ManualOverrideEditor
+												<ItemBudgetPreview
 													item={item}
-													effectiveFinalPrice={
-														pricing?.effectiveFinalPrice ??
-														getEffectiveFinalPrice(item)
+													budgetPreviewFinalPrice={
+														pricing?.budgetPreviewFinalPrice ??
+														item.pricingSnapshot.finalPrice
 													}
-													onCommit={(finalPrice) =>
-														setItemManualOverride(item.draftItemId, finalPrice)
+													budgetAdjustmentAmount={
+														pricing?.budgetAdjustmentAmount ?? "0.00"
 													}
+													budgetAdjustmentDirection={
+														pricing?.budgetAdjustmentDirection ?? "NONE"
+													}
+													hasBudgetPreview={pricing?.hasBudgetPreview ?? false}
 												/>
 											</TableCell>
 											<TableCell className="text-right">
@@ -451,70 +436,55 @@ function ItemsSection() {
 	);
 }
 
-function PricingSummarySection() {
-	const { currency, totals } = useDraftOrderPricing();
+function DraftSidebarSection() {
+	const { isReadyForSave, itemCount, resetDraft } = useDraftOrderActions();
+	const { customer } = useDraftOrderCustomer();
+	const { rentalPeriod } = useDraftOrderRentalPeriod();
+	const { fulfillmentMethod } = useDraftOrderFulfillment();
+	const { currency, totals, budget, setBudgetTargetTotal } =
+		useDraftOrderPricing();
+	const { handleSaveDraft, saveError, isSaving } = useSaveDraftOrder();
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Resumen de precios</CardTitle>
+				<CardTitle>Resumen del borrador</CardTitle>
 				<CardDescription>
-					La vista usa el ajuste manual si existe; si no, muestra la referencia
-					calculada.
+					Total visible mientras ajustás precios e ítems.
 				</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-4">
+			<CardContent className="space-y-6">
 				<div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
 					<SummaryRow
 						label="Subtotal calculado"
 						value={formatMoney(totals.calculatedSubtotal, currency)}
 					/>
 					<SummaryRow
-						label="Subtotal efectivo"
-						value={formatMoney(totals.effectiveSubtotal, currency)}
+						label="Total presupuesto"
+						value={formatMoney(totals.budgetSubtotal, currency)}
 					/>
 					<SummaryRow
-						label="Ajustes manuales"
-						value={
-							totals.hasManualOverrides
-								? `${totals.manualOverrideCount} activos`
-								: "Sin ajustes"
-						}
+						label="Objetivo"
+						value={formatMoney(
+							totals.targetTotal ?? totals.calculatedSubtotal,
+							currency,
+						)}
 					/>
 					<SummaryRow
-						label="Ajuste manual total"
+						label="Ajuste"
 						value={formatSignedMoney(
-							totals.manualAdjustmentTotal,
-							totals.manualAdjustmentDirection,
+							totals.budgetAdjustmentTotal,
+							totals.budgetAdjustmentDirection,
 							currency,
 						)}
 					/>
 				</div>
 
-				<ProposalPlaceholder currency={currency} />
-			</CardContent>
-		</Card>
-	);
-}
-
-function ActionsSection() {
-	const { isReadyForSave, itemCount, resetDraft } = useDraftOrderActions();
-	const { customer } = useDraftOrderCustomer();
-	const { rentalPeriod } = useDraftOrderRentalPeriod();
-	const { fulfillmentMethod } = useDraftOrderFulfillment();
-	const { handleSaveDraft, saveError, isSaving, hasManualOverrides } =
-		useSaveDraftOrder();
-
-	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Acciones</CardTitle>
-				<CardDescription>
-					Acciones locales solamente. El borrador sigue en memoria hasta
-					implementar `Guardar borrador`.
-				</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-4">
+				<BudgetSection
+					currency={currency}
+					targetTotal={budget?.targetTotal ?? ""}
+					onChange={setBudgetTargetTotal}
+				/>
 				<div className="space-y-2 rounded-lg border border-border bg-muted/20 p-4 text-sm">
 					<SummaryRow
 						label="Cliente"
@@ -539,11 +509,12 @@ function ActionsSection() {
 					<p className="text-sm text-destructive">{saveError}</p>
 				) : null}
 
-				<div className="flex flex-wrap gap-2">
+				<div className="flex flex-col gap-2">
 					<Button
 						type="button"
 						onClick={() => void handleSaveDraft()}
 						disabled={isSaving}
+						className="w-full"
 					>
 						{isSaving ? "Guardando..." : "Guardar borrador"}
 					</Button>
@@ -552,18 +523,17 @@ function ActionsSection() {
 						variant="outline"
 						onClick={resetDraft}
 						disabled={isSaving}
+						className="w-full"
 					>
 						Reiniciar borrador local
 					</Button>
 				</div>
 
-				<p className="text-sm text-muted-foreground">
-					{isReadyForSave
-						? hasManualOverrides
-							? "Al guardar se crea el borrador y luego se persisten los ajustes manuales por ítem."
-							: "El borrador ya tiene la forma mínima para guardarse sin pasos extra de precio."
-						: "Falta completar el período o los ítems antes de guardar."}
-				</p>
+				{!isReadyForSave && (
+					<p className="text-sm text-muted-foreground">
+						"Falta completar el período o los ítems antes de guardar."
+					</p>
+				)}
 			</CardContent>
 		</Card>
 	);
@@ -737,184 +707,130 @@ function ItemPricingSummary({
 	item: ReturnType<typeof useDraftOrderItems>["items"][number];
 }) {
 	const currency = item.pricingSnapshot.currency;
-	const effectiveFinalPrice = getEffectiveFinalPrice(item);
 	const hasCalculatedDiscount = item.pricingSnapshot.discountTotal !== "0.00";
-	const hasManualOverride = isManualOverrideActive(item);
-	const manualAdjustmentAmount = getManualAdjustmentAmount(item);
-	const manualAdjustmentDirection = getManualAdjustmentDirection(item);
 
 	return (
-		<div className="space-y-3 text-sm">
-			<div className="space-y-1">
+		<div className="space-y-1 text-sm">
+			<PricingLine
+				label="Base"
+				value={formatMoney(item.pricingSnapshot.basePrice, currency)}
+			/>
+			{hasCalculatedDiscount ? (
 				<PricingLine
-					label="Base"
-					value={formatMoney(item.pricingSnapshot.basePrice, currency)}
+					label="Descuento"
+					value={`-${formatMoney(item.pricingSnapshot.discountTotal, currency)}`}
+					tone="success"
 				/>
-				{hasCalculatedDiscount ? (
-					<PricingLine
-						label="Descuento calculado"
-						value={`-${formatMoney(item.pricingSnapshot.discountTotal, currency)}`}
-						tone="success"
-					/>
-				) : null}
-				<PricingLine
-					label="Total calculado"
-					value={formatMoney(item.pricingSnapshot.finalPrice, currency)}
-				/>
-			</div>
-
-			<div
-				className={
-					hasManualOverride
-						? "rounded-md border border-amber-200 bg-amber-50/70 p-3"
-						: "rounded-md border border-border bg-muted/20 p-3"
-				}
-			>
-				<PricingLine
-					label="Precio efectivo"
-					value={formatMoney(effectiveFinalPrice, currency)}
-					valueClassName="font-semibold"
-				/>
-				<p className="mt-1 text-xs text-muted-foreground">
-					{hasManualOverride
-						? "Se muestra el ajuste manual por encima de la referencia calculada."
-						: "Todavía coincide con el precio calculado."}
-				</p>
-				{hasManualOverride && manualAdjustmentDirection !== "NONE" ? (
-					<p
-						className={`mt-2 text-xs font-medium ${manualAdjustmentDirection === "DISCOUNT" ? "text-emerald-700" : "text-amber-700"}`}
-					>
-						{manualAdjustmentDirection === "DISCOUNT"
-							? `Descuento manual: -${formatMoney(manualAdjustmentAmount, currency)}`
-							: `Recargo manual: +${formatMoney(manualAdjustmentAmount, currency)}`}
-					</p>
-				) : null}
-			</div>
+			) : null}
 		</div>
 	);
 }
 
-function ManualOverrideEditor({
+function ItemBudgetPreview({
 	item,
-	effectiveFinalPrice,
-	onCommit,
+	budgetPreviewFinalPrice,
+	budgetAdjustmentAmount,
+	budgetAdjustmentDirection,
+	hasBudgetPreview,
 }: {
 	item: ReturnType<typeof useDraftOrderItems>["items"][number];
-	effectiveFinalPrice: string;
-	onCommit: (finalPrice: string | null) => void;
+	budgetPreviewFinalPrice: string;
+	budgetAdjustmentAmount: string;
+	budgetAdjustmentDirection: "DISCOUNT" | "SURCHARGE" | "NONE";
+	hasBudgetPreview: boolean;
 }) {
-	const [value, setValue] = useState(
-		item.manualOverride?.finalPrice ?? item.pricingSnapshot.finalPrice,
+	return (
+		<div className="space-y-1 text-sm">
+			<PricingLine
+				label="Objetivo"
+				value={formatMoney(
+					budgetPreviewFinalPrice,
+					item.pricingSnapshot.currency,
+				)}
+				valueClassName={hasBudgetPreview ? "font-semibold" : "font-medium"}
+			/>
+			{hasBudgetPreview && budgetAdjustmentDirection !== "NONE" ? (
+				<PricingLine
+					label={
+						budgetAdjustmentDirection === "DISCOUNT" ? "Ajuste" : "Recargo"
+					}
+					value={formatSignedMoney(
+						budgetAdjustmentAmount,
+						budgetAdjustmentDirection,
+						item.pricingSnapshot.currency,
+					)}
+					valueClassName={
+						budgetAdjustmentDirection === "DISCOUNT"
+							? "font-medium text-emerald-700"
+							: "font-medium text-amber-700"
+					}
+				/>
+			) : null}
+		</div>
 	);
-	const [error, setError] = useState<string | null>(null);
-	const hasManualOverride = isManualOverrideActive(item);
+}
 
-	function applyValue() {
-		const trimmed = value.trim();
+function BudgetSection({
+	currency,
+	targetTotal,
+	onChange,
+}: {
+	currency: string;
+	targetTotal: string;
+	onChange: (targetTotal: string | null) => void;
+}) {
+	const [value, setValue] = useState(targetTotal);
+	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		setValue(targetTotal);
+	}, [targetTotal]);
+
+	function handleApply(rawValue: string) {
+		const trimmed = rawValue.trim();
 
 		if (!trimmed) {
-			onCommit(null);
-			setValue(item.pricingSnapshot.finalPrice);
+			onChange(null);
+			setValue("");
 			setError(null);
 			return;
 		}
 
 		if (!isValidNonNegativeMoneyAmount(trimmed)) {
-			setError("Ingresá un monto valido mayor o igual a 0.00.");
+			setError("Ingresá un monto valido.");
 			return;
 		}
 
 		const normalizedValue = normalizeMoneyAmount(trimmed);
 
 		if (!normalizedValue) {
-			setError("Ingresá un monto valido mayor o igual a 0.00.");
+			setError("Ingresá un monto valido.");
 			return;
 		}
 
-		onCommit(normalizedValue);
-		setValue(
-			normalizedValue === item.pricingSnapshot.finalPrice
-				? item.pricingSnapshot.finalPrice
-				: normalizedValue,
-		);
-		setError(null);
-	}
-
-	function clearOverride() {
-		onCommit(null);
-		setValue(item.pricingSnapshot.finalPrice);
+		onChange(normalizedValue);
+		setValue(normalizedValue);
 		setError(null);
 	}
 
 	return (
-		<div className="space-y-3">
-			<div className="space-y-1">
-				<p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-					Precio manual
-				</p>
-				<Input
-					inputMode="decimal"
-					value={value}
-					onChange={(event) => {
-						setValue(event.target.value);
-						if (error) {
-							setError(null);
-						}
-					}}
-					onBlur={applyValue}
-					placeholder={item.pricingSnapshot.finalPrice}
-				/>
-				<p className="text-xs text-muted-foreground">
-					Precio actual:{" "}
-					{formatMoney(effectiveFinalPrice, item.pricingSnapshot.currency)}
-				</p>
-				{error ? <p className="text-xs text-destructive">{error}</p> : null}
-			</div>
-
-			<div className="flex flex-wrap gap-2">
-				<Button type="button" size="sm" variant="outline" onClick={applyValue}>
-					Aplicar
-				</Button>
-				<Button
-					type="button"
-					size="sm"
-					variant="ghost"
-					onClick={clearOverride}
-					disabled={!hasManualOverride}
-				>
-					Limpiar
-				</Button>
-			</div>
-		</div>
-	);
-}
-
-function ProposalPlaceholder({ currency }: { currency: string }) {
-	return (
-		<div className="space-y-4 rounded-lg border border-dashed border-border bg-muted/10 p-4">
-			<div className="space-y-1">
-				<h3 className="text-sm font-semibold">Flujo de presupuesto</h3>
-				<p className="text-sm text-muted-foreground">
-					La distribución proporcional del total objetivo sigue reservada al
-					backend. Esta vista todavía no la ejecuta mientras el borrador sea
-					local y no persistido.
-				</p>
-			</div>
-
-			<div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-				<div className="space-y-2">
-					<p className="text-sm font-medium">Total objetivo</p>
-					<Input value={formatMoney("0.00", currency)} disabled />
-				</div>
-				<Button type="button" disabled>
-					Generar presupuesto
-				</Button>
-			</div>
-
+		<div className="space-y-2 rounded-lg border border-border bg-muted/10 p-4">
+			<p className="text-sm font-semibold">Presupuesto</p>
+			<Input
+				inputMode="decimal"
+				value={value}
+				onChange={(event) => {
+					setValue(event.target.value);
+					if (error) {
+						setError(null);
+					}
+				}}
+				onBlur={() => handleApply(value)}
+				placeholder={`0.00 ${currency}`}
+			/>
+			{error ? <p className="text-xs text-destructive">{error}</p> : null}
 			<p className="text-xs text-muted-foreground">
-				Se conectará cuando exista un endpoint de propuesta para borradores no
-				persistidos, o después de `Guardar borrador` en una revisión posterior
-				del flujo.
+				Se distribuye proporcionalmente entre los ítems.
 			</p>
 		</div>
 	);

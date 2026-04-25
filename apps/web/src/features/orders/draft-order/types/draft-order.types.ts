@@ -32,13 +32,8 @@ export type DraftOrderPricingSnapshot = {
 	discountLines: DraftOrderDiscountLine[];
 };
 
-export type DraftOrderItemManualOverride = {
-	finalPrice: string;
-	reason?: string;
-};
-
-export type DraftOrderItemProposalPricing = {
-	orderItemId: string;
+export type DraftOrderItemBudgetPreview = {
+	draftItemId: string;
 	label: string;
 	currency: string;
 	basePrice: string;
@@ -69,16 +64,15 @@ export type DraftOrderItem = {
 	draftItemId: string;
 	selection: DraftOrderSelectedItem;
 	pricingSnapshot: DraftOrderPricingSnapshot;
-	manualOverride: DraftOrderItemManualOverride | null;
-	proposalPricing: DraftOrderItemProposalPricing | null;
+	budgetPreview: DraftOrderItemBudgetPreview | null;
 };
 
-export type DraftOrderProposalPricingState = {
+export type DraftOrderBudgetState = {
 	currency: string;
 	currentItemsSubtotal: string;
 	targetTotal: string;
 	proposedDiscountTotal: string;
-	items: DraftOrderItemProposalPricing[];
+	items: DraftOrderItemBudgetPreview[];
 };
 
 export type DraftOrderState = {
@@ -88,7 +82,7 @@ export type DraftOrderState = {
 	fulfillmentMethod: FulfillmentMethod;
 	deliveryRequest: DraftOrderDeliveryRequestDraft | null;
 	items: DraftOrderItem[];
-	proposalPricing: DraftOrderProposalPricingState | null;
+	budget: DraftOrderBudgetState | null;
 };
 
 export const EMPTY_DRAFT_ORDER_RENTAL_PERIOD: DraftOrderRentalPeriod = {

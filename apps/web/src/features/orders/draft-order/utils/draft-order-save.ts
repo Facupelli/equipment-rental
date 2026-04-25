@@ -1,8 +1,6 @@
 import type {
 	CreateDraftOrderDto,
 	DeliveryRequestDto,
-	OrderDetailResponseDto,
-	UpdateDraftOrderPricingRequestDto,
 } from "@repo/schemas";
 import { FulfillmentMethod } from "@repo/types";
 import type {
@@ -60,47 +58,13 @@ export function buildCreateDraftOrderPayload({
 		returnTime: state.rentalPeriod.returnTime ?? 0,
 		currency: state.currency,
 		insuranceSelected: false,
+		initialPricingAdjustment: buildInitialPricingAdjustment(state),
 		fulfillmentMethod: state.fulfillmentMethod,
 		deliveryRequest: normalizeDeliveryRequest(
 			state.fulfillmentMethod,
 			state.deliveryRequest,
 		),
 		items: state.items.map((item) => toCreateDraftOrderItem(item)),
-	};
-}
-
-export function buildManualOverridePricingPayload({
-	localItems,
-	persistedItems,
-}: {
-	localItems: DraftOrderItem[];
-	persistedItems: OrderDetailResponseDto["items"];
-}): UpdateDraftOrderPricingRequestDto | null {
-	const overriddenItems = localItems.filter((item) => item.manualOverride !== null);
-
-	if (overriddenItems.length === 0) {
-		return null;
-	}
-
-	if (persistedItems.length !== localItems.length) {
-		throw new Error("No pudimos reconciliar los items persistidos del borrador.");
-	}
-
-	return {
-		mode: "ITEMS",
-		items: localItems.map((item, index) => {
-			const persistedItem = persistedItems[index];
-
-			if (!persistedItem || persistedItem.type !== toPersistedItemType(item)) {
-				throw new Error("No pudimos reconciliar los items persistidos del borrador.");
-			}
-
-			return {
-				orderItemId: persistedItem.id,
-				finalPrice:
-					item.manualOverride?.finalPrice ?? item.pricingSnapshot.finalPrice,
-			};
-		}),
 	};
 }
 
@@ -117,6 +81,19 @@ function toCreateDraftOrderItem(item: DraftOrderItem): CreateDraftOrderDto["item
 	return {
 		type: "BUNDLE",
 		bundleId: item.selection.bundleId,
+	};
+}
+
+function buildInitialPricingAdjustment(
+	state: DraftOrderState,
+): CreateDraftOrderDto["initialPricingAdjustment"] {
+	if (!state.budget || state.budget.targetTotal === state.budget.currentItemsSubtotal) {
+		return null;
+	}
+
+	return {
+		mode: "TARGET_TOTAL",
+		targetTotal: state.budget.targetTotal,
 	};
 }
 
@@ -139,10 +116,6 @@ function normalizeDeliveryRequest(
 		country: deliveryRequest.country.trim(),
 		instructions: deliveryRequest.instructions.trim() || null,
 	};
-}
-
-function toPersistedItemType(item: DraftOrderItem): "PRODUCT" | "BUNDLE" {
-	return item.selection.type;
 }
 
 function isDeliveryRequestComplete(
