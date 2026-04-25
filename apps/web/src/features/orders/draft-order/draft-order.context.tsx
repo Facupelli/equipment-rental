@@ -95,8 +95,6 @@ export function useDraftOrderItems() {
 		items: state.items,
 		addPricedProductItem: actions.addPricedProductItem,
 		addPricedBundleItem: actions.addPricedBundleItem,
-		addDemoProductItem: actions.addDemoProductItem,
-		addDemoBundleItem: actions.addDemoBundleItem,
 		removeItem: actions.removeItem,
 	};
 }

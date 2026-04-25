@@ -35,7 +35,8 @@ export function DraftOrderItemPicker() {
 	const { customer } = useDraftOrderCustomer();
 	const { currency } = useDraftOrderPricing();
 	const { rentalPeriod } = useDraftOrderRentalPeriod();
-	const { addPricedProductItem, addPricedBundleItem } = useDraftOrderItems();
+	const { items, addPricedProductItem, addPricedBundleItem } =
+		useDraftOrderItems();
 	const [search, setSearch] = useState("");
 	const [activeTab, setActiveTab] = useState<ItemTab>("ALL");
 	const [pendingAddKey, setPendingAddKey] = useState<string | null>(null);
@@ -105,6 +106,16 @@ export function DraftOrderItemPicker() {
 		setAddError(null);
 
 		try {
+			const existingItem = items.find(
+				(item) =>
+					item.selection.type === "PRODUCT" &&
+					item.selection.productTypeId === product.id,
+			);
+			const mergedQuantity =
+				(existingItem?.selection.type === "PRODUCT"
+					? existingItem.selection.quantity
+					: 0) + quantity;
+
 			const preview = await getAdminDraftOrderCartPricePreview({
 				data: {
 					tenantId: tenant.id,
@@ -121,7 +132,7 @@ export function DraftOrderItemPicker() {
 							{
 								type: "PRODUCT",
 								productTypeId: product.id,
-								quantity,
+								quantity: mergedQuantity,
 							},
 						],
 					},
@@ -140,7 +151,7 @@ export function DraftOrderItemPicker() {
 				selection: {
 					type: "PRODUCT",
 					productTypeId: product.id,
-					quantity,
+					quantity: mergedQuantity,
 					label: product.name,
 				},
 				pricingSnapshot: createPricingSnapshot(lineItem, tenantCurrency),

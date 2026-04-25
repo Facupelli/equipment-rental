@@ -1,10 +1,9 @@
-import type { DraftOrderDiscountLine } from "@repo/schemas";
 import { FulfillmentMethod } from "@repo/types";
 import { useReducer } from "react";
 import type {
+	DraftOrderBudgetState,
 	DraftOrderCustomerRef,
 	DraftOrderItem,
-	DraftOrderBudgetState,
 	DraftOrderPricingSnapshot,
 	DraftOrderSelectedBundleItem,
 	DraftOrderSelectedProductItem,
@@ -49,6 +48,10 @@ type DraftOrderAction =
 			type: "add_item";
 			item: DraftOrderItem;
 	  }
+	| {
+			type: "upsert_product_item";
+			item: DraftOrderItem;
+	  }
 	| { type: "remove_item"; draftItemId: string }
 	| {
 			type: "set_budget_target_total";
@@ -78,8 +81,9 @@ function recalculateBudget(state: DraftOrderState): DraftOrderState {
 		items: state.items.map((item) => ({
 			...item,
 			budgetPreview:
-				budget?.items.find((preview) => preview.draftItemId === item.draftItemId) ??
-				null,
+				budget?.items.find(
+					(preview) => preview.draftItemId === item.draftItemId,
+				) ?? null,
 		})),
 	};
 }
@@ -141,6 +145,36 @@ function draftOrderReducer(
 				items: [...state.items, action.item],
 			});
 
+		case "upsert_product_item": {
+			const existingIndex = state.items.findIndex(
+				(item) =>
+					item.selection.type === "PRODUCT" &&
+					action.item.selection.type === "PRODUCT" &&
+					item.selection.productTypeId === action.item.selection.productTypeId,
+			);
+
+			if (existingIndex === -1) {
+				return recalculateBudget({
+					...state,
+					currency: action.item.pricingSnapshot.currency,
+					items: [...state.items, action.item],
+				});
+			}
+
+			return recalculateBudget({
+				...state,
+				currency: action.item.pricingSnapshot.currency,
+				items: state.items.map((item, index) =>
+					index === existingIndex
+						? {
+								...action.item,
+								draftItemId: item.draftItemId,
+							}
+						: item,
+				),
+			});
+		}
+
 		case "remove_item":
 			return recalculateBudget({
 				...state,
@@ -151,7 +185,9 @@ function draftOrderReducer(
 
 		case "set_budget_target_total": {
 			const normalizedTargetTotal =
-				action.targetTotal === null ? null : normalizeMoneyAmount(action.targetTotal);
+				action.targetTotal === null
+					? null
+					: normalizeMoneyAmount(action.targetTotal);
 
 			if (action.targetTotal !== null && normalizedTargetTotal === null) {
 				return state;
@@ -186,28 +222,6 @@ function createDraftItem(
 	};
 }
 
-function createPricingSnapshot({
-	currency,
-	basePrice,
-	finalPrice,
-	discountTotal = "0.00",
-	discountLines = [],
-}: {
-	currency: string;
-	basePrice: string;
-	finalPrice: string;
-	discountTotal?: string;
-	discountLines?: DraftOrderDiscountLine[];
-}): DraftOrderPricingSnapshot {
-	return {
-		currency,
-		basePrice,
-		finalPrice,
-		discountTotal,
-		discountLines,
-	};
-}
-
 export function useDraftOrder() {
 	const [state, dispatch] = useReducer(
 		draftOrderReducer,
@@ -220,7 +234,8 @@ export function useDraftOrder() {
 	const budgetSubtotalCents = state.items.reduce((sum, item) => {
 		return sum + (toMoneyCents(getBudgetPreviewFinalPrice(item)) ?? 0);
 	}, 0);
-	const budgetAdjustmentDeltaCents = budgetSubtotalCents - calculatedSubtotalCents;
+	const budgetAdjustmentDeltaCents =
+		budgetSubtotalCents - calculatedSubtotalCents;
 
 	return {
 		state,
@@ -286,7 +301,7 @@ export function useDraftOrder() {
 				pricingSnapshot: DraftOrderPricingSnapshot;
 			}) =>
 				dispatch({
-					type: "add_item",
+					type: "upsert_product_item",
 					item: createDraftItem(selection, pricingSnapshot),
 				}),
 			addPricedBundleItem: ({
@@ -299,40 +314,6 @@ export function useDraftOrder() {
 				dispatch({
 					type: "add_item",
 					item: createDraftItem(selection, pricingSnapshot),
-				}),
-			addDemoProductItem: () =>
-				dispatch({
-					type: "add_item",
-					item: createDraftItem(
-						{
-							type: "PRODUCT",
-							productTypeId: crypto.randomUUID(),
-							quantity: 2,
-							label: "Par LED RGB x2",
-						},
-						createPricingSnapshot({
-							currency: "USD",
-							basePrice: "120.00",
-							finalPrice: "120.00",
-						}),
-					),
-				}),
-			addDemoBundleItem: () =>
-				dispatch({
-					type: "add_item",
-					item: createDraftItem(
-						{
-							type: "BUNDLE",
-							bundleId: crypto.randomUUID(),
-							label: "Kit streaming entrevista",
-						},
-						createPricingSnapshot({
-							currency: "USD",
-							basePrice: "250.00",
-							finalPrice: "225.00",
-							discountTotal: "25.00",
-						}),
-					),
 				}),
 			removeItem: (draftItemId: string) =>
 				dispatch({ type: "remove_item", draftItemId }),

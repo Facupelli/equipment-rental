@@ -9,20 +9,16 @@ export const Route = createFileRoute("/_admin/dashboard/orders/new")({
 
 function NewDraftOrderPage() {
 	return (
-		<div className="space-y-6 p-6">
+		<div className="px-6 pb-10">
 			<PageBreadcrumb
 				parent={{ label: "Pedidos", to: "/dashboard/orders" }}
 				current="Nuevo borrador"
 			/>
 
-			<div className="space-y-1">
+			<div className="space-y-1 pb-4">
 				<h1 className="text-2xl font-semibold tracking-tight">
 					Nuevo borrador
 				</h1>
-				<p className="text-sm text-muted-foreground">
-					Flujo local de creación de pedidos para administración. El estado
-					vive solo en memoria hasta implementar `Guardar borrador`.
-				</p>
 			</div>
 
 			<DraftOrderProvider>

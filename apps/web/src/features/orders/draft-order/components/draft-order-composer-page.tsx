@@ -2,7 +2,7 @@ import type { CustomerResponseDto } from "@repo/schemas";
 import { FulfillmentMethod } from "@repo/types";
 import { es } from "date-fns/locale";
 import { CalendarIcon, Loader2, Search, UserRound, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -69,9 +69,8 @@ function DraftSetupSection() {
 		<Card>
 			<CardHeader>
 				<CardTitle>Configuración del borrador</CardTitle>
-				<CardDescription>Cliente, período y logística.</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-8">
+			<CardContent className="space-y-6">
 				<CustomerLinkSection />
 				<RentalPeriodSection />
 				<FulfillmentSection />
@@ -101,12 +100,52 @@ function CustomerLinkSection() {
 	);
 	const customerResults = data?.data ?? [];
 
+	function renderCustomerResults() {
+		if (!shouldSearchCustomers) {
+			return null;
+		}
+
+		if (isError) {
+			return (
+				<div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+					No pudimos buscar clientes en este momento.
+				</div>
+			);
+		}
+
+		if (customerResults.length === 0) {
+			return (
+				<div className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+					No se encontraron clientes para &quot;{normalizedSearch}&quot;.
+				</div>
+			);
+		}
+
+		return (
+			<div className="space-y-2 rounded-lg border border-border bg-background p-2">
+				{customerResults.map((result) => (
+					<CustomerSearchResultRow
+						key={result.id}
+						customer={result}
+						onSelect={() => {
+							setCustomer({
+								id: result.id,
+								displayName: getCustomerDisplayName(result),
+							});
+							setSearch("");
+						}}
+					/>
+				))}
+			</div>
+		);
+	}
+
 	return (
 		<div className="space-y-4">
 			<div className="flex items-start justify-between gap-3">
-				<div className="space-y-1">
+				<div className="space-y-1 flex items-center gap-2">
 					<h2 className="text-base font-semibold">Cliente</h2>
-					<p className="text-sm text-muted-foreground">Opcional.</p>
+					<p className="text-xs text-muted-foreground">(Opcional)</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
 					{customer ? (
@@ -131,35 +170,7 @@ function CustomerLinkSection() {
 					/>
 				</div>
 
-				{shouldSearchCustomers ? (
-					isError ? (
-						<div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-							No pudimos buscar clientes en este momento.
-						</div>
-					) : customerResults.length > 0 ? (
-						<div className="space-y-2 rounded-lg border border-border bg-background p-2">
-							{customerResults.map((result) => (
-								<CustomerSearchResultRow
-									key={result.id}
-									customer={result}
-									onSelect={() => {
-										setCustomer({
-											id: result.id,
-											displayName: getCustomerDisplayName(result),
-										});
-										setSearch("");
-									}}
-								/>
-							))}
-						</div>
-					) : (
-						<div className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
-							No se encontraron clientes para &quot;{normalizedSearch}&quot;.
-						</div>
-					)
-				) : (
-					<p className="text-sm text-muted-foreground">Escribí para buscar.</p>
-				)}
+				{renderCustomerResults()}
 			</div>
 
 			{customer ? (
@@ -195,7 +206,7 @@ function RentalPeriodSection() {
 		useDraftOrderRentalPeriod();
 
 	return (
-		<div className="space-y-4 border-t pt-8">
+		<div className="space-y-4 border-t pt-4">
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-1">
 					<h2 className="text-base font-semibold">Período de alquiler</h2>
@@ -207,7 +218,7 @@ function RentalPeriodSection() {
 				</div>
 			</div>
 
-			<div className="flex items-center gap-4">
+			<div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px_160px] md:items-end">
 				<RentalPeriodDateRangeField
 					pickupDate={rentalPeriod.pickupDate}
 					returnDate={rentalPeriod.returnDate}
@@ -224,7 +235,6 @@ function RentalPeriodSection() {
 				/>
 				<PeriodField
 					label="Hora de retiro"
-					type="time"
 					value={minutesToTimeInput(rentalPeriod.pickupTime)}
 					onChange={(value) =>
 						setRentalPeriodField("pickupTime", timeInputToMinutes(value))
@@ -232,7 +242,6 @@ function RentalPeriodSection() {
 				/>
 				<PeriodField
 					label="Hora de devolución"
-					type="time"
 					value={minutesToTimeInput(rentalPeriod.returnTime)}
 					onChange={(value) =>
 						setRentalPeriodField("returnTime", timeInputToMinutes(value))
@@ -252,7 +261,7 @@ function FulfillmentSection() {
 	} = useDraftOrderFulfillment();
 
 	return (
-		<div className="space-y-4 border-t pt-8">
+		<div className="space-y-4 border-t pt-4">
 			<div className="space-y-1">
 				<h2 className="text-base font-semibold">Logística</h2>
 				<p className="text-sm text-muted-foreground">
@@ -481,6 +490,7 @@ function DraftSidebarSection() {
 				</div>
 
 				<BudgetSection
+					key={budget?.targetTotal ?? "empty-budget"}
 					currency={currency}
 					targetTotal={budget?.targetTotal ?? ""}
 					onChange={setBudgetTargetTotal}
@@ -531,7 +541,7 @@ function DraftSidebarSection() {
 
 				{!isReadyForSave && (
 					<p className="text-sm text-muted-foreground">
-						"Falta completar el período o los ítems antes de guardar."
+						Falta completar el período o los ítems antes de guardar.
 					</p>
 				)}
 			</CardContent>
@@ -625,27 +635,29 @@ function RentalPeriodDateRangeField({
 		: "Seleccionar";
 
 	return (
-		<div className="space-y-2 md:col-span-2">
+		<div className="space-y-2">
 			<p className="text-sm font-medium">Fechas</p>
 			<Popover open={open} onOpenChange={setOpen}>
-				<PopoverTrigger>
-					<Button
-						type="button"
-						variant="outline"
-						className="w-full justify-start gap-2 text-left"
-					>
-						<CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
-						{value.from && value.to ? (
-							<span className="text-sm font-medium text-foreground tabular-nums">
-								{fromLabel} - {toLabel}
-							</span>
-						) : (
-							<span className="text-sm font-medium text-foreground">
-								Seleccionar período de alquiler
-							</span>
-						)}
-					</Button>
-				</PopoverTrigger>
+				<PopoverTrigger
+					render={
+						<Button
+							type="button"
+							variant="outline"
+							className="w-full justify-start gap-2 text-left"
+						>
+							<CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+							{value.from && value.to ? (
+								<span className="text-sm font-medium text-foreground tabular-nums">
+									{fromLabel} - {toLabel}
+								</span>
+							) : (
+								<span className="text-sm font-medium text-foreground">
+									Seleccionar período de alquiler
+								</span>
+							)}
+						</Button>
+					}
+				/>
 				<PopoverContent className="w-auto p-0" align="start">
 					<Calendar
 						locale={es}
@@ -663,12 +675,10 @@ function RentalPeriodDateRangeField({
 
 function PeriodField({
 	label,
-	type,
 	value,
 	onChange,
 }: {
 	label: string;
-	type: "date" | "time";
 	value: string;
 	onChange: (value: string) => void;
 }) {
@@ -676,7 +686,7 @@ function PeriodField({
 		<div className="space-y-2">
 			<p className="text-sm font-medium">{label}</p>
 			<Input
-				type={type}
+				type="time"
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
 			/>
@@ -781,10 +791,6 @@ function BudgetSection({
 }) {
 	const [value, setValue] = useState(targetTotal);
 	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		setValue(targetTotal);
-	}, [targetTotal]);
 
 	function handleApply(rawValue: string) {
 		const trimmed = rawValue.trim();
