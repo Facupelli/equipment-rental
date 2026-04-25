@@ -36,6 +36,7 @@ import { Route as AdminDashboardLocationsIndexRouteImport } from './routes/_admi
 import { Route as AdminDashboardCustomersIndexRouteImport } from './routes/_admin/dashboard/customers/index'
 import { Route as AdminDashboardCalendarIndexRouteImport } from './routes/_admin/dashboard/calendar/index'
 import { Route as ApiOrdersOrderIdContractRouteImport } from './routes/api/orders/$orderId/contract'
+import { Route as ApiOrdersOrderIdBudgetRouteImport } from './routes/api/orders/$orderId/budget'
 import { Route as ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport } from './routes/api/customer-profiles/$customerProfileId/identity-document'
 import { Route as PortalAuthGoogleFinalizeRouteImport } from './routes/_portal/auth/google/finalize'
 import { Route as AdminDashboardPromotionsNewRouteImport } from './routes/_admin/dashboard/promotions/new'
@@ -50,6 +51,7 @@ import { Route as AdminDashboardCatalogProductsIndexRouteImport } from './routes
 import { Route as AdminDashboardCatalogCategoriesIndexRouteImport } from './routes/_admin/dashboard/catalog/categories/index'
 import { Route as AdminDashboardCatalogBundlesIndexRouteImport } from './routes/_admin/dashboard/catalog/bundles/index'
 import { Route as ApiOrdersOrderIdContractDownloadRouteImport } from './routes/api/orders/$orderId/contract/download'
+import { Route as ApiOrdersOrderIdBudgetDownloadRouteImport } from './routes/api/orders/$orderId/budget/download'
 import { Route as AdminDashboardPromotionsPromotionIdEditRouteImport } from './routes/_admin/dashboard/promotions/$promotionId/edit'
 import { Route as AdminDashboardCustomersPendingProfilesCustomerProfileIdRouteImport } from './routes/_admin/dashboard/customers/pending-profiles/$customerProfileId'
 import { Route as AdminDashboardCatalogProductsNewRouteImport } from './routes/_admin/dashboard/catalog/products/new'
@@ -203,6 +205,11 @@ const ApiOrdersOrderIdContractRoute =
     path: '/api/orders/$orderId/contract',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiOrdersOrderIdBudgetRoute = ApiOrdersOrderIdBudgetRouteImport.update({
+  id: '/api/orders/$orderId/budget',
+  path: '/api/orders/$orderId/budget',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute =
   ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport.update({
     id: '/api/customer-profiles/$customerProfileId/identity-document',
@@ -286,6 +293,12 @@ const ApiOrdersOrderIdContractDownloadRoute =
     path: '/download',
     getParentRoute: () => ApiOrdersOrderIdContractRoute,
   } as any)
+const ApiOrdersOrderIdBudgetDownloadRoute =
+  ApiOrdersOrderIdBudgetDownloadRouteImport.update({
+    id: '/download',
+    path: '/download',
+    getParentRoute: () => ApiOrdersOrderIdBudgetRoute,
+  } as any)
 const AdminDashboardPromotionsPromotionIdEditRoute =
   AdminDashboardPromotionsPromotionIdEditRouteImport.update({
     id: '/promotions/$promotionId/edit',
@@ -356,6 +369,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
+  '/api/orders/$orderId/budget': typeof ApiOrdersOrderIdBudgetRouteWithChildren
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/dashboard/calendar/': typeof AdminDashboardCalendarIndexRoute
   '/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
@@ -373,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/dashboard/customers/pending-profiles/$customerProfileId': typeof AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute
   '/dashboard/promotions/$promotionId/edit': typeof AdminDashboardPromotionsPromotionIdEditRoute
+  '/api/orders/$orderId/budget/download': typeof ApiOrdersOrderIdBudgetDownloadRoute
   '/api/orders/$orderId/contract/download': typeof ApiOrdersOrderIdContractDownloadRoute
   '/dashboard/catalog/bundles/': typeof AdminDashboardCatalogBundlesIndexRoute
   '/dashboard/catalog/categories/': typeof AdminDashboardCatalogCategoriesIndexRoute
@@ -404,6 +419,7 @@ export interface FileRoutesByTo {
   '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
+  '/api/orders/$orderId/budget': typeof ApiOrdersOrderIdBudgetRouteWithChildren
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/dashboard/calendar': typeof AdminDashboardCalendarIndexRoute
   '/dashboard/customers': typeof AdminDashboardCustomersIndexRoute
@@ -421,6 +437,7 @@ export interface FileRoutesByTo {
   '/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/dashboard/customers/pending-profiles/$customerProfileId': typeof AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute
   '/dashboard/promotions/$promotionId/edit': typeof AdminDashboardPromotionsPromotionIdEditRoute
+  '/api/orders/$orderId/budget/download': typeof ApiOrdersOrderIdBudgetDownloadRoute
   '/api/orders/$orderId/contract/download': typeof ApiOrdersOrderIdContractDownloadRoute
   '/dashboard/catalog/bundles': typeof AdminDashboardCatalogBundlesIndexRoute
   '/dashboard/catalog/categories': typeof AdminDashboardCatalogCategoriesIndexRoute
@@ -456,6 +473,7 @@ export interface FileRoutesById {
   '/_admin/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/_portal/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
+  '/api/orders/$orderId/budget': typeof ApiOrdersOrderIdBudgetRouteWithChildren
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
   '/_admin/dashboard/calendar/': typeof AdminDashboardCalendarIndexRoute
   '/_admin/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
@@ -473,6 +491,7 @@ export interface FileRoutesById {
   '/_admin/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/_admin/dashboard/customers/pending-profiles/$customerProfileId': typeof AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute
   '/_admin/dashboard/promotions/$promotionId/edit': typeof AdminDashboardPromotionsPromotionIdEditRoute
+  '/api/orders/$orderId/budget/download': typeof ApiOrdersOrderIdBudgetDownloadRoute
   '/api/orders/$orderId/contract/download': typeof ApiOrdersOrderIdContractDownloadRoute
   '/_admin/dashboard/catalog/bundles/': typeof AdminDashboardCatalogBundlesIndexRoute
   '/_admin/dashboard/catalog/categories/': typeof AdminDashboardCatalogCategoriesIndexRoute
@@ -507,6 +526,7 @@ export interface FileRouteTypes {
     | '/dashboard/promotions/new'
     | '/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
+    | '/api/orders/$orderId/budget'
     | '/api/orders/$orderId/contract'
     | '/dashboard/calendar/'
     | '/dashboard/customers/'
@@ -524,6 +544,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalog/products/new'
     | '/dashboard/customers/pending-profiles/$customerProfileId'
     | '/dashboard/promotions/$promotionId/edit'
+    | '/api/orders/$orderId/budget/download'
     | '/api/orders/$orderId/contract/download'
     | '/dashboard/catalog/bundles/'
     | '/dashboard/catalog/categories/'
@@ -555,6 +576,7 @@ export interface FileRouteTypes {
     | '/dashboard/promotions/new'
     | '/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
+    | '/api/orders/$orderId/budget'
     | '/api/orders/$orderId/contract'
     | '/dashboard/calendar'
     | '/dashboard/customers'
@@ -572,6 +594,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalog/products/new'
     | '/dashboard/customers/pending-profiles/$customerProfileId'
     | '/dashboard/promotions/$promotionId/edit'
+    | '/api/orders/$orderId/budget/download'
     | '/api/orders/$orderId/contract/download'
     | '/dashboard/catalog/bundles'
     | '/dashboard/catalog/categories'
@@ -606,6 +629,7 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/promotions/new'
     | '/_portal/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
+    | '/api/orders/$orderId/budget'
     | '/api/orders/$orderId/contract'
     | '/_admin/dashboard/calendar/'
     | '/_admin/dashboard/customers/'
@@ -623,6 +647,7 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/catalog/products/new'
     | '/_admin/dashboard/customers/pending-profiles/$customerProfileId'
     | '/_admin/dashboard/promotions/$promotionId/edit'
+    | '/api/orders/$orderId/budget/download'
     | '/api/orders/$orderId/contract/download'
     | '/_admin/dashboard/catalog/bundles/'
     | '/_admin/dashboard/catalog/categories/'
@@ -647,6 +672,7 @@ export interface RootRouteChildren {
   AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
   AuthGoogleStartRoute: typeof AuthGoogleStartRoute
   ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute: typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
+  ApiOrdersOrderIdBudgetRoute: typeof ApiOrdersOrderIdBudgetRouteWithChildren
   ApiOrdersOrderIdContractRoute: typeof ApiOrdersOrderIdContractRouteWithChildren
 }
 
@@ -841,6 +867,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOrdersOrderIdContractRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/orders/$orderId/budget': {
+      id: '/api/orders/$orderId/budget'
+      path: '/api/orders/$orderId/budget'
+      fullPath: '/api/orders/$orderId/budget'
+      preLoaderRoute: typeof ApiOrdersOrderIdBudgetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/customer-profiles/$customerProfileId/identity-document': {
       id: '/api/customer-profiles/$customerProfileId/identity-document'
       path: '/api/customer-profiles/$customerProfileId/identity-document'
@@ -938,6 +971,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/orders/$orderId/contract/download'
       preLoaderRoute: typeof ApiOrdersOrderIdContractDownloadRouteImport
       parentRoute: typeof ApiOrdersOrderIdContractRoute
+    }
+    '/api/orders/$orderId/budget/download': {
+      id: '/api/orders/$orderId/budget/download'
+      path: '/download'
+      fullPath: '/api/orders/$orderId/budget/download'
+      preLoaderRoute: typeof ApiOrdersOrderIdBudgetDownloadRouteImport
+      parentRoute: typeof ApiOrdersOrderIdBudgetRoute
     }
     '/_admin/dashboard/promotions/$promotionId/edit': {
       id: '/_admin/dashboard/promotions/$promotionId/edit'
@@ -1112,6 +1152,20 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
 const AdminDashboardRouteRouteWithChildren =
   AdminDashboardRouteRoute._addFileChildren(AdminDashboardRouteRouteChildren)
 
+interface ApiOrdersOrderIdBudgetRouteChildren {
+  ApiOrdersOrderIdBudgetDownloadRoute: typeof ApiOrdersOrderIdBudgetDownloadRoute
+}
+
+const ApiOrdersOrderIdBudgetRouteChildren: ApiOrdersOrderIdBudgetRouteChildren =
+  {
+    ApiOrdersOrderIdBudgetDownloadRoute: ApiOrdersOrderIdBudgetDownloadRoute,
+  }
+
+const ApiOrdersOrderIdBudgetRouteWithChildren =
+  ApiOrdersOrderIdBudgetRoute._addFileChildren(
+    ApiOrdersOrderIdBudgetRouteChildren,
+  )
+
 interface ApiOrdersOrderIdContractRouteChildren {
   ApiOrdersOrderIdContractDownloadRoute: typeof ApiOrdersOrderIdContractDownloadRoute
 }
@@ -1140,6 +1194,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthGoogleStartRoute: AuthGoogleStartRoute,
   ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute:
     ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute,
+  ApiOrdersOrderIdBudgetRoute: ApiOrdersOrderIdBudgetRouteWithChildren,
   ApiOrdersOrderIdContractRoute: ApiOrdersOrderIdContractRouteWithChildren,
 }
 export const routeTree = rootRouteImport

@@ -9,26 +9,31 @@ import {
 } from "../orders.queries";
 
 type ContractErrorState = {
-  status: number;
-  message: string;
+ 	status: number;
+	message: string;
+	action: "open" | "download";
 } | null;
 
 type OrderLifecycleAction = "pickup" | "return" | null;
 
 function openPreviewWindow() {
-  const previewWindow = window.open("", "_blank");
+ 	const previewWindow = window.open("", "_blank");
 
-  if (previewWindow) {
-    previewWindow.opener = null;
-  }
+ 	if (previewWindow) {
+		previewWindow.opener = null;
+	}
 
-  return previewWindow;
+ 	return previewWindow;
 }
 
 export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 	const [isOpeningContract, setIsOpeningContract] = useState(false);
 	const [isDownloadingContract, setIsDownloadingContract] = useState(false);
+	const [isOpeningBudget, setIsOpeningBudget] = useState(false);
+	const [isDownloadingBudget, setIsDownloadingBudget] = useState(false);
 	const [contractError, setContractError] = useState<ContractErrorState>(null);
+	const [contractBusinessErrorMessage, setContractBusinessErrorMessage] =
+		useState<string | null>(null);
 	const [isContractBusinessErrorOpen, setIsContractBusinessErrorOpen] =
 		useState(false);
 	const [pendingLifecycleAction, setPendingLifecycleAction] =
@@ -58,15 +63,18 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		const contractUrl = `/api/orders/${order.id}/contract/`;
 		const canProceed = await preflightContractRequest({
 			url: contractUrl,
-			onBusinessError: () => {
+			onBusinessError: (message) => {
 				previewWindow?.close();
+				setContractBusinessErrorMessage(message);
 				setIsContractBusinessErrorOpen(true);
 			},
-			onRequestError: ({ status, message }) => {
+			onRequestError: ({ status, message, action }) => {
 				previewWindow?.close();
-				setContractError({ status, message });
+				setContractError({ status, message, action });
 			},
 			fallbackMessage: "No pudimos abrir el remito. Intenta nuevamente.",
+			notFoundMessage: "No pudimos encontrar el pedido para generar el remito.",
+			action: "open",
 		});
 
 		if (canProceed) {
@@ -87,13 +95,16 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		const downloadUrl = `/api/orders/${order.id}/contract/download`;
 		const canProceed = await preflightContractRequest({
 			url: downloadUrl,
-			onBusinessError: () => {
+			onBusinessError: (message) => {
+				setContractBusinessErrorMessage(message);
 				setIsContractBusinessErrorOpen(true);
 			},
-			onRequestError: ({ status, message }) => {
-				setContractError({ status, message });
+			onRequestError: ({ status, message, action }) => {
+				setContractError({ status, message, action });
 			},
 			fallbackMessage: "No pudimos descargar el remito. Intenta nuevamente.",
+			notFoundMessage: "No pudimos encontrar el pedido para generar el remito.",
+			action: "download",
 		});
 
 		if (canProceed) {
@@ -101,6 +112,82 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		}
 
 		setIsDownloadingContract(false);
+	};
+
+	const handleOpenBudget = async () => {
+		const previewWindow = openPreviewWindow();
+
+		setIsOpeningBudget(true);
+		setContractError(null);
+
+		const result = await fetchDocumentBlob({
+			url: `/api/orders/${order.id}/budget`,
+			method: "POST",
+			body: {},
+			fallbackMessage: "No pudimos abrir el presupuesto. Intenta nuevamente.",
+			notFoundMessage: "No pudimos encontrar el pedido para generar el presupuesto.",
+		});
+
+		if (result.ok) {
+			const objectUrl = URL.createObjectURL(result.blob);
+
+			if (previewWindow) {
+				previewWindow.location.href = objectUrl;
+			} else {
+				window.open(objectUrl, "_blank", "noopener,noreferrer");
+			}
+
+			window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+		} else if (result.isBusinessError) {
+			previewWindow?.close();
+			setContractBusinessErrorMessage(result.message);
+			setIsContractBusinessErrorOpen(true);
+		} else {
+			previewWindow?.close();
+			setContractError({
+				status: result.status,
+				message: result.message,
+				action: "open",
+			});
+		}
+
+		setIsOpeningBudget(false);
+	};
+
+	const handleDownloadBudget = async () => {
+		setIsDownloadingBudget(true);
+		setContractError(null);
+
+		const result = await fetchDocumentBlob({
+			url: `/api/orders/${order.id}/budget/download`,
+			method: "POST",
+			body: {},
+			fallbackMessage: "No pudimos descargar el presupuesto. Intenta nuevamente.",
+			notFoundMessage: "No pudimos encontrar el pedido para generar el presupuesto.",
+		});
+
+		if (result.ok) {
+			const objectUrl = URL.createObjectURL(result.blob);
+			const link = document.createElement("a");
+			link.href = objectUrl;
+			link.download =
+				result.fileName ?? `presupuesto-${String(order.number).padStart(4, "0")}.pdf`;
+			document.body.append(link);
+			link.click();
+			link.remove();
+			URL.revokeObjectURL(objectUrl);
+		} else if (result.isBusinessError) {
+			setContractBusinessErrorMessage(result.message);
+			setIsContractBusinessErrorOpen(true);
+		} else {
+			setContractError({
+				status: result.status,
+				message: result.message,
+				action: "download",
+			});
+		}
+
+		setIsDownloadingBudget(false);
 	};
 
 	const handleEditOrder = () => {
@@ -135,10 +222,10 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		}
 	};
 
-  const handleMarkAsPickedUp = () => {
-    setLifecycleActionError(null);
-    setPendingLifecycleAction("pickup");
-  };
+	const handleMarkAsPickedUp = () => {
+		setLifecycleActionError(null);
+		setPendingLifecycleAction("pickup");
+	};
 
 	const handleMarkAsReturned = () => {
 		setLifecycleActionError(null);
@@ -170,34 +257,34 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		}
 	};
 
-  const handleConfirmLifecycleAction = async () => {
-    if (!pendingLifecycleAction) {
-      return;
-    }
+	const handleConfirmLifecycleAction = async () => {
+		if (!pendingLifecycleAction) {
+			return;
+		}
 
-    setLifecycleActionError(null);
+		setLifecycleActionError(null);
 
-    try {
-      if (pendingLifecycleAction === "pickup") {
-        await markEquipmentAsRetired({ orderId: order.id });
-      } else {
-        await markEquipmentAsReturned({ orderId: order.id });
-      }
+		try {
+			if (pendingLifecycleAction === "pickup") {
+				await markEquipmentAsRetired({ orderId: order.id });
+			} else {
+				await markEquipmentAsReturned({ orderId: order.id });
+			}
 
-      setPendingLifecycleAction(null);
-    } catch (error) {
-      if (error instanceof ProblemDetailsError) {
-        setLifecycleActionError(
-          error.problemDetails.detail ??
-            error.problemDetails.title ??
-            "No pudimos actualizar el estado del pedido.",
-        );
-        return;
-      }
+			setPendingLifecycleAction(null);
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				setLifecycleActionError(
+					error.problemDetails.detail ??
+						error.problemDetails.title ??
+						"No pudimos actualizar el estado del pedido.",
+				);
+				return;
+			}
 
-      setLifecycleActionError("Ocurrio un error al actualizar el estado del pedido.");
-    }
-  };
+			setLifecycleActionError("Ocurrio un error al actualizar el estado del pedido.");
+		}
+	};
 
 	const setIsLifecycleActionDialogOpen = (open: boolean) => {
 		if (!open) {
@@ -222,23 +309,26 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		setIsConfirmOrderDialogOpen(open);
 	};
 
-  const handleReleaseEquipment = () => {
-    // TODO: trigger release equipment mutation, then invalidate order query
-  };
+	const handleReleaseEquipment = () => {
+		// TODO: trigger release equipment mutation, then invalidate order query
+	};
 
-  const handleProcessPayment = () => {
-    // TODO: trigger process payment mutation, then invalidate order query
-  };
+	const handleProcessPayment = () => {
+		// TODO: trigger process payment mutation, then invalidate order query
+	};
 
 	return {
 		cancelOrderError,
 		contractError,
 		confirmOrderError,
+		contractBusinessErrorMessage,
 		handleConfirmOrderSubmission,
 		handleConfirmCancelOrder,
 		handleConfirmOrder,
 		handleConfirmLifecycleAction,
+		handleDownloadBudget,
 		handleDownloadContract,
+		handleOpenBudget,
 		handleOpenCancelOrder,
 		handleOpenContract,
 		handleEditOrder,
@@ -251,11 +341,14 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		isConfirmOrderDialogOpen,
 		isConfirmOrderPending: isConfirmingOrder,
 		isContractBusinessErrorOpen,
+		isDownloadingBudget,
 		isDownloadingContract,
 		isLifecycleActionPending: isMarkingAsPickedUp || isMarkingAsReturned,
+		isOpeningBudget,
 		isOpeningContract,
 		lifecycleActionError,
 		pendingLifecycleAction,
+		setContractBusinessErrorMessage,
 		setContractError,
 		setIsCancelOrderDialogOpen: setIsCancelOrderDialogOpenWithReset,
 		setIsConfirmOrderDialogOpen: setIsConfirmOrderDialogOpenWithReset,
@@ -288,11 +381,19 @@ async function preflightContractRequest({
 	onBusinessError,
 	onRequestError,
 	fallbackMessage,
+	notFoundMessage,
+	action,
 }: {
 	url: string;
-	onBusinessError: () => void;
-	onRequestError: (error: { status: number; message: string }) => void;
+	onBusinessError: (message: string) => void;
+	onRequestError: (error: {
+		status: number;
+		message: string;
+		action: "open" | "download";
+	}) => void;
 	fallbackMessage: string;
+	notFoundMessage: string;
+	action: "open" | "download";
 }): Promise<boolean> {
 	try {
 		const response = await fetch(url, {
@@ -309,24 +410,100 @@ async function preflightContractRequest({
 		} | null;
 
 		if (response.status === 422) {
-			onBusinessError();
+			onBusinessError(payload?.message ?? fallbackMessage);
 			return false;
 		}
 
 		onRequestError({
 			status: response.status,
+			action,
 			message:
 				payload?.message ??
-				(response.status === 404
-					? "No pudimos encontrar el pedido para generar el remito."
-					: fallbackMessage),
+				(response.status === 404 ? notFoundMessage : fallbackMessage),
 		});
 		return false;
 	} catch {
 		onRequestError({
 			status: 500,
 			message: fallbackMessage,
+			action,
 		});
 		return false;
 	}
+}
+
+async function fetchDocumentBlob({
+	url,
+	method,
+	body,
+	fallbackMessage,
+	notFoundMessage,
+}: {
+	url: string;
+	method: "POST";
+	body: Record<string, never>;
+	fallbackMessage: string;
+	notFoundMessage: string;
+}): Promise<
+	| { ok: true; blob: Blob; fileName: string | null }
+	| { ok: false; status: number; message: string; isBusinessError: boolean }
+> {
+	try {
+		const response = await fetch(url, {
+			method,
+			credentials: "same-origin",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(body),
+		});
+
+		if (response.ok) {
+			return {
+				ok: true,
+				blob: await response.blob(),
+				fileName: getFileNameFromContentDisposition(
+					response.headers.get("Content-Disposition"),
+				),
+			};
+		}
+
+		const payload = (await response.json().catch(() => null)) as {
+			message?: string;
+		} | null;
+		const message =
+			payload?.message ??
+			(response.status === 404 ? notFoundMessage : fallbackMessage);
+
+		return {
+			ok: false,
+			status: response.status || 500,
+			message,
+			isBusinessError: response.status === 422,
+		};
+	} catch {
+		return {
+			ok: false,
+			status: 500,
+			message: fallbackMessage,
+			isBusinessError: false,
+		};
+	}
+}
+
+function getFileNameFromContentDisposition(
+	contentDisposition: string | null,
+): string | null {
+	if (!contentDisposition) {
+		return null;
+	}
+
+	const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+
+	if (utf8Match?.[1]) {
+		return decodeURIComponent(utf8Match[1]);
+	}
+
+	const asciiMatch = contentDisposition.match(/filename="?([^\"]+)"?/i);
+	return asciiMatch?.[1] ?? null;
 }

@@ -90,8 +90,6 @@ function RouteComponent() {
 		createOrderDetailQueryOptions({ orderId }),
 	);
 
-	console.log({ order });
-
 	return (
 		<OrderDetailProvider order={order}>
 			<div className="min-h-screen bg-neutral-50 text-neutral-950 px-8">
@@ -125,6 +123,8 @@ function RouteComponent() {
 
 function OrderHeader() {
 	const { order, actions } = useOrderDetailContext();
+	const isDraft = order.status === OrderStatus.DRAFT;
+	const documentLabel = isDraft ? "presupuesto" : "remito";
 	const temporalInsight = getOrderTemporalInsight(
 		order,
 		nowUtc(),
@@ -165,19 +165,30 @@ function OrderHeader() {
 
 			<AlertDialog
 				open={actions.isContractBusinessErrorOpen}
-				onOpenChange={actions.setIsContractBusinessErrorOpen}
+				onOpenChange={(open) => {
+					if (!open) {
+						actions.setContractBusinessErrorMessage(null);
+					}
+
+					actions.setIsContractBusinessErrorOpen(open);
+				}}
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>No se pudo generar el remito</AlertDialogTitle>
+						<AlertDialogTitle>
+							No se pudo generar el {documentLabel}
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							No se puede generar el remito porque el cliente no tiene
-							DNI/documento configurado en su perfil.
+							{actions.contractBusinessErrorMessage ??
+								"No pudimos generar este documento en este momento."}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogAction
-							onClick={() => actions.setIsContractBusinessErrorOpen(false)}
+							onClick={() => {
+								actions.setContractBusinessErrorMessage(null);
+								actions.setIsContractBusinessErrorOpen(false);
+							}}
 						>
 							Entendido
 						</AlertDialogAction>
@@ -198,7 +209,7 @@ function OrderHeader() {
 						<AlertDialogTitle>
 							{actions.contractError?.status === 404
 								? "Pedido no encontrado"
-								: "No se pudo abrir el remito"}
+								: `No se pudo ${actions.contractError?.action === "download" ? "descargar" : "abrir"} el ${documentLabel}`}
 						</AlertDialogTitle>
 						<AlertDialogDescription>
 							{actions.contractError?.message}
@@ -548,6 +559,9 @@ function OrderActionsMenu({
 }: {
 	actions: ReturnType<typeof useOrderDetailContext>["actions"];
 }) {
+	const { order } = useOrderDetailContext();
+	const isDraft = order.status === OrderStatus.DRAFT;
+
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger
@@ -569,22 +583,47 @@ function OrderActionsMenu({
 					Editar pedido
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem
-					onClick={actions.handleOpenContract}
-					disabled={actions.isOpeningContract}
-				>
-					<FileText className="mr-2 h-4 w-4" />
-					{actions.isOpeningContract ? "Abriendo remito..." : "Ver remito"}
-				</DropdownMenuItem>
-				<DropdownMenuItem
-					onClick={actions.handleDownloadContract}
-					disabled={actions.isDownloadingContract}
-				>
-					<FileText className="mr-2 h-4 w-4" />
-					{actions.isDownloadingContract
-						? "Descargando remito..."
-						: "Descargar remito"}
-				</DropdownMenuItem>
+				{isDraft ? (
+					<>
+						<DropdownMenuItem
+							onClick={actions.handleOpenBudget}
+							disabled={actions.isOpeningBudget}
+						>
+							<FileText className="mr-2 h-4 w-4" />
+							{actions.isOpeningBudget
+								? "Abriendo presupuesto..."
+								: "Ver presupuesto"}
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={actions.handleDownloadBudget}
+							disabled={actions.isDownloadingBudget}
+						>
+							<FileText className="mr-2 h-4 w-4" />
+							{actions.isDownloadingBudget
+								? "Descargando presupuesto..."
+								: "Descargar presupuesto"}
+						</DropdownMenuItem>
+					</>
+				) : (
+					<>
+						<DropdownMenuItem
+							onClick={actions.handleOpenContract}
+							disabled={actions.isOpeningContract}
+						>
+							<FileText className="mr-2 h-4 w-4" />
+							{actions.isOpeningContract ? "Abriendo remito..." : "Ver remito"}
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={actions.handleDownloadContract}
+							disabled={actions.isDownloadingContract}
+						>
+							<FileText className="mr-2 h-4 w-4" />
+							{actions.isDownloadingContract
+								? "Descargando remito..."
+								: "Descargar remito"}
+						</DropdownMenuItem>
+					</>
+				)}
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					variant="destructive"
