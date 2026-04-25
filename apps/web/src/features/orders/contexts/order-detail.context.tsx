@@ -36,3 +36,23 @@ export function useOrderDetailContext(): OrderDetailContextValue {
 
 	return ctx;
 }
+
+export function useOrderDocuments() {
+	return useOrderDetailContext().actions.documents;
+}
+
+export function useOrderBudget() {
+	return useOrderDetailContext().actions.budget;
+}
+
+export function useOrderConfirmation() {
+	return useOrderDetailContext().actions.confirmation;
+}
+
+export function useOrderCancellation() {
+	return useOrderDetailContext().actions.cancellation;
+}
+
+export function useOrderLifecycle() {
+	return useOrderDetailContext().actions.lifecycle;
+}

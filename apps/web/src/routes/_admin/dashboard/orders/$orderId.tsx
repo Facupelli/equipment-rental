@@ -2,47 +2,29 @@ import { FulfillmentMethod, OrderStatus } from "@repo/types";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-	CheckCircle2,
-	CircleSlash,
 	Clock,
 	ExternalLink,
-	FileText,
 	Mail,
 	MapPin,
-	MoreHorizontal,
 	Package,
-	Pencil,
-	RotateCcw,
 	Truck,
 	User2Icon,
 } from "lucide-react";
 import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	getCustomerContactName,
 	getCustomerDisplayName,
 	getCustomerInitials,
 } from "@/features/customer/customer.utils";
+import { OrderDetailActionsMenu } from "@/features/orders/components/order-detail-actions-menu";
+import { OrderDetailBudgetDialogs } from "@/features/orders/components/order-detail-budget-dialogs";
+import { OrderDetailCancelDialog } from "@/features/orders/components/order-detail-cancel-dialog";
+import { OrderDetailConfirmDialog } from "@/features/orders/components/order-detail-confirm-dialog";
+import { OrderDetailDocumentErrorDialogs } from "@/features/orders/components/order-detail-document-error-dialogs";
+import { OrderDetailLifecycleDialog } from "@/features/orders/components/order-detail-lifecycle-dialog";
+import { OrderDetailPrimaryActionButton } from "@/features/orders/components/order-detail-primary-action-button";
 import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
-import { OrderBudgetCustomerDialog } from "@/features/orders/components/order-budget-customer-dialog";
 import {
 	OrderDetailProvider,
 	useOrderDetailContext,
@@ -123,12 +105,7 @@ function RouteComponent() {
 }
 
 function OrderHeader() {
-	const { order, actions } = useOrderDetailContext();
-	const documents = actions.documents;
-	const budget = actions.budget;
-	const cancellation = actions.cancellation;
-	const isDraft = order.status === OrderStatus.DRAFT;
-	const documentLabel = isDraft ? "presupuesto" : "remito";
+	const { order } = useOrderDetailContext();
 	const temporalInsight = getOrderTemporalInsight(
 		order,
 		nowUtc(),
@@ -162,251 +139,17 @@ function OrderHeader() {
 						deadline={temporalInsight.deadline}
 						state={temporalInsight.state}
 					/>
-					<PrimaryAdminActionButton action={primaryAction} actions={actions} />
-					<OrderActionsMenu actions={actions} />
+					<OrderDetailPrimaryActionButton action={primaryAction} />
+					<OrderDetailActionsMenu />
 				</div>
 			</div>
 
-			<AlertDialog
-				open={documents.error.isBusinessErrorOpen}
-				onOpenChange={(open) => {
-					if (!open) {
-						documents.error.setBusinessMessage(null);
-					}
-
-					documents.error.setIsBusinessErrorOpen(open);
-				}}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>
-							No se pudo generar el {documentLabel}
-						</AlertDialogTitle>
-						<AlertDialogDescription>
-							{documents.error.businessMessage ??
-								"No pudimos generar este documento en este momento."}
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogAction
-							onClick={() => {
-								documents.error.setBusinessMessage(null);
-								documents.error.setIsBusinessErrorOpen(false);
-							}}
-						>
-							Entendido
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
-
-			<AlertDialog
-				open={Boolean(documents.error.contractError)}
-				onOpenChange={(open) => {
-					if (!open) {
-						documents.error.setContractError(null);
-					}
-				}}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>
-							{documents.error.contractError?.status === 404
-								? "Pedido no encontrado"
-								: `No se pudo ${documents.error.contractError?.action === "download" ? "descargar" : "abrir"} el ${documentLabel}`}
-						</AlertDialogTitle>
-						<AlertDialogDescription>
-							{documents.error.contractError?.message}
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogAction
-							onClick={() => documents.error.setContractError(null)}
-						>
-							Cerrar
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
-
-			<AlertDialog
-				open={cancellation.isDialogOpen}
-				onOpenChange={cancellation.setIsDialogOpen}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Cancelar pedido</AlertDialogTitle>
-						<AlertDialogDescription>
-							Estas por cancelar este pedido. Esta acción no se puede deshacer.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-
-					{cancellation.error ? (
-						<p className="text-sm text-destructive">
-							{cancellation.error}
-						</p>
-					) : null}
-
-					<AlertDialogFooter>
-						<AlertDialogCancel disabled={cancellation.isPending}>
-							Volver
-						</AlertDialogCancel>
-						<AlertDialogAction
-							variant="destructive"
-							onClick={(event) => {
-								event.preventDefault();
-								void cancellation.submit();
-							}}
-							disabled={cancellation.isPending}
-						>
-							{cancellation.isPending ? "Cancelando..." : "Cancelar"}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
-
-			<OrderLifecycleActionDialog actions={actions} />
-			<OrderConfirmDialog actions={actions} />
-			<OrderBudgetCustomerDialog
-				open={budget.customerDialog.open}
-				onOpenChange={budget.customerDialog.onOpenChange}
-				onSubmit={budget.customerDialog.submit}
-				isOpeningBudget={budget.isOpening}
-				isDownloadingBudget={budget.isDownloading}
-			/>
+			<OrderDetailDocumentErrorDialogs />
+			<OrderDetailCancelDialog />
+			<OrderDetailLifecycleDialog />
+			<OrderDetailConfirmDialog />
+			<OrderDetailBudgetDialogs />
 		</header>
-	);
-}
-
-function OrderConfirmDialog({
-	actions,
-}: {
-	actions: ReturnType<typeof useOrderDetailContext>["actions"];
-}) {
-	const { order } = useOrderDetailContext();
-	const confirmation = actions.confirmation;
-	const isDraft = order.status === OrderStatus.DRAFT;
-	const hasCustomer = Boolean(order.customer);
-
-	return (
-		<AlertDialog
-			open={confirmation.isDialogOpen}
-			onOpenChange={confirmation.setIsDialogOpen}
-		>
-			<AlertDialogContent>
-				<AlertDialogHeader>
-					<AlertDialogTitle>
-						{isDraft ? "Confirmar borrador" : "Confirmar pedido"}
-					</AlertDialogTitle>
-					<AlertDialogDescription>
-						{isDraft
-							? "Vas a confirmar este borrador con los precios ya guardados. La confirmacion no recalcula importes."
-							: "Confirma este pedido para dejarlo listo para operación."}
-					</AlertDialogDescription>
-				</AlertDialogHeader>
-
-				{isDraft && !hasCustomer ? (
-					<p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-						Este borrador no tiene cliente vinculado. No puede confirmarse hasta
-						completar ese paso fuera de esta pantalla.
-					</p>
-				) : null}
-
-				{confirmation.error ? (
-					<p className="text-sm text-destructive">
-						{confirmation.error}
-					</p>
-				) : null}
-
-				<AlertDialogFooter>
-					<AlertDialogCancel disabled={confirmation.isPending}>
-						Cancelar
-					</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={(event) => {
-							event.preventDefault();
-							void confirmation.submit();
-						}}
-						disabled={confirmation.isPending}
-					>
-						{confirmation.isPending
-							? isDraft
-								? "Confirmando borrador..."
-								: "Confirmando pedido..."
-							: isDraft
-								? "Confirmar borrador"
-								: "Confirmar pedido"}
-					</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
-	);
-}
-
-function OrderLifecycleActionDialog({
-	actions,
-}: {
-	actions: ReturnType<typeof useOrderDetailContext>["actions"];
-}) {
-	const lifecycle = actions.lifecycle;
-	const action = lifecycle.pendingAction;
-
-	if (!action) {
-		return null;
-	}
-
-	const copy =
-		action === "pickup"
-			? {
-					title: "Marcar equipo retirado",
-					description:
-						"Confirma que el cliente ya retiró el equipo en la sucursal. El pedido pasará a estar activo.",
-					confirmLabel: lifecycle.isPending
-						? "Marcando retiro..."
-						: "Marcar retirado",
-				}
-			: {
-					title: "Marcar equipo devuelto",
-					description:
-						"Confirma que el cliente ya devolvió el equipo. El pedido pasará a estar completado.",
-					confirmLabel: lifecycle.isPending
-						? "Marcando devolucion..."
-						: "Marcar devuelto",
-				};
-
-	return (
-		<AlertDialog
-			open={Boolean(action)}
-			onOpenChange={lifecycle.setDialogOpen}
-		>
-			<AlertDialogContent>
-				<AlertDialogHeader>
-					<AlertDialogTitle>{copy.title}</AlertDialogTitle>
-					<AlertDialogDescription>{copy.description}</AlertDialogDescription>
-				</AlertDialogHeader>
-
-				{lifecycle.error ? (
-					<p className="text-sm text-destructive">
-						{lifecycle.error}
-					</p>
-				) : null}
-
-				<AlertDialogFooter>
-					<AlertDialogCancel disabled={lifecycle.isPending}>
-						Cancelar
-					</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={(event) => {
-							event.preventDefault();
-							void lifecycle.submit();
-						}}
-						disabled={lifecycle.isPending}
-					>
-						{copy.confirmLabel}
-					</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
 	);
 }
 
@@ -507,155 +250,6 @@ function OrderStatusCard({
 	);
 }
 
-function getPrimaryAdminButtonConfig(
-	action: ReturnType<typeof getOrderPrimaryAdminAction>,
-	actions: ReturnType<typeof useOrderDetailContext>["actions"],
-) {
-	if (!action) {
-		return null;
-	}
-
-	switch (action.action) {
-		case "confirm":
-			return {
-				icon: CheckCircle2,
-				onClick: actions.confirmation.openDialog,
-			};
-		case "pickup":
-			return {
-				icon: Truck,
-				onClick: actions.lifecycle.openPickup,
-			};
-		case "return":
-			return {
-				icon: RotateCcw,
-				onClick: actions.lifecycle.openReturn,
-			};
-		default:
-			return null;
-	}
-}
-
-function PrimaryAdminActionButton({
-	action,
-	actions,
-}: {
-	action: ReturnType<typeof getOrderPrimaryAdminAction>;
-	actions: ReturnType<typeof useOrderDetailContext>["actions"];
-}) {
-	const config = getPrimaryAdminButtonConfig(action, actions);
-
-	if (!config) {
-		return null;
-	}
-
-	const Icon = config.icon;
-
-	return (
-		<Button
-			className="h-auto justify-start rounded-xl bg-emerald-600 px-4 py-2 text-left text-white hover:bg-emerald-700"
-			onClick={config.onClick}
-		>
-			<div className="flex items-start gap-3">
-				<div className="mt-0.5 rounded-full bg-white/15 p-1.5">
-					<Icon className="h-4 w-4" />
-				</div>
-				<div>
-					<p className="text-sm font-semibold leading-none">{action?.label}</p>
-					<p className="mt-1 text-xs text-white/80">{action?.description}</p>
-				</div>
-			</div>
-		</Button>
-	);
-}
-
-function OrderActionsMenu({
-	actions,
-}: {
-	actions: ReturnType<typeof useOrderDetailContext>["actions"];
-}) {
-	const { order } = useOrderDetailContext();
-	const isDraft = order.status === OrderStatus.DRAFT;
-	const budget = actions.budget;
-	const documents = actions.documents;
-	const cancellation = actions.cancellation;
-
-	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger
-				render={
-					<Button
-						variant="outline"
-						size="icon"
-						className="px-4 rounded-sm border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
-					>
-						<MoreHorizontal className="size-4" />
-						<span className="sr-only">Más acciones</span>
-					</Button>
-				}
-			/>
-
-			<DropdownMenuContent align="end" className="w-56">
-				<DropdownMenuItem onClick={actions.edit.open} disabled>
-					<Pencil className="mr-2 h-4 w-4" />
-					Editar pedido
-				</DropdownMenuItem>
-				<DropdownMenuSeparator />
-				{isDraft ? (
-					<>
-						<DropdownMenuItem
-							onClick={budget.open}
-							disabled={budget.isOpening}
-						>
-							<FileText className="mr-2 h-4 w-4" />
-							{budget.isOpening
-								? "Abriendo presupuesto..."
-								: "Ver presupuesto"}
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							onClick={budget.download}
-							disabled={budget.isDownloading}
-						>
-							<FileText className="mr-2 h-4 w-4" />
-							{budget.isDownloading
-								? "Descargando presupuesto..."
-								: "Descargar presupuesto"}
-						</DropdownMenuItem>
-					</>
-				) : (
-					<>
-						<DropdownMenuItem
-							onClick={documents.contract.open}
-							disabled={documents.contract.isOpening}
-						>
-							<FileText className="mr-2 h-4 w-4" />
-							{documents.contract.isOpening
-								? "Abriendo remito..."
-								: "Ver remito"}
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							onClick={documents.contract.download}
-							disabled={documents.contract.isDownloading}
-						>
-							<FileText className="mr-2 h-4 w-4" />
-							{documents.contract.isDownloading
-								? "Descargando remito..."
-								: "Descargar remito"}
-						</DropdownMenuItem>
-					</>
-				)}
-				<DropdownMenuSeparator />
-				<DropdownMenuItem
-					variant="destructive"
-					onClick={cancellation.openDialog}
-				>
-					<CircleSlash className="mr-2 h-4 w-4" />
-					Cancelar
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-		</DropdownMenu>
-	);
-}
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
