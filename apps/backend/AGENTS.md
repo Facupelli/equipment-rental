@@ -19,9 +19,11 @@ Workspace commands:
 - `pnpm build`
 - `pnpm lint`
 
+Use `docs/constitution/` as the source of truth for project mission, technical direction, and architectural decisions.
+
 Use `docs/agent-rules/` as the source of truth for implementation rules, invariants, and examples.
 
-Always start with `docs/agent-rules/architecture.md`, then load any additional artifact-specific rule documents from `docs/agent-rules/` as needed for the code you are changing.
+Start with `docs/agent-rules/architecture.md` only when you need implementation-rule navigation. Then load any additional artifact-specific rule documents from `docs/agent-rules/` as needed for the code you are changing.
 
 Use existing backend skills for specialized workflows:
 
