@@ -10,7 +10,9 @@ import {
 	Truck,
 	User2Icon,
 } from "lucide-react";
+import { useState } from "react";
 import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	getCustomerContactName,
@@ -91,10 +93,7 @@ function RouteComponent() {
 
 					{/* Right */}
 					<div className="space-y-4">
-						{order.status === OrderStatus.DRAFT && (
-							<DraftOrderOperationalCard />
-						)}
-						{order.customer && <OrderClientCard />}
+						<OrderClientCard />
 						<OrderLogisticsCard />
 						<OrderFinancialsCard />
 					</div>
@@ -501,16 +500,10 @@ function ActivityEntry({
 
 function OrderClientCard() {
 	const { order } = useOrderDetailContext();
-
-	if (!order.customer) {
-		return null;
-	}
-
 	const customer = order.customer;
-
-	const displayName = getCustomerDisplayName(customer);
-	const contactName = getCustomerContactName(customer);
-	const initials = getCustomerInitials(customer);
+	const displayName = customer ? getCustomerDisplayName(customer) : null;
+	const contactName = customer ? getCustomerContactName(customer) : null;
+	const initials = customer ? getCustomerInitials(customer) : null;
 
 	return (
 		<section className="bg-white border border-neutral-200 rounded-lg p-5">
@@ -519,38 +512,53 @@ function OrderClientCard() {
 				<span className="font-mono text-[10px] tracking-[0.15em] uppercase text-neutral-400">
 					Información del Cliente
 				</span>
-				<Link
-					to="/dashboard/customers/$customerId"
-					params={{ customerId: customer.id }}
-					className="flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-950 transition-colors"
-				>
-					Ver Perfil
-					<ExternalLink className="w-3 h-3" />
-				</Link>
+				{customer ? (
+					<Link
+						to="/dashboard/customers/$customerId"
+						params={{ customerId: customer.id }}
+						className="flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-950 transition-colors"
+					>
+						Ver Perfil
+						<ExternalLink className="w-3 h-3" />
+					</Link>
+				) : null}
 			</div>
 
-			{/* Avatar + name */}
-			<div className="flex items-center gap-3 mb-4">
-				<div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center shrink-0">
-					<span className="text-sm font-bold text-neutral-600">{initials}</span>
-				</div>
-				<div>
-					<p className="text-sm font-bold text-neutral-950 leading-tight">
-						{displayName}
+			{customer ? (
+				<>
+					{/* Avatar + name */}
+					<div className="flex items-center gap-3 mb-4">
+						<div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center shrink-0">
+							<span className="text-sm font-bold text-neutral-600">{initials}</span>
+						</div>
+						<div>
+							<p className="text-sm font-bold text-neutral-950 leading-tight">
+								{displayName}
+							</p>
+							{contactName && (
+								<p className="text-xs text-neutral-400 mt-0.5">{contactName}</p>
+							)}
+						</div>
+					</div>
+
+					{/* Contact fields */}
+					<div className="space-y-2.5">
+						<SidebarField
+							icon={<Mail className="w-3.5 h-3.5" />}
+							value={customer.email}
+						/>
+					</div>
+				</>
+			) : (
+				<div className="rounded-md border border-amber-200 bg-amber-50/60 px-3 py-3">
+					<p className="text-sm font-medium text-amber-900">
+						Todavia no hay un cliente vinculado.
 					</p>
-					{contactName && (
-						<p className="text-xs text-neutral-400 mt-0.5">{contactName}</p>
-					)}
+					<p className="mt-1 text-xs text-amber-800/85">
+						La confirmacion del borrador esta bloqueada hasta asociar un cliente.
+					</p>
 				</div>
-			</div>
-
-			{/* Contact fields */}
-			<div className="space-y-2.5">
-				<SidebarField
-					icon={<Mail className="w-3.5 h-3.5" />}
-					value={customer.email}
-				/>
-			</div>
+			)}
 		</section>
 	);
 }
@@ -662,26 +670,35 @@ function OrderLogisticsCard() {
 function OrderFinancialsCard() {
 	const { order } = useOrderDetailContext();
 	const { financial } = order;
+	const [showPricingAudit, setShowPricingAudit] = useState(false);
+	const hasAdjustedLines = financial.items.some((line) => line.pricing.isOverridden);
 	const hasOwnerObligations = financial.ownerObligations !== "0";
 
 	return (
 		<section className="bg-white border border-neutral-200 rounded-lg p-5">
 			<SidebarSectionLabel label="Resumen financiero" />
 
+			{hasAdjustedLines ? (
+				<div className="mb-4 flex items-start justify-between gap-4 rounded-md border border-amber-200 bg-amber-50/50 px-3 py-2.5">
+					<div>
+						<p className="text-sm font-medium text-amber-900">
+							Hay precios ajustados manualmente
+						</p>
+						<p className="text-xs text-amber-800/80">
+							Mostrar auditoria detallada por linea
+						</p>
+					</div>
+					<Switch
+						checked={showPricingAudit}
+						onCheckedChange={setShowPricingAudit}
+						aria-label="Mostrar auditoria de ajustes manuales"
+					/>
+				</div>
+			) : null}
+
 			<div>
 				{financial.items.map((line) => (
 					<div key={line.orderItemId} className="border-b border-neutral-100">
-						{line.pricing.isOverridden && (
-							<div className="mb-2 flex items-center justify-between rounded-md bg-amber-50 px-3 py-2">
-								<span className="text-[11px] font-medium text-amber-800">
-									Precio ajustado manualmente
-								</span>
-								<span className="font-mono text-[11px] text-amber-700">
-									{formatMoney(line.finalPrice)}
-								</span>
-							</div>
-						)}
-
 						{/* Item label + base price */}
 						<div className="flex items-center justify-between">
 							<span className="text-sm text-neutral-500">{line.label}</span>
@@ -723,7 +740,9 @@ function OrderFinancialsCard() {
 							</div>
 						)}
 
-						{line.pricing.isOverridden && <PricingAuditSection line={line} />}
+						{line.pricing.isOverridden && showPricingAudit ? (
+							<PricingAuditSection line={line} />
+						) : null}
 
 						{/* Owner split breakdown — only shown for external-owned items */}
 						{line.ownerSplit && (
@@ -804,37 +823,6 @@ function OrderFinancialsCard() {
 				<span className="font-mono text-xl font-bold text-neutral-950 tracking-tight">
 					{formatMoney(financial.total)}
 				</span>
-			</div>
-		</section>
-	);
-}
-
-function DraftOrderOperationalCard() {
-	const { order } = useOrderDetailContext();
-
-	return (
-		<section className="rounded-lg border border-amber-200 bg-amber-50/70 p-5">
-			<p className="font-mono text-[10px] tracking-[0.15em] uppercase text-amber-700">
-				Borrador persistido
-			</p>
-			<div className="mt-3 space-y-3 text-sm text-neutral-700">
-				<p className="font-semibold text-neutral-950">
-					Este pedido sigue guardado como borrador operativo.
-				</p>
-				<p>
-					Al confirmar, se usan los precios guardados actualmente. Esta acción
-					no vuelve a cotizar ni recalcula importes.
-				</p>
-				<p>
-					{order.customer
-						? "El cliente ya está vinculado y el borrador puede avanzar a confirmación."
-						: "Falta vincular un cliente antes de poder confirmar este borrador."}
-				</p>
-				{!order.customer ? (
-					<div className="rounded-md border border-amber-300 bg-white/70 px-3 py-2 text-sm font-medium text-amber-900">
-						Confirmación bloqueada: este borrador no tiene cliente asociado.
-					</div>
-				) : null}
 			</div>
 		</section>
 	);

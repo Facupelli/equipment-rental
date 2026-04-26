@@ -1,8 +1,17 @@
 {
   "folders": [
-    { "path": "apps/backend", "name": "Backend" },
-    { "path": "apps/web", "name": "Frontend" },
-    { "path": "packages", "name": "Packages" },
+    {
+      "name": "Backend",
+      "path": "apps/backend",
+    },
+    {
+      "name": "Frontend",
+      "path": "apps/web",
+    },
+    {
+      "name": "Packages",
+      "path": "packages",
+    },
   ],
   "settings": {
     "editor.formatOnSave": true,
