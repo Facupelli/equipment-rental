@@ -15,10 +15,12 @@ const DraftOrderContext = createContext<DraftOrderContextValue | null>(null);
 
 export function DraftOrderProvider({
 	children,
+	initialOrder,
 }: {
 	children: React.ReactNode;
+	initialOrder?: DraftOrderState | null;
 }) {
-	const value = useDraftOrder();
+	const value = useDraftOrder(initialOrder);
 
 	return (
 		<DraftOrderContext.Provider value={value}>

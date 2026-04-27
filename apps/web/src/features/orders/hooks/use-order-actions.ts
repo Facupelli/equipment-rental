@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import type { ParsedOrderDetailResponseDto } from "@/features/orders/queries/get-order-by-id";
 import { useOrderBudgetActions } from "./use-order-budget-actions";
 import { useOrderCancelActions } from "./use-order-cancel-actions";
@@ -7,6 +8,7 @@ import { useOrderDocumentState } from "./use-order-document-state";
 import { useOrderLifecycleActions } from "./use-order-lifecycle-actions";
 
 export function useOrderActions(order: ParsedOrderDetailResponseDto) {
+	const navigate = useNavigate();
 	const documentState = useOrderDocumentState();
 	const contractActions = useOrderContractActions({
 		orderId: order.id,
@@ -29,7 +31,11 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 	const lifecycleActions = useOrderLifecycleActions(order.id);
 
 	const handleEditOrder = () => {
-		// TODO: navigate to edit order page or open edit modal
+		console.log("NAVIGATE");
+		navigate({
+			to: "/dashboard/orders/$orderId/edit",
+			params: { orderId: order.id },
+		});
 	};
 
 	const handleReleaseEquipment = () => {
@@ -54,8 +60,7 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 				businessMessage: documentState.contractBusinessErrorMessage,
 				setBusinessMessage: documentState.setContractBusinessErrorMessage,
 				isBusinessErrorOpen: documentState.isContractBusinessErrorOpen,
-				setIsBusinessErrorOpen:
-					documentState.setIsContractBusinessErrorOpen,
+				setIsBusinessErrorOpen: documentState.setIsContractBusinessErrorOpen,
 			},
 		},
 		budget: {

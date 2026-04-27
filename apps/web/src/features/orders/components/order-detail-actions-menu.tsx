@@ -38,7 +38,7 @@ export function OrderDetailActionsMenu() {
 			/>
 
 			<DropdownMenuContent align="end" className="w-56">
-				<DropdownMenuItem onClick={actions.edit.open} disabled>
+				<DropdownMenuItem onClick={actions.edit.open} disabled={!isDraft}>
 					<Pencil className="mr-2 h-4 w-4" />
 					Editar pedido
 				</DropdownMenuItem>
@@ -47,9 +47,7 @@ export function OrderDetailActionsMenu() {
 					<>
 						<DropdownMenuItem onClick={budget.open} disabled={budget.isOpening}>
 							<FileText className="mr-2 h-4 w-4" />
-							{budget.isOpening
-								? "Abriendo presupuesto..."
-								: "Ver presupuesto"}
+							{budget.isOpening ? "Abriendo presupuesto..." : "Ver presupuesto"}
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={budget.download}

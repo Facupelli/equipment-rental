@@ -57,7 +57,8 @@ type DraftOrderAction =
 			type: "set_budget_target_total";
 			targetTotal: string | null;
 	  }
-	| { type: "reset" };
+	| { type: "reset" }
+	| { type: "initialize_from_order"; state: DraftOrderState };
 
 export function createInitialDraftOrderState(): DraftOrderState {
 	return {
@@ -205,6 +206,9 @@ function draftOrderReducer(
 		case "reset":
 			return createInitialDraftOrderState();
 
+		case "initialize_from_order":
+			return action.state;
+
 		default:
 			return state;
 	}
@@ -222,11 +226,11 @@ function createDraftItem(
 	};
 }
 
-export function useDraftOrder() {
+export function useDraftOrder(initialOrder?: DraftOrderState | null) {
 	const [state, dispatch] = useReducer(
 		draftOrderReducer,
-		undefined,
-		createInitialDraftOrderState,
+		initialOrder ?? undefined,
+		initialOrder ? () => initialOrder : createInitialDraftOrderState,
 	);
 	const calculatedSubtotalCents = state.items.reduce((sum, item) => {
 		return sum + (toMoneyCents(item.pricingSnapshot.finalPrice) ?? 0);

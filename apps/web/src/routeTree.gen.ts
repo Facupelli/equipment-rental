@@ -42,9 +42,9 @@ import { Route as PortalAuthGoogleFinalizeRouteImport } from './routes/_portal/a
 import { Route as AdminDashboardPromotionsNewRouteImport } from './routes/_admin/dashboard/promotions/new'
 import { Route as AdminDashboardOwnersOwnerIdRouteImport } from './routes/_admin/dashboard/owners/$ownerId'
 import { Route as AdminDashboardOrdersNewRouteImport } from './routes/_admin/dashboard/orders/new'
-import { Route as AdminDashboardOrdersOrderIdRouteImport } from './routes/_admin/dashboard/orders/$orderId'
 import { Route as AdminDashboardLocationsLocationIdRouteImport } from './routes/_admin/dashboard/locations/$locationId'
 import { Route as AdminDashboardCustomersCustomerIdRouteImport } from './routes/_admin/dashboard/customers/$customerId'
+import { Route as AdminDashboardOrdersOrderIdIndexRouteImport } from './routes/_admin/dashboard/orders/$orderId/index'
 import { Route as AdminDashboardInventoryAssetsIndexRouteImport } from './routes/_admin/dashboard/inventory/assets/index'
 import { Route as AdminDashboardCustomersPendingProfilesIndexRouteImport } from './routes/_admin/dashboard/customers/pending-profiles/index'
 import { Route as AdminDashboardCatalogProductsIndexRouteImport } from './routes/_admin/dashboard/catalog/products/index'
@@ -53,6 +53,7 @@ import { Route as AdminDashboardCatalogBundlesIndexRouteImport } from './routes/
 import { Route as ApiOrdersOrderIdContractDownloadRouteImport } from './routes/api/orders/$orderId/contract/download'
 import { Route as ApiOrdersOrderIdBudgetDownloadRouteImport } from './routes/api/orders/$orderId/budget/download'
 import { Route as AdminDashboardPromotionsPromotionIdEditRouteImport } from './routes/_admin/dashboard/promotions/$promotionId/edit'
+import { Route as AdminDashboardOrdersOrderIdEditRouteImport } from './routes/_admin/dashboard/orders/$orderId/edit'
 import { Route as AdminDashboardCustomersPendingProfilesCustomerProfileIdRouteImport } from './routes/_admin/dashboard/customers/pending-profiles/$customerProfileId'
 import { Route as AdminDashboardCatalogProductsNewRouteImport } from './routes/_admin/dashboard/catalog/products/new'
 import { Route as AdminDashboardCatalogBundlesNewRouteImport } from './routes/_admin/dashboard/catalog/bundles/new'
@@ -239,12 +240,6 @@ const AdminDashboardOrdersNewRoute = AdminDashboardOrdersNewRouteImport.update({
   path: '/orders/new',
   getParentRoute: () => AdminDashboardRouteRoute,
 } as any)
-const AdminDashboardOrdersOrderIdRoute =
-  AdminDashboardOrdersOrderIdRouteImport.update({
-    id: '/orders/$orderId',
-    path: '/orders/$orderId',
-    getParentRoute: () => AdminDashboardRouteRoute,
-  } as any)
 const AdminDashboardLocationsLocationIdRoute =
   AdminDashboardLocationsLocationIdRouteImport.update({
     id: '/locations/$locationId',
@@ -255,6 +250,12 @@ const AdminDashboardCustomersCustomerIdRoute =
   AdminDashboardCustomersCustomerIdRouteImport.update({
     id: '/customers/$customerId',
     path: '/customers/$customerId',
+    getParentRoute: () => AdminDashboardRouteRoute,
+  } as any)
+const AdminDashboardOrdersOrderIdIndexRoute =
+  AdminDashboardOrdersOrderIdIndexRouteImport.update({
+    id: '/orders/$orderId/',
+    path: '/orders/$orderId/',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
 const AdminDashboardInventoryAssetsIndexRoute =
@@ -303,6 +304,12 @@ const AdminDashboardPromotionsPromotionIdEditRoute =
   AdminDashboardPromotionsPromotionIdEditRouteImport.update({
     id: '/promotions/$promotionId/edit',
     path: '/promotions/$promotionId/edit',
+    getParentRoute: () => AdminDashboardRouteRoute,
+  } as any)
+const AdminDashboardOrdersOrderIdEditRoute =
+  AdminDashboardOrdersOrderIdEditRouteImport.update({
+    id: '/orders/$orderId/edit',
+    path: '/orders/$orderId/edit',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
 const AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute =
@@ -363,7 +370,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof AdminDashboardIndexRoute
   '/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
-  '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/orders/new': typeof AdminDashboardOrdersNewRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
@@ -386,6 +392,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/dashboard/customers/pending-profiles/$customerProfileId': typeof AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute
+  '/dashboard/orders/$orderId/edit': typeof AdminDashboardOrdersOrderIdEditRoute
   '/dashboard/promotions/$promotionId/edit': typeof AdminDashboardPromotionsPromotionIdEditRoute
   '/api/orders/$orderId/budget/download': typeof ApiOrdersOrderIdBudgetDownloadRoute
   '/api/orders/$orderId/contract/download': typeof ApiOrdersOrderIdContractDownloadRoute
@@ -394,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/catalog/products/': typeof AdminDashboardCatalogProductsIndexRoute
   '/dashboard/customers/pending-profiles/': typeof AdminDashboardCustomersPendingProfilesIndexRoute
   '/dashboard/inventory/assets/': typeof AdminDashboardInventoryAssetsIndexRoute
+  '/dashboard/orders/$orderId/': typeof AdminDashboardOrdersOrderIdIndexRoute
   '/dashboard/catalog/bundles/$bundleId/edit': typeof AdminDashboardCatalogBundlesBundleIdEditRoute
   '/dashboard/catalog/products/$productId/edit': typeof AdminDashboardCatalogProductsProductIdEditRoute
   '/dashboard/catalog/bundles/$bundleId/': typeof AdminDashboardCatalogBundlesBundleIdIndexRoute
@@ -413,7 +421,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AdminDashboardIndexRoute
   '/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
-  '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/dashboard/orders/new': typeof AdminDashboardOrdersNewRoute
   '/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
@@ -436,6 +443,7 @@ export interface FileRoutesByTo {
   '/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/dashboard/customers/pending-profiles/$customerProfileId': typeof AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute
+  '/dashboard/orders/$orderId/edit': typeof AdminDashboardOrdersOrderIdEditRoute
   '/dashboard/promotions/$promotionId/edit': typeof AdminDashboardPromotionsPromotionIdEditRoute
   '/api/orders/$orderId/budget/download': typeof ApiOrdersOrderIdBudgetDownloadRoute
   '/api/orders/$orderId/contract/download': typeof ApiOrdersOrderIdContractDownloadRoute
@@ -444,6 +452,7 @@ export interface FileRoutesByTo {
   '/dashboard/catalog/products': typeof AdminDashboardCatalogProductsIndexRoute
   '/dashboard/customers/pending-profiles': typeof AdminDashboardCustomersPendingProfilesIndexRoute
   '/dashboard/inventory/assets': typeof AdminDashboardInventoryAssetsIndexRoute
+  '/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdIndexRoute
   '/dashboard/catalog/bundles/$bundleId/edit': typeof AdminDashboardCatalogBundlesBundleIdEditRoute
   '/dashboard/catalog/products/$productId/edit': typeof AdminDashboardCatalogProductsProductIdEditRoute
   '/dashboard/catalog/bundles/$bundleId': typeof AdminDashboardCatalogBundlesBundleIdIndexRoute
@@ -467,7 +476,6 @@ export interface FileRoutesById {
   '/_admin/dashboard/': typeof AdminDashboardIndexRoute
   '/_admin/dashboard/customers/$customerId': typeof AdminDashboardCustomersCustomerIdRoute
   '/_admin/dashboard/locations/$locationId': typeof AdminDashboardLocationsLocationIdRoute
-  '/_admin/dashboard/orders/$orderId': typeof AdminDashboardOrdersOrderIdRoute
   '/_admin/dashboard/orders/new': typeof AdminDashboardOrdersNewRoute
   '/_admin/dashboard/owners/$ownerId': typeof AdminDashboardOwnersOwnerIdRoute
   '/_admin/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
@@ -490,6 +498,7 @@ export interface FileRoutesById {
   '/_admin/dashboard/catalog/bundles/new': typeof AdminDashboardCatalogBundlesNewRoute
   '/_admin/dashboard/catalog/products/new': typeof AdminDashboardCatalogProductsNewRoute
   '/_admin/dashboard/customers/pending-profiles/$customerProfileId': typeof AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute
+  '/_admin/dashboard/orders/$orderId/edit': typeof AdminDashboardOrdersOrderIdEditRoute
   '/_admin/dashboard/promotions/$promotionId/edit': typeof AdminDashboardPromotionsPromotionIdEditRoute
   '/api/orders/$orderId/budget/download': typeof ApiOrdersOrderIdBudgetDownloadRoute
   '/api/orders/$orderId/contract/download': typeof ApiOrdersOrderIdContractDownloadRoute
@@ -498,6 +507,7 @@ export interface FileRoutesById {
   '/_admin/dashboard/catalog/products/': typeof AdminDashboardCatalogProductsIndexRoute
   '/_admin/dashboard/customers/pending-profiles/': typeof AdminDashboardCustomersPendingProfilesIndexRoute
   '/_admin/dashboard/inventory/assets/': typeof AdminDashboardInventoryAssetsIndexRoute
+  '/_admin/dashboard/orders/$orderId/': typeof AdminDashboardOrdersOrderIdIndexRoute
   '/_admin/dashboard/catalog/bundles/$bundleId/edit': typeof AdminDashboardCatalogBundlesBundleIdEditRoute
   '/_admin/dashboard/catalog/products/$productId/edit': typeof AdminDashboardCatalogProductsProductIdEditRoute
   '/_admin/dashboard/catalog/bundles/$bundleId/': typeof AdminDashboardCatalogBundlesBundleIdIndexRoute
@@ -520,7 +530,6 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/dashboard/customers/$customerId'
     | '/dashboard/locations/$locationId'
-    | '/dashboard/orders/$orderId'
     | '/dashboard/orders/new'
     | '/dashboard/owners/$ownerId'
     | '/dashboard/promotions/new'
@@ -543,6 +552,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalog/bundles/new'
     | '/dashboard/catalog/products/new'
     | '/dashboard/customers/pending-profiles/$customerProfileId'
+    | '/dashboard/orders/$orderId/edit'
     | '/dashboard/promotions/$promotionId/edit'
     | '/api/orders/$orderId/budget/download'
     | '/api/orders/$orderId/contract/download'
@@ -551,6 +561,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalog/products/'
     | '/dashboard/customers/pending-profiles/'
     | '/dashboard/inventory/assets/'
+    | '/dashboard/orders/$orderId/'
     | '/dashboard/catalog/bundles/$bundleId/edit'
     | '/dashboard/catalog/products/$productId/edit'
     | '/dashboard/catalog/bundles/$bundleId/'
@@ -570,7 +581,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/customers/$customerId'
     | '/dashboard/locations/$locationId'
-    | '/dashboard/orders/$orderId'
     | '/dashboard/orders/new'
     | '/dashboard/owners/$ownerId'
     | '/dashboard/promotions/new'
@@ -593,6 +603,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalog/bundles/new'
     | '/dashboard/catalog/products/new'
     | '/dashboard/customers/pending-profiles/$customerProfileId'
+    | '/dashboard/orders/$orderId/edit'
     | '/dashboard/promotions/$promotionId/edit'
     | '/api/orders/$orderId/budget/download'
     | '/api/orders/$orderId/contract/download'
@@ -601,6 +612,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalog/products'
     | '/dashboard/customers/pending-profiles'
     | '/dashboard/inventory/assets'
+    | '/dashboard/orders/$orderId'
     | '/dashboard/catalog/bundles/$bundleId/edit'
     | '/dashboard/catalog/products/$productId/edit'
     | '/dashboard/catalog/bundles/$bundleId'
@@ -623,7 +635,6 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/'
     | '/_admin/dashboard/customers/$customerId'
     | '/_admin/dashboard/locations/$locationId'
-    | '/_admin/dashboard/orders/$orderId'
     | '/_admin/dashboard/orders/new'
     | '/_admin/dashboard/owners/$ownerId'
     | '/_admin/dashboard/promotions/new'
@@ -646,6 +657,7 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/catalog/bundles/new'
     | '/_admin/dashboard/catalog/products/new'
     | '/_admin/dashboard/customers/pending-profiles/$customerProfileId'
+    | '/_admin/dashboard/orders/$orderId/edit'
     | '/_admin/dashboard/promotions/$promotionId/edit'
     | '/api/orders/$orderId/budget/download'
     | '/api/orders/$orderId/contract/download'
@@ -654,6 +666,7 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/catalog/products/'
     | '/_admin/dashboard/customers/pending-profiles/'
     | '/_admin/dashboard/inventory/assets/'
+    | '/_admin/dashboard/orders/$orderId/'
     | '/_admin/dashboard/catalog/bundles/$bundleId/edit'
     | '/_admin/dashboard/catalog/products/$productId/edit'
     | '/_admin/dashboard/catalog/bundles/$bundleId/'
@@ -909,13 +922,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardOrdersNewRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
-    '/_admin/dashboard/orders/$orderId': {
-      id: '/_admin/dashboard/orders/$orderId'
-      path: '/orders/$orderId'
-      fullPath: '/dashboard/orders/$orderId'
-      preLoaderRoute: typeof AdminDashboardOrdersOrderIdRouteImport
-      parentRoute: typeof AdminDashboardRouteRoute
-    }
     '/_admin/dashboard/locations/$locationId': {
       id: '/_admin/dashboard/locations/$locationId'
       path: '/locations/$locationId'
@@ -928,6 +934,13 @@ declare module '@tanstack/react-router' {
       path: '/customers/$customerId'
       fullPath: '/dashboard/customers/$customerId'
       preLoaderRoute: typeof AdminDashboardCustomersCustomerIdRouteImport
+      parentRoute: typeof AdminDashboardRouteRoute
+    }
+    '/_admin/dashboard/orders/$orderId/': {
+      id: '/_admin/dashboard/orders/$orderId/'
+      path: '/orders/$orderId'
+      fullPath: '/dashboard/orders/$orderId/'
+      preLoaderRoute: typeof AdminDashboardOrdersOrderIdIndexRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
     '/_admin/dashboard/inventory/assets/': {
@@ -984,6 +997,13 @@ declare module '@tanstack/react-router' {
       path: '/promotions/$promotionId/edit'
       fullPath: '/dashboard/promotions/$promotionId/edit'
       preLoaderRoute: typeof AdminDashboardPromotionsPromotionIdEditRouteImport
+      parentRoute: typeof AdminDashboardRouteRoute
+    }
+    '/_admin/dashboard/orders/$orderId/edit': {
+      id: '/_admin/dashboard/orders/$orderId/edit'
+      path: '/orders/$orderId/edit'
+      fullPath: '/dashboard/orders/$orderId/edit'
+      preLoaderRoute: typeof AdminDashboardOrdersOrderIdEditRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
     '/_admin/dashboard/customers/pending-profiles/$customerProfileId': {
@@ -1078,7 +1098,6 @@ interface AdminDashboardRouteRouteChildren {
   AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
   AdminDashboardCustomersCustomerIdRoute: typeof AdminDashboardCustomersCustomerIdRoute
   AdminDashboardLocationsLocationIdRoute: typeof AdminDashboardLocationsLocationIdRoute
-  AdminDashboardOrdersOrderIdRoute: typeof AdminDashboardOrdersOrderIdRoute
   AdminDashboardOrdersNewRoute: typeof AdminDashboardOrdersNewRoute
   AdminDashboardOwnersOwnerIdRoute: typeof AdminDashboardOwnersOwnerIdRoute
   AdminDashboardPromotionsNewRoute: typeof AdminDashboardPromotionsNewRoute
@@ -1093,12 +1112,14 @@ interface AdminDashboardRouteRouteChildren {
   AdminDashboardCatalogBundlesNewRoute: typeof AdminDashboardCatalogBundlesNewRoute
   AdminDashboardCatalogProductsNewRoute: typeof AdminDashboardCatalogProductsNewRoute
   AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute: typeof AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute
+  AdminDashboardOrdersOrderIdEditRoute: typeof AdminDashboardOrdersOrderIdEditRoute
   AdminDashboardPromotionsPromotionIdEditRoute: typeof AdminDashboardPromotionsPromotionIdEditRoute
   AdminDashboardCatalogBundlesIndexRoute: typeof AdminDashboardCatalogBundlesIndexRoute
   AdminDashboardCatalogCategoriesIndexRoute: typeof AdminDashboardCatalogCategoriesIndexRoute
   AdminDashboardCatalogProductsIndexRoute: typeof AdminDashboardCatalogProductsIndexRoute
   AdminDashboardCustomersPendingProfilesIndexRoute: typeof AdminDashboardCustomersPendingProfilesIndexRoute
   AdminDashboardInventoryAssetsIndexRoute: typeof AdminDashboardInventoryAssetsIndexRoute
+  AdminDashboardOrdersOrderIdIndexRoute: typeof AdminDashboardOrdersOrderIdIndexRoute
   AdminDashboardCatalogBundlesBundleIdEditRoute: typeof AdminDashboardCatalogBundlesBundleIdEditRoute
   AdminDashboardCatalogProductsProductIdEditRoute: typeof AdminDashboardCatalogProductsProductIdEditRoute
   AdminDashboardCatalogBundlesBundleIdIndexRoute: typeof AdminDashboardCatalogBundlesBundleIdIndexRoute
@@ -1111,7 +1132,6 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
     AdminDashboardCustomersCustomerIdRoute,
   AdminDashboardLocationsLocationIdRoute:
     AdminDashboardLocationsLocationIdRoute,
-  AdminDashboardOrdersOrderIdRoute: AdminDashboardOrdersOrderIdRoute,
   AdminDashboardOrdersNewRoute: AdminDashboardOrdersNewRoute,
   AdminDashboardOwnersOwnerIdRoute: AdminDashboardOwnersOwnerIdRoute,
   AdminDashboardPromotionsNewRoute: AdminDashboardPromotionsNewRoute,
@@ -1127,6 +1147,7 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
   AdminDashboardCatalogProductsNewRoute: AdminDashboardCatalogProductsNewRoute,
   AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute:
     AdminDashboardCustomersPendingProfilesCustomerProfileIdRoute,
+  AdminDashboardOrdersOrderIdEditRoute: AdminDashboardOrdersOrderIdEditRoute,
   AdminDashboardPromotionsPromotionIdEditRoute:
     AdminDashboardPromotionsPromotionIdEditRoute,
   AdminDashboardCatalogBundlesIndexRoute:
@@ -1139,6 +1160,7 @@ const AdminDashboardRouteRouteChildren: AdminDashboardRouteRouteChildren = {
     AdminDashboardCustomersPendingProfilesIndexRoute,
   AdminDashboardInventoryAssetsIndexRoute:
     AdminDashboardInventoryAssetsIndexRoute,
+  AdminDashboardOrdersOrderIdIndexRoute: AdminDashboardOrdersOrderIdIndexRoute,
   AdminDashboardCatalogBundlesBundleIdEditRoute:
     AdminDashboardCatalogBundlesBundleIdEditRoute,
   AdminDashboardCatalogProductsProductIdEditRoute:

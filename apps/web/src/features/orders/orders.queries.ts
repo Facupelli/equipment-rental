@@ -43,6 +43,7 @@ import {
 	getOrdersSchedule,
 	markEquipmentAsRetired,
 	markEquipmentAsReturned,
+	updateDraftOrder,
 	updateDraftOrderPricing,
 } from "./orders.api";
 
@@ -346,6 +347,22 @@ export function useCreateDraftOrder(options?: DraftOrderMutationOptions) {
 		...options,
 		mutationFn: async (data) => {
 			const result = await createDraftOrder({ data });
+			if (typeof result === "object" && "error" in result) {
+				throw new ProblemDetailsError(result.error);
+			}
+			return result;
+		},
+		meta: {
+			invalidates: orderKeys.all(),
+		},
+	});
+}
+
+export function useUpdateDraftOrder(options?: DraftOrderMutationOptions) {
+	return useMutation<void, ProblemDetailsError, { orderId: string; data: CreateDraftOrderDto }>({
+		...options,
+		mutationFn: async ({ orderId, data }) => {
+			const result = await updateDraftOrder({ data: { orderId, dto: data } });
 			if (typeof result === "object" && "error" in result) {
 				throw new ProblemDetailsError(result.error);
 			}

@@ -291,3 +291,26 @@ export const markEquipmentAsRetired = createServerFn({ method: "POST" })
 			throw error;
 		}
 	});
+
+// TODO: Implement backend endpoint for updating draft orders
+export const updateDraftOrder = createServerFn({ method: "PUT" })
+	.inputValidator((data: { orderId: string; dto: CreateDraftOrderDto }) =>
+		z.object({
+			orderId: z.string().uuid(),
+			dto: createDraftOrderSchema,
+		}).parse(data),
+	)
+	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+		try {
+			await apiFetch<void>(`${apiUrl}/drafts/${data.orderId}`, {
+				method: "PUT",
+				body: data.dto,
+			});
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+
+			throw error;
+		}
+	});

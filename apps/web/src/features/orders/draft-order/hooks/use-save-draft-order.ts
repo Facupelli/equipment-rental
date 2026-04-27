@@ -5,16 +5,21 @@ import {
 	buildCreateDraftOrderPayload,
 	validateDraftOrderForSave,
 } from "@/features/orders/draft-order/utils/draft-order-save";
-import { useCreateDraftOrder } from "@/features/orders/orders.queries";
+import {
+	useCreateDraftOrder,
+	useUpdateDraftOrder,
+} from "@/features/orders/orders.queries";
 import { useLocationId } from "@/shared/contexts/location/location.hooks";
 import { ProblemDetailsError } from "@/shared/errors";
 
-export function useSaveDraftOrder() {
+export function useSaveDraftOrder(orderId?: string) {
 	const navigate = useNavigate();
 	const locationId = useLocationId();
 	const { state } = useDraftOrderContext();
 	const { mutateAsync: createDraftOrder, isPending: isCreatePending } =
 		useCreateDraftOrder();
+	const { mutateAsync: updateDraftOrder, isPending: isUpdatePending } =
+		useUpdateDraftOrder();
 	const [saveError, setSaveError] = useState<string | null>(null);
 
 	async function handleSaveDraft() {
@@ -35,18 +40,25 @@ export function useSaveDraftOrder() {
 			return;
 		}
 
-		try {
-			const orderId = await createDraftOrder(
-				buildCreateDraftOrderPayload({
-					state,
-					locationId,
-				}),
-			);
+		const payload = buildCreateDraftOrderPayload({
+			state,
+			locationId,
+		});
 
-			await navigate({
-				to: "/dashboard/orders/$orderId",
-				params: { orderId },
-			});
+		try {
+			if (orderId) {
+				await updateDraftOrder({ orderId, data: payload });
+				await navigate({
+					to: "/dashboard/orders/$orderId",
+					params: { orderId },
+				});
+			} else {
+				const newOrderId = await createDraftOrder(payload);
+				await navigate({
+					to: "/dashboard/orders/$orderId",
+					params: { orderId: newOrderId },
+				});
+			}
 		} catch (error) {
 			setSaveError(getSaveErrorMessage(error));
 		}
@@ -55,7 +67,7 @@ export function useSaveDraftOrder() {
 	return {
 		handleSaveDraft,
 		saveError,
-		isSaving: isCreatePending,
+		isSaving: isCreatePending || isUpdatePending,
 		hasBudget: state.budget !== null,
 	};
 }

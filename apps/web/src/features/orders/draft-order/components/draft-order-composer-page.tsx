@@ -49,16 +49,16 @@ import dayjs from "@/lib/dates/dayjs";
 import { dateParamToLocalDate, localDateToDateParam } from "@/lib/dates/parse";
 import useDebounce from "@/shared/hooks/use-debounce";
 
-export function DraftOrderComposerPage() {
+export function DraftOrderComposerPage({ orderId }: { orderId?: string }) {
 	return (
-		<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+		<div className="grid gap-6 lg:grid-cols-[1fr_380px]">
 			<div className="space-y-4">
 				<DraftSetupSection />
 				<ItemsSection />
 			</div>
 
 			<div className="xl:sticky xl:top-6 xl:self-start">
-				<DraftSidebarSection />
+				<DraftSidebarSection orderId={orderId} />
 			</div>
 		</div>
 	);
@@ -445,14 +445,14 @@ function ItemsSection() {
 	);
 }
 
-function DraftSidebarSection() {
+function DraftSidebarSection({ orderId }: { orderId?: string }) {
 	const { isReadyForSave, itemCount, resetDraft } = useDraftOrderActions();
 	const { customer } = useDraftOrderCustomer();
 	const { rentalPeriod } = useDraftOrderRentalPeriod();
 	const { fulfillmentMethod } = useDraftOrderFulfillment();
 	const { currency, totals, budget, setBudgetTargetTotal } =
 		useDraftOrderPricing();
-	const { handleSaveDraft, saveError, isSaving } = useSaveDraftOrder();
+	const { handleSaveDraft, saveError, isSaving } = useSaveDraftOrder(orderId);
 
 	return (
 		<Card>

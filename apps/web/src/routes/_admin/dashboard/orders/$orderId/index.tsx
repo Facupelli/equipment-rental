@@ -1,4 +1,4 @@
-import { FulfillmentMethod, OrderStatus } from "@repo/types";
+import { FulfillmentMethod } from "@repo/types";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -51,7 +51,7 @@ import {
 import { nowUtc } from "@/lib/dates/parse";
 import { AdminRouteError } from "@/shared/components/admin-route-error";
 
-export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
+export const Route = createFileRoute("/_admin/dashboard/orders/$orderId/")({
 	validateSearch: ordersListSearchSchema,
 	loader: ({ context: { queryClient }, params: { orderId } }) => {
 		queryClient.ensureQueryData(createOrderDetailQueryOptions({ orderId }));
@@ -63,7 +63,7 @@ export const Route = createFileRoute("/_admin/dashboard/orders/$orderId")({
 				genericMessage="No pudimos cargar el contenido del pedido."
 				forbiddenMessage="No tienes permisos para ver el pedido."
 			/>
-		);
+		)
 	},
 	component: RouteComponent,
 });
@@ -73,7 +73,7 @@ function RouteComponent() {
 	const search = Route.useSearch();
 	const { data: order } = useSuspenseQuery(
 		createOrderDetailQueryOptions({ orderId }),
-	);
+	)
 
 	return (
 		<OrderDetailProvider order={order}>
@@ -100,7 +100,7 @@ function RouteComponent() {
 				</div>
 			</div>
 		</OrderDetailProvider>
-	);
+	)
 }
 
 function OrderHeader() {
@@ -109,7 +109,7 @@ function OrderHeader() {
 		order,
 		nowUtc(),
 		order.location.effectiveTimezone,
-	);
+	)
 	const primaryAction = getOrderPrimaryAdminAction(order.status);
 
 	return (
@@ -149,7 +149,7 @@ function OrderHeader() {
 			<OrderDetailConfirmDialog />
 			<OrderDetailBudgetDialogs />
 		</header>
-	);
+	)
 }
 
 const OPERATIONAL_STATE_STYLES: Record<
@@ -229,7 +229,7 @@ function OperationalStateCard({
 				</div>
 			</div>
 		</section>
-	);
+	)
 }
 
 function OrderStatusCard({
@@ -246,9 +246,8 @@ function OrderStatusCard({
 				<OrderStatusBadge status={status} />
 			</div>
 		</section>
-	);
+	)
 }
-
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
@@ -282,7 +281,7 @@ function OrderTabs() {
 				<TabPlaceholder label="Todavia no hay notas internas." />
 			</TabsContent>
 		</Tabs>
-	);
+	)
 }
 
 function TabPlaceholder({ label }: { label: string }) {
@@ -290,7 +289,7 @@ function TabPlaceholder({ label }: { label: string }) {
 		<div className="border border-dashed border-neutral-200 py-16 flex items-center justify-center rounded-md">
 			<span className="text-sm text-neutral-300">{label}</span>
 		</div>
-	);
+	)
 }
 
 // ─── Items Table ──────────────────────────────────────────────────────────────
@@ -302,7 +301,7 @@ function OrderItemsTable() {
 	// Build a map from orderItemId → financial line for O(1) lookup per row
 	const financialByItemId = new Map(
 		financial.items.map((line) => [line.orderItemId, line]),
-	);
+	)
 
 	return (
 		<section className="mb-10">
@@ -332,7 +331,7 @@ function OrderItemsTable() {
 				))}
 			</div>
 		</section>
-	);
+	)
 }
 
 // ─── Item Row ─────────────────────────────────────────────────────────────────
@@ -435,7 +434,7 @@ function OrderItemRow({
 				</span>
 			</div>
 		</div>
-	);
+	)
 }
 
 // ─── Activity Log ─────────────────────────────────────────────────────────────
@@ -461,7 +460,7 @@ function ActivityLog() {
 				/>
 			</div>
 		</section>
-	);
+	)
 }
 
 function ActivityEntry({
@@ -493,7 +492,7 @@ function ActivityEntry({
 				</span>
 			</div>
 		</div>
-	);
+	)
 }
 
 // ─── Client Card ──────────────────────────────────────────────────────────────
@@ -529,7 +528,9 @@ function OrderClientCard() {
 					{/* Avatar + name */}
 					<div className="flex items-center gap-3 mb-4">
 						<div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center shrink-0">
-							<span className="text-sm font-bold text-neutral-600">{initials}</span>
+							<span className="text-sm font-bold text-neutral-600">
+								{initials}
+							</span>
 						</div>
 						<div>
 							<p className="text-sm font-bold text-neutral-950 leading-tight">
@@ -555,12 +556,13 @@ function OrderClientCard() {
 						Todavia no hay un cliente vinculado.
 					</p>
 					<p className="mt-1 text-xs text-amber-800/85">
-						La confirmacion del borrador esta bloqueada hasta asociar un cliente.
+						La confirmacion del borrador esta bloqueada hasta asociar un
+						cliente.
 					</p>
 				</div>
 			)}
 		</section>
-	);
+	)
 }
 
 // ─── Logistics Card ───────────────────────────────────────────────────────────
@@ -662,7 +664,7 @@ function OrderLogisticsCard() {
 				</div>
 			)}
 		</section>
-	);
+	)
 }
 
 // ─── Financials Card ──────────────────────────────────────────────────────────
@@ -671,7 +673,9 @@ function OrderFinancialsCard() {
 	const { order } = useOrderDetailContext();
 	const { financial } = order;
 	const [showPricingAudit, setShowPricingAudit] = useState(false);
-	const hasAdjustedLines = financial.items.some((line) => line.pricing.isOverridden);
+	const hasAdjustedLines = financial.items.some(
+		(line) => line.pricing.isOverridden,
+	)
 	const hasOwnerObligations = financial.ownerObligations !== "0";
 
 	return (
@@ -703,7 +707,7 @@ function OrderFinancialsCard() {
 						<div className="flex items-center justify-between">
 							<span className="text-sm text-neutral-500">{line.label}</span>
 							<span
-								className={`font-mono text-sm ${line.discounts.length > 0 ? "text-neutral-400" : "text-neutral-950"}`}
+								className={`font-mono text-sm ${line.discounts.length > 0 ? `text-neutral-400` : `text-neutral-950`}`}
 							>
 								{formatMoney(line.basePrice)}
 							</span>
@@ -825,7 +829,7 @@ function OrderFinancialsCard() {
 				</span>
 			</div>
 		</section>
-	);
+	)
 }
 
 function FinancialSummaryRow({
@@ -854,7 +858,7 @@ function FinancialSummaryRow({
 				{formatMoney(value)}
 			</span>
 		</div>
-	);
+	)
 }
 
 function PricingAuditSection({
@@ -907,7 +911,7 @@ function PricingAuditSection({
 				)}
 			</div>
 		</div>
-	);
+	)
 }
 
 function PricingAuditRow({ label, value }: { label: string; value: string }) {
@@ -918,7 +922,7 @@ function PricingAuditRow({ label, value }: { label: string; value: string }) {
 				{value}
 			</span>
 		</div>
-	);
+	)
 }
 
 function formatSignedMoney(amount: string): string {
@@ -932,7 +936,7 @@ function formatSignedMoney(amount: string): string {
 		return formatMoney(amount);
 	}
 
-	return `${value > 0 ? "+" : "-"}${formatMoney(String(Math.abs(value)))}`;
+	return `${value > 0 ? `+` : `-`}${formatMoney(String(Math.abs(value)))}`;
 }
 
 // ─── Shared Sidebar Primitives ────────────────────────────────────────────────
@@ -942,7 +946,7 @@ function SidebarSectionLabel({ label }: { label: string }) {
 		<p className="font-mono text-[10px] tracking-[0.15em] uppercase text-neutral-400 mb-4 pb-3 border-b border-neutral-100">
 			{label}
 		</p>
-	);
+	)
 }
 
 function SidebarField({
@@ -957,5 +961,5 @@ function SidebarField({
 			<span className="text-neutral-400 shrink-0">{icon}</span>
 			<span className="text-xs text-neutral-500">{value}</span>
 		</div>
-	);
+	)
 }
