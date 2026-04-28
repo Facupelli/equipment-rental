@@ -31,10 +31,92 @@ export class OrderRepository {
     return OrderMapper.toDomain(raw);
   }
 
-  async save(order: Order, tx?: PrismaTransactionClient): Promise<string> {
+  async save(order: Order, tx?: PrismaTransactionClient, options?: { replaceChildren?: boolean }): Promise<string> {
     const client = tx ?? this.prisma.client;
     const { orderRow, deliveryRequestRow, itemRows, snapshotRows, snapshotComponentRows, splitRows } =
       OrderMapper.toPersistence(order);
+
+    if (options?.replaceChildren) {
+      const itemIds = itemRows.map((item) => item.id);
+      const snapshotIds = snapshotRows.map((snapshot) => snapshot.id);
+      const snapshotComponentIds = snapshotComponentRows.map((component) => component.id);
+      const splitIds = splitRows.map((split) => split.id);
+
+      const persistedOrder = await client.order.findUnique({
+        where: { id: order.id },
+        select: {
+          items: {
+            select: {
+              id: true,
+              bundleSnapshot: {
+                select: {
+                  id: true,
+                  components: {
+                    select: { id: true },
+                  },
+                },
+              },
+              ownerSplits: {
+                select: { id: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (persistedOrder) {
+        const staleItemIds = persistedOrder.items.map((item) => item.id).filter((id) => !itemIds.includes(id));
+        const staleSnapshotIds = persistedOrder.items
+          .flatMap((item) => (item.bundleSnapshot ? [item.bundleSnapshot.id] : []))
+          .filter((id) => !snapshotIds.includes(id));
+        const staleSnapshotComponentIds = persistedOrder.items
+          .flatMap((item) => item.bundleSnapshot?.components.map((component) => component.id) ?? [])
+          .filter((id) => !snapshotComponentIds.includes(id));
+        const staleSplitIds = persistedOrder.items
+          .flatMap((item) => item.ownerSplits.map((split) => split.id))
+          .filter((id) => !splitIds.includes(id));
+
+        if (staleSnapshotComponentIds.length > 0) {
+          await client.bundleSnapshotComponent.deleteMany({
+            where: {
+              id: {
+                in: staleSnapshotComponentIds,
+              },
+            },
+          });
+        }
+
+        if (staleSnapshotIds.length > 0) {
+          await client.bundleSnapshot.deleteMany({
+            where: {
+              id: {
+                in: staleSnapshotIds,
+              },
+            },
+          });
+        }
+
+        if (staleSplitIds.length > 0) {
+          await client.orderItemOwnerSplit.deleteMany({
+            where: {
+              id: {
+                in: staleSplitIds,
+              },
+            },
+          });
+        }
+
+        if (staleItemIds.length > 0) {
+          await client.orderItem.deleteMany({
+            where: {
+              id: {
+                in: staleItemIds,
+              },
+            },
+          });
+        }
+      }
+    }
 
     await client.order.upsert({
       where: { id: orderRow.id },

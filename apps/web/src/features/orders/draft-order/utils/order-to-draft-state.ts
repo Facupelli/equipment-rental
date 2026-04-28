@@ -2,6 +2,7 @@ import type { DraftOrderDiscountLine } from "@repo/schemas";
 import { FulfillmentMethod, OrderItemType } from "@repo/types";
 import type {
 	DraftOrderItem,
+	DraftOrderItemBudgetPreview,
 	DraftOrderPricingSnapshot,
 	DraftOrderSelectedBundleItem,
 	DraftOrderSelectedProductItem,
@@ -13,6 +14,13 @@ import type { ParsedOrderDetailResponseDto } from "@/features/orders/queries/get
 export function orderToDraftOrderState(
 	order: ParsedOrderDetailResponseDto,
 ): DraftOrderState {
+	const hasManualPricing = order.financial.items.some(
+		(item) => item.pricing.isOverridden,
+	);
+	const budgetByItemId = hasManualPricing
+		? buildLoadedDraftBudgetPreviewByItemId(order)
+		: null;
+
 	return {
 		currency: order.financial.items[0]?.currency ?? "USD",
 		customer: order.customer
@@ -49,9 +57,24 @@ export function orderToDraftOrderState(
 			const financialLine = order.financial.items.find(
 				(f) => f.orderItemId === item.id,
 			);
-			return orderItemToDraftItem(item, financialLine);
+			return orderItemToDraftItem(
+				item,
+				financialLine,
+				budgetByItemId?.get(item.id) ?? null,
+			);
 		}),
-		budget: null,
+		budget: hasManualPricing
+			? {
+				currency: order.financial.items[0]?.currency ?? "USD",
+				currentItemsSubtotal: order.financial.subtotalBeforeDiscounts,
+				targetTotal: order.financial.itemsSubtotal,
+				proposedDiscountTotal: absoluteMoneyDifference(
+					order.financial.subtotalBeforeDiscounts,
+					order.financial.itemsSubtotal,
+				),
+				items: Array.from(budgetByItemId?.values() ?? []),
+			}
+			: null,
 	};
 }
 
@@ -60,6 +83,7 @@ function orderItemToDraftItem(
 	financialLine:
 		| ParsedOrderDetailResponseDto["financial"]["items"][number]
 		| undefined,
+	budgetPreview: DraftOrderItemBudgetPreview | null,
 ): DraftOrderItem {
 	return {
 		draftItemId: item.id,
@@ -68,19 +92,22 @@ function orderItemToDraftItem(
 				? productItemToDraftSelection(item)
 				: bundleItemToDraftSelection(item),
 		pricingSnapshot: financialLine
-			? pricingToDraftPricingSnapshot(financialLine.pricing)
+			? pricingToDraftPricingSnapshot(financialLine)
 			: createEmptyPricingSnapshot(),
-		budgetPreview: null,
+		budgetPreview,
 	};
 }
 
 function productItemToDraftSelection(
-	item: ParsedOrderDetailResponseDto["items"][number],
+	item: Extract<
+		ParsedOrderDetailResponseDto["items"][number],
+		{ type: OrderItemType.PRODUCT }
+	>,
 ): DraftOrderSelectedProductItem {
 	const firstAsset = item.assets[0];
 	return {
 		type: "PRODUCT",
-		productTypeId: firstAsset?.productTypeId ?? "",
+		productTypeId: item.productTypeId,
 		assetId: firstAsset?.id,
 		quantity: item.assets.length || 1,
 		label: item.name,
@@ -88,28 +115,32 @@ function productItemToDraftSelection(
 }
 
 function bundleItemToDraftSelection(
-	item: ParsedOrderDetailResponseDto["items"][number],
+	item: Extract<
+		ParsedOrderDetailResponseDto["items"][number],
+		{ type: OrderItemType.BUNDLE }
+	>,
 ): DraftOrderSelectedBundleItem {
 	return {
 		type: "BUNDLE",
-		bundleId: item.id,
+		bundleId: item.bundleId,
 		label: item.name,
 	};
 }
 
 function pricingToDraftPricingSnapshot(
-	pricing: ParsedOrderDetailResponseDto["financial"]["items"][number]["pricing"],
+	financialLine: ParsedOrderDetailResponseDto["financial"]["items"][number],
 ): DraftOrderPricingSnapshot {
-	const discountTotal = pricing.effective.discounts.reduce((sum, d) => {
+	const { pricing } = financialLine;
+	const discountTotal = pricing.calculated.discounts.reduce((sum, d) => {
 		return sum + parseFloat(d.discountAmount);
 	}, 0);
 
 	return {
-		currency: "USD",
+		currency: financialLine.currency,
 		basePrice: pricing.calculated.basePrice,
-		finalPrice: pricing.effective.finalPrice,
+		finalPrice: pricing.calculated.finalPrice,
 		discountTotal: discountTotal.toFixed(2),
-		discountLines: pricing.effective.discounts.map(
+		discountLines: pricing.calculated.discounts.map(
 			(d): DraftOrderDiscountLine => ({
 				sourceKind: d.sourceKind,
 				sourceId: d.sourceId,
@@ -122,6 +153,35 @@ function pricingToDraftPricingSnapshot(
 			}),
 		),
 	};
+}
+
+function buildLoadedDraftBudgetPreviewByItemId(
+	order: ParsedOrderDetailResponseDto,
+): Map<string, DraftOrderItemBudgetPreview> {
+	return new Map(
+		order.financial.items.map((item) => [
+			item.orderItemId,
+			{
+				draftItemId: item.orderItemId,
+				label: item.label,
+				currency: item.currency,
+				basePrice: item.pricing.calculated.basePrice,
+				currentFinalPrice: item.pricing.calculated.finalPrice,
+				proposedFinalPrice: item.pricing.effective.finalPrice,
+				proposedDiscountAmount: absoluteMoneyDifference(
+					item.pricing.calculated.finalPrice,
+					item.pricing.effective.finalPrice,
+				),
+			},
+		]),
+	);
+}
+
+function absoluteMoneyDifference(left: string, right: string): string {
+	const leftAmount = Number.parseFloat(left);
+	const rightAmount = Number.parseFloat(right);
+
+	return Math.abs(leftAmount - rightAmount).toFixed(2);
 }
 
 function createEmptyPricingSnapshot(): DraftOrderPricingSnapshot {

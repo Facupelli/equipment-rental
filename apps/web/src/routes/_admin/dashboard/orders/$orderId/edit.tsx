@@ -31,8 +31,6 @@ export const Route = createFileRoute("/_admin/dashboard/orders/$orderId/edit")({
 });
 
 function EditDraftOrderPage() {
-	console.log("EDIT DRAFT ORDER PAGE");
-
 	const { orderId } = Route.useParams();
 	const { data: draftOrder } = useSuspenseQuery(
 		createOrderDetailQueryOptions({ orderId }),

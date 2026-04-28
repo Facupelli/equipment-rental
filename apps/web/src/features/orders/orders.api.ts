@@ -292,8 +292,7 @@ export const markEquipmentAsRetired = createServerFn({ method: "POST" })
 		}
 	});
 
-// TODO: Implement backend endpoint for updating draft orders
-export const updateDraftOrder = createServerFn({ method: "PUT" })
+export const updateDraftOrder = createServerFn({ method: "POST" })
 	.inputValidator((data: { orderId: string; dto: CreateDraftOrderDto }) =>
 		z.object({
 			orderId: z.string().uuid(),

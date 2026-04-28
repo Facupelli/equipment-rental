@@ -58,6 +58,7 @@ const AssetSummarySchema = z.object({
 const ProductTypeItemSchema = z.object({
   id: z.uuid(),
   type: z.literal(OrderItemType.PRODUCT),
+  productTypeId: z.uuid(),
   name: z.string(),
   assets: z.array(AssetSummarySchema),
 });
@@ -71,6 +72,7 @@ const BundleComponentSnapshotSchema = z.object({
 const BundleItemSchema = z.object({
   id: z.uuid(),
   type: z.literal(OrderItemType.BUNDLE),
+  bundleId: z.uuid(),
   name: z.string(),
   components: z.array(BundleComponentSnapshotSchema),
   assets: z.array(AssetSummarySchema),

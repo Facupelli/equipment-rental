@@ -133,6 +133,7 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
         return {
           id: item.id,
           type: OrderItemType.PRODUCT,
+          productTypeId: item.productTypeId!,
           name: item.productType.name,
           assets,
         };
@@ -142,6 +143,7 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
         return {
           id: item.id,
           type: OrderItemType.BUNDLE,
+          bundleId: item.bundleId!,
           name: item.bundle.name,
           components: item.bundle.components.map((c) => ({
             productTypeId: c.productType.id,

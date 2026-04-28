@@ -69,6 +69,12 @@ export class OrderPricingAdjustmentNotAllowedError extends OrderError {
   }
 }
 
+export class OrderDraftEditNotAllowedError extends OrderError {
+  constructor(status: OrderStatus) {
+    super(`Cannot edit a draft order while it is in '${status}' status.`);
+  }
+}
+
 export class OrderPricingItemNotFoundError extends OrderError {
   constructor(orderItemId: string) {
     super(`Order item '${orderItemId}' was not found for pricing adjustment.`);
