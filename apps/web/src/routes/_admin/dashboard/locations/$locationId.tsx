@@ -1,24 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { useParams } from "@tanstack/react-router";
+import type { LocationScheduleResponseDto } from "@repo/schemas";
+import { ScheduleSlotType } from "@repo/types";
+import { createFileRoute, useParams } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
+import { useState } from "react";
+import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	formatTimeRange,
-	groupSchedulesByDay,
-	type DayScheduleRow,
-} from "@/features/tenant/locations/utils/location-schedule.utils";
 import {
 	ScheduleSlotModal,
 	type ScheduleSlotModalState,
 } from "@/features/tenant/components/location-schedule-form/location-schedule-dialog-form";
-import type { LocationScheduleResponseDto } from "@repo/schemas";
-import { ScheduleSlotType } from "@repo/types";
-import dayjs from "@/lib/dates/dayjs";
-import { cn } from "@/lib/utils";
 import { useLocationSchedules } from "@/features/tenant/locations/location-schedules.queries";
 import { useLocations } from "@/features/tenant/locations/locations.queries";
-import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
+import {
+	type DayScheduleRow,
+	formatTimeRange,
+	groupSchedulesByDay,
+} from "@/features/tenant/locations/utils/location-schedule.utils";
+import dayjs from "@/lib/dates/dayjs";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_admin/dashboard/locations/$locationId")(
 	{
@@ -75,7 +74,7 @@ function LocationDetailPage() {
 								{location?.name}
 							</h1>
 							<p className="mt-1 text-sm text-muted-foreground">
-								Location Schedule Management &amp; Operating Hours
+								Manejo de horarios de operación
 							</p>
 						</div>
 					</div>

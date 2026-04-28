@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -5,6 +6,7 @@ import {
 	DialogTitle,
 	DialogDescription,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { LocationScheduleResponseDto } from "@repo/schemas";
 import {
 	getScheduleSlotDefaults,
@@ -18,6 +20,7 @@ import {
 	useBulkCreateLocationSchedules,
 	useUpdateLocationSchedule,
 } from "../../locations/location-schedules.queries";
+import { ProblemDetailsError } from "@/shared/errors";
 
 // ---------------------------------------------------------------------------
 // Modal state discriminated union
@@ -57,6 +60,7 @@ export function ScheduleSlotModal({
 }: ScheduleSlotModalProps) {
 	const bulkCreate = useBulkCreateLocationSchedules();
 	const update = useUpdateLocationSchedule();
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const isPending = bulkCreate.isPending || update.isPending;
 
@@ -77,25 +81,44 @@ export function ScheduleSlotModal({
 	const isEditMode = state.open && state.mode === "edit";
 	const title = isEditMode ? "Edit Schedule Slot" : "Add Schedule Slot";
 
-	async function handleSubmit(values: ScheduleSlotFormValues) {
-		const dtos = toAddScheduleDtos(values);
-
-		if (state.open && state.mode === "edit") {
-			// Edit always produces exactly one DTO — the single record being updated
-			await update.mutateAsync({
-				locationId,
-				scheduleId: state.schedule.id,
-				dto: dtos[0],
-			});
-		} else {
-			await bulkCreate.mutateAsync({ items: dtos, locationId });
-		}
-
+	function handleClose() {
+		setErrorMessage(null);
 		onClose();
 	}
 
+	async function handleSubmit(values: ScheduleSlotFormValues) {
+		const dtos = toAddScheduleDtos(values);
+		setErrorMessage(null);
+
+		try {
+			if (state.open && state.mode === "edit") {
+				// Edit always produces exactly one DTO — the single record being updated
+				await update.mutateAsync({
+					locationId,
+					scheduleId: state.schedule.id,
+					dto: dtos[0],
+				});
+			} else {
+				await bulkCreate.mutateAsync({ items: dtos, locationId });
+			}
+
+			handleClose();
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				setErrorMessage(
+					error.problemDetails.detail ??
+						error.problemDetails.title ??
+						"No se pudo guardar la franja horaria.",
+				);
+				return;
+			}
+
+			setErrorMessage("Ocurrió un error al guardar la franja horaria.");
+		}
+	}
+
 	return (
-		<Dialog open={state.open} onOpenChange={(open) => !open && onClose()}>
+		<Dialog open={state.open} onOpenChange={(open) => !open && handleClose()}>
 			<DialogContent className="sm:max-w-xl">
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
@@ -103,6 +126,12 @@ export function ScheduleSlotModal({
 						Define availability for this location.
 					</DialogDescription>
 				</DialogHeader>
+
+				{errorMessage && (
+					<Alert variant="destructive">
+						<AlertDescription>{errorMessage}</AlertDescription>
+					</Alert>
+				)}
 
 				{state.open && (
 					<ScheduleSlotForm
@@ -112,7 +141,7 @@ export function ScheduleSlotModal({
 						defaultValues={defaultValues}
 						isEditMode={isEditMode}
 						onSubmit={handleSubmit}
-						onCancel={onClose}
+						onCancel={handleClose}
 						isPending={isPending}
 					/>
 				)}

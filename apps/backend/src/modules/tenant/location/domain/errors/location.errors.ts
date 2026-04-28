@@ -7,3 +7,9 @@ export class LocationNotFoundError extends LocationError {
     super(`Location '${locationId}' was not found`);
   }
 }
+
+export class LocationScheduleNotFoundError extends LocationError {
+  constructor(scheduleId: string) {
+    super(`Location schedule '${scheduleId}' was not found`);
+  }
+}

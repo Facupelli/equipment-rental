@@ -225,7 +225,7 @@ export class Location {
 
   updateScheduleWindow(
     scheduleId: string,
-    props: { openTime: number; closeTime: number; slotIntervalMinutes: number },
+    props: { openTime: number; closeTime: number; slotIntervalMinutes: number | null },
   ): void {
     const target = this.schedules.find((s) => s.id === scheduleId);
     if (!target) {

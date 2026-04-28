@@ -64,6 +64,8 @@ import { GetRentalLocationSchedulesHttpController } from './location/application
 import { GetRentalLocationsHttpController } from './location/application/queries/get-rental-locations/get-rental-locations.http.controller';
 import { AddLocationScheduleHttpController } from './location/application/commands/add-schedule-to-location/add-location-schedule.http.controller';
 import { BulkAddLocationSchedulesHttpController } from './location/application/commands/bulk-add-schedule-to-location/bulk-add-location-schedules.http.controller';
+import { UpdateLocationScheduleCommandHandler } from './location/application/commands/update-location-schedule/update-location-schedule.command-handler';
+import { UpdateLocationScheduleHttpController } from './location/application/commands/update-location-schedule/update-location-schedule.http.controller';
 import { CloudflareCustomHostnameService } from './infrastructure/services/cloudflare-custom-hostname.service';
 
 const commandHandlers = [
@@ -82,6 +84,7 @@ const commandHandlers = [
   DeactivateLocationCommandHandler,
   AddScheduleToLocationCommandHandler,
   BulkAddSchedulesToLocationCommandHandler,
+  UpdateLocationScheduleCommandHandler,
 ];
 const queryHandlers = [
   IsSlugTakenQueryHandler,
@@ -139,6 +142,7 @@ const controllers = [
   GetLocationSchedulesHttpController,
   AddLocationScheduleHttpController,
   BulkAddLocationSchedulesHttpController,
+  UpdateLocationScheduleHttpController,
   CreateOwnerHttpController,
   CreateOwnerContractHttpController,
   GetOwnersHttpController,

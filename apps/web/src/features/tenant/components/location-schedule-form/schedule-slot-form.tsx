@@ -79,12 +79,14 @@ export function ScheduleSlotForm({
 										<button
 											key={type}
 											type="button"
+											disabled={isEditMode}
 											onClick={() => field.handleChange(type)}
 											className={cn(
 												"flex-1 rounded-md py-1.5 text-sm font-medium transition-all",
 												field.state.value === type
 													? "bg-background text-foreground shadow-sm"
 													: "text-muted-foreground hover:text-foreground",
+												isEditMode && "cursor-not-allowed opacity-60",
 											)}
 										>
 											{type.charAt(0) + type.slice(1).toLowerCase()}
@@ -114,12 +116,14 @@ export function ScheduleSlotForm({
 										<button
 											key={opt.value}
 											type="button"
+											disabled={isEditMode}
 											onClick={() => modeField.handleChange(opt.value)}
 											className={cn(
 												"flex-1 rounded-md py-1.5 text-sm font-medium transition-all",
 												modeField.state.value === opt.value
 													? "bg-background text-foreground shadow-sm"
 													: "text-muted-foreground hover:text-foreground",
+												isEditMode && "cursor-not-allowed opacity-60",
 											)}
 										>
 											{opt.label}
@@ -199,6 +203,7 @@ export function ScheduleSlotForm({
 													type="date"
 													name={field.name}
 													value={field.state.value ?? ""}
+													disabled={isEditMode}
 													onBlur={field.handleBlur}
 													onChange={(e) =>
 														field.handleChange(e.target.value || null)
@@ -232,7 +237,12 @@ export function ScheduleSlotForm({
 										name={field.name}
 										value={field.state.value}
 										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
+										onChange={(e) => {
+											field.handleChange(e.target.value);
+											if (e.target.value === form.getFieldValue("closeTime")) {
+												form.setFieldValue("slotIntervalMinutes", null);
+											}
+										}}
 										aria-invalid={isInvalid}
 									/>
 									{isInvalid && <FieldError errors={field.state.meta.errors} />}
