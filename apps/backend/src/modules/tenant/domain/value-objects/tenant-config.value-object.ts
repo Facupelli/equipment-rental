@@ -33,8 +33,6 @@ export interface TenantConfigProps {
   bookingMode?: BookingMode;
 }
 
-type LegacyRoundingRule = 'ROUND_UP' | 'SPLIT';
-
 // Deep partial for merge — all fields optional at every level
 export type TenantConfigPatch = {
   pricing?: Partial<TenantPricingConfigProps>;
@@ -86,7 +84,7 @@ export class TenantConfig {
         overRentalEnabled: false,
         maxOverRentThreshold: 0,
         weekendCountsAsOne: false,
-        roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
+        roundingRule: RoundingRule.IGNORE_PARTIAL_DAY,
         currency: 'ARS',
         locale: 'es-AR',
         insuranceEnabled: false,
@@ -134,27 +132,12 @@ export class TenantConfig {
   private static normalizeProps(props: TenantConfigProps): Required<TenantConfigProps> {
     return {
       ...props,
-      pricing: {
-        ...props.pricing,
-        roundingRule: TenantConfig.normalizeRoundingRule(props.pricing.roundingRule),
-      },
+      pricing: { ...props.pricing },
       notifications: {
         enabledChannels: props.notifications?.enabledChannels ?? ['EMAIL'],
       },
       bookingMode: props.bookingMode ?? BookingMode.INSTANT_BOOK,
     };
-  }
-
-  private static normalizeRoundingRule(rule: RoundingRule | LegacyRoundingRule): RoundingRule {
-    if (rule === 'ROUND_UP') {
-      return RoundingRule.BILL_PARTIAL_AS_FULL_UNIT;
-    }
-
-    if (rule === 'SPLIT') {
-      return RoundingRule.IGNORE_PARTIAL_UNIT;
-    }
-
-    return rule;
   }
 
   // --- Validation helpers ---

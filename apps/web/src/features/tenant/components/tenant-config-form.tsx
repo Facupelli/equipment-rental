@@ -1,9 +1,18 @@
 import { BookingMode, RoundingRule } from "@repo/types";
 import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { CircleHelp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -133,31 +142,84 @@ function PricingSettingsFields({
             {(field) => (
               <div className="grid grid-cols-[1fr_auto] items-start gap-8 px-5 py-4">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    Regla para tiempo extra en alquileres diarios
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-foreground">
+                      Comportamiento de cobro diario
+                    </p>
+                    <Popover>
+                      <PopoverTrigger
+                        render={
+                          <button
+                            type="button"
+                            aria-label="Más información sobre el comportamiento de cobro diario"
+                            className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            <CircleHelp className="h-3.5 w-3.5" />
+                          </button>
+                        }
+                      />
+                      <PopoverContent align="start" sideOffset={8} className="w-80 gap-2">
+                        <PopoverHeader className="gap-2">
+                          <PopoverTitle>Cómo funciona cada opción</PopoverTitle>
+                          <PopoverDescription className="space-y-3 text-xs leading-5">
+                            <p>
+                              <span className="font-medium text-foreground">
+                                No cobrar la fracción restante:
+                              </span>{" "}
+                              solo cobra días completos de 24 horas. Si el alquiler supera un día pero no alcanza el siguiente completo, no suma otra unidad.
+                            </p>
+                            <p>
+                              <span className="font-medium text-foreground">
+                                Cobrar desde media jornada extra:
+                              </span>{" "}
+                              suma la siguiente unidad recién cuando se supera la mitad del próximo día. Por ejemplo, hasta 36 horas cobra 1 unidad; desde 36 horas y 1 minuto cobra 2.
+                            </p>
+                            <p>
+                              <span className="font-medium text-foreground">
+                                Cobrar cualquier fracción extra:
+                              </span>{" "}
+                              cualquier tiempo adicional después de un día completo suma una nueva unidad.
+                            </p>
+                          </PopoverDescription>
+                        </PopoverHeader>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Define si una fracción adicional de dia se cobra como una
-                    nueva unidad o se ignora hasta completar el próximo dia.
+                    Define cómo se cobra el tiempo adicional una vez cumplida
+                    cada jornada de 24 horas.
                   </p>
                 </div>
                 <Select
                   value={field.state.value}
                   onValueChange={(v) => field.handleChange(v as RoundingRule)}
-									items={[
-										{ value: RoundingRule.IGNORE_PARTIAL_UNIT, label: "No cobrar la fracción restante" },
-										{ value: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT, label: "Cobrar una unidad completa adicional" },
-									]}
+                  items={[
+                    {
+                      value: RoundingRule.IGNORE_PARTIAL_DAY,
+                      label: "No cobrar la fracción restante",
+                    },
+                    {
+                      value: RoundingRule.BILL_OVER_HALF_DAY,
+                      label: "Cobrar desde media jornada extra",
+                    },
+                    {
+                      value: RoundingRule.BILL_ANY_PARTIAL_DAY,
+                      label: "Cobrar cualquier fracción extra",
+                    },
+                  ]}
                 >
                   <SelectTrigger className="w-[20rem] max-w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={RoundingRule.IGNORE_PARTIAL_UNIT}>
+                    <SelectItem value={RoundingRule.IGNORE_PARTIAL_DAY}>
                       No cobrar la fracción restante
                     </SelectItem>
-                    <SelectItem value={RoundingRule.BILL_PARTIAL_AS_FULL_UNIT}>
-                      Cobrar una unidad completa adicional
+                    <SelectItem value={RoundingRule.BILL_OVER_HALF_DAY}>
+                      Cobrar desde media jornada extra
+                    </SelectItem>
+                    <SelectItem value={RoundingRule.BILL_ANY_PARTIAL_DAY}>
+                      Cobrar cualquier fracción extra
                     </SelectItem>
                   </SelectContent>
                 </Select>

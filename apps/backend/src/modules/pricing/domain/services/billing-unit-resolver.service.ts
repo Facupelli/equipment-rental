@@ -10,6 +10,7 @@ export type ResolveBillingUnitsInput = {
 };
 
 const MINUTES_PER_DAY = 24 * 60;
+const HALF_DAY_MINUTES = MINUTES_PER_DAY / 2;
 
 export class BillingUnitResolverService {
   resolveUnits(input: ResolveBillingUnitsInput): number {
@@ -39,8 +40,12 @@ export class BillingUnitResolverService {
       return fullUnits;
     }
 
-    if (roundingRule === RoundingRule.BILL_PARTIAL_AS_FULL_UNIT) {
+    if (roundingRule === RoundingRule.BILL_ANY_PARTIAL_DAY) {
       return fullUnits + 1;
+    }
+
+    if (roundingRule === RoundingRule.BILL_OVER_HALF_DAY) {
+      return Math.max(1, fullUnits + (remainderMinutes > HALF_DAY_MINUTES ? 1 : 0));
     }
 
     return Math.max(1, fullUnits);

@@ -27,7 +27,7 @@ export const tenantConfigFormDefaults: TenantConfigFormValues = {
   overRentalEnabled: false,
   maxOverRentThreshold: 0,
   weekendCountsAsOne: false,
-  roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
+  roundingRule: RoundingRule.IGNORE_PARTIAL_DAY,
   currency: "ARS",
   locale: "es-AR",
   insuranceEnabled: false,

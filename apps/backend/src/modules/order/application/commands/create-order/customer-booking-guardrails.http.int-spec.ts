@@ -342,7 +342,7 @@ describe('Customer booking guardrails HTTP integration', () => {
         overRentalEnabled: false,
         maxOverRentThreshold: 0,
         weekendCountsAsOne: false,
-        roundingRule: 'BILL_PARTIAL_AS_FULL_UNIT',
+        roundingRule: 'BILL_ANY_PARTIAL_DAY',
         defaultCurrency: 'USD',
       },
       timezone: 'UTC',

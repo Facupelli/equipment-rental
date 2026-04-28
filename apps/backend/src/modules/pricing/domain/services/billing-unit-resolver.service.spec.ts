@@ -15,7 +15,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 60,
       effectiveTimezone: 'UTC',
       weekendCountsAsOne: true,
-      roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
+      roundingRule: RoundingRule.IGNORE_PARTIAL_DAY,
     });
 
     expect(units).toBe(2);
@@ -27,7 +27,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: false,
-      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
+      roundingRule: RoundingRule.BILL_ANY_PARTIAL_DAY,
     });
 
     expect(units).toBe(3);
@@ -39,7 +39,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
-      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
+      roundingRule: RoundingRule.BILL_ANY_PARTIAL_DAY,
     });
 
     expect(units).toBe(2);
@@ -51,7 +51,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
-      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
+      roundingRule: RoundingRule.BILL_ANY_PARTIAL_DAY,
     });
 
     expect(units).toBe(1);
@@ -63,7 +63,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
-      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
+      roundingRule: RoundingRule.BILL_ANY_PARTIAL_DAY,
     });
 
     expect(units).toBe(1);
@@ -75,7 +75,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
-      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
+      roundingRule: RoundingRule.BILL_ANY_PARTIAL_DAY,
     });
 
     expect(units).toBe(2);
@@ -87,7 +87,7 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       effectiveTimezone: 'UTC',
       weekendCountsAsOne: false,
-      roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
+      roundingRule: RoundingRule.IGNORE_PARTIAL_DAY,
     });
 
     expect(units).toBe(2);
@@ -99,10 +99,46 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       effectiveTimezone: 'UTC',
       weekendCountsAsOne: false,
-      roundingRule: RoundingRule.BILL_PARTIAL_AS_FULL_UNIT,
+      roundingRule: RoundingRule.BILL_ANY_PARTIAL_DAY,
     });
 
     expect(units).toBe(3);
+  });
+
+  it('charges one unit until the rental goes beyond 36 hours in middle mode', () => {
+    const units = resolver.resolveUnits({
+      period: DateRange.create(new Date('2025-05-11T08:00:00Z'), new Date('2025-05-12T20:00:00Z')),
+      billingUnitDurationMinutes: 1440,
+      effectiveTimezone: 'UTC',
+      weekendCountsAsOne: false,
+      roundingRule: RoundingRule.BILL_OVER_HALF_DAY,
+    });
+
+    expect(units).toBe(1);
+  });
+
+  it('charges the next unit once the rental goes past 36 hours in middle mode', () => {
+    const units = resolver.resolveUnits({
+      period: DateRange.create(new Date('2025-05-11T08:00:00Z'), new Date('2025-05-12T20:01:00Z')),
+      billingUnitDurationMinutes: 1440,
+      effectiveTimezone: 'UTC',
+      weekendCountsAsOne: false,
+      roundingRule: RoundingRule.BILL_OVER_HALF_DAY,
+    });
+
+    expect(units).toBe(2);
+  });
+
+  it('applies the half-day threshold on top of each completed day block', () => {
+    const units = resolver.resolveUnits({
+      period: DateRange.create(new Date('2025-05-11T08:00:00Z'), new Date('2025-05-13T20:00:00Z')),
+      billingUnitDurationMinutes: 1440,
+      effectiveTimezone: 'UTC',
+      weekendCountsAsOne: false,
+      roundingRule: RoundingRule.BILL_OVER_HALF_DAY,
+    });
+
+    expect(units).toBe(2);
   });
 
   it('applies weekend collapse on top of ignored daily partials instead of replacing the base model', () => {
@@ -111,7 +147,19 @@ describe('BillingUnitResolverService', () => {
       billingUnitDurationMinutes: 1440,
       effectiveTimezone: 'America/Argentina/Buenos_Aires',
       weekendCountsAsOne: true,
-      roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
+      roundingRule: RoundingRule.IGNORE_PARTIAL_DAY,
+    });
+
+    expect(units).toBe(2);
+  });
+
+  it('applies weekend collapse on top of middle daily billing behavior', () => {
+    const units = resolver.resolveUnits({
+      period: DateRange.create(new Date('2025-01-03T13:00:00Z'), new Date('2025-01-06T14:00:00Z')),
+      billingUnitDurationMinutes: 1440,
+      effectiveTimezone: 'America/Argentina/Buenos_Aires',
+      weekendCountsAsOne: true,
+      roundingRule: RoundingRule.BILL_OVER_HALF_DAY,
     });
 
     expect(units).toBe(2);

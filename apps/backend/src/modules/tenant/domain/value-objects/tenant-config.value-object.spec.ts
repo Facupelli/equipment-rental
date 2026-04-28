@@ -20,7 +20,7 @@ describe('TenantConfig', () => {
           overRentalEnabled: false,
           maxOverRentThreshold: 0,
           weekendCountsAsOne: false,
-          roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
+          roundingRule: RoundingRule.IGNORE_PARTIAL_DAY,
           currency: 'ARS',
           locale: 'es-AR',
           insuranceEnabled: false,
@@ -39,7 +39,7 @@ describe('TenantConfig', () => {
         overRentalEnabled: false,
         maxOverRentThreshold: 0,
         weekendCountsAsOne: false,
-        roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
+        roundingRule: RoundingRule.IGNORE_PARTIAL_DAY,
         currency: 'ARS',
         locale: 'es-AR',
         insuranceEnabled: false,
@@ -54,13 +54,13 @@ describe('TenantConfig', () => {
     expect(config.pricing.insuranceRatePercent).toBe(0);
   });
 
-  it('maps legacy rounding rule values during reconstitution', () => {
+  it('keeps the configured daily billing behavior during reconstitution', () => {
     const config = TenantConfig.reconstitute({
       pricing: {
         overRentalEnabled: false,
         maxOverRentThreshold: 0,
         weekendCountsAsOne: false,
-        roundingRule: 'SPLIT' as never,
+        roundingRule: RoundingRule.BILL_OVER_HALF_DAY,
         currency: 'ARS',
         locale: 'es-AR',
         insuranceEnabled: false,
@@ -70,7 +70,7 @@ describe('TenantConfig', () => {
       newArrivalsWindowDays: 30,
     });
 
-    expect(config.pricing.roundingRule).toBe(RoundingRule.IGNORE_PARTIAL_UNIT);
+    expect(config.pricing.roundingRule).toBe(RoundingRule.BILL_OVER_HALF_DAY);
   });
 
   it('rejects insurance rates above 100 percent', () => {
@@ -80,7 +80,7 @@ describe('TenantConfig', () => {
           overRentalEnabled: false,
           maxOverRentThreshold: 0,
           weekendCountsAsOne: false,
-          roundingRule: RoundingRule.IGNORE_PARTIAL_UNIT,
+          roundingRule: RoundingRule.IGNORE_PARTIAL_DAY,
           currency: 'ARS',
           locale: 'es-AR',
           insuranceEnabled: true,
