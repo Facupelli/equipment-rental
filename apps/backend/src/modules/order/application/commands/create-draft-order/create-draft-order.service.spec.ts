@@ -1,5 +1,5 @@
 import { QueryBus } from '@nestjs/cqrs';
-import { FulfillmentMethod, OrderStatus, ScheduleSlotType } from '@repo/types';
+import { FulfillmentMethod, OrderStatus } from '@repo/types';
 
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
@@ -38,7 +38,7 @@ describe('CreateDraftOrderService', () => {
     } as unknown as PrismaService;
 
     const queryBus = {
-      execute: jest.fn(async (query: { constructor: { name: string }; type?: ScheduleSlotType }) => {
+      execute: jest.fn(async (query: { constructor: { name: string } }) => {
         if (query.constructor.name === 'GetTenantConfigQuery') {
           return {
             timezone: 'UTC',
@@ -52,8 +52,6 @@ describe('CreateDraftOrderService', () => {
         if (query.constructor.name === 'GetLocationContextQuery') {
           return { id: 'location-1', supportsDelivery: false, effectiveTimezone: 'UTC' };
         }
-
-        return [600, 900];
       }),
     } as unknown as QueryBus;
 
@@ -128,6 +126,32 @@ describe('CreateDraftOrderService', () => {
       savedItemCount: 1,
       savedOrder: expect.any(Order),
     });
+  });
+
+  it('creates a draft order outside the location schedule', async () => {
+    const { service, saved } = makeService();
+
+    const result = await service.execute(
+      new CreateDraftOrderCommand({
+        tenantId: 'tenant-1',
+        locationId: 'location-1',
+        pickupDate: '2026-03-29',
+        returnDate: '2026-04-05',
+        pickupTime: 123,
+        returnTime: 1380,
+        items: [{ type: 'PRODUCT', productTypeId: 'product-1', quantity: 1 }],
+        currency: 'ARS',
+        insuranceSelected: false,
+        setByUserId: 'user-1',
+        fulfillmentMethod: FulfillmentMethod.PICKUP,
+      }),
+    );
+
+    expect(result.isOk()).toBe(true);
+    expect(saved().savedOrder?.currentBookingSnapshot?.pickupDate).toBe('2026-03-29');
+    expect(saved().savedOrder?.currentBookingSnapshot?.pickupTime).toBe(123);
+    expect(saved().savedOrder?.currentBookingSnapshot?.returnDate).toBe('2026-04-05');
+    expect(saved().savedOrder?.currentBookingSnapshot?.returnTime).toBe(1380);
   });
 
   it('creates a draft order with an initial target total override', async () => {

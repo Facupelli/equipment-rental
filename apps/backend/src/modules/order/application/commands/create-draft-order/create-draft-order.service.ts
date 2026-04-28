@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
-import { FulfillmentMethod, OrderItemType, OrderStatus, ScheduleSlotType } from '@repo/types';
+import { FulfillmentMethod, OrderItemType, OrderStatus } from '@repo/types';
 import Decimal from 'decimal.js';
 import { err, ok, Result } from 'neverthrow';
 
@@ -11,7 +11,6 @@ import {
   GetLocationContextQuery,
   LocationContextReadModel,
 } from 'src/modules/tenant/public/queries/get-location-context.query';
-import { GetLocationScheduleSlotsQuery } from 'src/modules/tenant/public/queries/get-location-schedule-slots.query';
 import { GetTenantConfigQuery } from 'src/modules/tenant/public/queries/get-tenant-config.query';
 import { CouponNotFoundError, CouponValidationError, PricingPublicApi } from 'src/modules/pricing/pricing.public-api';
 import {
@@ -38,9 +37,7 @@ import { toPriceSnapshot } from '../create-order/create-order-pricing-snapshot.m
 import { CreateOrderError, ResolvedItem } from '../create-order/create-order.types';
 import {
   DeliveryNotSupportedForLocationError,
-  InvalidPickupSlotError,
   InvalidBookingLocationError,
-  InvalidReturnSlotError,
   BundleNotFoundError,
   OrderMustContainItemsError,
   OrderPricingTargetTotalInvalidError,
@@ -69,11 +66,6 @@ export class CreateDraftOrderService implements ICommandHandler<
     const locationValidation = await this.validateLocation(command);
     if (locationValidation.isErr()) {
       return err(locationValidation.error);
-    }
-
-    const slotValidation = await this.validateSlots(command);
-    if (slotValidation.isErr()) {
-      return err(slotValidation.error);
     }
 
     const bookingContext = await this.deriveBookingContext(command);
@@ -193,39 +185,6 @@ export class CreateDraftOrderService implements ICommandHandler<
 
     if (command.fulfillmentMethod === FulfillmentMethod.DELIVERY && !location.supportsDelivery) {
       return err(new DeliveryNotSupportedForLocationError(command.locationId));
-    }
-
-    return ok(undefined);
-  }
-
-  private async validateSlots(
-    command: CreateDraftOrderCommand,
-  ): Promise<Result<void, InvalidPickupSlotError | InvalidReturnSlotError>> {
-    const [pickupSlots, returnSlots] = await Promise.all([
-      this.queryBus.execute<GetLocationScheduleSlotsQuery, number[]>(
-        new GetLocationScheduleSlotsQuery(
-          command.tenantId,
-          command.locationId,
-          command.pickupDate,
-          ScheduleSlotType.PICKUP,
-        ),
-      ),
-      this.queryBus.execute<GetLocationScheduleSlotsQuery, number[]>(
-        new GetLocationScheduleSlotsQuery(
-          command.tenantId,
-          command.locationId,
-          command.returnDate,
-          ScheduleSlotType.RETURN,
-        ),
-      ),
-    ]);
-
-    if (!pickupSlots.includes(command.pickupTime)) {
-      return err(new InvalidPickupSlotError(command.pickupTime));
-    }
-
-    if (!returnSlots.includes(command.returnTime)) {
-      return err(new InvalidReturnSlotError(command.returnTime));
     }
 
     return ok(undefined);

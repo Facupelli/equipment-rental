@@ -1,5 +1,5 @@
 import { QueryBus } from '@nestjs/cqrs';
-import { FulfillmentMethod, OrderStatus, ScheduleSlotType } from '@repo/types';
+import { FulfillmentMethod, OrderStatus } from '@repo/types';
 
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
@@ -60,7 +60,7 @@ describe('UpdateDraftOrderService', () => {
     } as unknown as PrismaService;
 
     const queryBus = {
-      execute: jest.fn(async (query: { constructor: { name: string }; type?: ScheduleSlotType }) => {
+      execute: jest.fn(async (query: { constructor: { name: string } }) => {
         if (query.constructor.name === 'GetTenantConfigQuery') {
           return {
             timezone: 'UTC',
@@ -74,8 +74,6 @@ describe('UpdateDraftOrderService', () => {
         if (query.constructor.name === 'GetLocationContextQuery') {
           return { id: 'location-2', supportsDelivery: true, effectiveTimezone: 'UTC' };
         }
-
-        return [600, 900, 1020];
       }),
     } as unknown as QueryBus;
 
@@ -171,6 +169,35 @@ describe('UpdateDraftOrderService', () => {
     expect(saved().savedOrder?.currentNotes).toBe('keep me');
     expect(saved().savedOrder?.getItems()).toHaveLength(1);
     expect(saved().savedOrder?.currentFinancialSnapshot.total.toFixed(2)).toBe('120.00');
+  });
+
+  it('updates a draft order outside the location schedule', async () => {
+    const existingOrder = makeOrder(OrderStatus.DRAFT);
+    const { service, saved } = makeService(existingOrder);
+
+    const result = await service.execute(
+      new UpdateDraftOrderCommand({
+        tenantId: 'tenant-1',
+        orderId: existingOrder.id,
+        locationId: 'location-2',
+        customerId: 'customer-new',
+        pickupDate: '2026-04-13',
+        returnDate: '2026-04-19',
+        pickupTime: 45,
+        returnTime: 1410,
+        items: [{ type: 'PRODUCT', productTypeId: 'product-2', quantity: 1 }],
+        currency: 'ARS',
+        insuranceSelected: false,
+        fulfillmentMethod: FulfillmentMethod.PICKUP,
+        setByUserId: 'user-1',
+      }),
+    );
+
+    expect(result.isOk()).toBe(true);
+    expect(saved().savedOrder?.currentBookingSnapshot?.pickupDate).toBe('2026-04-13');
+    expect(saved().savedOrder?.currentBookingSnapshot?.pickupTime).toBe(45);
+    expect(saved().savedOrder?.currentBookingSnapshot?.returnDate).toBe('2026-04-19');
+    expect(saved().savedOrder?.currentBookingSnapshot?.returnTime).toBe(1410);
   });
 
   it('rejects replacing a non-draft order', async () => {
