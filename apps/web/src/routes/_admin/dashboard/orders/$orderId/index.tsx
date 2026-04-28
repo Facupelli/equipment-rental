@@ -2,16 +2,19 @@ import { FulfillmentMethod } from "@repo/types";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+	CheckCircle2,
 	Clock,
 	ExternalLink,
 	Mail,
 	MapPin,
 	Package,
+	RotateCcw,
 	Truck,
 	User2Icon,
 } from "lucide-react";
 import { useState } from "react";
 import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -25,8 +28,6 @@ import { OrderDetailCancelDialog } from "@/features/orders/components/order-deta
 import { OrderDetailConfirmDialog } from "@/features/orders/components/order-detail-confirm-dialog";
 import { OrderDetailDocumentErrorDialogs } from "@/features/orders/components/order-detail-document-error-dialogs";
 import { OrderDetailLifecycleDialog } from "@/features/orders/components/order-detail-lifecycle-dialog";
-import { OrderDetailPrimaryActionButton } from "@/features/orders/components/order-detail-primary-action-button";
-import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
 import {
 	OrderDetailProvider,
 	useOrderDetailContext,
@@ -38,10 +39,9 @@ import {
 	getExternalOwnersByProductType,
 	getItemQty,
 	getItemSerialNumber,
-	getOrderPrimaryAdminAction,
-	getOrderTemporalInsight,
+	getOrderHeaderBannerConfig,
 	getOwnerDisplay,
-	type OrderTemporalState,
+	type OrderHeaderBannerTone,
 } from "@/features/orders/order.utils";
 import { ordersListSearchSchema } from "@/features/orders/orders-list.search";
 import {
@@ -63,7 +63,7 @@ export const Route = createFileRoute("/_admin/dashboard/orders/$orderId/")({
 				genericMessage="No pudimos cargar el contenido del pedido."
 				forbiddenMessage="No tienes permisos para ver el pedido."
 			/>
-		)
+		);
 	},
 	component: RouteComponent,
 });
@@ -73,7 +73,7 @@ function RouteComponent() {
 	const search = Route.useSearch();
 	const { data: order } = useSuspenseQuery(
 		createOrderDetailQueryOptions({ orderId }),
-	)
+	);
 
 	return (
 		<OrderDetailProvider order={order}>
@@ -100,47 +100,36 @@ function RouteComponent() {
 				</div>
 			</div>
 		</OrderDetailProvider>
-	)
+	);
 }
 
 function OrderHeader() {
 	const { order } = useOrderDetailContext();
-	const temporalInsight = getOrderTemporalInsight(
-		order,
-		nowUtc(),
-		order.location.effectiveTimezone,
-	)
-	const primaryAction = getOrderPrimaryAdminAction(order.status);
 
 	return (
 		<header className="border-b border-neutral-200 pb-8">
-			<div className="flex flex-col gap-6 py-4 xl:flex-row xl:items-center xl:justify-between">
-				<div>
-					<div className="flex flex-wrap items-center gap-3 mb-1.5">
-						<div>
-							<span className="uppercase text-neutral-500 text-xs">Pedido</span>
-							<h1 className="text-3xl font-bold tracking-tight leading-none">
-								<span>#{formatOrderNumber(order.number)}</span>
-							</h1>
+			<div className="flex flex-col gap-6 pb-4">
+				<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+					<div>
+						<div className="flex flex-wrap items-center gap-3 mb-1.5">
+							<div>
+								<h1 className="text-3xl font-bold tracking-tight leading-none">
+									<span>#{formatOrderNumber(order.number)}</span>
+								</h1>
+							</div>
 						</div>
+						<p className="text-sm text-neutral-400 mt-2">
+							Creado el {order.createdAt.format("DD MMM, YYYY")} ·{" "}
+							{order.createdAt.format("HH:mm A")}
+						</p>
 					</div>
-					<p className="text-sm text-neutral-400 mt-2">
-						Creado el {order.createdAt.format("DD MMM, YYYY")} ·{" "}
-						{order.createdAt.format("HH:mm A")}
-					</p>
+
+					<div className="flex justify-start xl:justify-end">
+						<OrderDetailActionsMenu />
+					</div>
 				</div>
 
-				<div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-end">
-					<OrderStatusCard status={order.status} />
-					<OperationalStateCard
-						title={temporalInsight.title}
-						description={temporalInsight.description}
-						deadline={temporalInsight.deadline}
-						state={temporalInsight.state}
-					/>
-					<OrderDetailPrimaryActionButton action={primaryAction} />
-					<OrderDetailActionsMenu />
-				</div>
+				<OrderHeaderBanner />
 			</div>
 
 			<OrderDetailDocumentErrorDialogs />
@@ -149,104 +138,197 @@ function OrderHeader() {
 			<OrderDetailConfirmDialog />
 			<OrderDetailBudgetDialogs />
 		</header>
-	)
+	);
 }
 
-const OPERATIONAL_STATE_STYLES: Record<
-	OrderTemporalState,
-	{ panelClassName: string; dotClassName: string }
+const ORDER_HEADER_BANNER_TONE_STYLES: Record<
+	OrderHeaderBannerTone,
+	{
+		panelClassName: string;
+		iconWrapClassName: string;
+		iconClassName: string;
+		metaClassName: string;
+	}
 > = {
-	draft: {
-		panelClassName: "border-amber-200 bg-amber-50/80",
-		dotClassName: "bg-amber-500",
+	neutral: {
+		panelClassName: "border-neutral-200 bg-white",
+		iconWrapClassName: "bg-neutral-100 text-neutral-700",
+		iconClassName: "text-neutral-700",
+		metaClassName: "text-neutral-500",
 	},
-	"pending-review": {
-		panelClassName: "border-violet-200 bg-violet-50/80",
-		dotClassName: "bg-violet-500",
-	},
-	upcoming: {
+	info: {
 		panelClassName: "border-sky-200 bg-sky-50/80",
-		dotClassName: "bg-sky-500",
+		iconWrapClassName: "bg-sky-100 text-sky-700",
+		iconClassName: "text-sky-700",
+		metaClassName: "text-sky-800/80",
 	},
-	active: {
-		panelClassName: "border-emerald-200 bg-emerald-50/80",
-		dotClassName: "bg-emerald-500",
-	},
-	overdue: {
+	warning: {
 		panelClassName: "border-amber-200 bg-amber-50/80",
-		dotClassName: "bg-amber-500",
+		iconWrapClassName: "bg-amber-100 text-amber-700",
+		iconClassName: "text-amber-700",
+		metaClassName: "text-amber-900/80",
 	},
-	finished: {
-		panelClassName: "border-neutral-200 bg-neutral-100/80",
-		dotClassName: "bg-neutral-500",
-	},
-	cancelled: {
+	danger: {
 		panelClassName: "border-red-200 bg-red-50/80",
-		dotClassName: "bg-red-500",
+		iconWrapClassName: "bg-red-100 text-red-700",
+		iconClassName: "text-red-700",
+		metaClassName: "text-red-900/80",
 	},
-	rejected: {
-		panelClassName: "border-rose-200 bg-rose-50/80",
-		dotClassName: "bg-rose-500",
+	success: {
+		panelClassName: "border-emerald-200 bg-emerald-50/80",
+		iconWrapClassName: "bg-emerald-100 text-emerald-700",
+		iconClassName: "text-emerald-700",
+		metaClassName: "text-emerald-900/80",
 	},
-	expired: {
-		panelClassName: "border-orange-200 bg-orange-50/80",
-		dotClassName: "bg-orange-500",
+	muted: {
+		panelClassName: "border-neutral-200 bg-neutral-100/80",
+		iconWrapClassName: "bg-neutral-200 text-neutral-600",
+		iconClassName: "text-neutral-600",
+		metaClassName: "text-neutral-600",
 	},
-} as const;
+};
 
-function OperationalStateCard({
-	title,
-	description,
-	deadline,
-	state,
-}: {
-	title: string;
-	description: string;
-	deadline: string;
-	state: OrderTemporalState;
-}) {
-	const config = OPERATIONAL_STATE_STYLES[state];
+function OrderHeaderBanner() {
+	const { order } = useOrderDetailContext();
+	const banner = getOrderHeaderBannerConfig(
+		order,
+		nowUtc(),
+		order.location.effectiveTimezone,
+	);
+	const styles = ORDER_HEADER_BANNER_TONE_STYLES[banner.tone];
+	const BannerIcon = getOrderHeaderBannerIcon(
+		banner.tone,
+		banner.primaryAction,
+	);
 
 	return (
 		<section
-			className={`min-w-70 rounded-xl border p-2 ${config.panelClassName}`}
+			className={`rounded-2xl border px-5 py-5 sm:px-6 ${styles.panelClassName}`}
 		>
-			<div className="flex items-start gap-2">
-				<span
-					className={`mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full ${config.dotClassName}`}
-				/>
-				<div className="flex items-start gap-2">
-					<p className="font-semibold tracking-tight text-neutral-950">
-						{title}
-					</p>
+			<div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+				<div className="flex items-start gap-4">
+					<div
+						className={`flex size-14 shrink-0 items-center justify-center rounded-2xl ${styles.iconWrapClassName}`}
+					>
+						<BannerIcon className={`size-7 ${styles.iconClassName}`} />
+					</div>
 
-					<div>
-						<p className="text-sm font-medium text-neutral-700 line-clamp-1">
-							{description}
+					<div className="space-y-2">
+						<h2 className="text-2xl font-semibold tracking-tight text-neutral-950">
+							{banner.title}
+						</h2>
+						{banner.subtitle ? (
+							<p className="max-w-2xl text-sm text-neutral-700">
+								{banner.subtitle}
+							</p>
+						) : null}
+						<p className={`text-sm font-medium ${styles.metaClassName}`}>
+							{banner.meta}
 						</p>
-						<p className="text-xs text-neutral-500 line-clamp-1">{deadline}</p>
 					</div>
 				</div>
+
+				<OrderHeaderBannerActions />
 			</div>
 		</section>
-	)
+	);
 }
 
-function OrderStatusCard({
-	status,
-}: {
-	status: ParsedOrderDetailResponseDto["status"];
-}) {
+function OrderHeaderBannerActions() {
+	const { order, actions } = useOrderDetailContext();
+	const banner = getOrderHeaderBannerConfig(
+		order,
+		nowUtc(),
+		order.location.effectiveTimezone,
+	);
+	const primaryAction = getOrderHeaderPrimaryButtonConfig(
+		banner.primaryAction,
+		actions,
+	);
+
+	if (!primaryAction && !banner.secondaryAction) {
+		return null;
+	}
+
+	const PrimaryIcon = primaryAction?.icon;
+
 	return (
-		<section>
-			<p className="mb-2 text-[10px] font-mono uppercase text-neutral-400">
-				Estado del pedido
-			</p>
-			<div className="flex items-center">
-				<OrderStatusBadge status={status} />
-			</div>
-		</section>
-	)
+		<div className="flex w-full flex-col gap-3 lg:w-70 lg:shrink-0">
+			{primaryAction && PrimaryIcon ? (
+				<Button
+					className={primaryAction.className}
+					onClick={primaryAction.onClick}
+				>
+					<PrimaryIcon className="size-4" />
+					{primaryAction.label}
+				</Button>
+			) : null}
+
+			{banner.secondaryAction === "edit" ? (
+				<Button variant="outline" onClick={actions.edit.open}>
+					Editar pedido
+				</Button>
+			) : null}
+		</div>
+	);
+}
+
+function getOrderHeaderBannerIcon(
+	tone: OrderHeaderBannerTone,
+	primaryAction: "confirm" | "pickup" | "return" | null,
+) {
+	if (primaryAction === "pickup") {
+		return Truck;
+	}
+
+	if (primaryAction === "return") {
+		return RotateCcw;
+	}
+
+	if (primaryAction === "confirm") {
+		return Package;
+	}
+
+	if (tone === "success") {
+		return CheckCircle2;
+	}
+
+	if (tone === "danger") {
+		return Clock;
+	}
+
+	return Package;
+}
+
+function getOrderHeaderPrimaryButtonConfig(
+	action: "confirm" | "pickup" | "return" | null,
+	actions: ReturnType<typeof useOrderDetailContext>["actions"],
+) {
+	switch (action) {
+		case "confirm":
+			return {
+				label: "Confirmar pedido",
+				icon: CheckCircle2,
+				className: "h-11 bg-neutral-950 text-white hover:bg-neutral-800",
+				onClick: actions.confirmation.openDialog,
+			};
+		case "pickup":
+			return {
+				label: "Marcar equipo como retirado",
+				icon: Truck,
+				className: "h-11 bg-neutral-950 text-white hover:bg-neutral-800",
+				onClick: actions.lifecycle.openPickup,
+			};
+		case "return":
+			return {
+				label: "Marcar equipo como devuelto",
+				icon: RotateCcw,
+				className: "h-11 bg-neutral-950 text-white hover:bg-neutral-800",
+				onClick: actions.lifecycle.openReturn,
+			};
+		default:
+			return null;
+	}
 }
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
@@ -281,7 +363,7 @@ function OrderTabs() {
 				<TabPlaceholder label="Todavia no hay notas internas." />
 			</TabsContent>
 		</Tabs>
-	)
+	);
 }
 
 function TabPlaceholder({ label }: { label: string }) {
@@ -289,7 +371,7 @@ function TabPlaceholder({ label }: { label: string }) {
 		<div className="border border-dashed border-neutral-200 py-16 flex items-center justify-center rounded-md">
 			<span className="text-sm text-neutral-300">{label}</span>
 		</div>
-	)
+	);
 }
 
 // ─── Items Table ──────────────────────────────────────────────────────────────
@@ -301,7 +383,7 @@ function OrderItemsTable() {
 	// Build a map from orderItemId → financial line for O(1) lookup per row
 	const financialByItemId = new Map(
 		financial.items.map((line) => [line.orderItemId, line]),
-	)
+	);
 
 	return (
 		<section className="mb-10">
@@ -331,7 +413,7 @@ function OrderItemsTable() {
 				))}
 			</div>
 		</section>
-	)
+	);
 }
 
 // ─── Item Row ─────────────────────────────────────────────────────────────────
@@ -434,7 +516,7 @@ function OrderItemRow({
 				</span>
 			</div>
 		</div>
-	)
+	);
 }
 
 // ─── Activity Log ─────────────────────────────────────────────────────────────
@@ -460,7 +542,7 @@ function ActivityLog() {
 				/>
 			</div>
 		</section>
-	)
+	);
 }
 
 function ActivityEntry({
@@ -492,7 +574,7 @@ function ActivityEntry({
 				</span>
 			</div>
 		</div>
-	)
+	);
 }
 
 // ─── Client Card ──────────────────────────────────────────────────────────────
@@ -562,7 +644,7 @@ function OrderClientCard() {
 				</div>
 			)}
 		</section>
-	)
+	);
 }
 
 // ─── Logistics Card ───────────────────────────────────────────────────────────
@@ -664,7 +746,7 @@ function OrderLogisticsCard() {
 				</div>
 			)}
 		</section>
-	)
+	);
 }
 
 // ─── Financials Card ──────────────────────────────────────────────────────────
@@ -675,7 +757,7 @@ function OrderFinancialsCard() {
 	const [showPricingAudit, setShowPricingAudit] = useState(false);
 	const hasAdjustedLines = financial.items.some(
 		(line) => line.pricing.isOverridden,
-	)
+	);
 	const hasOwnerObligations = financial.ownerObligations !== "0";
 
 	return (
@@ -829,7 +911,7 @@ function OrderFinancialsCard() {
 				</span>
 			</div>
 		</section>
-	)
+	);
 }
 
 function FinancialSummaryRow({
@@ -858,7 +940,7 @@ function FinancialSummaryRow({
 				{formatMoney(value)}
 			</span>
 		</div>
-	)
+	);
 }
 
 function PricingAuditSection({
@@ -911,7 +993,7 @@ function PricingAuditSection({
 				)}
 			</div>
 		</div>
-	)
+	);
 }
 
 function PricingAuditRow({ label, value }: { label: string; value: string }) {
@@ -922,7 +1004,7 @@ function PricingAuditRow({ label, value }: { label: string; value: string }) {
 				{value}
 			</span>
 		</div>
-	)
+	);
 }
 
 function formatSignedMoney(amount: string): string {
@@ -946,7 +1028,7 @@ function SidebarSectionLabel({ label }: { label: string }) {
 		<p className="font-mono text-[10px] tracking-[0.15em] uppercase text-neutral-400 mb-4 pb-3 border-b border-neutral-100">
 			{label}
 		</p>
-	)
+	);
 }
 
 function SidebarField({
@@ -961,5 +1043,5 @@ function SidebarField({
 			<span className="text-neutral-400 shrink-0">{icon}</span>
 			<span className="text-xs text-neutral-500">{value}</span>
 		</div>
-	)
+	);
 }

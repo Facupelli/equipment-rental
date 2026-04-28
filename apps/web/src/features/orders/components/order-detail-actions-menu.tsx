@@ -1,5 +1,5 @@
 import { OrderStatus } from "@repo/types";
-import { CircleSlash, FileText, MoreHorizontal, Pencil } from "lucide-react";
+import { ChevronDown, CircleSlash, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -16,34 +16,39 @@ import {
 } from "@/features/orders/contexts/order-detail.context";
 
 export function OrderDetailActionsMenu() {
-	const { order, actions } = useOrderDetailContext();
+	const { order } = useOrderDetailContext();
 	const budget = useOrderBudget();
 	const documents = useOrderDocuments();
 	const cancellation = useOrderCancellation();
-	const isDraft = order.status === OrderStatus.DRAFT;
+	const canOpenBudget =
+		order.status === OrderStatus.DRAFT ||
+		order.status === OrderStatus.PENDING_REVIEW;
+	const canOpenContract =
+		order.status === OrderStatus.CONFIRMED ||
+		order.status === OrderStatus.ACTIVE ||
+		order.status === OrderStatus.COMPLETED;
+	const canCancel =
+		order.status === OrderStatus.DRAFT ||
+		order.status === OrderStatus.PENDING_REVIEW ||
+		order.status === OrderStatus.CONFIRMED;
+
+	if (!canOpenBudget && !canOpenContract && !canCancel) {
+		return null;
+	}
 
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				render={
-					<Button
-						variant="outline"
-						size="icon"
-						className="px-4 rounded-sm border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
-					>
-						<MoreHorizontal className="size-4" />
-						<span className="sr-only">Más acciones</span>
+					<Button variant="outline">
+						Acciones
+						<ChevronDown className="size-4" />
 					</Button>
 				}
 			/>
 
 			<DropdownMenuContent align="end" className="w-56">
-				<DropdownMenuItem onClick={actions.edit.open} disabled={!isDraft}>
-					<Pencil className="mr-2 h-4 w-4" />
-					Editar pedido
-				</DropdownMenuItem>
-				<DropdownMenuSeparator />
-				{isDraft ? (
+				{canOpenBudget ? (
 					<>
 						<DropdownMenuItem onClick={budget.open} disabled={budget.isOpening}>
 							<FileText className="mr-2 h-4 w-4" />
@@ -59,8 +64,11 @@ export function OrderDetailActionsMenu() {
 								: "Descargar presupuesto"}
 						</DropdownMenuItem>
 					</>
-				) : (
+				) : null}
+
+				{canOpenContract ? (
 					<>
+						{canOpenBudget ? <DropdownMenuSeparator /> : null}
 						<DropdownMenuItem
 							onClick={documents.contract.open}
 							disabled={documents.contract.isOpening}
@@ -80,15 +88,22 @@ export function OrderDetailActionsMenu() {
 								: "Descargar remito"}
 						</DropdownMenuItem>
 					</>
-				)}
-				<DropdownMenuSeparator />
-				<DropdownMenuItem
-					variant="destructive"
-					onClick={cancellation.openDialog}
-				>
-					<CircleSlash className="mr-2 h-4 w-4" />
-					Cancelar
-				</DropdownMenuItem>
+				) : null}
+
+				{canCancel ? (
+					<>
+						{canOpenBudget || canOpenContract ? (
+							<DropdownMenuSeparator />
+						) : null}
+						<DropdownMenuItem
+							variant="destructive"
+							onClick={cancellation.openDialog}
+						>
+							<CircleSlash className="mr-2 h-4 w-4" />
+							Cancelar pedido
+						</DropdownMenuItem>
+					</>
+				) : null}
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);

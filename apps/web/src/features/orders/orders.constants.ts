@@ -9,7 +9,7 @@ export type StatusConfig = {
 export const ORDER_STATUS_MAP: Record<OrderStatus, StatusConfig> = {
 	[OrderStatus.DRAFT]: {
 		label: "Borrador",
-		className: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+		className: "bg-stone-100 text-stone-700 ring-1 ring-stone-200",
 	},
 	[OrderStatus.PENDING_REVIEW]: {
 		label: "Pendiente Revisión",
@@ -33,7 +33,7 @@ export const ORDER_STATUS_MAP: Record<OrderStatus, StatusConfig> = {
 	},
 	[OrderStatus.COMPLETED]: {
 		label: "Completado",
-		className: "bg-gray-100 text-gray-500 ring-1 ring-gray-200",
+		className: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
 	},
 	[OrderStatus.CANCELLED]: {
 		label: "Cancelado",

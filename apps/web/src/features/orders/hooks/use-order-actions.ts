@@ -31,7 +31,6 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 	const lifecycleActions = useOrderLifecycleActions(order.id);
 
 	const handleEditOrder = () => {
-		console.log("NAVIGATE");
 		navigate({
 			to: "/dashboard/orders/$orderId/edit",
 			params: { orderId: order.id },

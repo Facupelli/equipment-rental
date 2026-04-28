@@ -50,7 +50,8 @@ export function createOrdersColumns({
 			accessorKey: "status",
 			header: "Estado",
 			cell: ({ row }) =>
-				row.original.status === OrderStatus.CONFIRMED ? (
+				row.original.status === OrderStatus.CONFIRMED ||
+				row.original.status === OrderStatus.ACTIVE ? (
 					<OrderOperationalPhaseBadge order={row.original} />
 				) : (
 					<OrderStatusBadge status={row.original.status} />

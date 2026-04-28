@@ -28,11 +28,11 @@ export function OrderDetailConfirmDialog() {
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>
-						{isDraft ? "Confirmar borrador" : "Confirmar pedido"}
+						Confirmar pedido
 					</AlertDialogTitle>
 					<AlertDialogDescription>
 						{isDraft
-							? "Vas a confirmar este borrador con los precios ya guardados. La confirmacion no recalcula importes."
+							? "Vas a confirmar este pedido con los precios ya guardados. La confirmación no recalcula importes."
 							: "Confirma este pedido para dejarlo listo para operación."}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
@@ -61,10 +61,10 @@ export function OrderDetailConfirmDialog() {
 					>
 						{confirmation.isPending
 							? isDraft
-								? "Confirmando borrador..."
+								? "Confirmando pedido..."
 								: "Confirmando pedido..."
 							: isDraft
-								? "Confirmar borrador"
+								? "Confirmar pedido"
 								: "Confirmar pedido"}
 					</AlertDialogAction>
 				</AlertDialogFooter>

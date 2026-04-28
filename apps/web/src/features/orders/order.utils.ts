@@ -193,9 +193,11 @@ export function hasOrderTodayEvent(
 
 export type OrderOperationalPhase =
 	| "draft"
-	| "pending"
+	| "pending-pickup"
+	| "pickup-overdue"
 	| "active"
-	| "returned"
+	| "overdue"
+	| "completed"
 	| "cancelled"
 	| "rejected"
 	| "expired";
@@ -232,6 +234,25 @@ export type OrderPrimaryAdminAction = {
 	description: string;
 };
 
+export type OrderHeaderBannerTone =
+	| "neutral"
+	| "info"
+	| "warning"
+	| "danger"
+	| "success"
+	| "muted";
+
+export type OrderHeaderBannerSecondaryAction = "edit" | null;
+
+export type OrderHeaderBannerConfig = {
+	tone: OrderHeaderBannerTone;
+	title: string;
+	subtitle: string | null;
+	meta: string;
+	primaryAction: OrderNextStep;
+	secondaryAction: OrderHeaderBannerSecondaryAction;
+};
+
 export function getOrderOperationalPhase(
 	order: Pick<ParsedOrderListItem, "status" | "pickupAt" | "returnAt">,
 	referenceDate: Dayjs,
@@ -239,20 +260,26 @@ export function getOrderOperationalPhase(
 	switch (order.status) {
 		case OrderStatus.DRAFT:
 			return "draft";
+		case OrderStatus.COMPLETED:
+			return "completed";
 		case OrderStatus.CANCELLED:
 			return "cancelled";
 		case OrderStatus.REJECTED:
 			return "rejected";
 		case OrderStatus.EXPIRED:
 			return "expired";
-	}
+		case OrderStatus.CONFIRMED:
+			if (referenceDate.isAfter(order.pickupAt)) {
+				return "pickup-overdue";
+			}
 
-	if (referenceDate.isBefore(order.pickupAt)) {
-		return "pending";
-	}
+			return "pending-pickup";
+		case OrderStatus.ACTIVE:
+			if (referenceDate.isAfter(order.returnAt)) {
+				return "overdue";
+			}
 
-	if (referenceDate.isAfter(order.returnAt)) {
-		return "returned";
+			return "active";
 	}
 
 	return "active";
@@ -406,7 +433,7 @@ export function getOrderPrimaryAdminAction(
 		case OrderStatus.DRAFT:
 			return {
 				action: "confirm",
-				label: "Confirmar borrador",
+				label: "Confirmar pedido",
 				description: "Usa los precios guardados",
 			};
 		case OrderStatus.PENDING_REVIEW:
@@ -429,6 +456,170 @@ export function getOrderPrimaryAdminAction(
 			};
 		default:
 			return null;
+	}
+}
+
+export function getOrderHeaderBannerConfig(
+	order: Pick<ParsedOrderDetailResponseDto, "status" | "pickupAt" | "returnAt">,
+	referenceDate: Dayjs,
+	timezone: string,
+): OrderHeaderBannerConfig {
+	const localizedNow = referenceDate.tz(timezone);
+	const localizedPickupAt = order.pickupAt.tz(timezone);
+	const localizedReturnAt = order.returnAt.tz(timezone);
+
+	switch (order.status) {
+		case OrderStatus.DRAFT:
+			return {
+				tone: "neutral",
+				title: "Pedido en borrador",
+				subtitle:
+					"Todavía no entró en operación. Revisá los datos antes de confirmarlo.",
+				meta: "Pendiente de confirmación",
+				primaryAction: "confirm",
+				secondaryAction: "edit",
+			};
+		case OrderStatus.PENDING_REVIEW:
+			return {
+				tone: "warning",
+				title: "Pendiente de revisión",
+				subtitle:
+					"Revisá el pedido y confirmalo para dejarlo listo para el retiro.",
+				meta: "Esperando confirmación operativa",
+				primaryAction: "confirm",
+				secondaryAction: null,
+			};
+		case OrderStatus.CONFIRMED:
+			if (localizedNow.isAfter(localizedPickupAt)) {
+				return {
+					tone: "danger",
+					title: "Retiro vencido",
+					subtitle:
+						"La fecha de retiro ya pasó y el pedido sigue sin marcarse como retirado.",
+					meta: `Retiro previsto para ${formatOrderDateTime(order.pickupAt, timezone)}`,
+					primaryAction: "pickup",
+					secondaryAction: null,
+				};
+			}
+
+			if (localizedNow.isSame(localizedPickupAt, "day")) {
+				return {
+					tone: "warning",
+					title: "Retiro hoy",
+					subtitle: "El cliente debería retirar el equipo hoy.",
+					meta: `Retiro previsto a las ${formatOrderTime(order.pickupAt, timezone)}`,
+					primaryAction: "pickup",
+					secondaryAction: null,
+				};
+			}
+
+			if (
+				localizedPickupAt.startOf("day").diff(localizedNow.startOf("day"), "day") <=
+				5
+			) {
+				return {
+					tone: "info",
+					title: "Retiro próximo",
+					subtitle:
+						"El pedido está confirmado y listo para entregar cuando llegue el cliente.",
+					meta: `Retiro programado para ${formatOrderDateTime(order.pickupAt, timezone)}`,
+					primaryAction: "pickup",
+					secondaryAction: null,
+				};
+			}
+
+			return {
+				tone: "info",
+				title: "Pedido confirmado",
+				subtitle:
+					"El pedido ya está listo y espera la fecha programada de retiro.",
+				meta: `Retiro programado para ${formatOrderDateTime(order.pickupAt, timezone)}`,
+				primaryAction: "pickup",
+				secondaryAction: null,
+			};
+		case OrderStatus.ACTIVE:
+			if (localizedNow.isAfter(localizedReturnAt)) {
+				return {
+					tone: "danger",
+					title: "Devolución vencida",
+					subtitle:
+						"La fecha de devolución ya pasó y seguimos esperando que el cliente entregue el equipo.",
+					meta: `Debía devolverse el ${formatOrderDateTime(order.returnAt, timezone)}`,
+					primaryAction: "return",
+					secondaryAction: null,
+				};
+			}
+
+			if (localizedNow.isSame(localizedReturnAt, "day")) {
+				return {
+					tone: "warning",
+					title: "Devolución hoy",
+					subtitle:
+						"El pedido está a la espera de devolución durante el día de hoy.",
+					meta: `Devolución prevista a las ${formatOrderTime(order.returnAt, timezone)}`,
+					primaryAction: "return",
+					secondaryAction: null,
+				};
+			}
+
+			return {
+				tone: "success",
+				title: "Devolución programada",
+				subtitle:
+					"El equipo está alquilado y todavía hay margen antes de la devolución.",
+				meta: `Devolución prevista para ${formatOrderDateTime(order.returnAt, timezone)}`,
+				primaryAction: "return",
+				secondaryAction: null,
+			};
+		case OrderStatus.COMPLETED:
+			return {
+				tone: "success",
+				title: "Pedido completado",
+				subtitle:
+					"La devolución ya fue registrada y el flujo operativo quedó cerrado.",
+				meta: "Sin acciones operativas pendientes",
+				primaryAction: null,
+				secondaryAction: null,
+			};
+		case OrderStatus.CANCELLED:
+			return {
+				tone: "danger",
+				title: "Pedido cancelado",
+				subtitle:
+					"Este pedido fue cancelado y ya no sigue en operación.",
+				meta: "Sin acciones disponibles",
+				primaryAction: null,
+				secondaryAction: null,
+			};
+		case OrderStatus.REJECTED:
+			return {
+				tone: "danger",
+				title: "Pedido rechazado",
+				subtitle:
+					"El pedido no fue aprobado y quedó fuera del flujo operativo.",
+				meta: "Sin acciones disponibles",
+				primaryAction: null,
+				secondaryAction: null,
+			};
+		case OrderStatus.EXPIRED:
+			return {
+				tone: "muted",
+				title: "Pedido expirado",
+				subtitle:
+					"La reserva venció antes de iniciar el retiro y ya no sigue en operación.",
+				meta: "Sin acciones disponibles",
+				primaryAction: null,
+				secondaryAction: null,
+			};
+		default:
+			return {
+				tone: "neutral",
+				title: "Estado del pedido",
+				subtitle: null,
+				meta: "Sin acciones disponibles",
+				primaryAction: null,
+				secondaryAction: null,
+			};
 	}
 }
 
@@ -498,6 +689,10 @@ function formatRelativeDistance(
 
 function formatOrderDateTime(value: Dayjs, timezone: string): string {
 	return `${value.tz(timezone).format("MMM D, YYYY")} · ${value.tz(timezone).format("HH:mm")}`;
+}
+
+function formatOrderTime(value: Dayjs, timezone: string): string {
+	return value.tz(timezone).format("HH:mm");
 }
 
 function formatRelativeLabel(
