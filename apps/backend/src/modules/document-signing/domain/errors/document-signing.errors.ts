@@ -55,3 +55,21 @@ export class UnsignedSigningArtifactNotFoundError extends DocumentSigningError {
     super(`Signing session '${sessionId}' does not have a frozen unsigned PDF artifact.`);
   }
 }
+
+export class SigningAcceptanceConfirmationRequiredError extends DocumentSigningError {
+  constructor() {
+    super('Signing acceptance requires explicit confirmation from the signer.');
+  }
+}
+
+export class SigningAcceptanceIdentityRequiredError extends DocumentSigningError {
+  constructor(field: 'declaredFullName' | 'declaredDocumentNumber' | 'acceptanceTextVersion') {
+    super(`Signing acceptance requires a non-empty '${field}'.`);
+  }
+}
+
+export class SigningSessionDocumentNotPresentedError extends DocumentSigningError {
+  constructor(sessionId: string) {
+    super(`Signing session '${sessionId}' cannot be accepted before the frozen unsigned document is presented.`);
+  }
+}

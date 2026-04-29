@@ -7,6 +7,8 @@ import { SigningDocumentType, SigningSessionStatus } from 'src/generated/prisma/
 import {
   DuplicateSigningArtifactKindError,
   DuplicateSigningAuditSequenceError,
+  SigningAcceptanceIdentityRequiredError,
+  SigningSessionDocumentNotPresentedError,
   SigningSessionStatusTransitionNotAllowedError,
 } from '../errors/document-signing.errors';
 import { SigningArtifactMetadata } from './signing-artifact-metadata.entity';
@@ -15,7 +17,6 @@ import { SigningAuditEvent } from './signing-audit-event.entity';
 const ALLOWED_TRANSITIONS: Record<SigningSessionStatus, SigningSessionStatus[]> = {
   [SigningSessionStatus.PENDING]: [
     SigningSessionStatus.OPENED,
-    SigningSessionStatus.SIGNED,
     SigningSessionStatus.EXPIRED,
     SigningSessionStatus.VOIDED,
   ],
@@ -215,16 +216,46 @@ export class SigningSession {
     declaredDocumentNumber: string;
     acceptanceTextVersion: string;
     agreementHash: string;
-  }): Result<void, SigningSessionStatusTransitionNotAllowedError> {
+  }): Result<
+    void,
+    | SigningSessionStatusTransitionNotAllowedError
+    | SigningAcceptanceIdentityRequiredError
+    | SigningSessionDocumentNotPresentedError
+  > {
+    if (!this.openedAt) {
+      return err(new SigningSessionDocumentNotPresentedError(this.id));
+    }
+
+    const declaredFullName = this.normalizeRequiredString('declaredFullName', props.declaredFullName);
+    if (declaredFullName.isErr()) {
+      return err(declaredFullName.error);
+    }
+
+    const declaredDocumentNumber = this.normalizeRequiredString(
+      'declaredDocumentNumber',
+      props.declaredDocumentNumber,
+    );
+    if (declaredDocumentNumber.isErr()) {
+      return err(declaredDocumentNumber.error);
+    }
+
+    const acceptanceTextVersion = this.normalizeRequiredString(
+      'acceptanceTextVersion',
+      props.acceptanceTextVersion,
+    );
+    if (acceptanceTextVersion.isErr()) {
+      return err(acceptanceTextVersion.error);
+    }
+
     const transition = this.transitionTo(SigningSessionStatus.SIGNED);
     if (transition.isErr()) {
       return transition;
     }
 
     this.signedAt = props.signedAt;
-    this.declaredFullName = SigningSession.assertNonEmpty('declaredFullName', props.declaredFullName);
-    this.declaredDocumentNumber = SigningSession.assertNonEmpty('declaredDocumentNumber', props.declaredDocumentNumber);
-    this.acceptanceTextVersion = SigningSession.assertNonEmpty('acceptanceTextVersion', props.acceptanceTextVersion);
+    this.declaredFullName = declaredFullName.value;
+    this.declaredDocumentNumber = declaredDocumentNumber.value;
+    this.acceptanceTextVersion = acceptanceTextVersion.value;
     this.agreementHash = SigningSession.assertNonEmpty('agreementHash', props.agreementHash);
     this.touch(props.signedAt);
     return ok(undefined);
@@ -294,6 +325,19 @@ export class SigningSession {
 
   private touch(at = new Date()): void {
     this.updatedAt = at;
+  }
+
+  private normalizeRequiredString(
+    field: 'declaredFullName' | 'declaredDocumentNumber' | 'acceptanceTextVersion',
+    value: string,
+  ): Result<string, SigningAcceptanceIdentityRequiredError> {
+    const normalized = value.trim();
+
+    if (normalized.length === 0) {
+      return err(new SigningAcceptanceIdentityRequiredError(field));
+    }
+
+    return ok(normalized);
   }
 
   private static assertUniqueArtifactKinds(sessionId: string, artifacts: SigningArtifactMetadata[]): void {

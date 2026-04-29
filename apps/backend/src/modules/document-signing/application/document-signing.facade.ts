@@ -38,7 +38,11 @@ import { SigningSession } from '../domain/entities/signing-session.entity';
 import {
   SigningInvitationEmailDeliveryFailedError,
   SigningInvitationRecipientEmailRequiredError,
+  SigningAcceptanceConfirmationRequiredError,
+  SigningAcceptanceIdentityRequiredError,
+  SigningSessionDocumentNotPresentedError,
   SigningSessionExpiredError,
+  SigningSessionStatusTransitionNotAllowedError,
   SigningSessionTokenNotFoundError,
   SigningSessionUnavailableError,
   UnsignedSigningArtifactNotFoundError,
@@ -47,6 +51,7 @@ import { SigningArtifactStorage } from '../domain/value-objects/signing-artifact
 import { SigningSessionRepository } from '../infrastructure/persistence/repositories/signing-session.repository';
 
 const PDF_CONTENT_TYPE = 'application/pdf';
+const SIGNING_ACCEPTANCE_CHANNEL = 'email_link' as const;
 
 export interface SendSigningInvitationInput {
   tenantId: string;
@@ -91,6 +96,32 @@ export interface PublicSigningDocumentStream {
   contentLength: number;
   stream: Readable;
 }
+
+export interface AcceptPublicSigningInput {
+  rawToken: string;
+  declaredFullName: string;
+  declaredDocumentNumber: string;
+  acceptanceTextVersion: string;
+  accepted: boolean;
+}
+
+export interface AcceptPublicSigningResult {
+  sessionId: string;
+  status: 'SIGNED';
+  acceptedAt: Date;
+  agreementHash: string;
+  channel: typeof SIGNING_ACCEPTANCE_CHANNEL;
+}
+
+export type AcceptPublicSigningError =
+  | SigningAcceptanceConfirmationRequiredError
+  | SigningAcceptanceIdentityRequiredError
+  | SigningSessionDocumentNotPresentedError
+  | SigningSessionExpiredError
+  | SigningSessionStatusTransitionNotAllowedError
+  | SigningSessionTokenNotFoundError
+  | SigningSessionUnavailableError
+  | UnsignedSigningArtifactNotFoundError;
 
 type PrepareOrderAgreementForSigningResult = Result<
   OrderAgreementForSigningReadModel,
@@ -353,6 +384,93 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       contentLength: artifact.storage.byteSize,
       stream,
     };
+  }
+
+  async acceptPublicSigningSession(
+    input: AcceptPublicSigningInput,
+  ): Promise<Result<AcceptPublicSigningResult, AcceptPublicSigningError>> {
+    if (!input.accepted) {
+      return err(new SigningAcceptanceConfirmationRequiredError());
+    }
+
+    let session: SigningSession;
+    try {
+      session = await this.requirePublicSessionByRawToken(input.rawToken);
+    } catch (error) {
+      if (
+        error instanceof SigningSessionTokenNotFoundError ||
+        error instanceof SigningSessionExpiredError ||
+        error instanceof SigningSessionUnavailableError ||
+        error instanceof UnsignedSigningArtifactNotFoundError
+      ) {
+        return err(error);
+      }
+
+      throw error;
+    }
+
+    const artifact = this.requireUnsignedArtifact(session);
+    const acceptedAt = new Date();
+    const declaredFullName = input.declaredFullName.trim();
+    const declaredDocumentNumber = input.declaredDocumentNumber.trim();
+    const acceptanceTextVersion = input.acceptanceTextVersion.trim();
+
+    this.appendAuditEvent(session, SigningAuditEventType.IDENTITY_DECLARED, {
+      declaredAt: acceptedAt.toISOString(),
+      declaredDocumentNumber,
+      declaredFullName,
+    });
+    this.appendAuditEvent(session, SigningAuditEventType.ACCEPTANCE_CONFIRMED, {
+      accepted: true,
+      acceptedAt: acceptedAt.toISOString(),
+      acceptanceTextVersion,
+      channel: SIGNING_ACCEPTANCE_CHANNEL,
+    });
+
+    const agreementHash = hashAgreementRecord({
+      acceptedAt: acceptedAt.toISOString(),
+      acceptanceTextVersion,
+      channel: SIGNING_ACCEPTANCE_CHANNEL,
+      declaredDocumentNumber,
+      declaredFullName,
+      unsignedDocumentHash: artifact.storage.sha256,
+    });
+
+    this.appendAuditEvent(session, SigningAuditEventType.AGREEMENT_HASH_CREATED, {
+      acceptedAt: acceptedAt.toISOString(),
+      acceptanceTextVersion,
+      agreementHash,
+      channel: SIGNING_ACCEPTANCE_CHANNEL,
+      unsignedDocumentHash: artifact.storage.sha256,
+    });
+
+    const signResult = session.markSigned({
+      signedAt: acceptedAt,
+      declaredFullName,
+      declaredDocumentNumber,
+      acceptanceTextVersion,
+      agreementHash,
+    });
+    if (signResult.isErr()) {
+      return err(signResult.error);
+    }
+
+    this.appendAuditEvent(session, SigningAuditEventType.SESSION_SIGNED, {
+      acceptedAt: acceptedAt.toISOString(),
+      agreementHash,
+      channel: SIGNING_ACCEPTANCE_CHANNEL,
+      unsignedDocumentHash: artifact.storage.sha256,
+    });
+
+    await this.signingSessionRepository.save(session);
+
+    return ok({
+      sessionId: session.id,
+      status: SigningSessionStatus.SIGNED,
+      acceptedAt,
+      agreementHash,
+      channel: SIGNING_ACCEPTANCE_CHANNEL,
+    });
   }
 
   private async ensureSessionForPreparedDocument(input: {
@@ -713,7 +831,27 @@ function hashAuditRecord(input: {
   previousHash: string | null;
   payload: SigningAuditPayload;
 }): string {
-  return hashString(JSON.stringify(input));
+  return hashString(stableStringify(input));
+}
+
+function hashAgreementRecord(input: {
+  unsignedDocumentHash: string;
+  declaredFullName: string;
+  declaredDocumentNumber: string;
+  acceptanceTextVersion: string;
+  acceptedAt: string;
+  channel: typeof SIGNING_ACCEPTANCE_CHANNEL;
+}): string {
+  return hashString(
+    stableStringify({
+      acceptedAt: input.acceptedAt,
+      acceptanceTextVersion: input.acceptanceTextVersion,
+      channel: input.channel,
+      declaredDocumentNumber: input.declaredDocumentNumber,
+      declaredFullName: input.declaredFullName,
+      unsignedDocumentHash: input.unsignedDocumentHash,
+    }),
+  );
 }
 
 function generateRawSigningToken(): string {
@@ -737,4 +875,20 @@ function getSigningDocumentLabel(documentType: SigningDocumentType): string {
     default:
       return 'documento';
   }
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+
+  const entries = Object.keys(value)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`);
+
+  return `{${entries.join(',')}}`;
 }

@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ObjectStorageModule } from '../object-storage/object-storage.module';
 
+import { AcceptPublicSigningSessionHttpController } from './application/commands/accept-public-signing-session/accept-public-signing-session.http.controller';
+import { AcceptPublicSigningSessionService } from './application/commands/accept-public-signing-session/accept-public-signing-session.service';
 import { DocumentSigningFacade } from './application/document-signing.facade';
 import { SendSigningInvitationHttpController } from './application/commands/send-signing-invitation/send-signing-invitation.http.controller';
 import { SendSigningInvitationService } from './application/commands/send-signing-invitation/send-signing-invitation.service';
@@ -13,10 +15,15 @@ import { SigningSessionRepository } from './infrastructure/persistence/repositor
 
 @Module({
   imports: [ObjectStorageModule, NotificationsModule],
-  controllers: [SendSigningInvitationHttpController, GetPublicSigningSessionHttpController],
+  controllers: [
+    SendSigningInvitationHttpController,
+    GetPublicSigningSessionHttpController,
+    AcceptPublicSigningSessionHttpController,
+  ],
   providers: [
     SigningSessionRepository,
     DocumentSigningFacade,
+    AcceptPublicSigningSessionService,
     SendSigningInvitationService,
     { provide: DocumentSigningPublicApi, useExisting: DocumentSigningFacade },
   ],

@@ -77,6 +77,9 @@ describe('DocumentSigningFacade', () => {
     const signingSessionRepository = {
       loadActiveByOrderDocumentType: jest.fn(async () => activeSession),
       load: jest.fn(async (id: string) => storedSessions.get(id) ?? null),
+      loadByTokenHash: jest.fn(async (tokenHash: string) => {
+        return [...storedSessions.values()].find((session) => session.currentTokenHash === tokenHash) ?? null;
+      }),
       save: jest.fn(async (session: SigningSession) => {
         savedSessions.push(session);
         storedSessions.set(session.id, session);
@@ -295,6 +298,74 @@ describe('DocumentSigningFacade', () => {
       SigningAuditEventType.INVITATION_EMAIL_REQUESTED,
       SigningAuditEventType.INVITATION_EMAIL_SENT,
     ]);
+  });
+
+  it('captures declared identity, hashes the agreement proof, and seals the acceptance audit chain', async () => {
+    const input = makeInput();
+    const { facade, signingSessionRepository } = makeFacade();
+
+    const prepared = await facade.prepareSigningSession(input);
+    await facade.streamPublicUnsignedDocument(input.rawToken);
+    const result = await facade.acceptPublicSigningSession({
+      rawToken: input.rawToken,
+      declaredFullName: 'Jane Doe',
+      declaredDocumentNumber: '12345678',
+      acceptanceTextVersion: 'rental-agreement-v1',
+      accepted: true,
+    });
+    const session = await (signingSessionRepository.load as jest.Mock)(prepared.sessionId);
+
+    expect(result.isOk()).toBe(true);
+    expect(session.currentStatus).toBe(SigningSessionStatus.SIGNED);
+    expect(session.currentDeclaredFullName).toBe('Jane Doe');
+    expect(session.currentDeclaredDocumentNumber).toBe('12345678');
+    expect(session.currentAcceptanceTextVersion).toBe('rental-agreement-v1');
+    expect(session.currentAgreementHash).toBe(result._unsafeUnwrap().agreementHash);
+    expect(session.getAuditEvents().slice(-4).map((event) => event.type)).toEqual([
+      SigningAuditEventType.IDENTITY_DECLARED,
+      SigningAuditEventType.ACCEPTANCE_CONFIRMED,
+      SigningAuditEventType.AGREEMENT_HASH_CREATED,
+      SigningAuditEventType.SESSION_SIGNED,
+    ]);
+
+    const chainedEvents = session.getAuditEvents().slice(-4);
+    expect(chainedEvents[0].previousHash).toBe(session.getAuditEvents()[session.getAuditEvents().length - 5]?.currentHash ?? null);
+    expect(chainedEvents[1].previousHash).toBe(chainedEvents[0].currentHash);
+    expect(chainedEvents[2].previousHash).toBe(chainedEvents[1].currentHash);
+    expect(chainedEvents[3].previousHash).toBe(chainedEvents[2].currentHash);
+  });
+
+  it('rejects acceptance before the unsigned document is presented', async () => {
+    const input = makeInput();
+    const { facade } = makeFacade();
+
+    await facade.prepareSigningSession(input);
+    const result = await facade.acceptPublicSigningSession({
+      rawToken: input.rawToken,
+      declaredFullName: 'Jane Doe',
+      declaredDocumentNumber: '12345678',
+      acceptanceTextVersion: 'rental-agreement-v1',
+      accepted: true,
+    });
+
+    expect(result.isErr()).toBe(true);
+  });
+
+  it('rejects acceptance when explicit confirmation is false', async () => {
+    const input = makeInput();
+    const { facade } = makeFacade();
+
+    await facade.prepareSigningSession(input);
+    await facade.streamPublicUnsignedDocument(input.rawToken);
+    const result = await facade.acceptPublicSigningSession({
+      rawToken: input.rawToken,
+      declaredFullName: 'Jane Doe',
+      declaredDocumentNumber: '12345678',
+      acceptanceTextVersion: 'rental-agreement-v1',
+      accepted: false,
+    });
+
+    expect(result.isErr()).toBe(true);
   });
 
   it('records invitation failure evidence and returns an error when email delivery fails', async () => {
