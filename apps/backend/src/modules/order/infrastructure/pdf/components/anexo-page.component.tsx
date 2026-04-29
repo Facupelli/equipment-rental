@@ -1,6 +1,8 @@
 import React from 'react';
 import { Image, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 
+import { SignedContractSummary } from 'src/modules/order/domain/ports/contract-render.port';
+
 const A4_PAGE_SIZE = { width: 595.28, height: 841.89 } as const;
 
 // ---------------------------------------------------------------------------
@@ -85,6 +87,28 @@ const s = StyleSheet.create({
     fontSize: 7.35,
     lineHeight: 1.2,
     marginBottom: 4,
+  },
+  signedSummaryBlock: {
+    marginTop: 10,
+    marginBottom: 10,
+    border: '1pt solid #111111',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: '#f6f6f6',
+  },
+  signedSummaryTitle: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 8.5,
+    marginBottom: 4,
+  },
+  signedSummaryLine: {
+    fontSize: 7.2,
+    lineHeight: 1.3,
+    marginBottom: 2,
+  },
+  signedSummaryLabel: {
+    fontFamily: 'Helvetica-Bold',
   },
 
   signatureRow: {
@@ -187,9 +211,15 @@ interface AnexoPageProps {
   logoUrl: string | null;
   rentalSignatureUrl: string | null;
   showRentalSignatureBlock: boolean;
+  signedSummary?: SignedContractSummary;
 }
 
-export function AnexoPage({ logoUrl: _logoUrl, rentalSignatureUrl, showRentalSignatureBlock }: AnexoPageProps) {
+export function AnexoPage({
+  logoUrl: _logoUrl,
+  rentalSignatureUrl,
+  showRentalSignatureBlock,
+  signedSummary,
+}: AnexoPageProps) {
   return (
     <Page size={A4_PAGE_SIZE} style={s.page} wrap={false}>
       <View style={s.headerRow}>
@@ -224,6 +254,8 @@ export function AnexoPage({ logoUrl: _logoUrl, rentalSignatureUrl, showRentalSig
             <Text style={s.sectionTitle}>Protección de datos</Text>
             <Text style={s.paragraph}>{DATA_PROTECTION_TEXT}</Text>
 
+            {signedSummary ? <SignedSummaryBlock summary={signedSummary} /> : null}
+
             <Text style={s.conformityLine}>SE FIRMA ESTE EJEMPLAR EXPRESANDO CONFORMIDAD DE AMBAS PARTES.</Text>
           </View>
 
@@ -257,5 +289,33 @@ export function AnexoPage({ logoUrl: _logoUrl, rentalSignatureUrl, showRentalSig
         <Text style={s.footerText}>www.guaridarental.com - guaridarental@gmail.com</Text>
       </View>
     </Page>
+  );
+}
+
+function SignedSummaryBlock({ summary }: { summary: SignedContractSummary }) {
+  return (
+    <View style={s.signedSummaryBlock}>
+      <Text style={s.signedSummaryTitle}>RESUMEN DE FIRMA ELECTRONICA</Text>
+      <Text style={s.signedSummaryLine}>
+        <Text style={s.signedSummaryLabel}>Firmante: </Text>
+        {summary.signerFullName}
+      </Text>
+      <Text style={s.signedSummaryLine}>
+        <Text style={s.signedSummaryLabel}>Documento declarado: </Text>
+        {summary.declaredDocumentNumber}
+      </Text>
+      <Text style={s.signedSummaryLine}>
+        <Text style={s.signedSummaryLabel}>Email destinatario: </Text>
+        {summary.recipientEmail}
+      </Text>
+      <Text style={s.signedSummaryLine}>
+        <Text style={s.signedSummaryLabel}>Fecha de firma: </Text>
+        {summary.signedAt}
+      </Text>
+      <Text style={s.signedSummaryLine}>
+        <Text style={s.signedSummaryLabel}>Referencia de sesion: </Text>
+        {summary.sessionReference}
+      </Text>
+    </View>
   );
 }

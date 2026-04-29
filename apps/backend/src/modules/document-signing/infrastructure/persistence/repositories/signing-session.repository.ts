@@ -47,6 +47,24 @@ export class SigningSessionRepository {
     return SigningSessionMapper.toDomain(record);
   }
 
+  async loadByFinalCopyTokenHash(tokenHash: string): Promise<SigningSession | null> {
+    const record = await this.prisma.client.signingSession.findFirst({
+      where: { finalCopyTokenHash: tokenHash },
+      include: {
+        artifacts: true,
+        auditEvents: {
+          orderBy: { sequence: 'asc' },
+        },
+      },
+    });
+
+    if (!record) {
+      return null;
+    }
+
+    return SigningSessionMapper.toDomain(record);
+  }
+
   async loadActiveByOrderDocumentType(
     tenantId: string,
     orderId: string,

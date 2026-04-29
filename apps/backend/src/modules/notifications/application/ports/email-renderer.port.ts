@@ -17,6 +17,14 @@ export interface DocumentSigningInvitationEmailPayload {
   isReplacement: boolean;
 }
 
+export interface DocumentSigningFinalCopyEmailPayload {
+  tenantName?: string;
+  documentLabel: string;
+  documentNumber: string;
+  downloadUrl: string;
+  expiresAt: Date;
+}
+
 export interface OrderCancelledEmailPayload {
   tenantName?: string;
   recipientName?: string;
@@ -52,6 +60,7 @@ export interface NotificationEmailPayloadMap {
   [NotificationType.ORDER_CREATED_BY_CUSTOMER]: OrderCreatedByCustomerEmailPayload;
   [NotificationType.ORDER_CANCELLED]: OrderCancelledEmailPayload;
   [NotificationType.DOCUMENT_SIGNING_INVITATION]: DocumentSigningInvitationEmailPayload;
+  [NotificationType.DOCUMENT_SIGNING_FINAL_COPY]: DocumentSigningFinalCopyEmailPayload;
   [NotificationType.PASSWORD_RESET]: PasswordResetEmailPayload;
 }
 

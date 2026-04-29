@@ -40,6 +40,7 @@ export function createContractDocument({ data }: ContractDocumentProps): React.R
         logoUrl={data.document.logoUrl}
         rentalSignatureUrl={data.document.rentalSignatureUrl}
         showRentalSignatureBlock={data.document.showRentalSignatureBlock}
+        signedSummary={data.document.signedSummary}
       />
     </Document>
   );

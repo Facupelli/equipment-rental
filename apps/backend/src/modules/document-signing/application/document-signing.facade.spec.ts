@@ -15,6 +15,7 @@ import { NotificationOrchestrator } from 'src/modules/notifications/application/
 import { NotificationChannel } from 'src/modules/notifications/domain/notification-channel.enum';
 import { ObjectStoragePort } from 'src/modules/object-storage/application/ports/object-storage.port';
 import { PrepareOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-order-agreement-for-signing.query';
+import { PrepareSignedOrderAgreementQuery } from 'src/modules/order/public/queries/prepare-signed-order-agreement.query';
 import { FindTenantByIdQuery } from 'src/modules/tenant/public/queries/find-tenant-by-id.query';
 
 import { SigningSession } from '../domain/entities/signing-session.entity';
@@ -80,6 +81,9 @@ describe('DocumentSigningFacade', () => {
       loadByTokenHash: jest.fn(async (tokenHash: string) => {
         return [...storedSessions.values()].find((session) => session.currentTokenHash === tokenHash) ?? null;
       }),
+      loadByFinalCopyTokenHash: jest.fn(async (tokenHash: string) => {
+        return [...storedSessions.values()].find((session) => session.currentFinalCopyTokenHash === tokenHash) ?? null;
+      }),
       save: jest.fn(async (session: SigningSession) => {
         savedSessions.push(session);
         storedSessions.set(session.id, session);
@@ -106,6 +110,15 @@ describe('DocumentSigningFacade', () => {
       execute: jest.fn(async (query: unknown) => {
         if (query instanceof PrepareOrderAgreementForSigningQuery) {
           return options?.preparedOrderResult ?? makePreparedOrder();
+        }
+
+        if (query instanceof PrepareSignedOrderAgreementQuery) {
+          return ok({
+            orderId: 'order-1',
+            buffer: Buffer.from('signed-contract-pdf'),
+            documentNumber: 'Tenant-0001',
+            fileName: 'remito-customer-0001-signed',
+          });
         }
 
         if (query instanceof FindTenantByIdQuery) {
@@ -321,18 +334,89 @@ describe('DocumentSigningFacade', () => {
     expect(session.currentDeclaredDocumentNumber).toBe('12345678');
     expect(session.currentAcceptanceTextVersion).toBe('rental-agreement-v1');
     expect(session.currentAgreementHash).toBe(result._unsafeUnwrap().agreementHash);
-    expect(session.getAuditEvents().slice(-4).map((event) => event.type)).toEqual([
+    expect(session.getArtifacts().map((artifact) => artifact.kind)).toEqual([
+      SigningArtifactKind.UNSIGNED_PDF,
+      SigningArtifactKind.SIGNED_PDF,
+    ]);
+    expect(session.getAuditEvents().slice(-8).map((event) => event.type)).toEqual([
       SigningAuditEventType.IDENTITY_DECLARED,
       SigningAuditEventType.ACCEPTANCE_CONFIRMED,
       SigningAuditEventType.AGREEMENT_HASH_CREATED,
       SigningAuditEventType.SESSION_SIGNED,
+      'SIGNED_PDF_GENERATED',
+      'SIGNED_PDF_STORED',
+      'FINAL_COPY_EMAIL_REQUESTED',
+      'FINAL_COPY_EMAIL_SENT',
     ]);
 
-    const chainedEvents = session.getAuditEvents().slice(-4);
-    expect(chainedEvents[0].previousHash).toBe(session.getAuditEvents()[session.getAuditEvents().length - 5]?.currentHash ?? null);
+    const chainedEvents = session.getAuditEvents().slice(-8);
+    expect(chainedEvents[0].previousHash).toBe(session.getAuditEvents()[session.getAuditEvents().length - 9]?.currentHash ?? null);
     expect(chainedEvents[1].previousHash).toBe(chainedEvents[0].currentHash);
     expect(chainedEvents[2].previousHash).toBe(chainedEvents[1].currentHash);
     expect(chainedEvents[3].previousHash).toBe(chainedEvents[2].currentHash);
+    expect(chainedEvents[4].previousHash).toBe(chainedEvents[3].currentHash);
+    expect(chainedEvents[5].previousHash).toBe(chainedEvents[4].currentHash);
+    expect(chainedEvents[6].previousHash).toBe(chainedEvents[5].currentHash);
+    expect(chainedEvents[7].previousHash).toBe(chainedEvents[6].currentHash);
+  });
+
+  it('streams the final signed artifact through a one-time token', async () => {
+    const input = makeInput();
+    const { facade, objectStorage, notificationOrchestrator } = makeFacade();
+
+    await facade.prepareSigningSession(input);
+    await facade.streamPublicUnsignedDocument(input.rawToken);
+    await facade.acceptPublicSigningSession({
+      rawToken: input.rawToken,
+      declaredFullName: 'Jane Doe',
+      declaredDocumentNumber: '12345678',
+      acceptanceTextVersion: 'rental-agreement-v1',
+      accepted: true,
+    });
+
+    const finalCopyDispatch = (notificationOrchestrator.dispatch as jest.Mock).mock.calls[0][0];
+    const token = new URL(finalCopyDispatch.payload.downloadUrl).searchParams.get('token');
+
+    const streamed = await facade.streamFinalSignedCopy(token ?? '');
+
+    expect((objectStorage.putObject as jest.Mock).mock.calls).toHaveLength(2);
+    expect((objectStorage.putObject as jest.Mock).mock.calls[1][0].key).toContain('/signed/');
+    expect(streamed.fileName).toBe('remito-customer-0001-signed.pdf');
+    expect((objectStorage.getObjectStream as jest.Mock).mock.calls[1][0].key).toContain('/signed/');
+    await expect(facade.streamFinalSignedCopy(token ?? '')).rejects.toThrow();
+  });
+
+  it('records final-copy email failure evidence without rolling back acceptance', async () => {
+    const input = makeInput();
+    const { facade, signingSessionRepository } = makeFacade({
+      notificationDispatchResult: {
+        attemptedChannels: [NotificationChannel.EMAIL],
+        deliveredChannels: [],
+        skippedChannels: [],
+        failedChannels: [
+          {
+            channel: NotificationChannel.EMAIL,
+            reason: 'PROVIDER_ERROR',
+            message: 'Provider rejected the email.',
+          },
+        ],
+      },
+    });
+
+    const prepared = await facade.prepareSigningSession(input);
+    await facade.streamPublicUnsignedDocument(input.rawToken);
+    const result = await facade.acceptPublicSigningSession({
+      rawToken: input.rawToken,
+      declaredFullName: 'Jane Doe',
+      declaredDocumentNumber: '12345678',
+      acceptanceTextVersion: 'rental-agreement-v1',
+      accepted: true,
+    });
+    const session = await (signingSessionRepository.load as jest.Mock)(prepared.sessionId);
+
+    expect(result.isOk()).toBe(true);
+    expect(session.currentStatus).toBe(SigningSessionStatus.SIGNED);
+    expect(session.getAuditEvents()[session.getAuditEvents().length - 1]?.type).toBe('FINAL_COPY_EMAIL_FAILED');
   });
 
   it('rejects acceptance before the unsigned document is presented', async () => {

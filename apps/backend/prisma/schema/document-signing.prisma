@@ -22,6 +22,8 @@ enum SigningAuditEventType {
   SESSION_EXPIRED
   SESSION_VOIDED
   ARTIFACT_RECORDED
+  SIGNED_PDF_GENERATED
+  SIGNED_PDF_STORED
   DOCUMENT_PRESENTED
   IDENTITY_DECLARED
   ACCEPTANCE_CONFIRMED
@@ -29,6 +31,9 @@ enum SigningAuditEventType {
   INVITATION_EMAIL_REQUESTED
   INVITATION_EMAIL_SENT
   INVITATION_EMAIL_FAILED
+  FINAL_COPY_EMAIL_REQUESTED
+  FINAL_COPY_EMAIL_SENT
+  FINAL_COPY_EMAIL_FAILED
   ANCHOR_LINKED
 }
 
@@ -60,6 +65,9 @@ model SigningSession {
   acceptanceTextVersion  String?              @map("acceptance_text_version")
   agreementHash          String?              @map("agreement_hash")
   signedArtifactId       String?              @unique @map("signed_artifact_id")
+  finalCopyTokenHash     String?              @unique @map("final_copy_token_hash")
+  finalCopyExpiresAt     DateTime?            @map("final_copy_expires_at")
+  finalCopyUsedAt        DateTime?            @map("final_copy_used_at")
   createdAt              DateTime             @default(now()) @map("created_at")
   updatedAt              DateTime             @updatedAt @map("updated_at")
 
@@ -134,5 +142,4 @@ model SigningAnchor {
   @@index([anchoredAt])
   @@map("signing_anchors")
 }
-
 

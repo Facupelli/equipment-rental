@@ -43,6 +43,9 @@ export interface CreateSigningSessionProps {
   declaredDocumentNumber?: string | null;
   acceptanceTextVersion?: string | null;
   agreementHash?: string | null;
+  finalCopyTokenHash?: string | null;
+  finalCopyExpiresAt?: Date | null;
+  finalCopyUsedAt?: Date | null;
 }
 
 export interface ReconstituteSigningSessionProps {
@@ -62,6 +65,9 @@ export interface ReconstituteSigningSessionProps {
   declaredDocumentNumber: string | null;
   acceptanceTextVersion: string | null;
   agreementHash: string | null;
+  finalCopyTokenHash: string | null;
+  finalCopyExpiresAt: Date | null;
+  finalCopyUsedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   artifacts: SigningArtifactMetadata[];
@@ -86,6 +92,9 @@ export class SigningSession {
     private declaredDocumentNumber: string | null,
     private acceptanceTextVersion: string | null,
     private agreementHash: string | null,
+    private finalCopyTokenHash: string | null,
+    private finalCopyExpiresAt: Date | null,
+    private finalCopyUsedAt: Date | null,
     public readonly createdAt: Date,
     private updatedAt: Date,
     private readonly artifacts: SigningArtifactMetadata[],
@@ -112,6 +121,9 @@ export class SigningSession {
       declaredDocumentNumber: props.declaredDocumentNumber?.trim() || null,
       acceptanceTextVersion: props.acceptanceTextVersion?.trim() || null,
       agreementHash: props.agreementHash?.trim() || null,
+      finalCopyTokenHash: props.finalCopyTokenHash?.trim() || null,
+      finalCopyExpiresAt: props.finalCopyExpiresAt ?? null,
+      finalCopyUsedAt: props.finalCopyUsedAt ?? null,
       createdAt: now,
       updatedAt: now,
       artifacts: [],
@@ -140,6 +152,9 @@ export class SigningSession {
       props.declaredDocumentNumber,
       props.acceptanceTextVersion,
       props.agreementHash,
+      props.finalCopyTokenHash,
+      props.finalCopyExpiresAt,
+      props.finalCopyUsedAt,
       props.createdAt,
       props.updatedAt,
       [...props.artifacts],
@@ -189,6 +204,18 @@ export class SigningSession {
 
   get updatedOn(): Date {
     return this.updatedAt;
+  }
+
+  get currentFinalCopyTokenHash(): string | null {
+    return this.finalCopyTokenHash;
+  }
+
+  get currentFinalCopyExpiresAt(): Date | null {
+    return this.finalCopyExpiresAt;
+  }
+
+  get currentFinalCopyUsedAt(): Date | null {
+    return this.finalCopyUsedAt;
   }
 
   getArtifacts(): SigningArtifactMetadata[] {
@@ -310,6 +337,18 @@ export class SigningSession {
     this.auditEvents.sort((left, right) => left.sequence - right.sequence);
     this.touch(event.occurredAt);
     return ok(undefined);
+  }
+
+  issueFinalCopyAccess(props: { tokenHash: string; expiresAt: Date }, at = new Date()): void {
+    this.finalCopyTokenHash = SigningSession.assertNonEmpty('finalCopyTokenHash', props.tokenHash);
+    this.finalCopyExpiresAt = props.expiresAt;
+    this.finalCopyUsedAt = null;
+    this.touch(at);
+  }
+
+  markFinalCopyAccessUsed(at = new Date()): void {
+    this.finalCopyUsedAt = at;
+    this.touch(at);
   }
 
   private transitionTo(next: SigningSessionStatus): Result<void, SigningSessionStatusTransitionNotAllowedError> {

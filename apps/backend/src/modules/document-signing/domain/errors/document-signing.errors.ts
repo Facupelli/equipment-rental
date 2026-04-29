@@ -56,6 +56,12 @@ export class UnsignedSigningArtifactNotFoundError extends DocumentSigningError {
   }
 }
 
+export class SignedSigningArtifactNotFoundError extends DocumentSigningError {
+  constructor(sessionId: string) {
+    super(`Signing session '${sessionId}' does not have a final signed PDF artifact.`);
+  }
+}
+
 export class SigningAcceptanceConfirmationRequiredError extends DocumentSigningError {
   constructor() {
     super('Signing acceptance requires explicit confirmation from the signer.');
@@ -71,5 +77,23 @@ export class SigningAcceptanceIdentityRequiredError extends DocumentSigningError
 export class SigningSessionDocumentNotPresentedError extends DocumentSigningError {
   constructor(sessionId: string) {
     super(`Signing session '${sessionId}' cannot be accepted before the frozen unsigned document is presented.`);
+  }
+}
+
+export class FinalCopyAccessTokenNotFoundError extends DocumentSigningError {
+  constructor() {
+    super('Final copy access token was not found for the provided token.');
+  }
+}
+
+export class FinalCopyAccessTokenExpiredError extends DocumentSigningError {
+  constructor(sessionId: string) {
+    super(`Final copy access token for signing session '${sessionId}' has expired.`);
+  }
+}
+
+export class FinalCopyAccessTokenAlreadyUsedError extends DocumentSigningError {
+  constructor(sessionId: string) {
+    super(`Final copy access token for signing session '${sessionId}' has already been used.`);
   }
 }

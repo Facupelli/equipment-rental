@@ -17,6 +17,14 @@ export interface ContractPartyData {
   phone: string;
 }
 
+export interface SignedContractSummary {
+  signerFullName: string;
+  declaredDocumentNumber: string;
+  recipientEmail: string;
+  signedAt: string;
+  sessionReference: string;
+}
+
 export interface ContractData {
   document: {
     /** e.g. "REMITO" or "PRESUPUESTO" */
@@ -43,6 +51,8 @@ export interface ContractData {
     landlord: ContractPartyData;
     /** Tenant identity block shown on the remito header */
     tenant: ContractPartyData;
+    /** Human-facing summary rendered only on final signed copies */
+    signedSummary?: SignedContractSummary;
   };
   /** Flat list of equipment lines. PRODUCT items produce one line each.
    *  BUNDLE items are expanded into one line per component. */

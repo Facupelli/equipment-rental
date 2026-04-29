@@ -23,6 +23,7 @@ import {
   ContractRendererPort,
   EquipmentLine,
   IncludedItem,
+  SignedContractSummary,
 } from 'src/modules/order/domain/ports/contract-render.port';
 
 export interface OrderDocumentCustomerInput {
@@ -42,6 +43,7 @@ export interface RenderOrderDocumentInput {
   requireLinkedCustomerDocumentNumber?: boolean;
   requireDraftOrder?: boolean;
   showRentalSignatureBlock?: boolean;
+  signedSummary?: SignedContractSummary;
 }
 
 export interface RenderOrderDocumentResult {
@@ -75,6 +77,23 @@ export class OrderDocumentRendererService {
       equipmentTitle: 'LISTA DE EQUIPOS RETIRADOS',
       requireLinkedCustomerDocumentNumber: true,
       showRentalSignatureBlock: true,
+    }) as Promise<Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError>>;
+  }
+
+  async renderSignedContract(
+    tenantId: string,
+    orderId: string,
+    signedSummary: SignedContractSummary,
+  ): Promise<Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError>> {
+    return this.render({
+      tenantId,
+      orderId,
+      documentLabel: 'REMITO',
+      fileNamePrefix: 'remito',
+      equipmentTitle: 'LISTA DE EQUIPOS RETIRADOS',
+      requireLinkedCustomerDocumentNumber: true,
+      showRentalSignatureBlock: true,
+      signedSummary,
     }) as Promise<Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError>>;
   }
 
@@ -239,13 +258,14 @@ export class OrderDocumentRendererService {
           phone: signerProfile?.phone ?? '',
         },
         tenant: resolvedCustomer,
+        signedSummary: input.signedSummary,
       },
       equipmentLines,
     };
 
     const buffer = await this.contractRenderer.render(contractData);
 
-    const fileName = `${input.fileNamePrefix}-${downloadFileName}`;
+    const fileName = `${input.fileNamePrefix}-${downloadFileName}${input.signedSummary ? '-signed' : ''}`;
 
     return ok({
       buffer,

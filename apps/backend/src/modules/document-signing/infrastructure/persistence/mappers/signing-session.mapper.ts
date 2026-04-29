@@ -65,6 +65,9 @@ export class SigningSessionMapper {
       declaredDocumentNumber: record.declaredDocumentNumber,
       acceptanceTextVersion: record.acceptanceTextVersion,
       agreementHash: record.agreementHash,
+      finalCopyTokenHash: (record as unknown as { finalCopyTokenHash?: string | null }).finalCopyTokenHash ?? null,
+      finalCopyExpiresAt: (record as unknown as { finalCopyExpiresAt?: Date | null }).finalCopyExpiresAt ?? null,
+      finalCopyUsedAt: (record as unknown as { finalCopyUsedAt?: Date | null }).finalCopyUsedAt ?? null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       artifacts,
@@ -81,7 +84,7 @@ export class SigningSessionMapper {
     const unsignedArtifact = artifacts.find((artifact) => artifact.kind === SigningArtifactKind.UNSIGNED_PDF) ?? null;
     const signedArtifact = artifacts.find((artifact) => artifact.kind === SigningArtifactKind.SIGNED_PDF) ?? null;
 
-    const sessionRow: Prisma.SigningSessionUncheckedCreateInput = {
+    const sessionRow = {
       id: session.id,
       tenantId: session.tenantId,
       orderId: session.orderId,
@@ -99,10 +102,13 @@ export class SigningSessionMapper {
       declaredDocumentNumber: session.currentDeclaredDocumentNumber,
       acceptanceTextVersion: session.currentAcceptanceTextVersion,
       agreementHash: session.currentAgreementHash,
+      finalCopyTokenHash: session.currentFinalCopyTokenHash,
+      finalCopyExpiresAt: session.currentFinalCopyExpiresAt,
+      finalCopyUsedAt: session.currentFinalCopyUsedAt,
       signedArtifactId: signedArtifact?.id ?? null,
       createdAt: session.createdAt,
       updatedAt: session.updatedOn,
-    };
+    } as Prisma.SigningSessionUncheckedCreateInput;
 
     const artifactRows: Prisma.SigningArtifactUncheckedCreateInput[] = artifacts.map(
       (artifact) =>

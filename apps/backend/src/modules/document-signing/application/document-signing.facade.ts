@@ -25,7 +25,9 @@ import {
   OrderSigningAllowedOnlyForConfirmedOrdersError,
 } from 'src/modules/order/domain/errors/order.errors';
 import { PrepareOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-order-agreement-for-signing.query';
+import { PrepareSignedOrderAgreementQuery } from 'src/modules/order/public/queries/prepare-signed-order-agreement.query';
 import { OrderAgreementForSigningReadModel } from 'src/modules/order/public/read-models/order-agreement-for-signing.read-model';
+import { SignedOrderAgreementReadModel } from 'src/modules/order/public/read-models/signed-order-agreement.read-model';
 
 import {
   DocumentSigningPublicApi,
@@ -40,6 +42,10 @@ import {
   SigningInvitationRecipientEmailRequiredError,
   SigningAcceptanceConfirmationRequiredError,
   SigningAcceptanceIdentityRequiredError,
+  FinalCopyAccessTokenAlreadyUsedError,
+  FinalCopyAccessTokenExpiredError,
+  FinalCopyAccessTokenNotFoundError,
+  SignedSigningArtifactNotFoundError,
   SigningSessionDocumentNotPresentedError,
   SigningSessionExpiredError,
   SigningSessionStatusTransitionNotAllowedError,
@@ -52,6 +58,11 @@ import { SigningSessionRepository } from '../infrastructure/persistence/reposito
 
 const PDF_CONTENT_TYPE = 'application/pdf';
 const SIGNING_ACCEPTANCE_CHANNEL = 'email_link' as const;
+const SIGNED_PDF_GENERATED_EVENT = 'SIGNED_PDF_GENERATED' as SigningAuditEventType;
+const SIGNED_PDF_STORED_EVENT = 'SIGNED_PDF_STORED' as SigningAuditEventType;
+const FINAL_COPY_EMAIL_REQUESTED_EVENT = 'FINAL_COPY_EMAIL_REQUESTED' as SigningAuditEventType;
+const FINAL_COPY_EMAIL_SENT_EVENT = 'FINAL_COPY_EMAIL_SENT' as SigningAuditEventType;
+const FINAL_COPY_EMAIL_FAILED_EVENT = 'FINAL_COPY_EMAIL_FAILED' as SigningAuditEventType;
 
 export interface SendSigningInvitationInput {
   tenantId: string;
@@ -126,6 +137,11 @@ export type AcceptPublicSigningError =
 type PrepareOrderAgreementForSigningResult = Result<
   OrderAgreementForSigningReadModel,
   ContractCustomerProfileMissingError | OrderNotFoundError | OrderSigningAllowedOnlyForConfirmedOrdersError
+>;
+
+type PrepareSignedOrderAgreementResult = Result<
+  SignedOrderAgreementReadModel,
+  ContractCustomerProfileMissingError | OrderNotFoundError
 >;
 
 @Injectable()
@@ -464,6 +480,24 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
 
     await this.signingSessionRepository.save(session);
 
+    const tenant = await this.queryBus.execute<FindTenantByIdQuery, TenantContext | null>(
+      new FindTenantByIdQuery(session.tenantId),
+    );
+    if (!tenant) {
+      throw new Error(`Tenant '${session.tenantId}' was not found.`);
+    }
+
+    await this.generateAndDeliverFinalSignedCopy({
+      tenant,
+      session,
+      signedAt: acceptedAt,
+      signerFullName: declaredFullName,
+      declaredDocumentNumber,
+      agreementHash,
+    });
+
+    await this.signingSessionRepository.save(session);
+
     return ok({
       sessionId: session.id,
       status: SigningSessionStatus.SIGNED,
@@ -471,6 +505,40 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       agreementHash,
       channel: SIGNING_ACCEPTANCE_CHANNEL,
     });
+  }
+
+  async streamFinalSignedCopy(rawToken: string): Promise<PublicSigningDocumentStream> {
+    const normalizedToken = rawToken.trim();
+    if (normalizedToken.length === 0) {
+      throw new FinalCopyAccessTokenNotFoundError();
+    }
+
+    const session = await this.signingSessionRepository.loadByFinalCopyTokenHash(hashString(normalizedToken));
+    if (!session || !session.currentFinalCopyTokenHash) {
+      throw new FinalCopyAccessTokenNotFoundError();
+    }
+
+    const now = new Date();
+    if (session.currentFinalCopyUsedAt) {
+      throw new FinalCopyAccessTokenAlreadyUsedError(session.id);
+    }
+
+    if (!session.currentFinalCopyExpiresAt || session.currentFinalCopyExpiresAt.getTime() <= now.getTime()) {
+      throw new FinalCopyAccessTokenExpiredError(session.id);
+    }
+
+    const artifact = this.requireSignedArtifact(session);
+    const stream = await this.objectStorage.getObjectStream({ key: artifact.storage.objectKey });
+
+    session.markFinalCopyAccessUsed(now);
+    await this.signingSessionRepository.save(session);
+
+    return {
+      fileName: artifact.displayFileName,
+      contentType: artifact.storage.contentType,
+      contentLength: artifact.storage.byteSize,
+      stream,
+    };
   }
 
   private async ensureSessionForPreparedDocument(input: {
@@ -617,6 +685,138 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     });
   }
 
+  private async recordSignedArtifact(input: {
+    tenantId: string;
+    orderId: string;
+    sessionId: string;
+    documentType: SigningDocumentType;
+    documentNumber: string;
+    fileName: string;
+    pdfBytes: Buffer;
+    signedDocumentHash: string;
+    agreementHash: string;
+  }): Promise<SigningArtifactStorage> {
+    const objectKey = buildSignedArtifactObjectKey({
+      tenantId: input.tenantId,
+      orderId: input.orderId,
+      sessionId: input.sessionId,
+      fileName: input.fileName,
+    });
+
+    await this.objectStorage.putObject({
+      key: objectKey,
+      body: input.pdfBytes,
+      contentType: PDF_CONTENT_TYPE,
+      metadata: {
+        tenantId: input.tenantId,
+        orderId: input.orderId,
+        sessionId: input.sessionId,
+        documentType: input.documentType,
+        documentNumber: input.documentNumber,
+        agreementHash: input.agreementHash,
+        sha256: input.signedDocumentHash,
+      },
+    });
+
+    return new SigningArtifactStorage({
+      bucket: this.bucketName,
+      objectKey,
+      contentType: PDF_CONTENT_TYPE,
+      byteSize: input.pdfBytes.length,
+      sha256: input.signedDocumentHash,
+    });
+  }
+
+  private async generateAndDeliverFinalSignedCopy(input: {
+    tenant: TenantContext;
+    session: SigningSession;
+    signedAt: Date;
+    signerFullName: string;
+    declaredDocumentNumber: string;
+    agreementHash: string;
+  }): Promise<void> {
+    const signedAgreement = await this.queryBus.execute<PrepareSignedOrderAgreementQuery, PrepareSignedOrderAgreementResult>(
+      new PrepareSignedOrderAgreementQuery(input.session.tenantId, input.session.orderId, {
+        signerFullName: input.signerFullName,
+        declaredDocumentNumber: input.declaredDocumentNumber,
+        recipientEmail: input.session.currentRecipientEmail,
+        signedAt: input.signedAt.toISOString(),
+        sessionReference: input.session.id,
+      }),
+    );
+
+    if (signedAgreement.isErr()) {
+      throw signedAgreement.error;
+    }
+
+    const signedPdfHash = hashBuffer(signedAgreement.value.buffer);
+    this.appendAuditEvent(input.session, SIGNED_PDF_GENERATED_EVENT, {
+      documentNumber: signedAgreement.value.documentNumber,
+      fileName: `${signedAgreement.value.fileName}.pdf`,
+      sha256: signedPdfHash,
+      signedAt: input.signedAt.toISOString(),
+      agreementHash: input.agreementHash,
+      sessionReference: input.session.id,
+    });
+
+    const storage = await this.recordSignedArtifact({
+      tenantId: input.session.tenantId,
+      orderId: input.session.orderId,
+      sessionId: input.session.id,
+      documentType: input.session.documentType,
+      documentNumber: signedAgreement.value.documentNumber,
+      fileName: signedAgreement.value.fileName,
+      pdfBytes: signedAgreement.value.buffer,
+      signedDocumentHash: signedPdfHash,
+      agreementHash: input.agreementHash,
+    });
+
+    const artifact = SigningArtifactMetadata.create({
+      sessionId: input.session.id,
+      kind: SigningArtifactKind.SIGNED_PDF,
+      documentNumber: signedAgreement.value.documentNumber,
+      displayFileName: `${signedAgreement.value.fileName}.pdf`,
+      storage,
+    });
+    const addArtifactResult = input.session.addArtifact(artifact);
+    if (addArtifactResult.isErr()) {
+      throw addArtifactResult.error;
+    }
+
+    this.appendAuditEvent(input.session, SIGNED_PDF_STORED_EVENT, {
+      artifactId: artifact.id,
+      documentNumber: artifact.documentNumber,
+      fileName: artifact.displayFileName,
+      bucket: storage.bucket,
+      objectKey: storage.objectKey,
+      contentType: storage.contentType,
+      byteSize: storage.byteSize,
+      sha256: storage.sha256,
+      agreementHash: input.agreementHash,
+    });
+
+    const finalCopyRawToken = generateRawSigningToken();
+    const finalCopyExpiresAt = new Date(input.signedAt.getTime() + this.signingSessionTtlSeconds * 1000);
+    input.session.issueFinalCopyAccess({ tokenHash: hashString(finalCopyRawToken), expiresAt: finalCopyExpiresAt }, input.signedAt);
+
+    this.appendAuditEvent(input.session, FINAL_COPY_EMAIL_REQUESTED_EVENT, {
+      recipientEmail: input.session.currentRecipientEmail,
+      documentNumber: signedAgreement.value.documentNumber,
+      expiresAt: finalCopyExpiresAt.toISOString(),
+      sessionReference: input.session.id,
+    });
+
+    await this.dispatchFinalCopyEmail({
+      tenant: input.tenant,
+      session: input.session,
+      documentType: input.session.documentType,
+      documentNumber: signedAgreement.value.documentNumber,
+      rawToken: finalCopyRawToken,
+      recipientEmail: input.session.currentRecipientEmail,
+      expiresAt: finalCopyExpiresAt,
+    });
+  }
+
   private async loadActiveSessionAfterExpiringIfNeeded(
     tenantId: string,
     orderId: string,
@@ -718,6 +918,66 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     return new SigningInvitationEmailDeliveryFailedError(message);
   }
 
+  private async dispatchFinalCopyEmail(input: {
+    tenant: TenantContext;
+    session: SigningSession;
+    documentType: SigningDocumentType;
+    documentNumber: string;
+    rawToken: string;
+    recipientEmail: string;
+    expiresAt: Date;
+  }): Promise<SigningInvitationEmailDeliveryFailedError | null> {
+    const downloadUrl = buildFinalCopyDownloadUrl(input.tenant, this.rootDomain, input.rawToken);
+    const dispatchResult = await this.notificationOrchestrator.dispatch({
+      tenantId: input.tenant.id,
+      notificationType: NotificationType.DOCUMENT_SIGNING_FINAL_COPY,
+      emailRecipients: [{ email: input.recipientEmail }],
+      payload: {
+        tenantName: input.tenant.name,
+        documentLabel: getSigningDocumentLabel(input.documentType),
+        documentNumber: input.documentNumber,
+        downloadUrl,
+        expiresAt: input.expiresAt,
+      },
+      metadata: {
+        orderId: input.session.orderId,
+        sessionId: input.session.id,
+        documentType: input.documentType,
+      },
+      idempotencyKey: `final-copy:${input.session.id}:${input.session.currentFinalCopyTokenHash}`,
+    });
+
+    if (dispatchResult.deliveredChannels.includes(NotificationChannel.EMAIL)) {
+      this.appendAuditEvent(input.session, FINAL_COPY_EMAIL_SENT_EVENT, {
+        recipientEmail: input.recipientEmail,
+        documentType: input.documentType,
+        documentNumber: input.documentNumber,
+        downloadUrl,
+        expiresAt: input.expiresAt.toISOString(),
+        sessionReference: input.session.id,
+      });
+      return null;
+    }
+
+    const failure = dispatchResult.failedChannels[0];
+    this.appendAuditEvent(input.session, FINAL_COPY_EMAIL_FAILED_EVENT, {
+      recipientEmail: input.recipientEmail,
+      documentType: input.documentType,
+      documentNumber: input.documentNumber,
+      downloadUrl,
+      expiresAt: input.expiresAt.toISOString(),
+      sessionReference: input.session.id,
+      failureReason: failure?.reason ?? 'NO_CHANNEL_DELIVERED',
+      failureMessage: failure?.message ?? 'No notification channel delivered the final copy email.',
+    });
+
+    return new SigningInvitationEmailDeliveryFailedError(
+      failure
+        ? `Final signed copy email delivery failed: ${failure.message}`
+        : 'Final signed copy email delivery failed: no notification channel delivered the email.',
+    );
+  }
+
   private async requirePublicSessionByRawToken(rawToken: string): Promise<SigningSession> {
     const normalizedToken = rawToken.trim();
     if (normalizedToken.length === 0) {
@@ -774,6 +1034,15 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     return artifact;
   }
 
+  private requireSignedArtifact(session: SigningSession): SigningArtifactMetadata {
+    const artifact = session.getArtifacts().find((candidate) => candidate.kind === SigningArtifactKind.SIGNED_PDF);
+    if (!artifact) {
+      throw new SignedSigningArtifactNotFoundError(session.id);
+    }
+
+    return artifact;
+  }
+
   private appendAuditEvent(session: SigningSession, type: SigningAuditEventType, payload: SigningAuditPayload): void {
     const auditEvents = session.getAuditEvents();
     const previousHash = auditEvents[auditEvents.length - 1]?.currentHash ?? null;
@@ -813,6 +1082,15 @@ function buildUnsignedArtifactObjectKey(props: {
   fileName: string;
 }): string {
   return `signing/${props.tenantId}/orders/${props.orderId}/sessions/${props.sessionId}/unsigned/${props.fileName}.pdf`;
+}
+
+function buildSignedArtifactObjectKey(props: {
+  tenantId: string;
+  orderId: string;
+  sessionId: string;
+  fileName: string;
+}): string {
+  return `signing/${props.tenantId}/orders/${props.orderId}/sessions/${props.sessionId}/signed/${props.fileName}.pdf`;
 }
 
 function hashBuffer(buffer: Buffer): string {
@@ -866,6 +1144,11 @@ function normalizeRecipientEmail(value?: string | null): string | null {
 function buildPortalSigningUrl(tenant: TenantContext, rootDomain: string, rawToken: string): string {
   const hostname = tenant.customDomain ?? `${tenant.slug}.${rootDomain}`;
   return `https://${hostname}/signing?token=${encodeURIComponent(rawToken)}`;
+}
+
+function buildFinalCopyDownloadUrl(tenant: TenantContext, rootDomain: string, rawToken: string): string {
+  const hostname = tenant.customDomain ?? `${tenant.slug}.${rootDomain}`;
+  return `https://${hostname}/document-signing/public/final-copy/download?token=${encodeURIComponent(rawToken)}`;
 }
 
 function getSigningDocumentLabel(documentType: SigningDocumentType): string {
