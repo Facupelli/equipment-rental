@@ -7,6 +7,8 @@ import { SigningArtifactStorage } from '../value-objects/signing-artifact-storag
 export interface CreateSigningArtifactMetadataProps {
   sessionId: string;
   kind: SigningArtifactKind;
+  documentNumber: string;
+  displayFileName: string;
   storage: SigningArtifactStorage;
 }
 
@@ -20,15 +22,33 @@ export class SigningArtifactMetadata {
     public readonly id: string,
     public readonly sessionId: string,
     public readonly kind: SigningArtifactKind,
+    public readonly documentNumber: string,
+    public readonly displayFileName: string,
     public readonly storage: SigningArtifactStorage,
     public readonly createdAt: Date,
   ) {}
 
   static create(props: CreateSigningArtifactMetadataProps): SigningArtifactMetadata {
-    return new SigningArtifactMetadata(randomUUID(), props.sessionId, props.kind, props.storage, new Date());
+    return new SigningArtifactMetadata(
+      randomUUID(),
+      props.sessionId,
+      props.kind,
+      props.documentNumber.trim(),
+      props.displayFileName.trim(),
+      props.storage,
+      new Date(),
+    );
   }
 
   static reconstitute(props: ReconstituteSigningArtifactMetadataProps): SigningArtifactMetadata {
-    return new SigningArtifactMetadata(props.id, props.sessionId, props.kind, props.storage, props.createdAt);
+    return new SigningArtifactMetadata(
+      props.id,
+      props.sessionId,
+      props.kind,
+      props.documentNumber.trim(),
+      props.displayFileName.trim(),
+      props.storage,
+      props.createdAt,
+    );
   }
 }

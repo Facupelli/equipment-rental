@@ -22,6 +22,8 @@ export class SigningSessionMapper {
         id: artifact.id,
         sessionId: artifact.sessionId,
         kind: artifact.kind,
+        documentNumber: artifact.documentNumber,
+        displayFileName: artifact.displayFileName,
         storage: new SigningArtifactStorage({
           bucket: artifact.bucket,
           objectKey: artifact.objectKey,
@@ -102,17 +104,22 @@ export class SigningSessionMapper {
       updatedAt: session.updatedOn,
     };
 
-    const artifactRows: Prisma.SigningArtifactUncheckedCreateInput[] = artifacts.map((artifact) => ({
-      id: artifact.id,
-      sessionId: artifact.sessionId,
-      kind: artifact.kind,
-      bucket: artifact.storage.bucket,
-      objectKey: artifact.storage.objectKey,
-      contentType: artifact.storage.contentType,
-      byteSize: artifact.storage.byteSize,
-      sha256: artifact.storage.sha256,
-      createdAt: artifact.createdAt,
-    }));
+    const artifactRows: Prisma.SigningArtifactUncheckedCreateInput[] = artifacts.map(
+      (artifact) =>
+        ({
+          id: artifact.id,
+          sessionId: artifact.sessionId,
+          kind: artifact.kind,
+          documentNumber: artifact.documentNumber,
+          displayFileName: artifact.displayFileName,
+          bucket: artifact.storage.bucket,
+          objectKey: artifact.storage.objectKey,
+          contentType: artifact.storage.contentType,
+          byteSize: artifact.storage.byteSize,
+          sha256: artifact.storage.sha256,
+          createdAt: artifact.createdAt,
+        }) as Prisma.SigningArtifactUncheckedCreateInput,
+    );
 
     const auditEventRows: Prisma.SigningAuditEventUncheckedCreateInput[] = session.getAuditEvents().map((event) => ({
       id: event.id,

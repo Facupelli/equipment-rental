@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { Readable } from 'stream';
 
 import { QueryBus } from '@nestjs/cqrs';
 import { ConfigService } from '@nestjs/config';
@@ -85,6 +86,7 @@ describe('DocumentSigningFacade', () => {
 
     const objectStorage = {
       putObject: jest.fn(async () => undefined),
+      getObjectStream: jest.fn(async () => Readable.from([Buffer.from('unsigned-contract-pdf')])),
     } as unknown as ObjectStoragePort;
 
     const notificationOrchestrator = {
@@ -166,6 +168,8 @@ describe('DocumentSigningFacade', () => {
     expect(savedSessions[0].currentUnsignedDocumentHash).toBe(hashBuffer(input.pdfBytes));
     expect(savedSessions[0].getArtifacts()).toHaveLength(1);
     expect(savedSessions[0].getArtifacts()[0].kind).toBe(SigningArtifactKind.UNSIGNED_PDF);
+    expect(savedSessions[0].getArtifacts()[0].documentNumber).toBe(input.documentNumber);
+    expect(savedSessions[0].getArtifacts()[0].displayFileName).toBe(`${input.fileName}.pdf`);
     expect(savedSessions[0].getArtifacts()[0].storage.sha256).toBe(hashBuffer(input.pdfBytes));
     expect(savedSessions[0].getAuditEvents().map((event) => event.type)).toEqual([
       SigningAuditEventType.SESSION_CREATED,
@@ -235,6 +239,40 @@ describe('DocumentSigningFacade', () => {
     expect((notificationOrchestrator.dispatch as jest.Mock).mock.calls[0][0].notificationType).toBe(
       'DOCUMENT_SIGNING_INVITATION',
     );
+  });
+
+  it('returns a public signing read model for the exact frozen unsigned artifact', async () => {
+    const input = makeInput();
+    const { facade } = makeFacade();
+
+    const prepared = await facade.prepareSigningSession(input);
+    const session = await facade.getPublicSigningSession(input.rawToken);
+
+    expect(session.sessionId).toBe(prepared.sessionId);
+    expect(session.document.documentNumber).toBe(input.documentNumber);
+    expect(session.document.displayFileName).toBe(`${input.fileName}.pdf`);
+    expect(session.document.sha256).toBe(hashBuffer(input.pdfBytes));
+    expect(session.status).toBe(SigningSessionStatus.PENDING);
+  });
+
+  it('streams the frozen unsigned artifact and records document presentation evidence', async () => {
+    const input = makeInput();
+    const { facade, objectStorage, signingSessionRepository } = makeFacade();
+
+    const prepared = await facade.prepareSigningSession(input);
+    const streamed = await facade.streamPublicUnsignedDocument(input.rawToken);
+    const session = await (signingSessionRepository.load as jest.Mock)(prepared.sessionId);
+
+    expect(streamed.fileName).toBe(`${input.fileName}.pdf`);
+    expect(streamed.contentType).toBe('application/pdf');
+    expect((objectStorage.getObjectStream as jest.Mock).mock.calls[0][0]).toEqual({
+      key: expect.stringContaining(`${prepared.sessionId}/unsigned/`),
+    });
+    expect(session.currentStatus).toBe(SigningSessionStatus.OPENED);
+    expect(session.getAuditEvents().slice(-2).map((event) => event.type)).toEqual([
+      SigningAuditEventType.SESSION_OPENED,
+      SigningAuditEventType.DOCUMENT_PRESENTED,
+    ]);
   });
 
   it('reuses a valid session, rotates the token hash, and records resend evidence', async () => {

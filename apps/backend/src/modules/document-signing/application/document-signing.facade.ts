@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'crypto';
+import { Readable } from 'stream';
 
 import { Injectable } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
@@ -37,6 +38,10 @@ import { SigningSession } from '../domain/entities/signing-session.entity';
 import {
   SigningInvitationEmailDeliveryFailedError,
   SigningInvitationRecipientEmailRequiredError,
+  SigningSessionExpiredError,
+  SigningSessionTokenNotFoundError,
+  SigningSessionUnavailableError,
+  UnsignedSigningArtifactNotFoundError,
 } from '../domain/errors/document-signing.errors';
 import { SigningArtifactStorage } from '../domain/value-objects/signing-artifact-storage.value-object';
 import { SigningSessionRepository } from '../infrastructure/persistence/repositories/signing-session.repository';
@@ -57,6 +62,34 @@ export interface SendSigningInvitationResult {
   expiresAt: Date;
   unsignedDocumentHash: string;
   reusedExistingSession: boolean;
+}
+
+export interface PublicSigningSessionReadModel {
+  sessionId: string;
+  documentType: SigningDocumentType;
+  status: SigningSessionStatus;
+  expiresAt: Date;
+  openedAt: Date | null;
+  document: {
+    artifactId: string;
+    kind: 'UNSIGNED_PDF';
+    documentNumber: string;
+    displayFileName: string;
+    contentType: string;
+    byteSize: number;
+    sha256: string;
+  };
+  prefilledSigner: {
+    fullName: string | null;
+    documentNumber: string | null;
+  };
+}
+
+export interface PublicSigningDocumentStream {
+  fileName: string;
+  contentType: string;
+  contentLength: number;
+  stream: Readable;
 }
 
 type PrepareOrderAgreementForSigningResult = Result<
@@ -250,6 +283,78 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     });
   }
 
+  async resolvePublicSigningSession(rawToken: string): Promise<{ sessionId: string }> {
+    const session = await this.requirePublicSessionByRawToken(rawToken);
+    return { sessionId: session.id };
+  }
+
+  async getPublicSigningSession(rawToken: string): Promise<PublicSigningSessionReadModel> {
+    const session = await this.requirePublicSessionByRawToken(rawToken);
+    const artifact = this.requireUnsignedArtifact(session);
+
+    return {
+      sessionId: session.id,
+      documentType: session.documentType,
+      status: session.currentStatus,
+      expiresAt: session.expiresAt,
+      openedAt: session.openedOn,
+      document: {
+        artifactId: artifact.id,
+        kind: SigningArtifactKind.UNSIGNED_PDF,
+        documentNumber: artifact.documentNumber,
+        displayFileName: artifact.displayFileName,
+        contentType: artifact.storage.contentType,
+        byteSize: artifact.storage.byteSize,
+        sha256: artifact.storage.sha256,
+      },
+      prefilledSigner: {
+        fullName: session.currentDeclaredFullName,
+        documentNumber: session.currentDeclaredDocumentNumber,
+      },
+    };
+  }
+
+  async streamPublicUnsignedDocument(rawToken: string): Promise<PublicSigningDocumentStream> {
+    const session = await this.requirePublicSessionByRawToken(rawToken);
+    const artifact = this.requireUnsignedArtifact(session);
+    const stream = await this.objectStorage.getObjectStream({ key: artifact.storage.objectKey });
+    const now = new Date();
+
+    if (session.currentStatus === SigningSessionStatus.PENDING) {
+      const markOpenedResult = session.markOpened(now);
+      if (markOpenedResult.isErr()) {
+        throw markOpenedResult.error;
+      }
+
+      this.appendAuditEvent(session, SigningAuditEventType.SESSION_OPENED, {
+        openedAt: now.toISOString(),
+        artifactId: artifact.id,
+        kind: artifact.kind,
+        sha256: artifact.storage.sha256,
+      });
+    }
+
+    this.appendAuditEvent(session, SigningAuditEventType.DOCUMENT_PRESENTED, {
+      artifactId: artifact.id,
+      kind: artifact.kind,
+      documentNumber: artifact.documentNumber,
+      displayFileName: artifact.displayFileName,
+      contentType: artifact.storage.contentType,
+      byteSize: artifact.storage.byteSize,
+      sha256: artifact.storage.sha256,
+      presentedAt: now.toISOString(),
+    });
+
+    await this.signingSessionRepository.save(session);
+
+    return {
+      fileName: artifact.displayFileName,
+      contentType: artifact.storage.contentType,
+      contentLength: artifact.storage.byteSize,
+      stream,
+    };
+  }
+
   private async ensureSessionForPreparedDocument(input: {
     tenantId: string;
     orderId: string;
@@ -319,6 +424,8 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     const artifact = SigningArtifactMetadata.create({
       sessionId: session.id,
       kind: SigningArtifactKind.UNSIGNED_PDF,
+      documentNumber: input.documentNumber,
+      displayFileName: `${input.fileName}.pdf`,
       storage,
     });
     const addArtifactResult = session.addArtifact(artifact);
@@ -491,6 +598,62 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     });
 
     return new SigningInvitationEmailDeliveryFailedError(message);
+  }
+
+  private async requirePublicSessionByRawToken(rawToken: string): Promise<SigningSession> {
+    const normalizedToken = rawToken.trim();
+    if (normalizedToken.length === 0) {
+      throw new SigningSessionTokenNotFoundError();
+    }
+
+    const session = await this.signingSessionRepository.loadByTokenHash(hashString(normalizedToken));
+    if (!session) {
+      throw new SigningSessionTokenNotFoundError();
+    }
+
+    const now = new Date();
+    if (session.expiresAt.getTime() <= now.getTime()) {
+      if (
+        session.currentStatus === SigningSessionStatus.PENDING ||
+        session.currentStatus === SigningSessionStatus.OPENED
+      ) {
+        this.appendAuditEvent(session, SigningAuditEventType.SESSION_EXPIRED, {
+          expiredAt: now.toISOString(),
+          previousStatus: session.currentStatus,
+        });
+
+        const expireResult = session.expire(now);
+        if (expireResult.isErr()) {
+          throw expireResult.error;
+        }
+
+        await this.signingSessionRepository.save(session);
+      }
+
+      throw new SigningSessionExpiredError(session.id);
+    }
+
+    if (session.currentStatus === SigningSessionStatus.EXPIRED) {
+      throw new SigningSessionExpiredError(session.id);
+    }
+
+    if (
+      session.currentStatus === SigningSessionStatus.SIGNED ||
+      session.currentStatus === SigningSessionStatus.VOIDED
+    ) {
+      throw new SigningSessionUnavailableError(session.id, session.currentStatus);
+    }
+
+    return session;
+  }
+
+  private requireUnsignedArtifact(session: SigningSession): SigningArtifactMetadata {
+    const artifact = session.getArtifacts().find((candidate) => candidate.kind === SigningArtifactKind.UNSIGNED_PDF);
+    if (!artifact) {
+      throw new UnsignedSigningArtifactNotFoundError(session.id);
+    }
+
+    return artifact;
   }
 
   private appendAuditEvent(session: SigningSession, type: SigningAuditEventType, payload: SigningAuditPayload): void {

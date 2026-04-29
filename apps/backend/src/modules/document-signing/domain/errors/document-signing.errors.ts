@@ -31,3 +31,27 @@ export class SigningInvitationEmailDeliveryFailedError extends DocumentSigningEr
     super(message);
   }
 }
+
+export class SigningSessionTokenNotFoundError extends DocumentSigningError {
+  constructor() {
+    super('Signing session was not found for the provided token.');
+  }
+}
+
+export class SigningSessionExpiredError extends DocumentSigningError {
+  constructor(sessionId: string) {
+    super(`Signing session '${sessionId}' has expired.`);
+  }
+}
+
+export class SigningSessionUnavailableError extends DocumentSigningError {
+  constructor(sessionId: string, status: string) {
+    super(`Signing session '${sessionId}' is not available for public signing because it is '${status}'.`);
+  }
+}
+
+export class UnsignedSigningArtifactNotFoundError extends DocumentSigningError {
+  constructor(sessionId: string) {
+    super(`Signing session '${sessionId}' does not have a frozen unsigned PDF artifact.`);
+  }
+}

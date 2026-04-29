@@ -29,9 +29,9 @@ export class SigningSessionRepository {
     return SigningSessionMapper.toDomain(record);
   }
 
-  async loadByTokenHash(tokenHash: string, tenantId: string): Promise<SigningSession | null> {
+  async loadByTokenHash(tokenHash: string): Promise<SigningSession | null> {
     const record = await this.prisma.client.signingSession.findFirst({
-      where: { tokenHash, tenantId },
+      where: { tokenHash },
       include: {
         artifacts: true,
         auditEvents: {

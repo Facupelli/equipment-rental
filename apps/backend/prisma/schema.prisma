@@ -262,6 +262,7 @@ enum SigningAuditEventType {
   SESSION_EXPIRED
   SESSION_VOIDED
   ARTIFACT_RECORDED
+  DOCUMENT_PRESENTED
   INVITATION_EMAIL_REQUESTED
   INVITATION_EMAIL_SENT
   INVITATION_EMAIL_FAILED
@@ -330,6 +331,8 @@ model SigningArtifact {
   id          String              @id @default(uuid())
   sessionId   String              @map("session_id")
   kind        SigningArtifactKind
+  documentNumber String           @map("document_number")
+  displayFileName String          @map("display_file_name")
   bucket      String
   objectKey   String              @map("object_key")
   contentType String              @map("content_type")
