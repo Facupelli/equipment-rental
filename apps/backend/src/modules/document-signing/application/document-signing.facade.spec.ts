@@ -61,6 +61,34 @@ describe('DocumentSigningFacade', () => {
     });
   }
 
+  function cloneSession(session: SigningSession): SigningSession {
+    return SigningSession.reconstitute({
+      id: session.id,
+      tenantId: session.tenantId,
+      orderId: session.orderId,
+      customerId: session.customerId,
+      documentType: session.documentType,
+      recipientEmail: session.currentRecipientEmail,
+      unsignedDocumentHash: session.currentUnsignedDocumentHash,
+      tokenHash: session.currentTokenHash,
+      status: session.currentStatus,
+      expiresAt: session.expiresAt,
+      openedAt: session.openedOn,
+      signedAt: session.signedOn,
+      declaredFullName: session.currentDeclaredFullName,
+      declaredDocumentNumber: session.currentDeclaredDocumentNumber,
+      acceptanceTextVersion: session.currentAcceptanceTextVersion,
+      agreementHash: session.currentAgreementHash,
+      finalCopyTokenHash: session.currentFinalCopyTokenHash,
+      finalCopyExpiresAt: session.currentFinalCopyExpiresAt,
+      finalCopyUsedAt: session.currentFinalCopyUsedAt,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedOn,
+      artifacts: session.getArtifacts(),
+      auditEvents: session.getAuditEvents(),
+    });
+  }
+
   function makeFacade(options?: {
     activeSession?: SigningSession | null;
     preparedOrderResult?: ReturnType<typeof makePreparedOrder>;
@@ -71,21 +99,27 @@ describe('DocumentSigningFacade', () => {
     const storedSessions = new Map<string, SigningSession>();
 
     if (activeSession) {
-      storedSessions.set(activeSession.id, activeSession);
+      storedSessions.set(activeSession.id, cloneSession(activeSession));
     }
 
     const signingSessionRepository = {
-      loadActiveByOrderDocumentType: jest.fn(async () => activeSession),
-      load: jest.fn(async (id: string) => storedSessions.get(id) ?? null),
+      loadActiveByOrderDocumentType: jest.fn(async () => (activeSession ? cloneSession(activeSession) : null)),
+      load: jest.fn(async (id: string) => {
+        const session = storedSessions.get(id);
+        return session ? cloneSession(session) : null;
+      }),
       loadByTokenHash: jest.fn(async (tokenHash: string) => {
-        return [...storedSessions.values()].find((session) => session.currentTokenHash === tokenHash) ?? null;
+        const session = [...storedSessions.values()].find((candidate) => candidate.currentTokenHash === tokenHash);
+        return session ? cloneSession(session) : null;
       }),
       loadByFinalCopyTokenHash: jest.fn(async (tokenHash: string) => {
-        return [...storedSessions.values()].find((session) => session.currentFinalCopyTokenHash === tokenHash) ?? null;
+        const session = [...storedSessions.values()].find((candidate) => candidate.currentFinalCopyTokenHash === tokenHash);
+        return session ? cloneSession(session) : null;
       }),
       save: jest.fn(async (session: SigningSession) => {
-        savedSessions.push(session);
-        storedSessions.set(session.id, session);
+        const persisted = cloneSession(session);
+        savedSessions.push(persisted);
+        storedSessions.set(session.id, persisted);
         return session.id;
       }),
     } as unknown as SigningSessionRepository;
@@ -295,9 +329,9 @@ describe('DocumentSigningFacade', () => {
 
     expect(result.isOk()).toBe(true);
     expect(savedSessions).toHaveLength(1);
-    expect(activeSession.currentTokenHash).not.toBe(originalTokenHash);
-    expect(activeSession.currentRecipientEmail).toBe('updated@example.com');
-    expect(activeSession.getAuditEvents().map((event) => event.type)).toEqual([
+    expect(savedSessions[0].currentTokenHash).not.toBe(originalTokenHash);
+    expect(savedSessions[0].currentRecipientEmail).toBe('updated@example.com');
+    expect(savedSessions[0].getAuditEvents().map((event) => event.type)).toEqual([
       SigningAuditEventType.INVITATION_EMAIL_REQUESTED,
       SigningAuditEventType.INVITATION_EMAIL_SENT,
     ]);
@@ -324,6 +358,8 @@ describe('DocumentSigningFacade', () => {
     expect(session.currentDeclaredDocumentNumber).toBe('12345678');
     expect(session.currentAcceptanceTextVersion).toBe('rental-agreement-v1');
     expect(session.currentAgreementHash).toBe(result._unsafeUnwrap().agreementHash);
+    expect(session.currentFinalCopyTokenHash).not.toBeNull();
+    expect(session.currentFinalCopyExpiresAt).not.toBeNull();
     expect(session.getArtifacts().map((artifact) => artifact.kind)).toEqual([
       SigningArtifactKind.UNSIGNED_PDF,
       SigningArtifactKind.SIGNED_PDF,
@@ -435,6 +471,36 @@ describe('DocumentSigningFacade', () => {
     expect(result.isOk()).toBe(true);
     expect(session.currentStatus).toBe(SigningSessionStatus.SIGNED);
     expect(session.getAuditEvents()[session.getAuditEvents().length - 1]?.type).toBe('FINAL_COPY_EMAIL_FAILED');
+  });
+
+  it('does not persist a signed session when signed artifact storage fails', async () => {
+    const input = makeInput();
+    const { facade, objectStorage, signingSessionRepository } = makeFacade();
+
+    (objectStorage.putObject as jest.Mock)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('signed artifact storage failed'));
+
+    const prepared = await facade.prepareSigningSession(input);
+    await facade.streamPublicUnsignedDocument(input.rawToken);
+
+    await expect(
+      facade.acceptPublicSigningSession({
+        rawToken: input.rawToken,
+        declaredFullName: 'Jane Doe',
+        declaredDocumentNumber: '12345678',
+        acceptanceTextVersion: 'rental-agreement-v1',
+        accepted: true,
+      }),
+    ).rejects.toThrow('signed artifact storage failed');
+
+    const session = await (signingSessionRepository.load as jest.Mock)(prepared.sessionId);
+
+    expect(session.currentStatus).toBe(SigningSessionStatus.OPENED);
+    expect(session.currentAgreementHash).toBeNull();
+    expect(session.currentFinalCopyTokenHash).toBeNull();
+    expect(session.getArtifacts().map((artifact) => artifact.kind)).toEqual([SigningArtifactKind.UNSIGNED_PDF]);
+    expect(session.getAuditEvents().map((event) => event.type)).not.toContain(SigningAuditEventType.SESSION_SIGNED);
   });
 
   it('rejects acceptance before the unsigned document is presented', async () => {

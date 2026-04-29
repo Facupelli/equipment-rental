@@ -471,8 +471,6 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       unsignedDocumentHash: artifact.storage.sha256,
     });
 
-    await this.signingSessionRepository.save(session);
-
     const tenant = await this.queryBus.execute<FindTenantByIdQuery, TenantContext | null>(
       new FindTenantByIdQuery(session.tenantId),
     );
@@ -480,13 +478,22 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       throw new Error(`Tenant '${session.tenantId}' was not found.`);
     }
 
-    await this.generateAndDeliverFinalSignedCopy({
-      tenant,
+    const finalCopy = await this.generateFinalSignedCopy({
       session,
       signedAt: acceptedAt,
-      signerFullName: declaredFullName,
-      declaredDocumentNumber,
       agreementHash,
+    });
+
+    await this.signingSessionRepository.save(session);
+
+    await this.dispatchFinalCopyEmail({
+      tenant,
+      session,
+      documentType: session.documentType,
+      documentNumber: finalCopy.documentNumber,
+      rawToken: finalCopy.rawToken,
+      recipientEmail: session.currentRecipientEmail,
+      expiresAt: finalCopy.expiresAt,
     });
 
     await this.signingSessionRepository.save(session);
@@ -724,14 +731,11 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     });
   }
 
-  private async generateAndDeliverFinalSignedCopy(input: {
-    tenant: TenantContext;
+  private async generateFinalSignedCopy(input: {
     session: SigningSession;
     signedAt: Date;
-    signerFullName: string;
-    declaredDocumentNumber: string;
     agreementHash: string;
-  }): Promise<void> {
+  }): Promise<{ documentNumber: string; rawToken: string; expiresAt: Date }> {
     const unsignedArtifact = this.requireUnsignedArtifact(input.session);
     const unsignedPdfStream = await this.objectStorage.getObjectStream({ key: unsignedArtifact.storage.objectKey });
     const signedPdfBytes = await streamToBuffer(unsignedPdfStream);
@@ -806,15 +810,11 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       sessionReference: input.session.id,
     });
 
-    await this.dispatchFinalCopyEmail({
-      tenant: input.tenant,
-      session: input.session,
-      documentType: input.session.documentType,
+    return {
       documentNumber: unsignedArtifact.documentNumber,
       rawToken: finalCopyRawToken,
-      recipientEmail: input.session.currentRecipientEmail,
       expiresAt: finalCopyExpiresAt,
-    });
+    };
   }
 
   private async loadActiveSessionAfterExpiringIfNeeded(
