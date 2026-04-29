@@ -104,6 +104,7 @@ export class OrderDocumentRendererService {
         customer: {
           select: {
             id: true,
+            email: true,
             firstName: true,
             lastName: true,
             profile: {

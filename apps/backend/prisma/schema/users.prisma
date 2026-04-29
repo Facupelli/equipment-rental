@@ -1,0 +1,177 @@
+enum Permission {
+  // Orders
+  VIEW_ORDERS
+  CREATE_ORDERS
+  CONFIRM_ORDERS
+  CANCEL_ORDERS
+
+  // Assets
+  VIEW_ASSETS
+  CREATE_ASSETS
+  UPDATE_ASSETS
+  DELETE_ASSETS
+
+  // Asset Assignments
+  VIEW_ASSET_ASSIGNMENTS
+  MANAGE_ASSET_ASSIGNMENTS
+
+  // Products
+  VIEW_PRODUCTS
+  CREATE_PRODUCTS
+  UPDATE_PRODUCTS
+  DELETE_PRODUCTS
+
+  // Bundles
+  VIEW_BUNDLES
+  MANAGE_BUNDLES
+
+  // Pricing
+  VIEW_PRICING
+  MANAGE_PRICING
+
+  // Customers
+  VIEW_CUSTOMERS
+  MANAGE_CUSTOMERS
+
+  // Owners
+  VIEW_OWNERS
+  MANAGE_OWNERS
+
+  // Locations
+  VIEW_LOCATIONS
+  MANAGE_LOCATIONS
+
+  // Users & Roles
+  VIEW_USERS
+  MANAGE_USERS
+  MANAGE_ROLES
+  INVITE_USERS
+}
+
+// ---------------------------------------------------------------------------
+// USER (tenant back-office accounts)
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String  @id @default(uuid())
+  tenantId     String  @map("tenant_id")
+  email        String
+  passwordHash String  @map("password_hash")
+  firstName    String  @map("first_name")
+  lastName     String  @map("last_name")
+  isActive     Boolean @default(true) @map("is_active")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tenant             Tenant            @relation(fields: [tenantId], references: [id])
+  userRoles          UserRole[]
+  profile            UserProfile?
+  reviewedProfiles   CustomerProfile[]
+  externalIdentities ExternalIdentity[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, isActive, deletedAt])
+  @@map("users")
+}
+
+model UserProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  fullName       String   @map("full_name")
+  documentNumber String   @map("document_number")
+  phone          String
+  address        String
+  signUrl        String   @map("sign_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_profiles")
+}
+
+// ---------------------------------------------------------------------------
+// PERMISSIONS & ROLES
+// ---------------------------------------------------------------------------
+
+model Role {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  code        String   @default("TENANT_ADMIN")
+  name        String
+  description String?
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
+  permissions RolePermission[]
+  userRoles   UserRole[]
+  invitations Invitation[]
+
+  @@unique([tenantId, code])
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model RolePermission {
+  id         String     @id @default(uuid())
+  roleId     String     @map("role_id")
+  permission Permission
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([roleId, permission])
+  @@map("role_permissions")
+}
+
+// ---------------------------------------------------------------------------
+// USER ROLE ASSIGNMENT
+// ---------------------------------------------------------------------------
+
+model UserRole {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  roleId     String   @map("role_id")
+  locationId String?  @map("location_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id])
+  role     Role      @relation(fields: [roleId], references: [id])
+  location Location? @relation(fields: [locationId], references: [id])
+
+  @@unique([userId, roleId, locationId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+
+// ---------------------------------------------------------------------------
+// INVITATION
+// ---------------------------------------------------------------------------
+
+model Invitation {
+  id         String    @id @default(uuid())
+  tenantId   String    @map("tenant_id")
+  email      String
+  roleId     String    @map("role_id")
+  locationId String?   @map("location_id")
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  acceptedAt DateTime? @map("accepted_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  role     Role      @relation(fields: [roleId], references: [id])
+  location Location? @relation(fields: [locationId], references: [id])
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([tokenHash])
+  @@map("invitations")
+}

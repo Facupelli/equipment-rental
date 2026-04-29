@@ -1,0 +1,126 @@
+// ---------------------------------------------------------------------------
+// PRODUCT
+// ---------------------------------------------------------------------------
+
+model ProductCategory {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  productTypes ProductType[]
+
+  @@unique([tenantId, name])
+  @@map("product_categories")
+}
+
+model ProductType {
+  id                     String       @id @default(uuid())
+  tenantId               String       @map("tenant_id")
+  categoryId             String?      @map("category_id")
+  billingUnitId          String       @map("billing_unit_id")
+  name                   String
+  description            String?
+  imageUrl               String?      @map("image_url")
+  trackingMode           TrackingMode @map("tracking_mode")
+  excludeFromNewArrivals Boolean      @default(false) @map("exclude_from_new_arrivals")
+  attributes             Json
+  includedItems          Json         @default("[]") @map("included_items")
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+  deletedAt              DateTime?    @map("deleted_at")
+  publishedAt            DateTime?    @map("published_at")
+  retiredAt              DateTime?    @map("retired_at")
+
+  tenant                       Tenant                        @relation(fields: [tenantId], references: [id])
+  category                     ProductCategory?              @relation(fields: [categoryId], references: [id])
+  billingUnit                  BillingUnit                   @relation(fields: [billingUnitId], references: [id])
+  assets                       Asset[]
+  pricingTiers                 PricingTier[]
+  longRentalDiscountExclusions LongRentalDiscountExclusion[]
+  promotionExclusions          PromotionExclusion[]
+  bundleComponents             BundleComponent[]
+  snapshotComponents           BundleSnapshotComponent[]
+  orderItems                   OrderItem[]
+
+  @@index([tenantId, publishedAt, deletedAt, categoryId])
+  @@map("product_types")
+}
+
+
+
+// ---------------------------------------------------------------------------
+// BUNDLE
+// ---------------------------------------------------------------------------
+
+model Bundle {
+  id            String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  billingUnitId String    @map("billing_unit_id")
+  name          String
+  description   String?
+  imageUrl      String?   @map("image_url")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  publishedAt   DateTime? @map("published_at")
+  retiredAt     DateTime? @map("retired_at")
+
+  tenant                       Tenant                        @relation(fields: [tenantId], references: [id])
+  billingUnit                  BillingUnit                   @relation(fields: [billingUnitId], references: [id])
+  components                   BundleComponent[]
+  pricingTiers                 PricingTier[]
+  longRentalDiscountExclusions LongRentalDiscountExclusion[]
+  promotionExclusions          PromotionExclusion[]
+  orderItems                   OrderItem[]
+
+  @@index([tenantId, publishedAt])
+  @@map("bundles")
+}
+
+model BundleComponent {
+  id            String @id @default(uuid())
+  bundleId      String @map("bundle_id")
+  productTypeId String @map("product_type_id")
+  quantity      Int
+
+  bundle      Bundle      @relation(fields: [bundleId], references: [id])
+  productType ProductType @relation(fields: [productTypeId], references: [id])
+
+  @@unique([bundleId, productTypeId])
+  @@map("bundle_components")
+}
+
+// ---------------------------------------------------------------------------
+// BUNDLE SNAPSHOT
+// ---------------------------------------------------------------------------
+
+model BundleSnapshot {
+  id          String   @id @default(uuid())
+  orderItemId String   @unique @map("order_item_id")
+  bundleId    String   @map("bundle_id")
+  bundleName  String   @map("bundle_name")
+  bundlePrice Decimal  @map("bundle_price")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  orderItem  OrderItem                 @relation(fields: [orderItemId], references: [id])
+  components BundleSnapshotComponent[]
+
+  @@map("bundle_snapshots")
+}
+
+model BundleSnapshotComponent {
+  id               String  @id @default(uuid())
+  bundleSnapshotId String  @map("bundle_snapshot_id")
+  productTypeId    String  @map("product_type_id")
+  productTypeName  String  @map("product_type_name")
+  quantity         Int
+  pricePerUnit     Decimal @default(0) @map("price_per_unit") // standalone price at snapshot time
+
+  bundleSnapshot BundleSnapshot @relation(fields: [bundleSnapshotId], references: [id])
+  productType    ProductType    @relation(fields: [productTypeId], references: [id])
+
+  @@map("bundle_snapshot_components")
+}

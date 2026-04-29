@@ -1,0 +1,16 @@
+enum TrackingMode {
+  IDENTIFIED
+  POOLED
+}
+
+enum FulfillmentMethod {
+  PICKUP
+  DELIVERY
+}
+
+enum CustomDomainStatus {
+  PENDING
+  ACTIVE
+  ACTION_REQUIRED
+  FAILED
+}

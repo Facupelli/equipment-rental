@@ -1,0 +1,28 @@
+// ---------------------------------------------------------------------------
+// BILLING UNIT
+// ---------------------------------------------------------------------------
+
+model BillingUnit {
+  id              String @id @default(uuid())
+  label           String @unique
+  durationMinutes Int    @map("duration_minutes")
+  sortOrder       Int    @map("sort_order")
+
+  tenantBillingUnits TenantBillingUnit[]
+  productTypes       ProductType[]
+  bundles            Bundle[]
+
+  @@map("billing_units")
+}
+
+model TenantBillingUnit {
+  id            String @id @default(uuid())
+  tenantId      String @map("tenant_id")
+  billingUnitId String @map("billing_unit_id")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  billingUnit BillingUnit @relation(fields: [billingUnitId], references: [id])
+
+  @@unique([tenantId, billingUnitId])
+  @@map("tenant_billing_units")
+}

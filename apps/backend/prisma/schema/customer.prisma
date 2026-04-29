@@ -1,0 +1,115 @@
+enum ProfileSubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CustomerProfileLeadSource {
+  INSTAGRAM
+  FACEBOOK
+  GOOGLE
+  TIKTOK
+  REFERRAL
+  EVENT
+  REPEAT_CUSTOMER
+  OTHER
+}
+
+enum OnboardingStatus {
+  NOT_STARTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ---------------------------------------------------------------------------
+// CUSTOMER (end-user booking accounts)
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id               String           @id @default(uuid())
+  tenantId         String           @map("tenant_id")
+  email            String
+  passwordHash     String           @map("password_hash")
+  firstName        String           @map("first_name")
+  lastName         String           @map("last_name")
+  isCompany        Boolean          @default(false) @map("is_company")
+  companyName      String?          @map("company_name")
+  isActive         Boolean          @default(true) @map("is_active")
+  onboardingStatus OnboardingStatus @default(NOT_STARTED) @map("onboarding_status")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  profile           CustomerProfile?
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  orders            Order[]
+  signingSessions   SigningSession[]
+  restrictedCoupons Coupon[]
+  couponRedemptions CouponRedemption[]
+  externalIdentities ExternalIdentity[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, isActive, deletedAt])
+  @@index([tenantId, isCompany])
+  @@map("customers")
+}
+
+model CustomerProfile {
+  id         String                  @id @default(uuid())
+  customerId String                  @unique @map("customer_id")
+  status     ProfileSubmissionStatus @default(PENDING)
+
+  // Personal
+  fullName             String   @map("full_name")
+  phone                String
+  birthDate            DateTime @map("birth_date") @db.Date
+  documentNumber       String   @map("document_number")
+  identityDocumentPath String   @map("identity_document_path")
+
+  // Address
+  address     String
+  city        String
+  stateRegion String @map("state_region")
+  country     String
+
+  // Professional
+  occupation   String
+  company      String?
+  taxId        String? @map("tax_id")
+  businessName String? @map("business_name")
+
+  // Bank
+  bankName      String @map("bank_name")
+  accountNumber String @map("account_number")
+
+  // Acquisition
+  instagram             String?
+  knowsExistingCustomer Boolean                   @default(false) @map("knows_existing_customer")
+  knownCustomerName     String?                   @map("known_customer_name")
+  heardAboutUs          CustomerProfileLeadSource @default(OTHER) @map("heard_about_us")
+  heardAboutUsOther     String?                   @map("heard_about_us_other")
+
+  // Reference contacts
+  contact1Name         String @map("contact1_name")
+  contact1Phone        String @default("migration") @map("contact1_phone")
+  contact1Relationship String @map("contact1_relationship")
+  contact2Name         String @map("contact2_name")
+  contact2Phone        String @default("migration") @map("contact2_phone")
+  contact2Relationship String @map("contact2_relationship")
+
+  // Review
+  rejectionReason String?   @map("rejection_reason")
+  reviewedAt      DateTime? @map("reviewed_at")
+  reviewedById    String?   @map("reviewed_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customer   Customer @relation(fields: [customerId], references: [id])
+  reviewedBy User?    @relation(fields: [reviewedById], references: [id])
+
+  @@index([status])
+  @@map("customer_profiles")
+}

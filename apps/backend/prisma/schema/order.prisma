@@ -1,0 +1,148 @@
+enum OrderStatus {
+  DRAFT
+  PENDING_REVIEW
+  CONFIRMED
+  REJECTED
+  EXPIRED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderItemType {
+  PRODUCT
+  BUNDLE
+}
+
+enum SplitStatus {
+  PENDING // order created, amounts computed
+  CONFIRMED // reserved for future async checkout confirmation
+  VOID // order cancelled or item removed
+  SETTLED // payment recorded
+}
+
+// ---------------------------------------------------------------------------
+// ORDER
+// ---------------------------------------------------------------------------
+
+model Order {
+  id                String            @id @default(uuid())
+  tenantId          String            @map("tenant_id")
+  locationId        String            @map("location_id")
+  customerId        String?           @map("customer_id")
+  couponId          String?           @map("coupon_id")
+  status            OrderStatus       @default(CONFIRMED)
+  fulfillmentMethod FulfillmentMethod @default(PICKUP) @map("fulfillment_method")
+  orderNumber       Int               @default(0) @map("order_number")
+  notes             String?
+  insuranceSelected Boolean           @default(false) @map("insurance_selected")
+  bookingSnapshot   Json              @default("{}") @map("booking_snapshot")
+  financialSnapshot Json              @default("{}") @map("financial_snapshot")
+  periodStart       DateTime          @map("period_start")
+  periodEnd         DateTime          @map("period_end")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  location         Location              @relation(fields: [locationId], references: [id])
+  items            OrderItem[]
+  assetAssignments AssetAssignment[]
+  customer         Customer?             @relation(fields: [customerId], references: [id])
+  coupon           Coupon?               @relation(fields: [couponId], references: [id])
+  couponRedemption CouponRedemption?
+  deliveryRequest  OrderDeliveryRequest?
+  signingSessions  SigningSession[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, locationId, status, createdAt(sort: Desc)])
+  @@index([tenantId, locationId, periodStart, periodEnd])
+  @@index([tenantId, deletedAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                    String        @id @default(uuid())
+  orderId               String        @map("order_id")
+  type                  OrderItemType
+  productTypeId         String?       @map("product_type_id")
+  bundleId              String?       @map("bundle_id")
+  priceSnapshot         Json          @map("price_snapshot")
+  manualPricingOverride Json? @map("manual_pricing_override")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  order            Order                 @relation(fields: [orderId], references: [id])
+  productType      ProductType?          @relation(fields: [productTypeId], references: [id])
+  bundle           Bundle?               @relation(fields: [bundleId], references: [id])
+  assetAssignments AssetAssignment[]
+  ownerSplits      OrderItemOwnerSplit[]
+  bundleSnapshot   BundleSnapshot?
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model OrderDeliveryRequest {
+  id            String   @id @default(uuid())
+  orderId       String   @unique @map("order_id")
+  recipientName String   @map("recipient_name")
+  phone         String
+  addressLine1  String   @map("address_line_1")
+  addressLine2  String?  @map("address_line_2")
+  city          String
+  stateRegion   String   @map("state_region")
+  postalCode    String   @map("postal_code")
+  country       String
+  instructions  String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("order_delivery_requests")
+}
+
+model TenantOrderSequence {
+  tenantId   String   @id @map("tenant_id")
+  lastNumber Int      @default(0) @map("last_number")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("tenant_order_sequences")
+}
+
+model OrderItemOwnerSplit {
+  id          String      @id @default(uuid())
+  orderItemId String      @map("order_item_id")
+  assetId     String      @map("asset_id")
+  ownerId     String      @map("owner_id")
+  contractId  String      @map("contract_id")
+  status      SplitStatus @default(PENDING)
+
+  // snapshot of contract terms at assignment time
+  ownerShare  Decimal       @map("owner_share")
+  rentalShare Decimal       @map("rental_share")
+  basis       ContractBasis
+
+  // computed amounts
+  grossAmount  Decimal @map("gross_amount")
+  netAmount    Decimal @map("net_amount")
+  ownerAmount  Decimal @map("owner_amount")
+  rentalAmount Decimal @map("rental_amount")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  orderItem OrderItem          @relation(fields: [orderItemId], references: [id])
+  asset     Asset              @relation(fields: [assetId], references: [id])
+  owner     Owner              @relation(fields: [ownerId], references: [id])
+  contract  OwnerContract      @relation(fields: [contractId], references: [id])
+  payment   OwnerPaymentSplit?
+
+  @@unique([orderItemId, assetId])
+  @@index([ownerId, status])
+  @@index([orderItemId])
+  @@map("order_item_owner_splits")
+}
