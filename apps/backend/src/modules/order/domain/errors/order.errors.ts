@@ -57,6 +57,12 @@ export class OrderNotFoundError extends OrderError {
   }
 }
 
+export class OrderSigningAllowedOnlyForConfirmedOrdersError extends OrderError {
+  constructor(orderId: string, status: OrderStatus) {
+    super(`Order "${orderId}" must be in '${OrderStatus.CONFIRMED}' status to start signing, but is '${status}'.`);
+  }
+}
+
 export class OrderStatusTransitionNotAllowedError extends OrderError {
   constructor(from: OrderStatus, to: OrderStatus) {
     super(`Cannot transition order from '${from}' to '${to}'.`);

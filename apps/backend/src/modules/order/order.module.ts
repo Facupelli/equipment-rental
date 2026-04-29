@@ -22,6 +22,7 @@ import { GetOrdersCalendarQueryHandler } from './application/queries/get-orders-
 import { GetPendingReviewOrdersQueryHandler } from './application/queries/get-pending-review-orders/get-pending-review-orders.query-handler';
 import { GetOrdersQueryHandler } from './application/queries/get-orders/get-orders.query-handler';
 import { GetDraftOrderPricingProposalQueryHandler } from './application/queries/get-draft-order-pricing-proposal/get-draft-order-pricing-proposal.query-handler';
+import { PrepareOrderAgreementForSigningQueryHandler } from './application/queries/prepare-order-agreement-for-signing/prepare-order-agreement-for-signing.query-handler';
 import { TenantModule } from '../tenant/tenant.module';
 import { CreateOrderAssetResolver } from './application/commands/create-order/create-order-asset-resolver';
 import { CreateOrderOwnerContractResolver } from './application/commands/create-order/create-order-owner-contract-resolver';
@@ -100,6 +101,7 @@ import { DocumentSigningModule } from '../document-signing/document-signing.modu
     GetDraftOrderPricingProposalQueryHandler,
     GetPendingReviewOrdersQueryHandler,
     GetOrdersQueryHandler,
+    PrepareOrderAgreementForSigningQueryHandler,
     OrderDocumentRendererService,
     GenerateOrderContractService,
     GenerateOrderBudgetService,

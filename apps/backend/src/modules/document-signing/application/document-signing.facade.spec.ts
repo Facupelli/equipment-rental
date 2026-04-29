@@ -1,13 +1,24 @@
 import { createHash } from 'crypto';
 
+import { QueryBus } from '@nestjs/cqrs';
 import { ConfigService } from '@nestjs/config';
+import { ok } from 'neverthrow';
 
-import { SigningArtifactKind, SigningAuditEventType, SigningDocumentType, SigningSessionStatus } from 'src/generated/prisma/client';
+import {
+  SigningArtifactKind,
+  SigningAuditEventType,
+  SigningDocumentType,
+  SigningSessionStatus,
+} from 'src/generated/prisma/client';
+import { NotificationOrchestrator } from 'src/modules/notifications/application/notification-orchestrator.service';
+import { NotificationChannel } from 'src/modules/notifications/domain/notification-channel.enum';
 import { ObjectStoragePort } from 'src/modules/object-storage/application/ports/object-storage.port';
+import { PrepareOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-order-agreement-for-signing.query';
+import { FindTenantByIdQuery } from 'src/modules/tenant/public/queries/find-tenant-by-id.query';
 
 import { SigningSession } from '../domain/entities/signing-session.entity';
-import { DocumentSigningFacade } from './document-signing.facade';
 import { SigningSessionRepository } from '../infrastructure/persistence/repositories/signing-session.repository';
+import { DocumentSigningFacade } from './document-signing.facade';
 
 describe('DocumentSigningFacade', () => {
   function makeInput(pdfBytes = Buffer.from('unsigned-contract-pdf')) {
@@ -25,7 +36,18 @@ describe('DocumentSigningFacade', () => {
     };
   }
 
-  function makeActiveSession(unsignedDocumentHash: string): SigningSession {
+  function makePreparedOrder(pdfBytes = Buffer.from('unsigned-contract-pdf')) {
+    return ok({
+      orderId: 'order-1',
+      customerId: 'customer-1',
+      customerEmail: 'customer@example.com',
+      buffer: pdfBytes,
+      documentNumber: 'Tenant-0001',
+      fileName: 'remito-customer-0001',
+    });
+  }
+
+  function makeActiveSession(unsignedDocumentHash: string, expiresAt = new Date('2026-05-01T12:00:00.000Z')): SigningSession {
     return SigningSession.create({
       tenantId: 'tenant-1',
       orderId: 'order-1',
@@ -34,16 +56,29 @@ describe('DocumentSigningFacade', () => {
       recipientEmail: 'customer@example.com',
       unsignedDocumentHash,
       tokenHash: hashString('existing-token'),
-      expiresAt: new Date('2026-05-01T12:00:00.000Z'),
+      expiresAt,
     });
   }
 
-  function makeFacade(activeSession: SigningSession | null = null) {
+  function makeFacade(options?: {
+    activeSession?: SigningSession | null;
+    preparedOrderResult?: ReturnType<typeof makePreparedOrder>;
+    notificationDispatchResult?: Awaited<ReturnType<NotificationOrchestrator['dispatch']>>;
+  }) {
     const savedSessions: SigningSession[] = [];
+    const activeSession = options?.activeSession ?? null;
+    const storedSessions = new Map<string, SigningSession>();
+
+    if (activeSession) {
+      storedSessions.set(activeSession.id, activeSession);
+    }
+
     const signingSessionRepository = {
       loadActiveByOrderDocumentType: jest.fn(async () => activeSession),
+      load: jest.fn(async (id: string) => storedSessions.get(id) ?? null),
       save: jest.fn(async (session: SigningSession) => {
         savedSessions.push(session);
+        storedSessions.set(session.id, session);
         return session.id;
       }),
     } as unknown as SigningSessionRepository;
@@ -52,10 +87,50 @@ describe('DocumentSigningFacade', () => {
       putObject: jest.fn(async () => undefined),
     } as unknown as ObjectStoragePort;
 
+    const notificationOrchestrator = {
+      dispatch: jest.fn(async () =>
+        options?.notificationDispatchResult ?? {
+          attemptedChannels: [NotificationChannel.EMAIL],
+          deliveredChannels: [NotificationChannel.EMAIL],
+          skippedChannels: [],
+          failedChannels: [],
+        }),
+    } as unknown as NotificationOrchestrator;
+
+    const queryBus = {
+      execute: jest.fn(async (query: unknown) => {
+        if (query instanceof PrepareOrderAgreementForSigningQuery) {
+          return options?.preparedOrderResult ?? makePreparedOrder();
+        }
+
+        if (query instanceof FindTenantByIdQuery) {
+          return {
+            id: 'tenant-1',
+            slug: 'tenant-one',
+            name: 'Tenant One',
+            customDomain: null,
+            logoUrl: null,
+            faviconUrl: null,
+            primaryColor: null,
+          };
+        }
+
+        throw new Error(`Unexpected query: ${query?.constructor?.name ?? 'unknown'}`);
+      }),
+    } as unknown as QueryBus;
+
     const configService = {
       get: jest.fn((key: string) => {
         if (key === 'R2_BUCKET_NAME') {
           return 'contracts-bucket';
+        }
+
+        if (key === 'ROOT_DOMAIN') {
+          return 'example.com';
+        }
+
+        if (key === 'DOCUMENT_SIGNING_SESSION_TTL_SECONDS') {
+          return 3600;
         }
 
         throw new Error(`Unexpected config key: ${key}`);
@@ -63,9 +138,17 @@ describe('DocumentSigningFacade', () => {
     } as unknown as ConfigService;
 
     return {
-      facade: new DocumentSigningFacade(signingSessionRepository, objectStorage, configService),
+      facade: new DocumentSigningFacade(
+        signingSessionRepository,
+        objectStorage,
+        notificationOrchestrator,
+        queryBus,
+        configService,
+      ),
       signingSessionRepository,
       objectStorage,
+      notificationOrchestrator,
+      queryBus,
       savedSessions,
     };
   }
@@ -98,7 +181,7 @@ describe('DocumentSigningFacade', () => {
   it('reuses the active session and artifact when the rendered hash matches', async () => {
     const input = makeInput();
     const activeSession = makeActiveSession(hashBuffer(input.pdfBytes));
-    const { facade, objectStorage, signingSessionRepository, savedSessions } = makeFacade(activeSession);
+    const { facade, objectStorage, signingSessionRepository, savedSessions } = makeFacade({ activeSession });
 
     const result = await facade.prepareSigningSession(input);
 
@@ -115,7 +198,7 @@ describe('DocumentSigningFacade', () => {
   it('voids the active session and creates a new frozen artifact when the rendered hash changes', async () => {
     const activeSession = makeActiveSession(hashBuffer(Buffer.from('old-pdf')));
     const input = makeInput(Buffer.from('new-pdf'));
-    const { facade, savedSessions } = makeFacade(activeSession);
+    const { facade, savedSessions } = makeFacade({ activeSession });
 
     const result = await facade.prepareSigningSession(input);
 
@@ -130,6 +213,82 @@ describe('DocumentSigningFacade', () => {
     expect(savedSessions[1].id).not.toBe(activeSession.id);
     expect(savedSessions[1].currentStatus).toBe(SigningSessionStatus.PENDING);
     expect(savedSessions[1].currentUnsignedDocumentHash).toBe(hashBuffer(input.pdfBytes));
+  });
+
+  it('creates a signing invitation session and records email evidence', async () => {
+    const { facade, notificationOrchestrator, savedSessions } = makeFacade();
+
+    const result = await facade.sendSigningInvitation({
+      tenantId: 'tenant-1',
+      orderId: 'order-1',
+      documentType: SigningDocumentType.RENTAL_AGREEMENT,
+    });
+
+    expect(result.isOk()).toBe(true);
+    expect(savedSessions).toHaveLength(2);
+    expect(savedSessions[1].getAuditEvents().map((event) => event.type)).toEqual([
+      SigningAuditEventType.SESSION_CREATED,
+      SigningAuditEventType.ARTIFACT_RECORDED,
+      SigningAuditEventType.INVITATION_EMAIL_REQUESTED,
+      SigningAuditEventType.INVITATION_EMAIL_SENT,
+    ]);
+    expect((notificationOrchestrator.dispatch as jest.Mock).mock.calls[0][0].notificationType).toBe(
+      'DOCUMENT_SIGNING_INVITATION',
+    );
+  });
+
+  it('reuses a valid session, rotates the token hash, and records resend evidence', async () => {
+    const activeSession = makeActiveSession(hashBuffer(Buffer.from('unsigned-contract-pdf')));
+    const originalTokenHash = activeSession.currentTokenHash;
+    const { facade, savedSessions } = makeFacade({ activeSession });
+
+    const result = await facade.sendSigningInvitation({
+      tenantId: 'tenant-1',
+      orderId: 'order-1',
+      documentType: SigningDocumentType.RENTAL_AGREEMENT,
+      recipientEmail: 'updated@example.com',
+    });
+
+    expect(result.isOk()).toBe(true);
+    expect(savedSessions).toHaveLength(1);
+    expect(activeSession.currentTokenHash).not.toBe(originalTokenHash);
+    expect(activeSession.currentRecipientEmail).toBe('updated@example.com');
+    expect(activeSession.getAuditEvents().map((event) => event.type)).toEqual([
+      SigningAuditEventType.INVITATION_EMAIL_REQUESTED,
+      SigningAuditEventType.INVITATION_EMAIL_SENT,
+    ]);
+  });
+
+  it('records invitation failure evidence and returns an error when email delivery fails', async () => {
+    const { facade, savedSessions } = makeFacade({
+      notificationDispatchResult: {
+        attemptedChannels: [NotificationChannel.EMAIL],
+        deliveredChannels: [],
+        skippedChannels: [],
+        failedChannels: [
+          {
+            channel: NotificationChannel.EMAIL,
+            reason: 'PROVIDER_ERROR',
+            message: 'Provider rejected the email.',
+          },
+        ],
+      },
+    });
+
+    const result = await facade.sendSigningInvitation({
+      tenantId: 'tenant-1',
+      orderId: 'order-1',
+      documentType: SigningDocumentType.RENTAL_AGREEMENT,
+    });
+
+    expect(result.isErr()).toBe(true);
+    expect(savedSessions).toHaveLength(2);
+    expect(savedSessions[1].getAuditEvents().map((event) => event.type)).toEqual([
+      SigningAuditEventType.SESSION_CREATED,
+      SigningAuditEventType.ARTIFACT_RECORDED,
+      SigningAuditEventType.INVITATION_EMAIL_REQUESTED,
+      SigningAuditEventType.INVITATION_EMAIL_FAILED,
+    ]);
   });
 });
 

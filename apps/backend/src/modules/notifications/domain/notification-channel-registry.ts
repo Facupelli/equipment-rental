@@ -5,6 +5,7 @@ const notificationChannelRegistry: Record<NotificationType, readonly Notificatio
   [NotificationType.ORDER_CREATED_CONFIRMATION]: [NotificationChannel.EMAIL],
   [NotificationType.ORDER_CREATED_BY_CUSTOMER]: [NotificationChannel.EMAIL],
   [NotificationType.ORDER_CANCELLED]: [NotificationChannel.EMAIL],
+  [NotificationType.DOCUMENT_SIGNING_INVITATION]: [NotificationChannel.EMAIL],
   [NotificationType.PASSWORD_RESET]: [NotificationChannel.EMAIL],
 };
 

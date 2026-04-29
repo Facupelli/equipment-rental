@@ -26,6 +26,7 @@ export const EnvSchema = z.object({
   R2_BUCKET_NAME: z.string(),
   R2_ACCESS_KEY_ID: z.string(),
   R2_SECRET_ACCESS_KEY: z.string(),
+  DOCUMENT_SIGNING_SESSION_TTL_SECONDS: z.coerce.number().default(604800),
 
   RESEND_API_KEY: z.string(),
   NOTIFICATIONS_EMAIL_FROM: z.string(),

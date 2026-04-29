@@ -47,6 +47,7 @@ export interface RenderOrderDocumentInput {
 export interface RenderOrderDocumentResult {
   buffer: Buffer;
   customerId: string | null;
+  customerEmail: string | null;
   documentNumber: string;
   fileName: string;
   downloadFileName: string;
@@ -248,6 +249,7 @@ export class OrderDocumentRendererService {
     return ok({
       buffer,
       customerId: order.customerId,
+      customerEmail: order.customer?.email ?? null,
       documentNumber,
       fileName,
       downloadFileName: fileName,

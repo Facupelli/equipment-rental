@@ -10,6 +10,7 @@ import { NotificationType } from '../../domain/notification-type.enum';
 import { renderOrderCreatedConfirmationEmailTemplate } from './templates/order-created-confirmation-email.template';
 import { renderOrderCreatedByCustomerEmailTemplate } from './templates/order-created-by-customer-email.template';
 import { renderOrderCancelledEmailTemplate } from './templates/order-cancelled-email.template';
+import { renderDocumentSigningInvitationEmailTemplate } from './templates/document-signing-invitation-email.template';
 import { renderPasswordResetEmailTemplate } from './templates/password-reset-email.template';
 
 const emailTemplateRenderers: {
@@ -18,6 +19,7 @@ const emailTemplateRenderers: {
   [NotificationType.ORDER_CREATED_CONFIRMATION]: renderOrderCreatedConfirmationEmailTemplate,
   [NotificationType.ORDER_CREATED_BY_CUSTOMER]: renderOrderCreatedByCustomerEmailTemplate,
   [NotificationType.ORDER_CANCELLED]: renderOrderCancelledEmailTemplate,
+  [NotificationType.DOCUMENT_SIGNING_INVITATION]: renderDocumentSigningInvitationEmailTemplate,
   [NotificationType.PASSWORD_RESET]: renderPasswordResetEmailTemplate,
 };
 

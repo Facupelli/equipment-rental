@@ -19,3 +19,15 @@ export class DuplicateSigningAuditSequenceError extends DocumentSigningError {
     super(`Signing session '${sessionId}' already has an audit event with sequence '${sequence}'.`);
   }
 }
+
+export class SigningInvitationRecipientEmailRequiredError extends DocumentSigningError {
+  constructor(orderId: string) {
+    super(`Order '${orderId}' must provide a recipient email before a signing invitation can be sent.`);
+  }
+}
+
+export class SigningInvitationEmailDeliveryFailedError extends DocumentSigningError {
+  constructor(message: string) {
+    super(message);
+  }
+}

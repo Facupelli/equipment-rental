@@ -76,7 +76,7 @@ export class SigningSession {
     public readonly documentType: SigningDocumentType,
     private recipientEmail: string,
     private unsignedDocumentHash: string,
-    private readonly tokenHash: string,
+    private tokenHash: string,
     private status: SigningSessionStatus,
     public readonly expiresAt: Date,
     private openedAt: Date | null,
@@ -238,6 +238,12 @@ export class SigningSession {
 
     this.touch(at);
     return ok(undefined);
+  }
+
+  refreshInvitation(props: { recipientEmail: string; tokenHash: string }, at = new Date()): void {
+    this.recipientEmail = SigningSession.assertNonEmpty('recipientEmail', props.recipientEmail);
+    this.tokenHash = SigningSession.assertNonEmpty('tokenHash', props.tokenHash);
+    this.touch(at);
   }
 
   void(at: Date): Result<void, SigningSessionStatusTransitionNotAllowedError> {

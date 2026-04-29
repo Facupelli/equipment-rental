@@ -8,6 +8,15 @@ export interface PasswordResetEmailPayload {
   expiresAt?: Date;
 }
 
+export interface DocumentSigningInvitationEmailPayload {
+  tenantName?: string;
+  documentLabel: string;
+  documentNumber: string;
+  signingUrl: string;
+  expiresAt: Date;
+  isReplacement: boolean;
+}
+
 export interface OrderCancelledEmailPayload {
   tenantName?: string;
   recipientName?: string;
@@ -42,6 +51,7 @@ export interface NotificationEmailPayloadMap {
   [NotificationType.ORDER_CREATED_CONFIRMATION]: OrderCreatedConfirmationEmailPayload;
   [NotificationType.ORDER_CREATED_BY_CUSTOMER]: OrderCreatedByCustomerEmailPayload;
   [NotificationType.ORDER_CANCELLED]: OrderCancelledEmailPayload;
+  [NotificationType.DOCUMENT_SIGNING_INVITATION]: DocumentSigningInvitationEmailPayload;
   [NotificationType.PASSWORD_RESET]: PasswordResetEmailPayload;
 }
 
