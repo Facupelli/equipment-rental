@@ -3,7 +3,8 @@ import { Readable } from 'stream';
 
 import { QueryBus } from '@nestjs/cqrs';
 import { ConfigService } from '@nestjs/config';
-import { ok } from 'neverthrow';
+import { err, ok } from 'neverthrow';
+import { OrderStatus } from '@repo/types';
 
 import {
   SigningArtifactKind,
@@ -14,6 +15,7 @@ import {
 import { NotificationOrchestrator } from 'src/modules/notifications/application/notification-orchestrator.service';
 import { NotificationChannel } from 'src/modules/notifications/domain/notification-channel.enum';
 import { ObjectStoragePort } from 'src/modules/object-storage/application/ports/object-storage.port';
+import { OrderSigningAllowedOnlyForConfirmedOrdersError } from 'src/modules/order/domain/errors/order.errors';
 import { PrepareOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-order-agreement-for-signing.query';
 import { FindTenantByIdQuery } from 'src/modules/tenant/public/queries/find-tenant-by-id.query';
 
@@ -22,21 +24,6 @@ import { SigningSessionRepository } from '../infrastructure/persistence/reposito
 import { DocumentSigningFacade } from './document-signing.facade';
 
 describe('DocumentSigningFacade', () => {
-  function makeInput(pdfBytes = Buffer.from('unsigned-contract-pdf')) {
-    return {
-      tenantId: 'tenant-1',
-      orderId: 'order-1',
-      customerId: 'customer-1',
-      documentType: SigningDocumentType.RENTAL_AGREEMENT,
-      recipientEmail: 'customer@example.com',
-      rawToken: 'raw-token',
-      expiresAt: new Date('2026-05-01T12:00:00.000Z'),
-      documentNumber: 'Tenant-0001',
-      fileName: 'remito-customer-0001',
-      pdfBytes,
-    };
-  }
-
   function makePreparedOrder(pdfBytes = Buffer.from('unsigned-contract-pdf')) {
     return ok({
       orderId: 'order-1',
@@ -48,7 +35,10 @@ describe('DocumentSigningFacade', () => {
     });
   }
 
-  function makeActiveSession(unsignedDocumentHash: string, expiresAt = new Date('2026-05-01T12:00:00.000Z')): SigningSession {
+  function makeActiveSession(
+    unsignedDocumentHash: string,
+    expiresAt = new Date('2026-05-01T12:00:00.000Z'),
+  ): SigningSession {
     return SigningSession.create({
       tenantId: 'tenant-1',
       orderId: 'order-1',
@@ -93,6 +83,7 @@ describe('DocumentSigningFacade', () => {
     activeSession?: SigningSession | null;
     preparedOrderResult?: ReturnType<typeof makePreparedOrder>;
     notificationDispatchResult?: Awaited<ReturnType<NotificationOrchestrator['dispatch']>>;
+    notificationDispatchResults?: Array<Awaited<ReturnType<NotificationOrchestrator['dispatch']>>>;
   }) {
     const savedSessions: SigningSession[] = [];
     const activeSession = options?.activeSession ?? null;
@@ -102,8 +93,32 @@ describe('DocumentSigningFacade', () => {
       storedSessions.set(activeSession.id, cloneSession(activeSession));
     }
 
+    const loadCurrentActiveSession = () => {
+      const currentActiveSession = [...storedSessions.values()]
+        .filter(
+          (session) =>
+            session.tenantId === 'tenant-1' &&
+            session.orderId === 'order-1' &&
+            session.documentType === SigningDocumentType.RENTAL_AGREEMENT &&
+            ![SigningSessionStatus.SIGNED, SigningSessionStatus.EXPIRED, SigningSessionStatus.VOIDED].includes(
+              session.currentStatus,
+            ),
+        )
+        .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())[0];
+
+      return currentActiveSession ? cloneSession(currentActiveSession) : null;
+    };
+
     const signingSessionRepository = {
-      loadActiveByOrderDocumentType: jest.fn(async () => (activeSession ? cloneSession(activeSession) : null)),
+      runWithActiveSessionLock: jest.fn(
+        async (
+          _tenantId: string,
+          _orderId: string,
+          _documentType: SigningDocumentType,
+          work: (tx: unknown) => Promise<unknown>,
+        ) => work({} as never),
+      ),
+      loadActiveByOrderDocumentType: jest.fn(async () => loadCurrentActiveSession()),
       load: jest.fn(async (id: string) => {
         const session = storedSessions.get(id);
         return session ? cloneSession(session) : null;
@@ -113,7 +128,9 @@ describe('DocumentSigningFacade', () => {
         return session ? cloneSession(session) : null;
       }),
       loadByFinalCopyTokenHash: jest.fn(async (tokenHash: string) => {
-        const session = [...storedSessions.values()].find((candidate) => candidate.currentFinalCopyTokenHash === tokenHash);
+        const session = [...storedSessions.values()].find(
+          (candidate) => candidate.currentFinalCopyTokenHash === tokenHash,
+        );
         return session ? cloneSession(session) : null;
       }),
       save: jest.fn(async (session: SigningSession) => {
@@ -130,13 +147,19 @@ describe('DocumentSigningFacade', () => {
     } as unknown as ObjectStoragePort;
 
     const notificationOrchestrator = {
-      dispatch: jest.fn(async () =>
-        options?.notificationDispatchResult ?? {
-          attemptedChannels: [NotificationChannel.EMAIL],
-          deliveredChannels: [NotificationChannel.EMAIL],
-          skippedChannels: [],
-          failedChannels: [],
-        }),
+      dispatch: jest.fn(async () => {
+        const nextResult = options?.notificationDispatchResults?.shift();
+
+        return (
+          nextResult ??
+          options?.notificationDispatchResult ?? {
+            attemptedChannels: [NotificationChannel.EMAIL],
+            deliveredChannels: [NotificationChannel.EMAIL],
+            skippedChannels: [],
+            failedChannels: [],
+          }
+        );
+      }),
     } as unknown as NotificationOrchestrator;
 
     const queryBus = {
@@ -195,72 +218,37 @@ describe('DocumentSigningFacade', () => {
     };
   }
 
-  it('creates the first frozen unsigned artifact and seeds audit events', async () => {
-    const input = makeInput();
-    const { facade, objectStorage, savedSessions } = makeFacade();
-
-    const result = await facade.prepareSigningSession(input);
-
-    expect(result.reusedExistingSession).toBe(false);
-    expect(savedSessions).toHaveLength(1);
-    expect(result.sessionId).toBe(savedSessions[0].id);
-    expect(savedSessions[0].currentStatus).toBe(SigningSessionStatus.PENDING);
-    expect(savedSessions[0].currentUnsignedDocumentHash).toBe(hashBuffer(input.pdfBytes));
-    expect(savedSessions[0].getArtifacts()).toHaveLength(1);
-    expect(savedSessions[0].getArtifacts()[0].kind).toBe(SigningArtifactKind.UNSIGNED_PDF);
-    expect(savedSessions[0].getArtifacts()[0].documentNumber).toBe(input.documentNumber);
-    expect(savedSessions[0].getArtifacts()[0].displayFileName).toBe(`${input.fileName}.pdf`);
-    expect(savedSessions[0].getArtifacts()[0].storage.sha256).toBe(hashBuffer(input.pdfBytes));
-    expect(savedSessions[0].getAuditEvents().map((event) => event.type)).toEqual([
-      SigningAuditEventType.SESSION_CREATED,
-      SigningAuditEventType.ARTIFACT_RECORDED,
-    ]);
-    expect((objectStorage.putObject as jest.Mock).mock.calls[0][0]).toMatchObject({
-      contentType: 'application/pdf',
-      body: input.pdfBytes,
+  async function issueInvitation(
+    facade: DocumentSigningFacade,
+    notificationOrchestrator: NotificationOrchestrator,
+    recipientEmail?: string,
+  ) {
+    const result = await facade.sendSigningInvitation({
+      tenantId: 'tenant-1',
+      orderId: 'order-1',
+      documentType: SigningDocumentType.RENTAL_AGREEMENT,
+      recipientEmail,
     });
-    expect((objectStorage.putObject as jest.Mock).mock.calls[0][0].key).toContain(`${result.sessionId}/unsigned/`);
-  });
 
-  it('reuses the active session and artifact when the rendered hash matches', async () => {
-    const input = makeInput();
-    const activeSession = makeActiveSession(hashBuffer(input.pdfBytes));
-    const { facade, objectStorage, signingSessionRepository, savedSessions } = makeFacade({ activeSession });
+    expect(result.isOk()).toBe(true);
 
-    const result = await facade.prepareSigningSession(input);
+    const dispatch = (notificationOrchestrator.dispatch as jest.Mock).mock.calls[0][0];
+    const rawToken = new URL(dispatch.payload.signingUrl).searchParams.get('token');
 
-    expect(result).toEqual({
-      sessionId: activeSession.id,
-      unsignedDocumentHash: hashBuffer(input.pdfBytes),
-      reusedExistingSession: true,
+    if (!rawToken) {
+      throw new Error('Expected signing invitation token in notification payload.');
+    }
+
+    return {
+      result: result._unsafeUnwrap(),
+      rawToken,
+    };
+  }
+
+  it('returns an error when invitation issuance is attempted for a non-confirmed order', async () => {
+    const { facade, notificationOrchestrator, savedSessions } = makeFacade({
+      preparedOrderResult: err(new OrderSigningAllowedOnlyForConfirmedOrdersError('order-1', OrderStatus.ACTIVE)),
     });
-    expect(savedSessions).toHaveLength(0);
-    expect((signingSessionRepository.loadActiveByOrderDocumentType as jest.Mock).mock.calls).toHaveLength(1);
-    expect((objectStorage.putObject as jest.Mock).mock.calls).toHaveLength(0);
-  });
-
-  it('voids the active session and creates a new frozen artifact when the rendered hash changes', async () => {
-    const activeSession = makeActiveSession(hashBuffer(Buffer.from('old-pdf')));
-    const input = makeInput(Buffer.from('new-pdf'));
-    const { facade, savedSessions } = makeFacade({ activeSession });
-
-    const result = await facade.prepareSigningSession(input);
-
-    expect(result.reusedExistingSession).toBe(false);
-    expect(savedSessions).toHaveLength(2);
-    expect(savedSessions[0].id).toBe(activeSession.id);
-    expect(savedSessions[0].currentStatus).toBe(SigningSessionStatus.VOIDED);
-    const previousSessionAuditEvents = savedSessions[0].getAuditEvents();
-    expect(previousSessionAuditEvents[previousSessionAuditEvents.length - 1]?.type).toBe(
-      SigningAuditEventType.SESSION_VOIDED,
-    );
-    expect(savedSessions[1].id).not.toBe(activeSession.id);
-    expect(savedSessions[1].currentStatus).toBe(SigningSessionStatus.PENDING);
-    expect(savedSessions[1].currentUnsignedDocumentHash).toBe(hashBuffer(input.pdfBytes));
-  });
-
-  it('creates a signing invitation session and records email evidence', async () => {
-    const { facade, notificationOrchestrator, savedSessions } = makeFacade();
 
     const result = await facade.sendSigningInvitation({
       tenantId: 'tenant-1',
@@ -268,51 +256,88 @@ describe('DocumentSigningFacade', () => {
       documentType: SigningDocumentType.RENTAL_AGREEMENT,
     });
 
+    expect(result.isErr()).toBe(true);
+    expect(savedSessions).toHaveLength(0);
+    expect((notificationOrchestrator.dispatch as jest.Mock).mock.calls).toHaveLength(0);
+  });
+
+  it('creates a signing invitation session and records email evidence', async () => {
+    const preparedOrder = makePreparedOrder()._unsafeUnwrap();
+    const { facade, notificationOrchestrator, savedSessions, objectStorage } = makeFacade();
+    const before = new Date();
+
+    const result = await facade.sendSigningInvitation({
+      tenantId: 'tenant-1',
+      orderId: 'order-1',
+      documentType: SigningDocumentType.RENTAL_AGREEMENT,
+    });
+    const after = new Date();
+
     expect(result.isOk()).toBe(true);
     expect(savedSessions).toHaveLength(2);
+    expect(savedSessions[1].currentStatus).toBe(SigningSessionStatus.PENDING);
+    expect(savedSessions[1].getArtifacts()).toHaveLength(1);
+    expect(savedSessions[1].getArtifacts()[0].kind).toBe(SigningArtifactKind.UNSIGNED_PDF);
+    expect(savedSessions[1].getArtifacts()[0].documentNumber).toBe(preparedOrder.documentNumber);
+    expect(savedSessions[1].getArtifacts()[0].displayFileName).toBe(`${preparedOrder.fileName}.pdf`);
+    expect(savedSessions[1].getArtifacts()[0].storage.sha256).toBe(hashBuffer(preparedOrder.buffer));
+    expect(savedSessions[1].expiresAt.getTime()).toBeGreaterThanOrEqual(before.getTime() + 3600 * 1000);
+    expect(savedSessions[1].expiresAt.getTime()).toBeLessThanOrEqual(after.getTime() + 3600 * 1000);
     expect(savedSessions[1].getAuditEvents().map((event) => event.type)).toEqual([
       SigningAuditEventType.SESSION_CREATED,
       SigningAuditEventType.ARTIFACT_RECORDED,
       SigningAuditEventType.INVITATION_EMAIL_REQUESTED,
       SigningAuditEventType.INVITATION_EMAIL_SENT,
     ]);
+    const invitationDispatch = (notificationOrchestrator.dispatch as jest.Mock).mock.calls[0][0];
+    expect(new URL(invitationDispatch.payload.signingUrl).searchParams.get('token')).toEqual(expect.any(String));
+    expect(invitationDispatch.payload.expiresAt).toEqual(result._unsafeUnwrap().expiresAt);
     expect((notificationOrchestrator.dispatch as jest.Mock).mock.calls[0][0].notificationType).toBe(
       'DOCUMENT_SIGNING_INVITATION',
+    );
+    expect((objectStorage.putObject as jest.Mock).mock.calls[0][0]).toMatchObject({
+      contentType: 'application/pdf',
+      body: preparedOrder.buffer,
+    });
+    expect((objectStorage.putObject as jest.Mock).mock.calls[0][0].key).toContain(
+      `${result._unsafeUnwrap().sessionId}/unsigned/`,
     );
   });
 
   it('returns a public signing read model for the exact frozen unsigned artifact', async () => {
-    const input = makeInput();
-    const { facade } = makeFacade();
+    const preparedOrder = makePreparedOrder()._unsafeUnwrap();
+    const { facade, notificationOrchestrator } = makeFacade();
 
-    const prepared = await facade.prepareSigningSession(input);
-    const session = await facade.getPublicSigningSession(input.rawToken);
+    const invitation = await issueInvitation(facade, notificationOrchestrator);
+    const session = await facade.getPublicSigningSession(invitation.rawToken);
 
-    expect(session.sessionId).toBe(prepared.sessionId);
-    expect(session.document.documentNumber).toBe(input.documentNumber);
-    expect(session.document.displayFileName).toBe(`${input.fileName}.pdf`);
-    expect(session.document.sha256).toBe(hashBuffer(input.pdfBytes));
+    expect(session.sessionId).toBe(invitation.result.sessionId);
+    expect(session.document.documentNumber).toBe(preparedOrder.documentNumber);
+    expect(session.document.displayFileName).toBe(`${preparedOrder.fileName}.pdf`);
+    expect(session.document.sha256).toBe(hashBuffer(preparedOrder.buffer));
     expect(session.status).toBe(SigningSessionStatus.PENDING);
   });
 
   it('streams the frozen unsigned artifact and records document presentation evidence', async () => {
-    const input = makeInput();
-    const { facade, objectStorage, signingSessionRepository } = makeFacade();
+    const preparedOrder = makePreparedOrder()._unsafeUnwrap();
+    const { facade, objectStorage, signingSessionRepository, notificationOrchestrator } = makeFacade();
 
-    const prepared = await facade.prepareSigningSession(input);
-    const streamed = await facade.streamPublicUnsignedDocument(input.rawToken);
-    const session = await (signingSessionRepository.load as jest.Mock)(prepared.sessionId);
+    const invitation = await issueInvitation(facade, notificationOrchestrator);
+    const streamed = await facade.streamPublicUnsignedDocument(invitation.rawToken);
+    const session = await (signingSessionRepository.load as jest.Mock)(invitation.result.sessionId);
 
-    expect(streamed.fileName).toBe(`${input.fileName}.pdf`);
+    expect(streamed.fileName).toBe(`${preparedOrder.fileName}.pdf`);
     expect(streamed.contentType).toBe('application/pdf');
     expect((objectStorage.getObjectStream as jest.Mock).mock.calls[0][0]).toEqual({
-      key: expect.stringContaining(`${prepared.sessionId}/unsigned/`),
+      key: expect.stringContaining(`${invitation.result.sessionId}/unsigned/`),
     });
     expect(session.currentStatus).toBe(SigningSessionStatus.OPENED);
-    expect(session.getAuditEvents().slice(-2).map((event) => event.type)).toEqual([
-      SigningAuditEventType.SESSION_OPENED,
-      SigningAuditEventType.DOCUMENT_PRESENTED,
-    ]);
+    expect(
+      session
+        .getAuditEvents()
+        .slice(-2)
+        .map((event) => event.type),
+    ).toEqual([SigningAuditEventType.SESSION_OPENED, SigningAuditEventType.DOCUMENT_PRESENTED]);
   });
 
   it('reuses a valid session, rotates the token hash, and records resend evidence', async () => {
@@ -328,29 +353,28 @@ describe('DocumentSigningFacade', () => {
     });
 
     expect(result.isOk()).toBe(true);
-    expect(savedSessions).toHaveLength(1);
-    expect(savedSessions[0].currentTokenHash).not.toBe(originalTokenHash);
-    expect(savedSessions[0].currentRecipientEmail).toBe('updated@example.com');
-    expect(savedSessions[0].getAuditEvents().map((event) => event.type)).toEqual([
+    expect(savedSessions).toHaveLength(2);
+    expect(savedSessions[1].currentTokenHash).not.toBe(originalTokenHash);
+    expect(savedSessions[1].currentRecipientEmail).toBe('updated@example.com');
+    expect(savedSessions[1].getAuditEvents().map((event) => event.type)).toEqual([
       SigningAuditEventType.INVITATION_EMAIL_REQUESTED,
       SigningAuditEventType.INVITATION_EMAIL_SENT,
     ]);
   });
 
   it('captures declared identity, hashes the agreement proof, and seals the acceptance audit chain', async () => {
-    const input = makeInput();
-    const { facade, signingSessionRepository } = makeFacade();
+    const { facade, signingSessionRepository, notificationOrchestrator } = makeFacade();
 
-    const prepared = await facade.prepareSigningSession(input);
-    await facade.streamPublicUnsignedDocument(input.rawToken);
+    const invitation = await issueInvitation(facade, notificationOrchestrator);
+    await facade.streamPublicUnsignedDocument(invitation.rawToken);
     const result = await facade.acceptPublicSigningSession({
-      rawToken: input.rawToken,
+      rawToken: invitation.rawToken,
       declaredFullName: 'Jane Doe',
       declaredDocumentNumber: '12345678',
       acceptanceTextVersion: 'rental-agreement-v1',
       accepted: true,
     });
-    const session = await (signingSessionRepository.load as jest.Mock)(prepared.sessionId);
+    const session = await (signingSessionRepository.load as jest.Mock)(invitation.result.sessionId);
 
     expect(result.isOk()).toBe(true);
     expect(session.currentStatus).toBe(SigningSessionStatus.SIGNED);
@@ -358,13 +382,23 @@ describe('DocumentSigningFacade', () => {
     expect(session.currentDeclaredDocumentNumber).toBe('12345678');
     expect(session.currentAcceptanceTextVersion).toBe('rental-agreement-v1');
     expect(session.currentAgreementHash).toBe(result._unsafeUnwrap().agreementHash);
+    expect(result._unsafeUnwrap().finalCopyDelivery).toEqual({
+      status: 'SENT',
+      failureReason: null,
+      failureMessage: null,
+    });
     expect(session.currentFinalCopyTokenHash).not.toBeNull();
     expect(session.currentFinalCopyExpiresAt).not.toBeNull();
     expect(session.getArtifacts().map((artifact) => artifact.kind)).toEqual([
       SigningArtifactKind.UNSIGNED_PDF,
       SigningArtifactKind.SIGNED_PDF,
     ]);
-    expect(session.getAuditEvents().slice(-8).map((event) => event.type)).toEqual([
+    expect(
+      session
+        .getAuditEvents()
+        .slice(-8)
+        .map((event) => event.type),
+    ).toEqual([
       SigningAuditEventType.IDENTITY_DECLARED,
       SigningAuditEventType.ACCEPTANCE_CONFIRMED,
       SigningAuditEventType.AGREEMENT_HASH_CREATED,
@@ -376,7 +410,9 @@ describe('DocumentSigningFacade', () => {
     ]);
 
     const chainedEvents = session.getAuditEvents().slice(-8);
-    expect(chainedEvents[0].previousHash).toBe(session.getAuditEvents()[session.getAuditEvents().length - 9]?.currentHash ?? null);
+    expect(chainedEvents[0].previousHash).toBe(
+      session.getAuditEvents()[session.getAuditEvents().length - 9]?.currentHash ?? null,
+    );
     expect(chainedEvents[1].previousHash).toBe(chainedEvents[0].currentHash);
     expect(chainedEvents[2].previousHash).toBe(chainedEvents[1].currentHash);
     expect(chainedEvents[3].previousHash).toBe(chainedEvents[2].currentHash);
@@ -387,13 +423,14 @@ describe('DocumentSigningFacade', () => {
   });
 
   it('derives the final signed artifact from the frozen unsigned bytes without live re-rendering', async () => {
-    const input = makeInput(Buffer.from('frozen-unsigned-pdf'));
-    const { facade, objectStorage, queryBus } = makeFacade();
+    const preparedOrderResult = makePreparedOrder(Buffer.from('frozen-unsigned-pdf'));
+    const preparedOrder = preparedOrderResult._unsafeUnwrap();
+    const { facade, objectStorage, queryBus, notificationOrchestrator } = makeFacade({ preparedOrderResult });
 
-    await facade.prepareSigningSession(input);
-    await facade.streamPublicUnsignedDocument(input.rawToken);
+    const invitation = await issueInvitation(facade, notificationOrchestrator);
+    await facade.streamPublicUnsignedDocument(invitation.rawToken);
     await facade.acceptPublicSigningSession({
-      rawToken: input.rawToken,
+      rawToken: invitation.rawToken,
       declaredFullName: 'Jane Doe',
       declaredDocumentNumber: '12345678',
       acceptanceTextVersion: 'rental-agreement-v1',
@@ -402,33 +439,36 @@ describe('DocumentSigningFacade', () => {
 
     expect((objectStorage.putObject as jest.Mock).mock.calls).toHaveLength(2);
     expect((objectStorage.putObject as jest.Mock).mock.calls[1][0]).toMatchObject({
-      body: input.pdfBytes,
+      body: preparedOrder.buffer,
       metadata: expect.objectContaining({
-        unsignedDocumentHash: hashBuffer(input.pdfBytes),
+        unsignedDocumentHash: hashBuffer(preparedOrder.buffer),
       }),
     });
-    expect((objectStorage.putObject as jest.Mock).mock.calls[1][0].metadata.sha256).toBe(hashBuffer(input.pdfBytes));
-    expect((objectStorage.putObject as jest.Mock).mock.calls[1][0].key).toContain('/signed/');
-    expect((queryBus.execute as jest.Mock).mock.calls.some(([query]) => query?.constructor?.name === 'PrepareSignedOrderAgreementQuery')).toBe(
-      false,
+    expect((objectStorage.putObject as jest.Mock).mock.calls[1][0].metadata.sha256).toBe(
+      hashBuffer(preparedOrder.buffer),
     );
+    expect((objectStorage.putObject as jest.Mock).mock.calls[1][0].key).toContain('/signed/');
+    expect(
+      (queryBus.execute as jest.Mock).mock.calls.some(
+        ([query]) => query?.constructor?.name === 'PrepareSignedOrderAgreementQuery',
+      ),
+    ).toBe(false);
   });
 
   it('streams the final signed artifact through a one-time token', async () => {
-    const input = makeInput();
     const { facade, objectStorage, notificationOrchestrator } = makeFacade();
 
-    await facade.prepareSigningSession(input);
-    await facade.streamPublicUnsignedDocument(input.rawToken);
+    const invitation = await issueInvitation(facade, notificationOrchestrator);
+    await facade.streamPublicUnsignedDocument(invitation.rawToken);
     await facade.acceptPublicSigningSession({
-      rawToken: input.rawToken,
+      rawToken: invitation.rawToken,
       declaredFullName: 'Jane Doe',
       declaredDocumentNumber: '12345678',
       acceptanceTextVersion: 'rental-agreement-v1',
       accepted: true,
     });
 
-    const finalCopyDispatch = (notificationOrchestrator.dispatch as jest.Mock).mock.calls[0][0];
+    const finalCopyDispatch = (notificationOrchestrator.dispatch as jest.Mock).mock.calls[1][0];
     const token = new URL(finalCopyDispatch.payload.downloadUrl).searchParams.get('token');
 
     const streamed = await facade.streamFinalSignedCopy(token ?? '');
@@ -441,52 +481,63 @@ describe('DocumentSigningFacade', () => {
   });
 
   it('records final-copy email failure evidence without rolling back acceptance', async () => {
-    const input = makeInput();
-    const { facade, signingSessionRepository } = makeFacade({
-      notificationDispatchResult: {
-        attemptedChannels: [NotificationChannel.EMAIL],
-        deliveredChannels: [],
-        skippedChannels: [],
-        failedChannels: [
-          {
-            channel: NotificationChannel.EMAIL,
-            reason: 'PROVIDER_ERROR',
-            message: 'Provider rejected the email.',
-          },
-        ],
-      },
+    const { facade, signingSessionRepository, notificationOrchestrator } = makeFacade({
+      notificationDispatchResults: [
+        {
+          attemptedChannels: [NotificationChannel.EMAIL],
+          deliveredChannels: [NotificationChannel.EMAIL],
+          skippedChannels: [],
+          failedChannels: [],
+        },
+        {
+          attemptedChannels: [NotificationChannel.EMAIL],
+          deliveredChannels: [],
+          skippedChannels: [],
+          failedChannels: [
+            {
+              channel: NotificationChannel.EMAIL,
+              reason: 'PROVIDER_ERROR',
+              message: 'Provider rejected the email.',
+            },
+          ],
+        },
+      ],
     });
 
-    const prepared = await facade.prepareSigningSession(input);
-    await facade.streamPublicUnsignedDocument(input.rawToken);
+    const invitation = await issueInvitation(facade, notificationOrchestrator);
+    await facade.streamPublicUnsignedDocument(invitation.rawToken);
     const result = await facade.acceptPublicSigningSession({
-      rawToken: input.rawToken,
+      rawToken: invitation.rawToken,
       declaredFullName: 'Jane Doe',
       declaredDocumentNumber: '12345678',
       acceptanceTextVersion: 'rental-agreement-v1',
       accepted: true,
     });
-    const session = await (signingSessionRepository.load as jest.Mock)(prepared.sessionId);
+    const session = await (signingSessionRepository.load as jest.Mock)(invitation.result.sessionId);
 
     expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap().finalCopyDelivery).toEqual({
+      status: 'FAILED',
+      failureReason: 'PROVIDER_ERROR',
+      failureMessage: 'Provider rejected the email.',
+    });
     expect(session.currentStatus).toBe(SigningSessionStatus.SIGNED);
     expect(session.getAuditEvents()[session.getAuditEvents().length - 1]?.type).toBe('FINAL_COPY_EMAIL_FAILED');
   });
 
   it('does not persist a signed session when signed artifact storage fails', async () => {
-    const input = makeInput();
-    const { facade, objectStorage, signingSessionRepository } = makeFacade();
+    const { facade, objectStorage, signingSessionRepository, notificationOrchestrator } = makeFacade();
 
     (objectStorage.putObject as jest.Mock)
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error('signed artifact storage failed'));
 
-    const prepared = await facade.prepareSigningSession(input);
-    await facade.streamPublicUnsignedDocument(input.rawToken);
+    const invitation = await issueInvitation(facade, notificationOrchestrator);
+    await facade.streamPublicUnsignedDocument(invitation.rawToken);
 
     await expect(
       facade.acceptPublicSigningSession({
-        rawToken: input.rawToken,
+        rawToken: invitation.rawToken,
         declaredFullName: 'Jane Doe',
         declaredDocumentNumber: '12345678',
         acceptanceTextVersion: 'rental-agreement-v1',
@@ -494,7 +545,7 @@ describe('DocumentSigningFacade', () => {
       }),
     ).rejects.toThrow('signed artifact storage failed');
 
-    const session = await (signingSessionRepository.load as jest.Mock)(prepared.sessionId);
+    const session = await (signingSessionRepository.load as jest.Mock)(invitation.result.sessionId);
 
     expect(session.currentStatus).toBe(SigningSessionStatus.OPENED);
     expect(session.currentAgreementHash).toBeNull();
@@ -504,12 +555,11 @@ describe('DocumentSigningFacade', () => {
   });
 
   it('rejects acceptance before the unsigned document is presented', async () => {
-    const input = makeInput();
-    const { facade } = makeFacade();
+    const { facade, notificationOrchestrator } = makeFacade();
 
-    await facade.prepareSigningSession(input);
+    const invitation = await issueInvitation(facade, notificationOrchestrator);
     const result = await facade.acceptPublicSigningSession({
-      rawToken: input.rawToken,
+      rawToken: invitation.rawToken,
       declaredFullName: 'Jane Doe',
       declaredDocumentNumber: '12345678',
       acceptanceTextVersion: 'rental-agreement-v1',
@@ -520,13 +570,12 @@ describe('DocumentSigningFacade', () => {
   });
 
   it('rejects acceptance when explicit confirmation is false', async () => {
-    const input = makeInput();
-    const { facade } = makeFacade();
+    const { facade, notificationOrchestrator } = makeFacade();
 
-    await facade.prepareSigningSession(input);
-    await facade.streamPublicUnsignedDocument(input.rawToken);
+    const invitation = await issueInvitation(facade, notificationOrchestrator);
+    await facade.streamPublicUnsignedDocument(invitation.rawToken);
     const result = await facade.acceptPublicSigningSession({
-      rawToken: input.rawToken,
+      rawToken: invitation.rawToken,
       declaredFullName: 'Jane Doe',
       declaredDocumentNumber: '12345678',
       acceptanceTextVersion: 'rental-agreement-v1',

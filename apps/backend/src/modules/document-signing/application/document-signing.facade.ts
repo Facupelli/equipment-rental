@@ -8,6 +8,7 @@ import { TenantContext } from '@repo/schemas';
 import { Result, err, ok } from 'neverthrow';
 
 import { Env } from 'src/config/env.schema';
+import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import {
   SigningArtifactKind,
   SigningAuditEventType,
@@ -27,11 +28,6 @@ import {
 import { PrepareOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-order-agreement-for-signing.query';
 import { OrderAgreementForSigningReadModel } from 'src/modules/order/public/read-models/order-agreement-for-signing.read-model';
 
-import {
-  DocumentSigningPublicApi,
-  PrepareSigningSessionInput,
-  PrepareSigningSessionResult,
-} from '../document-signing.public-api';
 import { SigningArtifactMetadata } from '../domain/entities/signing-artifact-metadata.entity';
 import { SigningAuditEvent, SigningAuditPayload } from '../domain/entities/signing-audit-event.entity';
 import { SigningSession } from '../domain/entities/signing-session.entity';
@@ -120,6 +116,11 @@ export interface AcceptPublicSigningResult {
   acceptedAt: Date;
   agreementHash: string;
   channel: typeof SIGNING_ACCEPTANCE_CHANNEL;
+  finalCopyDelivery: {
+    status: 'SENT' | 'FAILED';
+    failureReason: string | null;
+    failureMessage: string | null;
+  };
 }
 
 export type AcceptPublicSigningError =
@@ -138,7 +139,7 @@ type PrepareOrderAgreementForSigningResult = Result<
 >;
 
 @Injectable()
-export class DocumentSigningFacade implements DocumentSigningPublicApi {
+export class DocumentSigningFacade {
   private readonly bucketName: string;
   private readonly rootDomain: string;
   private readonly signingSessionTtlSeconds: number;
@@ -153,21 +154,6 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     this.bucketName = this.configService.get('R2_BUCKET_NAME');
     this.rootDomain = this.configService.get('ROOT_DOMAIN');
     this.signingSessionTtlSeconds = this.configService.get('DOCUMENT_SIGNING_SESSION_TTL_SECONDS');
-  }
-
-  async prepareSigningSession(input: PrepareSigningSessionInput): Promise<PrepareSigningSessionResult> {
-    return this.ensureSessionForPreparedDocument({
-      tenantId: input.tenantId,
-      orderId: input.orderId,
-      customerId: input.customerId ?? null,
-      documentType: input.documentType,
-      recipientEmail: input.recipientEmail,
-      rawToken: input.rawToken,
-      expiresAt: input.expiresAt,
-      documentNumber: input.documentNumber,
-      fileName: input.fileName,
-      pdfBytes: input.pdfBytes,
-    });
   }
 
   async sendSigningInvitation(
@@ -205,112 +191,139 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     }
 
     const now = new Date();
-    const activeSession = await this.loadActiveSessionAfterExpiringIfNeeded(
-      input.tenantId,
-      input.orderId,
-      input.documentType,
-      now,
-    );
     const unsignedDocumentHash = hashBuffer(preparedOrder.value.buffer);
     const rawToken = generateRawSigningToken();
     const tokenHash = hashString(rawToken);
 
-    if (activeSession && activeSession.currentUnsignedDocumentHash === unsignedDocumentHash) {
-      activeSession.refreshInvitation({ recipientEmail, tokenHash }, now);
-      this.appendAuditEvent(activeSession, SigningAuditEventType.INVITATION_EMAIL_REQUESTED, {
-        recipientEmail,
-        documentType: input.documentType,
-        unsignedDocumentHash,
-        expiresAt: activeSession.expiresAt.toISOString(),
-        resend: true,
-        tokenRotated: true,
-      });
+    const sessionResult = await this.signingSessionRepository.runWithActiveSessionLock(
+      input.tenantId,
+      input.orderId,
+      input.documentType,
+      async (tx) => {
+        const activeSession = await this.loadActiveSessionAfterExpiringIfNeeded(
+          input.tenantId,
+          input.orderId,
+          input.documentType,
+          now,
+          tx,
+        );
 
-      const deliveryError = await this.dispatchInvitationEmail({
-        tenant,
-        session: activeSession,
-        documentType: input.documentType,
-        documentNumber: preparedOrder.value.documentNumber,
-        rawToken,
-        recipientEmail,
-        unsignedDocumentHash,
-        resend: true,
-      });
+        if (activeSession && activeSession.currentUnsignedDocumentHash === unsignedDocumentHash) {
+          activeSession.refreshInvitation({ recipientEmail, tokenHash }, now);
+          this.appendAuditEvent(activeSession, SigningAuditEventType.INVITATION_EMAIL_REQUESTED, {
+            recipientEmail,
+            documentType: input.documentType,
+            unsignedDocumentHash,
+            expiresAt: activeSession.expiresAt.toISOString(),
+            resend: true,
+            tokenRotated: true,
+          });
 
-      await this.signingSessionRepository.save(activeSession);
+          await this.signingSessionRepository.save(activeSession, tx);
 
-      if (deliveryError) {
-        return err(deliveryError);
-      }
+          return {
+            sessionId: activeSession.id,
+            expiresAt: activeSession.expiresAt,
+            tokenHash,
+            unsignedDocumentHash,
+            reusedExistingSession: true,
+          };
+        }
 
-      return ok({
-        sessionId: activeSession.id,
-        documentNumber: preparedOrder.value.documentNumber,
-        recipientEmail,
-        expiresAt: activeSession.expiresAt,
-        unsignedDocumentHash,
-        reusedExistingSession: true,
-      });
-    }
+        if (activeSession) {
+          this.appendAuditEvent(activeSession, SigningAuditEventType.SESSION_VOIDED, {
+            reason: 'ORDER_DOCUMENT_CHANGED',
+            supersededByDocumentHash: unsignedDocumentHash,
+          });
 
-    if (activeSession) {
-      this.appendAuditEvent(activeSession, SigningAuditEventType.SESSION_VOIDED, {
-        reason: 'ORDER_DOCUMENT_CHANGED',
-        supersededByDocumentHash: unsignedDocumentHash,
-      });
+          const voidResult = activeSession.void(now);
+          if (voidResult.isErr()) {
+            throw voidResult.error;
+          }
 
-      const voidResult = activeSession.void(now);
-      if (voidResult.isErr()) {
-        throw voidResult.error;
-      }
+          await this.signingSessionRepository.save(activeSession, tx);
+        }
 
-      await this.signingSessionRepository.save(activeSession);
-    }
+        const expiresAt = new Date(now.getTime() + this.signingSessionTtlSeconds * 1000);
+        const session = await this.createSessionForPreparedDocument({
+          tenantId: input.tenantId,
+          orderId: input.orderId,
+          customerId: preparedOrder.value.customerId,
+          documentType: input.documentType,
+          recipientEmail,
+          rawToken,
+          expiresAt,
+          documentNumber: preparedOrder.value.documentNumber,
+          fileName: preparedOrder.value.fileName,
+          pdfBytes: preparedOrder.value.buffer,
+        });
 
-    const expiresAt = new Date(now.getTime() + this.signingSessionTtlSeconds * 1000);
-    const sessionResult = await this.ensureSessionForPreparedDocument({
-      tenantId: input.tenantId,
+        this.appendAuditEvent(session, SigningAuditEventType.INVITATION_EMAIL_REQUESTED, {
+          recipientEmail,
+          documentType: input.documentType,
+          unsignedDocumentHash,
+          expiresAt: session.expiresAt.toISOString(),
+          resend: false,
+          tokenRotated: false,
+        });
+
+        await this.signingSessionRepository.save(session, tx);
+
+        return {
+          sessionId: session.id,
+          expiresAt: session.expiresAt,
+          tokenHash,
+          unsignedDocumentHash,
+          reusedExistingSession: false,
+        };
+      },
+    );
+
+    const deliveryResult = await this.dispatchInvitationEmail({
+      tenant,
+      sessionId: sessionResult.sessionId,
       orderId: input.orderId,
-      customerId: preparedOrder.value.customerId,
       documentType: input.documentType,
-      recipientEmail,
-      rawToken,
-      expiresAt,
       documentNumber: preparedOrder.value.documentNumber,
-      fileName: preparedOrder.value.fileName,
-      pdfBytes: preparedOrder.value.buffer,
-      skipActiveSessionLookup: true,
+      rawToken,
+      tokenHash: sessionResult.tokenHash,
+      recipientEmail,
+      expiresAt: sessionResult.expiresAt,
+      resend: sessionResult.reusedExistingSession,
     });
+
     const session = await this.signingSessionRepository.load(sessionResult.sessionId, input.tenantId);
 
     if (!session) {
       throw new Error(`Signing session '${sessionResult.sessionId}' was not found after creation.`);
     }
 
-    this.appendAuditEvent(session, SigningAuditEventType.INVITATION_EMAIL_REQUESTED, {
-      recipientEmail,
-      documentType: input.documentType,
-      unsignedDocumentHash: sessionResult.unsignedDocumentHash,
-      expiresAt: session.expiresAt.toISOString(),
-      resend: false,
-      tokenRotated: false,
-    });
-
-    const deliveryError = await this.dispatchInvitationEmail({
-      tenant,
-      session,
-      documentType: input.documentType,
-      documentNumber: preparedOrder.value.documentNumber,
-      rawToken,
-      recipientEmail,
-      unsignedDocumentHash: sessionResult.unsignedDocumentHash,
-      resend: false,
-    });
+    if (deliveryResult.delivered) {
+      this.appendAuditEvent(session, SigningAuditEventType.INVITATION_EMAIL_SENT, {
+        recipientEmail,
+        documentType: input.documentType,
+        signingUrl: deliveryResult.signingUrl,
+        expiresAt: sessionResult.expiresAt.toISOString(),
+        unsignedDocumentHash: sessionResult.unsignedDocumentHash,
+        resend: sessionResult.reusedExistingSession,
+      });
+    } else {
+      this.appendAuditEvent(session, SigningAuditEventType.INVITATION_EMAIL_FAILED, {
+        recipientEmail,
+        documentType: input.documentType,
+        signingUrl: deliveryResult.signingUrl,
+        expiresAt: sessionResult.expiresAt.toISOString(),
+        unsignedDocumentHash: sessionResult.unsignedDocumentHash,
+        resend: sessionResult.reusedExistingSession,
+        failureReason: deliveryResult.failureReason,
+        failureMessage: deliveryResult.failureMessage,
+      });
+    }
 
     await this.signingSessionRepository.save(session);
 
-    if (deliveryError) {
-      return err(deliveryError);
+    if (deliveryResult.deliveryError) {
+      return err(deliveryResult.deliveryError);
     }
 
     return ok({
@@ -319,7 +332,7 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       recipientEmail,
       expiresAt: session.expiresAt,
       unsignedDocumentHash: sessionResult.unsignedDocumentHash,
-      reusedExistingSession: false,
+      reusedExistingSession: sessionResult.reusedExistingSession,
     });
   }
 
@@ -486,7 +499,7 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
 
     await this.signingSessionRepository.save(session);
 
-    await this.dispatchFinalCopyEmail({
+    const finalCopyDelivery = await this.dispatchFinalCopyEmail({
       tenant,
       session,
       documentType: session.documentType,
@@ -504,6 +517,7 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       acceptedAt,
       agreementHash,
       channel: SIGNING_ACCEPTANCE_CHANNEL,
+      finalCopyDelivery,
     });
   }
 
@@ -541,7 +555,7 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     };
   }
 
-  private async ensureSessionForPreparedDocument(input: {
+  private async createSessionForPreparedDocument(input: {
     tenantId: string;
     orderId: string;
     customerId: string | null;
@@ -552,38 +566,8 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     documentNumber: string;
     fileName: string;
     pdfBytes: Buffer;
-    skipActiveSessionLookup?: boolean;
-  }): Promise<PrepareSigningSessionResult> {
+  }): Promise<SigningSession> {
     const unsignedDocumentHash = hashBuffer(input.pdfBytes);
-    const activeSession = input.skipActiveSessionLookup
-      ? null
-      : await this.signingSessionRepository.loadActiveByOrderDocumentType(
-          input.tenantId,
-          input.orderId,
-          input.documentType,
-        );
-
-    if (activeSession && activeSession.currentUnsignedDocumentHash === unsignedDocumentHash) {
-      return {
-        sessionId: activeSession.id,
-        unsignedDocumentHash,
-        reusedExistingSession: true,
-      };
-    }
-
-    if (activeSession) {
-      this.appendAuditEvent(activeSession, SigningAuditEventType.SESSION_VOIDED, {
-        reason: 'ORDER_DOCUMENT_CHANGED',
-        supersededByDocumentHash: unsignedDocumentHash,
-      });
-
-      const voidResult = activeSession.void(new Date());
-      if (voidResult.isErr()) {
-        throw voidResult.error;
-      }
-
-      await this.signingSessionRepository.save(activeSession);
-    }
 
     const session = SigningSession.create({
       tenantId: input.tenantId,
@@ -636,13 +620,7 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       sha256: storage.sha256,
     });
 
-    await this.signingSessionRepository.save(session);
-
-    return {
-      sessionId: session.id,
-      unsignedDocumentHash,
-      reusedExistingSession: false,
-    };
+    return session;
   }
 
   private async recordUnsignedArtifact(input: {
@@ -822,11 +800,13 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     orderId: string,
     documentType: SigningDocumentType,
     now: Date,
+    tx?: PrismaTransactionClient,
   ): Promise<SigningSession | null> {
     const activeSession = await this.signingSessionRepository.loadActiveByOrderDocumentType(
       tenantId,
       orderId,
       documentType,
+      tx,
     );
     if (!activeSession) {
       return null;
@@ -850,7 +830,7 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
         throw expireResult.error;
       }
 
-      await this.signingSessionRepository.save(activeSession);
+      await this.signingSessionRepository.save(activeSession, tx);
     }
 
     return null;
@@ -858,14 +838,29 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
 
   private async dispatchInvitationEmail(input: {
     tenant: TenantContext;
-    session: SigningSession;
+    sessionId: string;
+    orderId: string;
     documentType: SigningDocumentType;
     documentNumber: string;
     rawToken: string;
+    tokenHash: string;
     recipientEmail: string;
-    unsignedDocumentHash: string;
+    expiresAt: Date;
     resend: boolean;
-  }): Promise<SigningInvitationEmailDeliveryFailedError | null> {
+  }): Promise<
+    | {
+        signingUrl: string;
+        delivered: true;
+        deliveryError: null;
+      }
+    | {
+        signingUrl: string;
+        delivered: false;
+        failureReason: string;
+        failureMessage: string;
+        deliveryError: SigningInvitationEmailDeliveryFailedError;
+      }
+  > {
     const signingUrl = buildPortalSigningUrl(input.tenant, this.rootDomain, input.rawToken);
     const dispatchResult = await this.notificationOrchestrator.dispatch({
       tenantId: input.tenant.id,
@@ -876,27 +871,23 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
         documentLabel: getSigningDocumentLabel(input.documentType),
         documentNumber: input.documentNumber,
         signingUrl,
-        expiresAt: input.session.expiresAt,
+        expiresAt: input.expiresAt,
         isReplacement: input.resend,
       },
       metadata: {
-        orderId: input.session.orderId,
-        sessionId: input.session.id,
+        orderId: input.orderId,
+        sessionId: input.sessionId,
         documentType: input.documentType,
       },
-      idempotencyKey: `signing-invitation:${input.session.id}:${input.session.currentTokenHash}`,
+      idempotencyKey: `signing-invitation:${input.sessionId}:${input.tokenHash}`,
     });
 
     if (dispatchResult.deliveredChannels.includes(NotificationChannel.EMAIL)) {
-      this.appendAuditEvent(input.session, SigningAuditEventType.INVITATION_EMAIL_SENT, {
-        recipientEmail: input.recipientEmail,
-        documentType: input.documentType,
+      return {
         signingUrl,
-        expiresAt: input.session.expiresAt.toISOString(),
-        unsignedDocumentHash: input.unsignedDocumentHash,
-        resend: input.resend,
-      });
-      return null;
+        delivered: true,
+        deliveryError: null,
+      };
     }
 
     const failure = dispatchResult.failedChannels[0];
@@ -904,18 +895,13 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       ? `Signing invitation email delivery failed: ${failure.message}`
       : 'Signing invitation email delivery failed: no notification channel delivered the invitation.';
 
-    this.appendAuditEvent(input.session, SigningAuditEventType.INVITATION_EMAIL_FAILED, {
-      recipientEmail: input.recipientEmail,
-      documentType: input.documentType,
+    return {
       signingUrl,
-      expiresAt: input.session.expiresAt.toISOString(),
-      unsignedDocumentHash: input.unsignedDocumentHash,
-      resend: input.resend,
+      delivered: false,
       failureReason: failure?.reason ?? 'NO_CHANNEL_DELIVERED',
       failureMessage: failure?.message ?? 'No notification channel delivered the invitation.',
-    });
-
-    return new SigningInvitationEmailDeliveryFailedError(message);
+      deliveryError: new SigningInvitationEmailDeliveryFailedError(message),
+    };
   }
 
   private async dispatchFinalCopyEmail(input: {
@@ -926,7 +912,7 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     rawToken: string;
     recipientEmail: string;
     expiresAt: Date;
-  }): Promise<SigningInvitationEmailDeliveryFailedError | null> {
+  }): Promise<AcceptPublicSigningResult['finalCopyDelivery']> {
     const downloadUrl = buildFinalCopyDownloadUrl(input.tenant, this.rootDomain, input.rawToken);
     const dispatchResult = await this.notificationOrchestrator.dispatch({
       tenantId: input.tenant.id,
@@ -956,10 +942,17 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
         expiresAt: input.expiresAt.toISOString(),
         sessionReference: input.session.id,
       });
-      return null;
+      return {
+        status: 'SENT',
+        failureReason: null,
+        failureMessage: null,
+      };
     }
 
     const failure = dispatchResult.failedChannels[0];
+    const failureReason = failure?.reason ?? 'NO_CHANNEL_DELIVERED';
+    const failureMessage = failure?.message ?? 'No notification channel delivered the final copy email.';
+
     this.appendAuditEvent(input.session, FINAL_COPY_EMAIL_FAILED_EVENT, {
       recipientEmail: input.recipientEmail,
       documentType: input.documentType,
@@ -967,15 +960,15 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       downloadUrl,
       expiresAt: input.expiresAt.toISOString(),
       sessionReference: input.session.id,
-      failureReason: failure?.reason ?? 'NO_CHANNEL_DELIVERED',
-      failureMessage: failure?.message ?? 'No notification channel delivered the final copy email.',
+      failureReason,
+      failureMessage,
     });
 
-    return new SigningInvitationEmailDeliveryFailedError(
-      failure
-        ? `Final signed copy email delivery failed: ${failure.message}`
-        : 'Final signed copy email delivery failed: no notification channel delivered the email.',
-    );
+    return {
+      status: 'FAILED',
+      failureReason,
+      failureMessage,
+    };
   }
 
   private async requirePublicSessionByRawToken(rawToken: string): Promise<SigningSession> {

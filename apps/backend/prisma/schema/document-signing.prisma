@@ -79,6 +79,8 @@ model SigningSession {
   artifacts        SigningArtifact[] @relation("SigningSessionArtifacts")
   auditEvents      SigningAuditEvent[]
 
+  // Active-session uniqueness is enforced with a manual partial unique index in SQL
+  // because Prisma cannot model `WHERE status IN ('PENDING', 'OPENED')` here.
   @@index([tenantId])
   @@index([orderId])
   @@index([customerId])
@@ -142,4 +144,3 @@ model SigningAnchor {
   @@index([anchoredAt])
   @@map("signing_anchors")
 }
-

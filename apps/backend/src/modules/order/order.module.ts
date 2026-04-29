@@ -13,7 +13,6 @@ import { MarkEquipmentAsReturnedService } from './application/commands/mark-equi
 import { ExpireOrderService } from './application/commands/expire-order/expire-order.service';
 import { UpdateDraftOrderPricingService } from './application/commands/update-draft-order-pricing/update-draft-order-pricing.service';
 import { UpdateDraftOrderService } from './application/commands/update-draft-order/update-draft-order.service';
-import { PrepareOrderContractForSigningService } from './application/commands/prepare-order-contract-for-signing/prepare-order-contract-for-signing.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { GetOrdersScheduleQueryHandler } from './application/queries/get-orders-schedule/get-orders-schedule.query-handler';
 import { GetOrderByIdQueryHandler } from './application/queries/get-order-by-id/get-order-by-id.query-handler';
@@ -29,7 +28,6 @@ import { CreateOrderOwnerContractResolver } from './application/commands/create-
 import { CreateOrderHttpController } from './application/commands/create-order/create-order.http.controller';
 import { CreateDraftOrderHttpController } from './application/commands/create-draft-order/create-draft-order.http.controller';
 import { ConfirmOrderHttpController } from './application/commands/confirm-order/confirm-order.http.controller';
-import { PrepareOrderContractForSigningHttpController } from './application/commands/prepare-order-contract-for-signing/prepare-order-contract-for-signing.http.controller';
 import { UpdateDraftOrderPricingHttpController } from './application/commands/update-draft-order-pricing/update-draft-order-pricing.http.controller';
 import { UpdateDraftOrderHttpController } from './application/commands/update-draft-order/update-draft-order.http.controller';
 import { RejectOrderHttpController } from './application/commands/reject-order/reject-order.http.controller';
@@ -51,15 +49,13 @@ import { ContractRendererAdapter } from './infrastructure/pdf/contract-renderer.
 import { ContractRendererPort } from './domain/ports/contract-render.port';
 import { DraftOrderPricingService } from './domain/services/draft-order-pricing.service';
 import { OrderDocumentRendererService } from './application/pdf/order-document-renderer.service';
-import { DocumentSigningModule } from '../document-signing/document-signing.module';
 
 @Module({
-  imports: [PricingModule, InventoryModule, TenantModule, DocumentSigningModule],
+  imports: [PricingModule, InventoryModule, TenantModule],
   controllers: [
     CreateOrderHttpController,
     CreateDraftOrderHttpController,
     ConfirmOrderHttpController,
-    PrepareOrderContractForSigningHttpController,
     UpdateDraftOrderHttpController,
     UpdateDraftOrderPricingHttpController,
     RejectOrderHttpController,
@@ -83,7 +79,6 @@ import { DocumentSigningModule } from '../document-signing/document-signing.modu
     CreateOrderService,
     CreateDraftOrderService,
     DraftOrderPricingService,
-    PrepareOrderContractForSigningService,
     ConfirmDraftOrderFlow,
     ConfirmPendingReviewOrderFlow,
     ConfirmOrderService,

@@ -27,5 +27,6 @@ export class GetOrderSigningSummaryQuery {
   constructor(
     public readonly tenantId: string,
     public readonly orderId: string,
+    public readonly documentType: SigningDocumentType,
   ) {}
 }

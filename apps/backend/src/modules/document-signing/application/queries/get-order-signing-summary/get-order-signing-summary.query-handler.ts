@@ -40,6 +40,7 @@ export class GetOrderSigningSummaryQueryHandler implements IQueryHandler<
       where: {
         tenantId: query.tenantId,
         orderId: query.orderId,
+        documentType: query.documentType,
       },
       orderBy: { createdAt: 'desc' },
       select: {
