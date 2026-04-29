@@ -134,6 +134,7 @@ model Customer {
   profile           CustomerProfile?
   tenant            Tenant             @relation(fields: [tenantId], references: [id])
   orders            Order[]
+  signingSessions   SigningSession[]
   restrictedCoupons Coupon[]
   couponRedemptions CouponRedemption[]
   externalIdentities ExternalIdentity[]
@@ -237,6 +238,38 @@ enum ExternalIdentityProvider {
   GOOGLE
 }
 
+enum SigningDocumentType {
+  RENTAL_AGREEMENT
+}
+
+enum SigningSessionStatus {
+  PENDING
+  OPENED
+  SIGNED
+  EXPIRED
+  VOIDED
+}
+
+enum SigningArtifactKind {
+  UNSIGNED_PDF
+  SIGNED_PDF
+}
+
+enum SigningAuditEventType {
+  SESSION_CREATED
+  SESSION_OPENED
+  SESSION_SIGNED
+  SESSION_EXPIRED
+  SESSION_VOIDED
+  ARTIFACT_RECORDED
+  ANCHOR_LINKED
+}
+
+enum SigningAnchorPublisherType {
+  INTERNAL
+  EXTERNAL
+}
+
 model AuthHandoffToken {
   id        String    @id @default(uuid())
   tokenHash String    @unique @map("token_hash")
@@ -250,6 +283,98 @@ model AuthHandoffToken {
   @@index([actorType, actorId])
   @@index([tenantId])
   @@map("auth_handoff_tokens")
+}
+
+model SigningSession {
+  id                     String               @id @default(uuid())
+  tenantId               String               @map("tenant_id")
+  orderId                String               @map("order_id")
+  customerId             String?              @map("customer_id")
+  documentType           SigningDocumentType  @map("document_type")
+  recipientEmail         String               @map("recipient_email")
+  unsignedDocumentHash   String               @map("unsigned_document_hash")
+  unsignedArtifactId     String?              @unique @map("unsigned_artifact_id")
+  tokenHash              String               @unique @map("token_hash")
+  status                 SigningSessionStatus @default(PENDING)
+  expiresAt              DateTime             @map("expires_at")
+  openedAt               DateTime?            @map("opened_at")
+  signedAt               DateTime?            @map("signed_at")
+  declaredFullName       String?              @map("declared_full_name")
+  declaredDocumentNumber String?              @map("declared_document_number")
+  acceptanceTextVersion  String?              @map("acceptance_text_version")
+  agreementHash          String?              @map("agreement_hash")
+  signedArtifactId       String?              @unique @map("signed_artifact_id")
+  createdAt              DateTime             @default(now()) @map("created_at")
+  updatedAt              DateTime             @updatedAt @map("updated_at")
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  order            Order             @relation(fields: [orderId], references: [id])
+  customer         Customer?         @relation(fields: [customerId], references: [id])
+  unsignedArtifact SigningArtifact?  @relation("SigningSessionUnsignedArtifact", fields: [unsignedArtifactId], references: [id])
+  signedArtifact   SigningArtifact?  @relation("SigningSessionSignedArtifact", fields: [signedArtifactId], references: [id])
+  artifacts        SigningArtifact[] @relation("SigningSessionArtifacts")
+  auditEvents      SigningAuditEvent[]
+
+  @@index([tenantId])
+  @@index([orderId])
+  @@index([customerId])
+  @@index([tenantId, status, expiresAt])
+  @@index([tenantId, orderId, documentType])
+  @@map("signing_sessions")
+}
+
+model SigningArtifact {
+  id          String              @id @default(uuid())
+  sessionId   String              @map("session_id")
+  kind        SigningArtifactKind
+  bucket      String
+  objectKey   String              @map("object_key")
+  contentType String              @map("content_type")
+  byteSize    Int                 @map("byte_size")
+  sha256      String
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  session            SigningSession  @relation("SigningSessionArtifacts", fields: [sessionId], references: [id])
+  unsignedForSession SigningSession? @relation("SigningSessionUnsignedArtifact")
+  signedForSession   SigningSession? @relation("SigningSessionSignedArtifact")
+
+  @@unique([sessionId, kind])
+  @@index([sessionId])
+  @@index([sessionId, kind])
+  @@map("signing_artifacts")
+}
+
+model SigningAuditEvent {
+  id           String                @id @default(uuid())
+  sessionId    String                @map("session_id")
+  sequence     Int
+  type         SigningAuditEventType
+  payload      Json
+  occurredAt   DateTime              @map("occurred_at")
+  previousHash String?               @map("previous_hash")
+  currentHash  String                @map("current_hash")
+
+  session SigningSession @relation(fields: [sessionId], references: [id])
+
+  @@unique([sessionId, sequence])
+  @@index([sessionId, occurredAt])
+  @@map("signing_audit_events")
+}
+
+model SigningAnchor {
+  id                 String                     @id @default(uuid())
+  rootHash           String                     @map("root_hash")
+  cutoffReference    String                     @map("cutoff_reference")
+  anchoredAt         DateTime                   @map("anchored_at")
+  publisherType      SigningAnchorPublisherType @map("publisher_type")
+  publisherReference String                     @map("publisher_reference")
+  payloadHash        String                     @map("payload_hash")
+  createdAt          DateTime                   @default(now()) @map("created_at")
+
+  @@unique([publisherType, publisherReference])
+  @@index([rootHash])
+  @@index([anchoredAt])
+  @@map("signing_anchors")
 }
 
 model ExternalIdentity {
@@ -321,6 +446,7 @@ model Tenant {
   owners              Owner[]
   users               User[]
   customers           Customer[]
+  signingSessions     SigningSession[]
   roles               Role[]
   invitations         Invitation[]
   TenantOrderSequence TenantOrderSequence[]
@@ -639,6 +765,7 @@ model Order {
   coupon           Coupon?               @relation(fields: [couponId], references: [id])
   couponRedemption CouponRedemption?
   deliveryRequest  OrderDeliveryRequest?
+  signingSessions  SigningSession[]
 
   @@unique([tenantId, orderNumber])
   @@index([tenantId, locationId, status, createdAt(sort: Desc)])
