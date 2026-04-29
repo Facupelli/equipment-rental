@@ -160,6 +160,29 @@ const FinancialBreakdownSchema = z.object({
   ownerObligations: z.string(),
 });
 
+const SigningDeliveryStatusSchema = z.enum(["NOT_SENT", "REQUESTED", "SENT", "FAILED"]);
+
+const SigningDeliverySummarySchema = z.object({
+  status: SigningDeliveryStatusSchema,
+  occurredAt: z.date().nullable(),
+  recipientEmail: z.string().nullable(),
+  failureReason: z.string().nullable(),
+  failureMessage: z.string().nullable(),
+});
+
+const OrderSigningStatusSchema = z.enum(["NO_SESSION", "PENDING", "OPENED", "SIGNED", "EXPIRED", "VOIDED"]);
+
+const OrderSigningSummarySchema = z.object({
+  status: OrderSigningStatusSchema,
+  documentType: z.enum(["RENTAL_AGREEMENT"]).nullable(),
+  createdAt: z.date().nullable(),
+  expiresAt: z.date().nullable(),
+  openedAt: z.date().nullable(),
+  signedAt: z.date().nullable(),
+  latestInvitationDelivery: SigningDeliverySummarySchema,
+  latestFinalCopyDelivery: SigningDeliverySummarySchema,
+});
+
 export const orderDetailSchema = z.object({
   id: z.uuid(),
   status: z.enum(OrderStatus),
@@ -176,6 +199,7 @@ export const orderDetailSchema = z.object({
   period: RentalPeriodSchema,
   items: z.array(OrderItemDetailSchema),
   financial: FinancialBreakdownSchema,
+  signing: OrderSigningSummarySchema,
 });
 
 export type OrderDetailResponseDto = z.infer<typeof orderDetailSchema>;

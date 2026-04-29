@@ -14,6 +14,10 @@ import {
   GetLocationContextQuery,
   LocationContextReadModel,
 } from 'src/modules/tenant/public/queries/get-location-context.query';
+import {
+  GetOrderSigningSummaryQuery,
+  OrderSigningSummaryReadModel,
+} from 'src/modules/document-signing/public/queries/get-order-signing-summary.query';
 
 @QueryHandler(GetOrderByIdQuery)
 export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery, GetOrderByIdResponseDto> {
@@ -104,9 +108,14 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
       throw new OrderNotFoundException(query.orderId);
     }
 
-    const locationContext = await this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
-      new GetLocationContextQuery(query.tenantId, order.locationId),
-    );
+    const [locationContext, signing] = await Promise.all([
+      this.queryBus.execute<GetLocationContextQuery, LocationContextReadModel | null>(
+        new GetLocationContextQuery(query.tenantId, order.locationId),
+      ),
+      this.queryBus.execute<GetOrderSigningSummaryQuery, OrderSigningSummaryReadModel>(
+        new GetOrderSigningSummaryQuery(query.tenantId, query.orderId),
+      ),
+    ]);
 
     if (!locationContext) {
       throw new Error(`Location context not found for location "${order.locationId}"`);
@@ -305,6 +314,7 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
         yourRevenue: yourRevenue.toString(),
         ownerObligations: totalOwnerObligations.toString(),
       },
+      signing,
     };
   }
 }
