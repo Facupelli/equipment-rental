@@ -80,23 +80,6 @@ export class OrderDocumentRendererService {
     }) as Promise<Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError>>;
   }
 
-  async renderSignedContract(
-    tenantId: string,
-    orderId: string,
-    signedSummary: SignedContractSummary,
-  ): Promise<Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError>> {
-    return this.render({
-      tenantId,
-      orderId,
-      documentLabel: 'REMITO',
-      fileNamePrefix: 'remito',
-      equipmentTitle: 'LISTA DE EQUIPOS RETIRADOS',
-      requireLinkedCustomerDocumentNumber: true,
-      showRentalSignatureBlock: true,
-      signedSummary,
-    }) as Promise<Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError>>;
-  }
-
   async renderBudget(
     tenantId: string,
     orderId: string,

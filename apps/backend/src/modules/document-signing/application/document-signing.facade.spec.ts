@@ -15,7 +15,6 @@ import { NotificationOrchestrator } from 'src/modules/notifications/application/
 import { NotificationChannel } from 'src/modules/notifications/domain/notification-channel.enum';
 import { ObjectStoragePort } from 'src/modules/object-storage/application/ports/object-storage.port';
 import { PrepareOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-order-agreement-for-signing.query';
-import { PrepareSignedOrderAgreementQuery } from 'src/modules/order/public/queries/prepare-signed-order-agreement.query';
 import { FindTenantByIdQuery } from 'src/modules/tenant/public/queries/find-tenant-by-id.query';
 
 import { SigningSession } from '../domain/entities/signing-session.entity';
@@ -110,15 +109,6 @@ describe('DocumentSigningFacade', () => {
       execute: jest.fn(async (query: unknown) => {
         if (query instanceof PrepareOrderAgreementForSigningQuery) {
           return options?.preparedOrderResult ?? makePreparedOrder();
-        }
-
-        if (query instanceof PrepareSignedOrderAgreementQuery) {
-          return ok({
-            orderId: 'order-1',
-            buffer: Buffer.from('signed-contract-pdf'),
-            documentNumber: 'Tenant-0001',
-            fileName: 'remito-customer-0001-signed',
-          });
         }
 
         if (query instanceof FindTenantByIdQuery) {
@@ -358,6 +348,34 @@ describe('DocumentSigningFacade', () => {
     expect(chainedEvents[5].previousHash).toBe(chainedEvents[4].currentHash);
     expect(chainedEvents[6].previousHash).toBe(chainedEvents[5].currentHash);
     expect(chainedEvents[7].previousHash).toBe(chainedEvents[6].currentHash);
+  });
+
+  it('derives the final signed artifact from the frozen unsigned bytes without live re-rendering', async () => {
+    const input = makeInput(Buffer.from('frozen-unsigned-pdf'));
+    const { facade, objectStorage, queryBus } = makeFacade();
+
+    await facade.prepareSigningSession(input);
+    await facade.streamPublicUnsignedDocument(input.rawToken);
+    await facade.acceptPublicSigningSession({
+      rawToken: input.rawToken,
+      declaredFullName: 'Jane Doe',
+      declaredDocumentNumber: '12345678',
+      acceptanceTextVersion: 'rental-agreement-v1',
+      accepted: true,
+    });
+
+    expect((objectStorage.putObject as jest.Mock).mock.calls).toHaveLength(2);
+    expect((objectStorage.putObject as jest.Mock).mock.calls[1][0]).toMatchObject({
+      body: input.pdfBytes,
+      metadata: expect.objectContaining({
+        unsignedDocumentHash: hashBuffer(input.pdfBytes),
+      }),
+    });
+    expect((objectStorage.putObject as jest.Mock).mock.calls[1][0].metadata.sha256).toBe(hashBuffer(input.pdfBytes));
+    expect((objectStorage.putObject as jest.Mock).mock.calls[1][0].key).toContain('/signed/');
+    expect((queryBus.execute as jest.Mock).mock.calls.some(([query]) => query?.constructor?.name === 'PrepareSignedOrderAgreementQuery')).toBe(
+      false,
+    );
   });
 
   it('streams the final signed artifact through a one-time token', async () => {

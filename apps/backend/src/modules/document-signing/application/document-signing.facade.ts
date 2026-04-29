@@ -25,9 +25,7 @@ import {
   OrderSigningAllowedOnlyForConfirmedOrdersError,
 } from 'src/modules/order/domain/errors/order.errors';
 import { PrepareOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-order-agreement-for-signing.query';
-import { PrepareSignedOrderAgreementQuery } from 'src/modules/order/public/queries/prepare-signed-order-agreement.query';
 import { OrderAgreementForSigningReadModel } from 'src/modules/order/public/read-models/order-agreement-for-signing.read-model';
-import { SignedOrderAgreementReadModel } from 'src/modules/order/public/read-models/signed-order-agreement.read-model';
 
 import {
   DocumentSigningPublicApi,
@@ -137,11 +135,6 @@ export type AcceptPublicSigningError =
 type PrepareOrderAgreementForSigningResult = Result<
   OrderAgreementForSigningReadModel,
   ContractCustomerProfileMissingError | OrderNotFoundError | OrderSigningAllowedOnlyForConfirmedOrdersError
->;
-
-type PrepareSignedOrderAgreementResult = Result<
-  SignedOrderAgreementReadModel,
-  ContractCustomerProfileMissingError | OrderNotFoundError
 >;
 
 @Injectable()
@@ -694,6 +687,8 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     fileName: string;
     pdfBytes: Buffer;
     signedDocumentHash: string;
+    unsignedArtifactId: string;
+    unsignedDocumentHash: string;
     agreementHash: string;
   }): Promise<SigningArtifactStorage> {
     const objectKey = buildSignedArtifactObjectKey({
@@ -713,6 +708,8 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
         sessionId: input.sessionId,
         documentType: input.documentType,
         documentNumber: input.documentNumber,
+        unsignedArtifactId: input.unsignedArtifactId,
+        unsignedDocumentHash: input.unsignedDocumentHash,
         agreementHash: input.agreementHash,
         sha256: input.signedDocumentHash,
       },
@@ -735,28 +732,23 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
     declaredDocumentNumber: string;
     agreementHash: string;
   }): Promise<void> {
-    const signedAgreement = await this.queryBus.execute<PrepareSignedOrderAgreementQuery, PrepareSignedOrderAgreementResult>(
-      new PrepareSignedOrderAgreementQuery(input.session.tenantId, input.session.orderId, {
-        signerFullName: input.signerFullName,
-        declaredDocumentNumber: input.declaredDocumentNumber,
-        recipientEmail: input.session.currentRecipientEmail,
-        signedAt: input.signedAt.toISOString(),
-        sessionReference: input.session.id,
-      }),
-    );
+    const unsignedArtifact = this.requireUnsignedArtifact(input.session);
+    const unsignedPdfStream = await this.objectStorage.getObjectStream({ key: unsignedArtifact.storage.objectKey });
+    const signedPdfBytes = await streamToBuffer(unsignedPdfStream);
+    const signedFileName = buildSignedArtifactFileName(unsignedArtifact.displayFileName);
+    const signedFileNameBase = stripPdfExtension(signedFileName);
+    const signedPdfHash = hashBuffer(signedPdfBytes);
 
-    if (signedAgreement.isErr()) {
-      throw signedAgreement.error;
-    }
-
-    const signedPdfHash = hashBuffer(signedAgreement.value.buffer);
     this.appendAuditEvent(input.session, SIGNED_PDF_GENERATED_EVENT, {
-      documentNumber: signedAgreement.value.documentNumber,
-      fileName: `${signedAgreement.value.fileName}.pdf`,
+      documentNumber: unsignedArtifact.documentNumber,
+      fileName: signedFileName,
+      sourceArtifactId: unsignedArtifact.id,
+      sourceDocumentHash: unsignedArtifact.storage.sha256,
       sha256: signedPdfHash,
       signedAt: input.signedAt.toISOString(),
       agreementHash: input.agreementHash,
       sessionReference: input.session.id,
+      derivedFromFrozenUnsignedArtifact: true,
     });
 
     const storage = await this.recordSignedArtifact({
@@ -764,18 +756,20 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       orderId: input.session.orderId,
       sessionId: input.session.id,
       documentType: input.session.documentType,
-      documentNumber: signedAgreement.value.documentNumber,
-      fileName: signedAgreement.value.fileName,
-      pdfBytes: signedAgreement.value.buffer,
+      documentNumber: unsignedArtifact.documentNumber,
+      fileName: signedFileNameBase,
+      pdfBytes: signedPdfBytes,
       signedDocumentHash: signedPdfHash,
+      unsignedArtifactId: unsignedArtifact.id,
+      unsignedDocumentHash: unsignedArtifact.storage.sha256,
       agreementHash: input.agreementHash,
     });
 
     const artifact = SigningArtifactMetadata.create({
       sessionId: input.session.id,
       kind: SigningArtifactKind.SIGNED_PDF,
-      documentNumber: signedAgreement.value.documentNumber,
-      displayFileName: `${signedAgreement.value.fileName}.pdf`,
+      documentNumber: unsignedArtifact.documentNumber,
+      displayFileName: signedFileName,
       storage,
     });
     const addArtifactResult = input.session.addArtifact(artifact);
@@ -787,21 +781,27 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       artifactId: artifact.id,
       documentNumber: artifact.documentNumber,
       fileName: artifact.displayFileName,
+      sourceArtifactId: unsignedArtifact.id,
+      sourceDocumentHash: unsignedArtifact.storage.sha256,
       bucket: storage.bucket,
       objectKey: storage.objectKey,
       contentType: storage.contentType,
       byteSize: storage.byteSize,
       sha256: storage.sha256,
       agreementHash: input.agreementHash,
+      derivedFromFrozenUnsignedArtifact: true,
     });
 
     const finalCopyRawToken = generateRawSigningToken();
     const finalCopyExpiresAt = new Date(input.signedAt.getTime() + this.signingSessionTtlSeconds * 1000);
-    input.session.issueFinalCopyAccess({ tokenHash: hashString(finalCopyRawToken), expiresAt: finalCopyExpiresAt }, input.signedAt);
+    input.session.issueFinalCopyAccess(
+      { tokenHash: hashString(finalCopyRawToken), expiresAt: finalCopyExpiresAt },
+      input.signedAt,
+    );
 
     this.appendAuditEvent(input.session, FINAL_COPY_EMAIL_REQUESTED_EVENT, {
       recipientEmail: input.session.currentRecipientEmail,
-      documentNumber: signedAgreement.value.documentNumber,
+      documentNumber: unsignedArtifact.documentNumber,
       expiresAt: finalCopyExpiresAt.toISOString(),
       sessionReference: input.session.id,
     });
@@ -810,7 +810,7 @@ export class DocumentSigningFacade implements DocumentSigningPublicApi {
       tenant: input.tenant,
       session: input.session,
       documentType: input.session.documentType,
-      documentNumber: signedAgreement.value.documentNumber,
+      documentNumber: unsignedArtifact.documentNumber,
       rawToken: finalCopyRawToken,
       recipientEmail: input.session.currentRecipientEmail,
       expiresAt: finalCopyExpiresAt,
@@ -1093,6 +1093,14 @@ function buildSignedArtifactObjectKey(props: {
   return `signing/${props.tenantId}/orders/${props.orderId}/sessions/${props.sessionId}/signed/${props.fileName}.pdf`;
 }
 
+function buildSignedArtifactFileName(displayFileName: string): string {
+  return `${stripPdfExtension(displayFileName)}-signed.pdf`;
+}
+
+function stripPdfExtension(fileName: string): string {
+  return fileName.toLowerCase().endsWith('.pdf') ? fileName.slice(0, -4) : fileName;
+}
+
 function hashBuffer(buffer: Buffer): string {
   return createHash('sha256').update(buffer).digest('hex');
 }
@@ -1134,6 +1142,16 @@ function hashAgreementRecord(input: {
 
 function generateRawSigningToken(): string {
   return randomBytes(32).toString('hex');
+}
+
+async function streamToBuffer(stream: Readable): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  return Buffer.concat(chunks);
 }
 
 function normalizeRecipientEmail(value?: string | null): string | null {
