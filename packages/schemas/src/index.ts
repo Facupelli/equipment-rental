@@ -19,6 +19,7 @@ export * from "./order/get-orders-calendar.schema";
 export * from "./order/get-orders.schema";
 export * from "./order/get-orders-schedule-response.schema";
 export * from "./order/get-pending-review-orders.schema";
+export * from "./order/prepare-order-contract-for-signing.schema";
 export * from "./order/order.schema";
 export * from "./portal/bundles.schema";
 export * from "./portal/cart-pricing.schema";

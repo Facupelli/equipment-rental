@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { Prisma } from 'src/generated/prisma/client';
+import { Prisma, SigningDocumentType, SigningSessionStatus } from 'src/generated/prisma/client';
 import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { SigningSession } from 'src/modules/document-signing/domain/entities/signing-session.entity';
@@ -38,6 +38,36 @@ export class SigningSessionRepository {
           orderBy: { sequence: 'asc' },
         },
       },
+    });
+
+    if (!record) {
+      return null;
+    }
+
+    return SigningSessionMapper.toDomain(record);
+  }
+
+  async loadActiveByOrderDocumentType(
+    tenantId: string,
+    orderId: string,
+    documentType: SigningDocumentType,
+  ): Promise<SigningSession | null> {
+    const record = await this.prisma.client.signingSession.findFirst({
+      where: {
+        tenantId,
+        orderId,
+        documentType,
+        status: {
+          notIn: [SigningSessionStatus.SIGNED, SigningSessionStatus.EXPIRED, SigningSessionStatus.VOIDED],
+        },
+      },
+      include: {
+        artifacts: true,
+        auditEvents: {
+          orderBy: { sequence: 'asc' },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!record) {

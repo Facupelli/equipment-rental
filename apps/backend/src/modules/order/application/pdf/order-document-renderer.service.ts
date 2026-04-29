@@ -46,7 +46,9 @@ export interface RenderOrderDocumentInput {
 
 export interface RenderOrderDocumentResult {
   buffer: Buffer;
+  customerId: string | null;
   documentNumber: string;
+  fileName: string;
   downloadFileName: string;
 }
 
@@ -241,7 +243,15 @@ export class OrderDocumentRendererService {
 
     const buffer = await this.contractRenderer.render(contractData);
 
-    return ok({ buffer, documentNumber, downloadFileName: `${input.fileNamePrefix}-${downloadFileName}` });
+    const fileName = `${input.fileNamePrefix}-${downloadFileName}`;
+
+    return ok({
+      buffer,
+      customerId: order.customerId,
+      documentNumber,
+      fileName,
+      downloadFileName: fileName,
+    });
   }
 }
 
