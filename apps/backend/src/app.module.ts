@@ -21,6 +21,7 @@ import { PricingModule } from './modules/pricing/pricing.module';
 import { InternalModule } from './modules/internal/internal.module';
 import { SharedModule } from './modules/shared/shared.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ObjectStorageModule } from './modules/object-storage/object-storage.module';
 import { HealthController } from './health/health.controller';
 import { DomainEventsModule } from './core/domain/events/domain-events.module';
 
@@ -36,6 +37,7 @@ import { DomainEventsModule } from './core/domain/events/domain-events.module';
     InternalModule,
     TenantModule,
     NotificationsModule,
+    ObjectStorageModule,
     AuthModule,
     UsersModule,
     CatalogModule,

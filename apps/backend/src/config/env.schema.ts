@@ -22,6 +22,11 @@ export const EnvSchema = z.object({
   CLOUDFLARE_API_TOKEN: z.string(),
   CLOUDFLARE_ZONE_ID: z.string(),
 
+  R2_ACCOUNT_ID: z.string(),
+  R2_BUCKET_NAME: z.string(),
+  R2_ACCESS_KEY_ID: z.string(),
+  R2_SECRET_ACCESS_KEY: z.string(),
+
   RESEND_API_KEY: z.string(),
   NOTIFICATIONS_EMAIL_FROM: z.string(),
   NOTIFICATIONS_EMAIL_FROM_NAME: z.string().optional(),
