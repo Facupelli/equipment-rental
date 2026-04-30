@@ -6,7 +6,9 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { Env } from 'src/config/env.schema';
+import { AppLogger } from 'src/core/logger/app-logger.service';
 
+import { ObjectStorageProviderError } from '../../application/errors/object-storage-provider.error';
 import { GetObjectInput, ObjectStoragePort, PutObjectInput } from '../../application/ports/object-storage.port';
 
 interface BodyWithByteArray {
@@ -19,10 +21,14 @@ interface BodyWithWebStream {
 
 @Injectable()
 export class R2ObjectStorageAdapter extends ObjectStoragePort {
+  private static readonly providerName = 'R2';
   private readonly bucketName: string;
   private readonly client: S3Client;
 
-  constructor(private readonly configService: ConfigService<Env, true>) {
+  constructor(
+    private readonly configService: ConfigService<Env, true>,
+    private readonly logger: AppLogger,
+  ) {
     super();
 
     const accountId = this.configService.get('R2_ACCOUNT_ID');
@@ -41,37 +47,73 @@ export class R2ObjectStorageAdapter extends ObjectStoragePort {
   }
 
   async putObject(input: PutObjectInput): Promise<void> {
-    await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucketName,
-        Key: input.key,
-        Body: input.body,
-        ContentType: input.contentType,
-        Metadata: input.metadata,
-      }),
-    );
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: input.key,
+          Body: input.body,
+          ContentType: input.contentType,
+          Metadata: input.metadata,
+        }),
+      );
+    } catch (error) {
+      throw this.wrapProviderError('putObject', input.key, error);
+    }
   }
 
   async getObjectBuffer(input: GetObjectInput): Promise<Buffer> {
-    const response = await this.client.send(
-      new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: input.key,
-      }),
-    );
+    let response;
+    try {
+      response = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucketName,
+          Key: input.key,
+        }),
+      );
+    } catch (error) {
+      throw this.wrapProviderError('getObjectBuffer', input.key, error);
+    }
 
     return this.toBuffer(response.Body);
   }
 
   async getObjectStream(input: GetObjectInput): Promise<Readable> {
-    const response = await this.client.send(
-      new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: input.key,
-      }),
-    );
+    let response;
+    try {
+      response = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucketName,
+          Key: input.key,
+        }),
+      );
+    } catch (error) {
+      throw this.wrapProviderError('getObjectStream', input.key, error);
+    }
 
     return this.toReadable(response.Body);
+  }
+
+  private wrapProviderError(
+    operation: 'putObject' | 'getObjectBuffer' | 'getObjectStream',
+    key: string,
+    error: unknown,
+  ) {
+    const message = error instanceof Error ? error.message : 'Unknown object storage provider error.';
+    const trace = error instanceof Error ? error.stack : undefined;
+
+    this.logger.error(
+      `${R2ObjectStorageAdapter.providerName} object storage ${operation} failed for bucket '${this.bucketName}' and key '${key}': ${message}`,
+      trace,
+      R2ObjectStorageAdapter.name,
+    );
+
+    return new ObjectStorageProviderError(
+      R2ObjectStorageAdapter.providerName,
+      operation,
+      `${this.bucketName}/${key}`,
+      `${R2ObjectStorageAdapter.providerName} object storage ${operation} failed for '${this.bucketName}/${key}'. ${message}`,
+    );
   }
 
   private async toBuffer(body: unknown): Promise<Buffer> {

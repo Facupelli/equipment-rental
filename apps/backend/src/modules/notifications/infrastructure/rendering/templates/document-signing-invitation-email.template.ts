@@ -1,5 +1,11 @@
 import { DocumentSigningInvitationEmailPayload, RenderedEmail } from '../../../application/ports/email-renderer.port';
 
+const expirationDateFormatter = new Intl.DateTimeFormat('es-ES', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'UTC',
+});
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -18,7 +24,7 @@ export function renderDocumentSigningInvitationEmailTemplate(
   const replacementLine = payload.isReplacement
     ? 'Este correo reemplaza cualquier invitacion de firma anterior. Usa solo este enlace.'
     : null;
-  const expirationLine = `Este enlace estara disponible hasta ${payload.expiresAt.toUTCString()}.`;
+  const expirationLine = `Este enlace estara disponible hasta ${expirationDateFormatter.format(payload.expiresAt)} UTC.`;
 
   return {
     subject,

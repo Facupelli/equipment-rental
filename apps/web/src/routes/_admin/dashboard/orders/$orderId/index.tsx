@@ -2,9 +2,12 @@ import { FulfillmentMethod } from "@repo/types";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+	BadgeCheck,
 	CheckCircle2,
+	ChevronDown,
 	Clock,
 	ExternalLink,
+	FileSignature,
 	Mail,
 	MapPin,
 	Package,
@@ -28,6 +31,7 @@ import { OrderDetailCancelDialog } from "@/features/orders/components/order-deta
 import { OrderDetailConfirmDialog } from "@/features/orders/components/order-detail-confirm-dialog";
 import { OrderDetailDocumentErrorDialogs } from "@/features/orders/components/order-detail-document-error-dialogs";
 import { OrderDetailLifecycleDialog } from "@/features/orders/components/order-detail-lifecycle-dialog";
+import { OrderSigningInvitationDialog } from "@/features/orders/components/order-signing-invitation-dialog";
 import {
 	OrderDetailProvider,
 	useOrderDetailContext,
@@ -94,6 +98,7 @@ function RouteComponent() {
 					{/* Right */}
 					<div className="space-y-4">
 						<OrderClientCard />
+						<OrderSigningCard />
 						<OrderLogisticsCard />
 						<OrderFinancialsCard />
 					</div>
@@ -108,7 +113,7 @@ function OrderHeader() {
 
 	return (
 		<header className="border-b border-neutral-200 pb-8">
-			<div className="flex flex-col gap-6 pb-4">
+			<div className="flex flex-col gap-6">
 				<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
 					<div>
 						<div className="flex flex-wrap items-center gap-3 mb-1.5">
@@ -137,6 +142,7 @@ function OrderHeader() {
 			<OrderDetailLifecycleDialog />
 			<OrderDetailConfirmDialog />
 			<OrderDetailBudgetDialogs />
+			<OrderSigningInvitationDialog />
 		</header>
 	);
 }
@@ -647,6 +653,117 @@ function OrderClientCard() {
 	);
 }
 
+function OrderSigningCard() {
+	const { order } = useOrderDetailContext();
+	const [isExpanded, setIsExpanded] = useState(false);
+	const isConfirmedLifecycle =
+		order.status === "CONFIRMED" ||
+		order.status === "ACTIVE" ||
+		order.status === "COMPLETED";
+
+	if (!isConfirmedLifecycle) {
+		return null;
+	}
+
+	const invitation = order.signing.latestInvitationDelivery;
+	const finalCopy = order.signing.latestFinalCopyDelivery;
+	const statusMeta = getSigningStatusMeta(order.signing.status);
+	const isSigned = order.signing.status === "SIGNED";
+	const summaryTimestamp =
+		order.signing.signedAt ?? order.signing.openedAt ?? order.signing.expiresAt;
+
+	return (
+		<section className="bg-white border border-neutral-200 rounded-lg p-5">
+			<button
+				type="button"
+				onClick={() => setIsExpanded((previous) => !previous)}
+				className="flex w-full items-start justify-between gap-4 text-left"
+			>
+				<div className="min-w-0">
+					<div className="flex items-center gap-2 pb-3">
+						<span className="font-mono text-[10px] tracking-[0.15em] uppercase text-neutral-400">
+							Firma del contrato
+						</span>
+					</div>
+					<div className="flex items-center gap-3">
+						<div
+							className={`flex size-10 shrink-0 items-center justify-center rounded-full ${statusMeta.iconWrapClassName}`}
+						>
+							<FileSignature className={`size-4 ${statusMeta.iconClassName}`} />
+						</div>
+						<div className="min-w-0">
+							<p className="text-sm font-semibold text-neutral-950">
+								{statusMeta.label}
+							</p>
+							<p className="mt-0.5 text-xs text-neutral-500">
+								{statusMeta.description}
+							</p>
+						</div>
+					</div>
+				</div>
+
+				<div className="flex shrink-0 items-center gap-2 pt-1 text-neutral-400">
+					<ChevronDown
+						className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+					/>
+				</div>
+			</button>
+
+			<div className="mt-4 space-y-3">
+				<SidebarField
+					icon={<Mail className="w-3.5 h-3.5" />}
+					value={
+						invitation.recipientEmail ??
+						order.customer?.email ??
+						"Sin email cargado"
+					}
+				/>
+
+				{!isSigned ? (
+					<SigningSummaryDetails
+						invitationStatus={invitation.status}
+						summaryTimestamp={summaryTimestamp}
+						expiresAt={order.signing.expiresAt}
+					/>
+				) : null}
+			</div>
+
+			{isExpanded ? (
+				<div className="mt-4 space-y-4 border-t border-neutral-100 pt-4">
+					{isSigned ? (
+						<SigningSummaryDetails
+							invitationStatus={invitation.status}
+							summaryTimestamp={summaryTimestamp}
+							expiresAt={order.signing.expiresAt}
+						/>
+					) : null}
+
+					<SigningDetailRow
+						label="Creada"
+						value={formatOptionalSigningDate(order.signing.createdAt)}
+					/>
+					<SigningDetailRow
+						label="Abierta"
+						value={formatOptionalSigningDate(order.signing.openedAt)}
+					/>
+					<SigningDetailRow
+						label="Firmada"
+						value={formatOptionalSigningDate(order.signing.signedAt)}
+					/>
+					<SigningDeliveryBlock
+						title="Última entrega de invitación"
+						delivery={invitation}
+					/>
+					<SigningDeliveryBlock
+						title="Última entrega de copia final"
+						delivery={finalCopy}
+					/>
+				</div>
+			) : null}
+		</section>
+	);
+}
+
 // ─── Logistics Card ───────────────────────────────────────────────────────────
 
 function OrderLogisticsCard() {
@@ -1031,6 +1148,93 @@ function SidebarSectionLabel({ label }: { label: string }) {
 	);
 }
 
+function SigningDetailRow({ label, value }: { label: string; value: string }) {
+	return (
+		<div className="flex items-center justify-between gap-3">
+			<p className="font-mono text-[10px] tracking-[0.12em] uppercase text-neutral-400">
+				{label}
+			</p>
+			<p className="text-sm font-medium text-neutral-950">{value}</p>
+		</div>
+	);
+}
+
+function SigningSummaryDetails({
+	invitationStatus,
+	summaryTimestamp,
+	expiresAt,
+}: {
+	invitationStatus: ParsedOrderDetailResponseDto["signing"]["latestInvitationDelivery"]["status"];
+	summaryTimestamp:
+		| ParsedOrderDetailResponseDto["signing"]["signedAt"]
+		| ParsedOrderDetailResponseDto["signing"]["openedAt"]
+		| ParsedOrderDetailResponseDto["signing"]["expiresAt"];
+	expiresAt: ParsedOrderDetailResponseDto["signing"]["expiresAt"];
+}) {
+	return (
+		<div className="space-y-3">
+			<div className="rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2.5">
+				<p className="font-mono text-[9px] tracking-widest uppercase text-neutral-400 mb-1">
+					Invitacion
+				</p>
+				<p className="text-sm font-semibold text-neutral-950">
+					{getSigningDeliveryLabel(invitationStatus)}
+				</p>
+				<p className="mt-0.5 text-xs text-neutral-500">
+					{summaryTimestamp
+						? formatSigningDate(summaryTimestamp)
+						: "Sin actividad registrada"}
+				</p>
+			</div>
+
+			{expiresAt ? (
+				<div className="rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2.5">
+					<p className="font-mono text-[9px] tracking-widest uppercase text-neutral-400 mb-1">
+						Vence
+					</p>
+					<p className="text-sm font-semibold text-neutral-950">
+						{formatSigningDate(expiresAt)}
+					</p>
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+function SigningDeliveryBlock({
+	title,
+	delivery,
+}: {
+	title: string;
+	delivery: ParsedOrderDetailResponseDto["signing"]["latestInvitationDelivery"];
+}) {
+	return (
+		<div className="rounded-md border border-neutral-100 bg-neutral-50 px-3 py-3">
+			<div className="flex items-center gap-2 text-sm font-semibold text-neutral-950">
+				<BadgeCheck className="size-4 text-neutral-400" />
+				{title}
+			</div>
+			<div className="mt-3 space-y-2">
+				<SigningDetailRow
+					label="Estado"
+					value={getSigningDeliveryLabel(delivery.status)}
+				/>
+				<SigningDetailRow
+					label="Fecha"
+					value={formatOptionalSigningDate(delivery.occurredAt)}
+				/>
+				<SigningDetailRow
+					label="Email"
+					value={delivery.recipientEmail ?? "Sin email"}
+				/>
+				{delivery.failureMessage ? (
+					<p className="text-sm text-red-700">{delivery.failureMessage}</p>
+				) : null}
+			</div>
+		</div>
+	);
+}
+
 function SidebarField({
 	icon,
 	value,
@@ -1044,4 +1248,85 @@ function SidebarField({
 			<span className="text-xs text-neutral-500">{value}</span>
 		</div>
 	);
+}
+
+function getSigningStatusMeta(
+	status: ParsedOrderDetailResponseDto["signing"]["status"],
+) {
+	switch (status) {
+		case "NO_SESSION":
+			return {
+				label: "Sin invitacion activa",
+				description: "Aun no se envio una invitación para firmar.",
+				iconWrapClassName: "bg-neutral-100 text-neutral-600",
+				iconClassName: "text-neutral-600",
+			};
+		case "PENDING":
+			return {
+				label: "Pendiente de apertura",
+				description: "La invitación fue enviada y espera revision del cliente.",
+				iconWrapClassName: "bg-amber-100 text-amber-700",
+				iconClassName: "text-amber-700",
+			};
+		case "OPENED":
+			return {
+				label: "Abierta por el cliente",
+				description: "El documento ya fue abierto, pero todavía no se firmo.",
+				iconWrapClassName: "bg-sky-100 text-sky-700",
+				iconClassName: "text-sky-700",
+			};
+		case "SIGNED":
+			return {
+				label: "Contrato firmado",
+				description: "La aceptación quedo registrada correctamente.",
+				iconWrapClassName: "bg-emerald-100 text-emerald-700",
+				iconClassName: "text-emerald-700",
+			};
+		case "EXPIRED":
+			return {
+				label: "Invitacion vencida",
+				description: "La sesión expiró y requiere un nuevo envio.",
+				iconWrapClassName: "bg-red-100 text-red-700",
+				iconClassName: "text-red-700",
+			};
+		case "VOIDED":
+			return {
+				label: "Sesion anulada",
+				description: "La invitación anterior ya no esta disponible.",
+				iconWrapClassName: "bg-neutral-200 text-neutral-600",
+				iconClassName: "text-neutral-600",
+			};
+	}
+}
+
+function getSigningDeliveryLabel(
+	status: ParsedOrderDetailResponseDto["signing"]["latestInvitationDelivery"]["status"],
+) {
+	switch (status) {
+		case "NOT_SENT":
+			return "No enviada";
+		case "REQUESTED":
+			return "Solicitada";
+		case "SENT":
+			return "Enviada";
+		case "FAILED":
+			return "Fallida";
+	}
+}
+
+function formatSigningDate(
+	value: NonNullable<ParsedOrderDetailResponseDto["signing"]["expiresAt"]>,
+) {
+	return value.format("DD MMM, YYYY · HH:mm");
+}
+
+function formatOptionalSigningDate(
+	value:
+		| ParsedOrderDetailResponseDto["signing"]["createdAt"]
+		| ParsedOrderDetailResponseDto["signing"]["openedAt"]
+		| ParsedOrderDetailResponseDto["signing"]["signedAt"]
+		| ParsedOrderDetailResponseDto["signing"]["expiresAt"]
+		| ParsedOrderDetailResponseDto["signing"]["latestInvitationDelivery"]["occurredAt"],
+) {
+	return value ? formatSigningDate(value) : "Sin registro";
 }

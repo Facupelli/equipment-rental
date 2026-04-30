@@ -2,6 +2,7 @@ import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logge
 import { Request, Response } from 'express';
 import { ProblemException } from '../exceptions/problem.exception';
 import { ProblemDetails } from '@repo/schemas';
+import { ObjectStorageProviderError } from 'src/modules/object-storage/application/errors/object-storage-provider.error';
 
 type HandlerResult = { status: number; problemDetails: ProblemDetails };
 
@@ -22,9 +23,11 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       .json({ ...problemDetails, instance: problemDetails.instance ?? request.url });
   }
 
+  // TODO: improve architecture
   private resolve(exception: unknown, request: Request): HandlerResult {
     return (
       this.tryHandleProblemException(exception) ??
+      this.tryHandleObjectStorageProviderError(exception, request) ??
       this.tryHandleValidationException(exception, request) ??
       this.tryHandleHttpException(exception, request) ??
       this.handleUnknownException(exception, request)
@@ -37,6 +40,21 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     return {
       status: exception.getStatus(),
       problemDetails: exception.getProblemDetails(),
+    };
+  }
+
+  private tryHandleObjectStorageProviderError(exception: unknown, request: Request): HandlerResult | null {
+    if (!(exception instanceof ObjectStorageProviderError)) return null;
+
+    return {
+      status: HttpStatus.BAD_GATEWAY,
+      problemDetails: {
+        type: 'errors://object-storage-unavailable',
+        title: 'Object Storage Unavailable',
+        status: HttpStatus.BAD_GATEWAY,
+        detail: `The requested operation could not be completed because ${exception.provider} object storage is unavailable.`,
+        instance: request.url,
+      },
     };
   }
 

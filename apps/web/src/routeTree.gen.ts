@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SigningRouteImport } from './routes/signing'
 import { Route as PortalRouteRouteImport } from './routes/_portal/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
@@ -35,8 +36,10 @@ import { Route as AdminDashboardOrdersIndexRouteImport } from './routes/_admin/d
 import { Route as AdminDashboardLocationsIndexRouteImport } from './routes/_admin/dashboard/locations/index'
 import { Route as AdminDashboardCustomersIndexRouteImport } from './routes/_admin/dashboard/customers/index'
 import { Route as AdminDashboardCalendarIndexRouteImport } from './routes/_admin/dashboard/calendar/index'
+import { Route as DocumentSigningPublicFinalCopyDownloadRouteImport } from './routes/document-signing/public/final-copy/download'
 import { Route as ApiOrdersOrderIdContractRouteImport } from './routes/api/orders/$orderId/contract'
 import { Route as ApiOrdersOrderIdBudgetRouteImport } from './routes/api/orders/$orderId/budget'
+import { Route as ApiDocumentSigningPublicUnsignedPdfRouteImport } from './routes/api/document-signing/public/unsigned-pdf'
 import { Route as ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport } from './routes/api/customer-profiles/$customerProfileId/identity-document'
 import { Route as PortalAuthGoogleFinalizeRouteImport } from './routes/_portal/auth/google/finalize'
 import { Route as AdminDashboardPromotionsNewRouteImport } from './routes/_admin/dashboard/promotions/new'
@@ -62,6 +65,11 @@ import { Route as AdminDashboardCatalogBundlesBundleIdIndexRouteImport } from '.
 import { Route as AdminDashboardCatalogProductsProductIdEditRouteImport } from './routes/_admin/dashboard/catalog/products/$productId/edit'
 import { Route as AdminDashboardCatalogBundlesBundleIdEditRouteImport } from './routes/_admin/dashboard/catalog/bundles/$bundleId/edit'
 
+const SigningRoute = SigningRouteImport.update({
+  id: '/signing',
+  path: '/signing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortalRouteRoute = PortalRouteRouteImport.update({
   id: '/_portal',
   getParentRoute: () => rootRouteImport,
@@ -200,6 +208,12 @@ const AdminDashboardCalendarIndexRoute =
     path: '/calendar/',
     getParentRoute: () => AdminDashboardRouteRoute,
   } as any)
+const DocumentSigningPublicFinalCopyDownloadRoute =
+  DocumentSigningPublicFinalCopyDownloadRouteImport.update({
+    id: '/document-signing/public/final-copy/download',
+    path: '/document-signing/public/final-copy/download',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiOrdersOrderIdContractRoute =
   ApiOrdersOrderIdContractRouteImport.update({
     id: '/api/orders/$orderId/contract',
@@ -211,6 +225,12 @@ const ApiOrdersOrderIdBudgetRoute = ApiOrdersOrderIdBudgetRouteImport.update({
   path: '/api/orders/$orderId/budget',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDocumentSigningPublicUnsignedPdfRoute =
+  ApiDocumentSigningPublicUnsignedPdfRouteImport.update({
+    id: '/api/document-signing/public/unsigned-pdf',
+    path: '/api/document-signing/public/unsigned-pdf',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute =
   ApiCustomerProfilesCustomerProfileIdIdentityDocumentRouteImport.update({
     id: '/api/customer-profiles/$customerProfileId/identity-document',
@@ -357,6 +377,7 @@ const AdminDashboardCatalogBundlesBundleIdEditRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/signing': typeof SigningRoute
   '/dashboard': typeof AdminDashboardRouteRouteWithChildren
   '/login': typeof PortalLoginRoute
   '/register': typeof PortalRegisterRoute
@@ -375,8 +396,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
+  '/api/document-signing/public/unsigned-pdf': typeof ApiDocumentSigningPublicUnsignedPdfRoute
   '/api/orders/$orderId/budget': typeof ApiOrdersOrderIdBudgetRouteWithChildren
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
+  '/document-signing/public/final-copy/download': typeof DocumentSigningPublicFinalCopyDownloadRoute
   '/dashboard/calendar/': typeof AdminDashboardCalendarIndexRoute
   '/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
@@ -409,6 +432,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/signing': typeof SigningRoute
   '/login': typeof PortalLoginRoute
   '/register': typeof PortalRegisterRoute
   '/api/branding-upload': typeof ApiBrandingUploadRoute
@@ -426,8 +450,10 @@ export interface FileRoutesByTo {
   '/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
+  '/api/document-signing/public/unsigned-pdf': typeof ApiDocumentSigningPublicUnsignedPdfRoute
   '/api/orders/$orderId/budget': typeof ApiOrdersOrderIdBudgetRouteWithChildren
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
+  '/document-signing/public/final-copy/download': typeof DocumentSigningPublicFinalCopyDownloadRoute
   '/dashboard/calendar': typeof AdminDashboardCalendarIndexRoute
   '/dashboard/customers': typeof AdminDashboardCustomersIndexRoute
   '/dashboard/locations': typeof AdminDashboardLocationsIndexRoute
@@ -462,6 +488,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_portal': typeof PortalRouteRouteWithChildren
+  '/signing': typeof SigningRoute
   '/_admin/dashboard': typeof AdminDashboardRouteRouteWithChildren
   '/_portal/_tenant': typeof PortalTenantRouteRouteWithChildren
   '/_portal/login': typeof PortalLoginRoute
@@ -481,8 +508,10 @@ export interface FileRoutesById {
   '/_admin/dashboard/promotions/new': typeof AdminDashboardPromotionsNewRoute
   '/_portal/auth/google/finalize': typeof PortalAuthGoogleFinalizeRoute
   '/api/customer-profiles/$customerProfileId/identity-document': typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
+  '/api/document-signing/public/unsigned-pdf': typeof ApiDocumentSigningPublicUnsignedPdfRoute
   '/api/orders/$orderId/budget': typeof ApiOrdersOrderIdBudgetRouteWithChildren
   '/api/orders/$orderId/contract': typeof ApiOrdersOrderIdContractRouteWithChildren
+  '/document-signing/public/final-copy/download': typeof DocumentSigningPublicFinalCopyDownloadRoute
   '/_admin/dashboard/calendar/': typeof AdminDashboardCalendarIndexRoute
   '/_admin/dashboard/customers/': typeof AdminDashboardCustomersIndexRoute
   '/_admin/dashboard/locations/': typeof AdminDashboardLocationsIndexRoute
@@ -517,6 +546,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/signing'
     | '/dashboard'
     | '/login'
     | '/register'
@@ -535,8 +565,10 @@ export interface FileRouteTypes {
     | '/dashboard/promotions/new'
     | '/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
+    | '/api/document-signing/public/unsigned-pdf'
     | '/api/orders/$orderId/budget'
     | '/api/orders/$orderId/contract'
+    | '/document-signing/public/final-copy/download'
     | '/dashboard/calendar/'
     | '/dashboard/customers/'
     | '/dashboard/locations/'
@@ -569,6 +601,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/signing'
     | '/login'
     | '/register'
     | '/api/branding-upload'
@@ -586,8 +619,10 @@ export interface FileRouteTypes {
     | '/dashboard/promotions/new'
     | '/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
+    | '/api/document-signing/public/unsigned-pdf'
     | '/api/orders/$orderId/budget'
     | '/api/orders/$orderId/contract'
+    | '/document-signing/public/final-copy/download'
     | '/dashboard/calendar'
     | '/dashboard/customers'
     | '/dashboard/locations'
@@ -621,6 +656,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_portal'
+    | '/signing'
     | '/_admin/dashboard'
     | '/_portal/_tenant'
     | '/_portal/login'
@@ -640,8 +676,10 @@ export interface FileRouteTypes {
     | '/_admin/dashboard/promotions/new'
     | '/_portal/auth/google/finalize'
     | '/api/customer-profiles/$customerProfileId/identity-document'
+    | '/api/document-signing/public/unsigned-pdf'
     | '/api/orders/$orderId/budget'
     | '/api/orders/$orderId/contract'
+    | '/document-signing/public/final-copy/download'
     | '/_admin/dashboard/calendar/'
     | '/_admin/dashboard/customers/'
     | '/_admin/dashboard/locations/'
@@ -676,6 +714,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PortalRouteRoute: typeof PortalRouteRouteWithChildren
+  SigningRoute: typeof SigningRoute
   AdminDashboardRouteRoute: typeof AdminDashboardRouteRouteWithChildren
   ApiBrandingUploadRoute: typeof ApiBrandingUploadRoute
   ApiCustomerUploadRoute: typeof ApiCustomerUploadRoute
@@ -685,12 +724,21 @@ export interface RootRouteChildren {
   AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
   AuthGoogleStartRoute: typeof AuthGoogleStartRoute
   ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute: typeof ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute
+  ApiDocumentSigningPublicUnsignedPdfRoute: typeof ApiDocumentSigningPublicUnsignedPdfRoute
   ApiOrdersOrderIdBudgetRoute: typeof ApiOrdersOrderIdBudgetRouteWithChildren
   ApiOrdersOrderIdContractRoute: typeof ApiOrdersOrderIdContractRouteWithChildren
+  DocumentSigningPublicFinalCopyDownloadRoute: typeof DocumentSigningPublicFinalCopyDownloadRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signing': {
+      id: '/signing'
+      path: '/signing'
+      fullPath: '/signing'
+      preLoaderRoute: typeof SigningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_portal': {
       id: '/_portal'
       path: ''
@@ -873,6 +921,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardCalendarIndexRouteImport
       parentRoute: typeof AdminDashboardRouteRoute
     }
+    '/document-signing/public/final-copy/download': {
+      id: '/document-signing/public/final-copy/download'
+      path: '/document-signing/public/final-copy/download'
+      fullPath: '/document-signing/public/final-copy/download'
+      preLoaderRoute: typeof DocumentSigningPublicFinalCopyDownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/orders/$orderId/contract': {
       id: '/api/orders/$orderId/contract'
       path: '/api/orders/$orderId/contract'
@@ -885,6 +940,13 @@ declare module '@tanstack/react-router' {
       path: '/api/orders/$orderId/budget'
       fullPath: '/api/orders/$orderId/budget'
       preLoaderRoute: typeof ApiOrdersOrderIdBudgetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/document-signing/public/unsigned-pdf': {
+      id: '/api/document-signing/public/unsigned-pdf'
+      path: '/api/document-signing/public/unsigned-pdf'
+      fullPath: '/api/document-signing/public/unsigned-pdf'
+      preLoaderRoute: typeof ApiDocumentSigningPublicUnsignedPdfRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/customer-profiles/$customerProfileId/identity-document': {
@@ -1206,6 +1268,7 @@ const ApiOrdersOrderIdContractRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PortalRouteRoute: PortalRouteRouteWithChildren,
+  SigningRoute: SigningRoute,
   AdminDashboardRouteRoute: AdminDashboardRouteRouteWithChildren,
   ApiBrandingUploadRoute: ApiBrandingUploadRoute,
   ApiCustomerUploadRoute: ApiCustomerUploadRoute,
@@ -1216,8 +1279,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthGoogleStartRoute: AuthGoogleStartRoute,
   ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute:
     ApiCustomerProfilesCustomerProfileIdIdentityDocumentRoute,
+  ApiDocumentSigningPublicUnsignedPdfRoute:
+    ApiDocumentSigningPublicUnsignedPdfRoute,
   ApiOrdersOrderIdBudgetRoute: ApiOrdersOrderIdBudgetRouteWithChildren,
   ApiOrdersOrderIdContractRoute: ApiOrdersOrderIdContractRouteWithChildren,
+  DocumentSigningPublicFinalCopyDownloadRoute:
+    DocumentSigningPublicFinalCopyDownloadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

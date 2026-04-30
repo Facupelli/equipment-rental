@@ -1074,7 +1074,7 @@ function buildUnsignedArtifactObjectKey(props: {
   sessionId: string;
   fileName: string;
 }): string {
-  return `signing/${props.tenantId}/orders/${props.orderId}/sessions/${props.sessionId}/unsigned/${props.fileName}.pdf`;
+  return `${props.tenantId}/orders/${props.orderId}/sessions/${props.sessionId}/unsigned/${props.fileName}.pdf`;
 }
 
 function buildSignedArtifactObjectKey(props: {
@@ -1083,7 +1083,7 @@ function buildSignedArtifactObjectKey(props: {
   sessionId: string;
   fileName: string;
 }): string {
-  return `signing/${props.tenantId}/orders/${props.orderId}/sessions/${props.sessionId}/signed/${props.fileName}.pdf`;
+  return `${props.tenantId}/orders/${props.orderId}/sessions/${props.sessionId}/signed/${props.fileName}.pdf`;
 }
 
 function buildSignedArtifactFileName(displayFileName: string): string {

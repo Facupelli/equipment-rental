@@ -225,8 +225,7 @@ export class SigningSessionRepository {
       persistedEvent.type === currentEvent.type &&
       persistedEvent.occurredAt.getTime() === currentEvent.occurredAt.getTime() &&
       persistedEvent.previousHash === currentEvent.previousHash &&
-      persistedEvent.currentHash === currentEvent.currentHash &&
-      JSON.stringify(persistedEvent.payload) === JSON.stringify(currentEvent.payload)
+      persistedEvent.currentHash === currentEvent.currentHash
     );
   }
 }

@@ -6,6 +6,7 @@ import { useOrderConfirmActions } from "./use-order-confirm-actions";
 import { useOrderContractActions } from "./use-order-contract-actions";
 import { useOrderDocumentState } from "./use-order-document-state";
 import { useOrderLifecycleActions } from "./use-order-lifecycle-actions";
+import { useOrderSigningActions } from "./use-order-signing-actions";
 
 export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 	const navigate = useNavigate();
@@ -29,6 +30,7 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 	const confirmActions = useOrderConfirmActions(order);
 	const cancelActions = useOrderCancelActions(order.id);
 	const lifecycleActions = useOrderLifecycleActions(order.id);
+	const signingActions = useOrderSigningActions(order);
 
 	const handleEditOrder = () => {
 		navigate({
@@ -98,6 +100,16 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 			openPickup: lifecycleActions.handleMarkAsPickedUp,
 			openReturn: lifecycleActions.handleMarkAsReturned,
 			submit: lifecycleActions.handleConfirmLifecycleAction,
+		},
+		signing: {
+			isInvitationDialogOpen: signingActions.isInvitationDialogOpen,
+			setIsInvitationDialogOpen: signingActions.setIsInvitationDialogOpen,
+			dialogIntent: signingActions.dialogIntent,
+			submitError: signingActions.submitError,
+			isPending: signingActions.isPending,
+			openSendDialog: signingActions.openSendDialog,
+			openResendDialog: signingActions.openResendDialog,
+			submitInvitation: signingActions.submitInvitation,
 		},
 		edit: {
 			open: handleEditOrder,

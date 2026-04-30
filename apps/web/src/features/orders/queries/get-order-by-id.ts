@@ -24,6 +24,7 @@ export type ParsedOrderDetailResponseDto = Omit<
 	| "pickupAt"
 	| "returnAt"
 	| "financial"
+	| "signing"
 > & {
 	period: ParsedOrderPeriod | null;
 	createdAt: Dayjs;
@@ -56,6 +57,27 @@ export type ParsedOrderDetailResponseDto = Omit<
 				};
 			}
 		>;
+	};
+	signing: Omit<
+		OrderDetailResponseDto["signing"],
+		"createdAt" | "expiresAt" | "openedAt" | "signedAt" | "latestInvitationDelivery" | "latestFinalCopyDelivery"
+	> & {
+		createdAt: Dayjs | null;
+		expiresAt: Dayjs | null;
+		openedAt: Dayjs | null;
+		signedAt: Dayjs | null;
+		latestInvitationDelivery: Omit<
+			OrderDetailResponseDto["signing"]["latestInvitationDelivery"],
+			"occurredAt"
+		> & {
+			occurredAt: Dayjs | null;
+		};
+		latestFinalCopyDelivery: Omit<
+			OrderDetailResponseDto["signing"]["latestFinalCopyDelivery"],
+			"occurredAt"
+		> & {
+			occurredAt: Dayjs | null;
+		};
 	};
 };
 
@@ -102,6 +124,21 @@ function parseOrderDetailResponse(
 						: null,
 				},
 			})),
+		},
+		signing: {
+			...raw.signing,
+			createdAt: parseTimestamp(raw.signing.createdAt),
+			expiresAt: parseTimestamp(raw.signing.expiresAt),
+			openedAt: parseTimestamp(raw.signing.openedAt),
+			signedAt: parseTimestamp(raw.signing.signedAt),
+			latestInvitationDelivery: {
+				...raw.signing.latestInvitationDelivery,
+				occurredAt: parseTimestamp(raw.signing.latestInvitationDelivery.occurredAt),
+			},
+			latestFinalCopyDelivery: {
+				...raw.signing.latestFinalCopyDelivery,
+				occurredAt: parseTimestamp(raw.signing.latestFinalCopyDelivery.occurredAt),
+			},
 		},
 	};
 }

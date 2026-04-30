@@ -56,3 +56,7 @@ export function useOrderCancellation() {
 export function useOrderLifecycle() {
 	return useOrderDetailContext().actions.lifecycle;
 }
+
+export function useOrderSigning() {
+	return useOrderDetailContext().actions.signing;
+}

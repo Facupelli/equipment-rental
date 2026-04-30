@@ -1,5 +1,11 @@
 import { DocumentSigningFinalCopyEmailPayload, RenderedEmail } from '../../../application/ports/email-renderer.port';
 
+const expirationDateFormatter = new Intl.DateTimeFormat('es-ES', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'UTC',
+});
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -15,7 +21,7 @@ export function renderDocumentSigningFinalCopyEmailTemplate(
   const subject = payload.tenantName
     ? `${payload.tenantName}: copia final firmada disponible`
     : 'Copia final firmada disponible';
-  const expirationLine = `Este enlace estara disponible hasta ${payload.expiresAt.toUTCString()}.`;
+  const expirationLine = `Este enlace estara disponible hasta ${expirationDateFormatter.format(payload.expiresAt)} UTC.`;
 
   return {
     subject,
