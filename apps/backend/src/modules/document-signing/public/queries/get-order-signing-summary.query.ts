@@ -1,4 +1,9 @@
-import { SigningDocumentType } from 'src/generated/prisma/client';
+export const DocumentSigningPublicDocumentTypes = {
+  RENTAL_AGREEMENT: 'RENTAL_AGREEMENT',
+} as const;
+
+export type DocumentSigningPublicDocumentType =
+  (typeof DocumentSigningPublicDocumentTypes)[keyof typeof DocumentSigningPublicDocumentTypes];
 
 export type OrderSigningSummaryStatus = 'NO_SESSION' | 'PENDING' | 'OPENED' | 'SIGNED' | 'EXPIRED' | 'VOIDED';
 
@@ -14,7 +19,7 @@ export type SigningDeliverySummaryReadModel = {
 
 export type OrderSigningSummaryReadModel = {
   status: OrderSigningSummaryStatus;
-  documentType: SigningDocumentType | null;
+  documentType: DocumentSigningPublicDocumentType | null;
   createdAt: Date | null;
   expiresAt: Date | null;
   openedAt: Date | null;
@@ -27,6 +32,6 @@ export class GetOrderSigningSummaryQuery {
   constructor(
     public readonly tenantId: string,
     public readonly orderId: string,
-    public readonly documentType: SigningDocumentType,
+    public readonly documentType: DocumentSigningPublicDocumentType,
   ) {}
 }

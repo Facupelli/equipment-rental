@@ -1,5 +1,4 @@
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
-import { SigningDocumentType } from 'src/generated/prisma/client';
 import { GetOrderByIdQuery } from './get-order-by-id.query';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { DateRange } from 'src/core/domain/value-objects/date-range.value-object';
@@ -16,6 +15,7 @@ import {
   LocationContextReadModel,
 } from 'src/modules/tenant/public/queries/get-location-context.query';
 import {
+  DocumentSigningPublicDocumentTypes,
   GetOrderSigningSummaryQuery,
   OrderSigningSummaryReadModel,
 } from 'src/modules/document-signing/public/queries/get-order-signing-summary.query';
@@ -114,7 +114,11 @@ export class GetOrderByIdQueryHandler implements IQueryHandler<GetOrderByIdQuery
         new GetLocationContextQuery(query.tenantId, order.locationId),
       ),
       this.queryBus.execute<GetOrderSigningSummaryQuery, OrderSigningSummaryReadModel>(
-        new GetOrderSigningSummaryQuery(query.tenantId, query.orderId, SigningDocumentType.RENTAL_AGREEMENT),
+        new GetOrderSigningSummaryQuery(
+          query.tenantId,
+          query.orderId,
+          DocumentSigningPublicDocumentTypes.RENTAL_AGREEMENT,
+        ),
       ),
     ]);
 

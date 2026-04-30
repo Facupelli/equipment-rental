@@ -1,42 +1,46 @@
-import { Controller, Get, GoneException, Headers, NotFoundException, Query, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Headers, Query, Res } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
 import { Response } from 'express';
 
 import { Public } from 'src/core/decorators/public.decorator';
-import { ProblemException } from 'src/core/exceptions/problem.exception';
-import { DocumentSigningFacade } from '../../document-signing.facade';
-import {
-  SigningSessionExpiredError,
-  SigningSessionTokenNotFoundError,
-  SigningSessionUnavailableError,
-  UnsignedSigningArtifactNotFoundError,
-} from 'src/modules/document-signing/domain/errors/document-signing.errors';
+import { extractBearerToken, mapDocumentSigningPublicHttpError } from '../../document-signing-public-http.helper';
+import { StreamPublicUnsignedDocumentService } from '../../services/stream-public-unsigned-document.service';
 
 import { ResolvePublicSigningSessionQueryDto } from './get-public-signing-session.request.dto';
 import {
   PublicSigningSessionResolveResponseDto,
   PublicSigningSessionResponseDto,
 } from './get-public-signing-session.response.dto';
+import { GetPublicSigningSessionQuery } from './get-public-signing-session.query';
+import { ResolvePublicSigningSessionQuery } from '../resolve-public-signing-session/resolve-public-signing-session.query';
 
 @Public()
 @Controller('document-signing/public/sessions')
 export class GetPublicSigningSessionHttpController {
-  constructor(private readonly documentSigningFacade: DocumentSigningFacade) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly streamPublicUnsignedDocumentService: StreamPublicUnsignedDocumentService,
+  ) {}
 
   @Get('resolve')
   async resolve(@Query() query: ResolvePublicSigningSessionQueryDto): Promise<PublicSigningSessionResolveResponseDto> {
     try {
-      return await this.documentSigningFacade.resolvePublicSigningSession(query.token);
+      return await this.queryBus.execute(new ResolvePublicSigningSessionQuery(query.token));
     } catch (error) {
-      throw mapPublicSigningError(error);
+      throw mapDocumentSigningPublicHttpError(error, {
+        signingSessionUnavailableAsProblemException: true,
+      });
     }
   }
 
   @Get('me')
   async getSession(@Headers('authorization') authorization?: string): Promise<PublicSigningSessionResponseDto> {
     try {
-      return await this.documentSigningFacade.getPublicSigningSession(extractBearerToken(authorization));
+      return await this.queryBus.execute(new GetPublicSigningSessionQuery(extractBearerToken(authorization)));
     } catch (error) {
-      throw mapPublicSigningError(error);
+      throw mapDocumentSigningPublicHttpError(error, {
+        signingSessionUnavailableAsProblemException: true,
+      });
     }
   }
 
@@ -46,7 +50,7 @@ export class GetPublicSigningSessionHttpController {
     @Res() res: Response,
   ): Promise<void> {
     try {
-      const document = await this.documentSigningFacade.streamPublicUnsignedDocument(extractBearerToken(authorization));
+      const document = await this.streamPublicUnsignedDocumentService.stream(extractBearerToken(authorization));
 
       res.set({
         'Content-Type': document.contentType,
@@ -56,56 +60,9 @@ export class GetPublicSigningSessionHttpController {
 
       document.stream.pipe(res);
     } catch (error) {
-      throw mapPublicSigningError(error);
+      throw mapDocumentSigningPublicHttpError(error, {
+        signingSessionUnavailableAsProblemException: true,
+      });
     }
   }
-}
-
-function extractBearerToken(authorization?: string): string {
-  const [scheme, token] = authorization?.trim().split(/\s+/, 2) ?? [];
-
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    throw new ProblemException(
-      HttpStatus.UNAUTHORIZED,
-      'Signing Token Required',
-      'Authorization header must contain a Bearer signing token.',
-      'errors://signing-token-required',
-    );
-  }
-
-  return token;
-}
-
-function mapPublicSigningError(error: unknown): Error {
-  if (error instanceof ProblemException) {
-    return error;
-  }
-
-  if (error instanceof SigningSessionTokenNotFoundError) {
-    return new NotFoundException(error.message);
-  }
-
-  if (error instanceof SigningSessionExpiredError) {
-    return new GoneException(error.message);
-  }
-
-  if (error instanceof SigningSessionUnavailableError) {
-    return new ProblemException(
-      HttpStatus.CONFLICT,
-      'Signing Session Unavailable',
-      error.message,
-      'errors://signing-session-unavailable',
-    );
-  }
-
-  if (error instanceof UnsignedSigningArtifactNotFoundError) {
-    return new ProblemException(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      'Signing Artifact Missing',
-      error.message,
-      'errors://signing-artifact-missing',
-    );
-  }
-
-  return error as Error;
 }

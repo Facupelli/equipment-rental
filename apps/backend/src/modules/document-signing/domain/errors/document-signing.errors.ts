@@ -26,9 +26,33 @@ export class SigningInvitationRecipientEmailRequiredError extends DocumentSignin
   }
 }
 
+export class SigningInvitationOrderNotFoundError extends DocumentSigningError {
+  constructor(orderId: string) {
+    super(`Order "${orderId}" was not found.`);
+  }
+}
+
+export class SigningInvitationOrderNotReadyError extends DocumentSigningError {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+export class SigningInvitationCustomerProfileMissingError extends DocumentSigningError {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export class SigningInvitationEmailDeliveryFailedError extends DocumentSigningError {
   constructor(message: string) {
     super(message);
+  }
+}
+
+export class SignedOrderAgreementRenderingFailedError extends DocumentSigningError {
+  constructor(orderId: string) {
+    super(`Unable to generate the final signed agreement for order "${orderId}".`);
   }
 }
 

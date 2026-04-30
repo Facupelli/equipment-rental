@@ -1,9 +1,11 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Prisma } from 'src/generated/prisma/client';
-import { SigningAuditEventType, SigningSessionStatus } from 'src/generated/prisma/client';
+import { SigningAuditEventType, SigningDocumentType, SigningSessionStatus } from 'src/generated/prisma/client';
 
 import { PrismaService } from 'src/core/database/prisma.service';
 import {
+  DocumentSigningPublicDocumentType,
+  DocumentSigningPublicDocumentTypes,
   GetOrderSigningSummaryQuery,
   OrderSigningSummaryReadModel,
   OrderSigningSummaryStatus,
@@ -40,7 +42,7 @@ export class GetOrderSigningSummaryQueryHandler implements IQueryHandler<
       where: {
         tenantId: query.tenantId,
         orderId: query.orderId,
-        documentType: query.documentType,
+        documentType: mapPublicDocumentTypeToPrisma(query.documentType),
       },
       orderBy: { createdAt: 'desc' },
       select: {
@@ -69,7 +71,7 @@ export class GetOrderSigningSummaryQueryHandler implements IQueryHandler<
 
     return {
       status: effectiveStatus,
-      documentType: session.documentType,
+      documentType: mapPrismaDocumentTypeToPublic(session.documentType),
       createdAt: session.createdAt,
       expiresAt: session.expiresAt,
       openedAt: session.openedAt,
@@ -77,6 +79,24 @@ export class GetOrderSigningSummaryQueryHandler implements IQueryHandler<
       latestInvitationDelivery: resolveDeliverySummary(session.auditEvents, INVITATION_DELIVERY_EVENT_TYPES),
       latestFinalCopyDelivery: resolveDeliverySummary(session.auditEvents, FINAL_COPY_DELIVERY_EVENT_TYPES),
     };
+  }
+}
+
+function mapPublicDocumentTypeToPrisma(documentType: DocumentSigningPublicDocumentType): SigningDocumentType {
+  switch (documentType) {
+    case DocumentSigningPublicDocumentTypes.RENTAL_AGREEMENT:
+      return SigningDocumentType.RENTAL_AGREEMENT;
+    default:
+      return assertUnreachable(documentType);
+  }
+}
+
+function mapPrismaDocumentTypeToPublic(documentType: SigningDocumentType): DocumentSigningPublicDocumentType {
+  switch (documentType) {
+    case SigningDocumentType.RENTAL_AGREEMENT:
+      return DocumentSigningPublicDocumentTypes.RENTAL_AGREEMENT;
+    default:
+      return assertUnreachable(documentType);
   }
 }
 
@@ -161,4 +181,8 @@ function asRecord(value: Prisma.JsonValue): Record<string, Prisma.JsonValue> | n
 function readString(record: Record<string, Prisma.JsonValue> | null, key: string): string | null {
   const value = record?.[key];
   return typeof value === 'string' ? value : null;
+}
+
+function assertUnreachable(value: never): never {
+  throw new Error(`Unsupported document signing document type: ${String(value)}`);
 }

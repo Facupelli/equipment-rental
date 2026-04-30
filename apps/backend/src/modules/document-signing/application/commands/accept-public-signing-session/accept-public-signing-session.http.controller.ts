@@ -1,33 +1,17 @@
-import {
-  Body,
-  ConflictException,
-  Controller,
-  GoneException,
-  Headers,
-  HttpCode,
-  HttpStatus,
-  NotFoundException,
-  Post,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, HttpStatus, Post, UnprocessableEntityException } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { Result } from 'neverthrow';
 
 import { Public } from 'src/core/decorators/public.decorator';
-import { ProblemException } from 'src/core/exceptions/problem.exception';
 import {
   SigningAcceptanceConfirmationRequiredError,
   SigningAcceptanceIdentityRequiredError,
   SigningSessionDocumentNotPresentedError,
-  SigningSessionExpiredError,
-  SigningSessionStatusTransitionNotAllowedError,
-  SigningSessionTokenNotFoundError,
-  SigningSessionUnavailableError,
-  UnsignedSigningArtifactNotFoundError,
 } from 'src/modules/document-signing/domain/errors/document-signing.errors';
 
-import { AcceptPublicSigningError, AcceptPublicSigningResult } from '../../document-signing.facade';
+import { extractBearerToken, mapDocumentSigningPublicHttpError } from '../../document-signing-public-http.helper';
 import { AcceptPublicSigningSessionCommand } from './accept-public-signing-session.command';
+import { AcceptPublicSigningError, AcceptPublicSigningResult } from './accept-public-signing-session.contract';
 import { AcceptPublicSigningSessionBodyDto } from './accept-public-signing-session.request.dto';
 import { AcceptPublicSigningSessionResponseDto } from './accept-public-signing-session.response.dto';
 
@@ -58,22 +42,6 @@ export class AcceptPublicSigningSessionHttpController {
     if (result.isErr()) {
       const error = result.error;
 
-      if (error instanceof SigningSessionTokenNotFoundError) {
-        throw new NotFoundException(error.message);
-      }
-
-      if (error instanceof SigningSessionExpiredError) {
-        throw new GoneException(error.message);
-      }
-
-      if (error instanceof SigningSessionUnavailableError) {
-        throw new ConflictException(error.message);
-      }
-
-      if (error instanceof SigningSessionStatusTransitionNotAllowedError) {
-        throw new ConflictException(error.message);
-      }
-
       if (
         error instanceof SigningAcceptanceConfirmationRequiredError ||
         error instanceof SigningAcceptanceIdentityRequiredError ||
@@ -82,33 +50,9 @@ export class AcceptPublicSigningSessionHttpController {
         throw new UnprocessableEntityException(error.message);
       }
 
-      if (error instanceof UnsignedSigningArtifactNotFoundError) {
-        throw new ProblemException(
-          HttpStatus.INTERNAL_SERVER_ERROR,
-          'Signing Artifact Missing',
-          error.message,
-          'errors://signing-artifact-missing',
-        );
-      }
-
-      throw error;
+      throw mapDocumentSigningPublicHttpError(error);
     }
 
     return result.value;
   }
-}
-
-function extractBearerToken(authorization?: string): string {
-  const [scheme, token] = authorization?.trim().split(/\s+/, 2) ?? [];
-
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    throw new ProblemException(
-      HttpStatus.UNAUTHORIZED,
-      'Signing Token Required',
-      'Authorization header must contain a Bearer signing token.',
-      'errors://signing-token-required',
-    );
-  }
-
-  return token;
 }
