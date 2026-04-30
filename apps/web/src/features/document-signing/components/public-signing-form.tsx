@@ -172,9 +172,7 @@ export function PublicSigningForm({
 					disabled={isPending}
 					className="w-full"
 				>
-					{isPending
-						? "Registrando aceptacion..."
-						: "Aceptar y firmar contrato"}
+					{isPending ? "Registrando..." : "Aceptar y firmar contrato"}
 				</Button>
 			</CardFooter>
 		</Card>

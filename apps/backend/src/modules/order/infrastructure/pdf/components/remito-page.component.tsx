@@ -1,6 +1,10 @@
 import React from 'react';
 import { Image, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
-import { ContractData, EquipmentLine } from 'src/modules/order/domain/ports/contract-render.port';
+import {
+  ContractData,
+  EquipmentLine,
+  SignedContractSummary,
+} from 'src/modules/order/domain/ports/contract-render.port';
 
 const A4_PAGE_SIZE = { width: 595.28, height: 841.89 } as const;
 
@@ -61,9 +65,9 @@ const s = StyleSheet.create({
   frame: {
     border: '2pt solid #111111',
     borderRadius: 14,
-    paddingTop: 18,
-    paddingHorizontal: 28,
-    paddingBottom: 18,
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   frameFirstPage: {
     height: 690,
@@ -131,12 +135,12 @@ const s = StyleSheet.create({
   },
   sectionDivider: {
     borderTop: '2pt solid #111111',
-    marginHorizontal: -28,
+    marginHorizontal: -16,
     marginVertical: 12,
   },
   divider: {
     borderTop: '2pt solid #111111',
-    marginHorizontal: -28,
+    marginHorizontal: -16,
     marginVertical: 12,
   },
 
@@ -178,10 +182,42 @@ const s = StyleSheet.create({
   signatureRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-end',
     marginTop: 20,
   },
   signatureBlock: {
     width: '38%',
+  },
+  digitalSignatureBlock: {
+    width: '38%',
+  },
+  digitalSignatureInfo: {
+    marginBottom: 6,
+  },
+  digitalSignatureName: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 8,
+    textAlign: 'center',
+  },
+  digitalSignatureDoc: {
+    fontSize: 7,
+    color: '#444',
+    textAlign: 'center',
+  },
+  digitalSignatureLine: {
+    borderBottom: '1pt solid #111111',
+    marginBottom: 6,
+  },
+  digitalSignatureLabel: {
+    fontSize: 7.8,
+    color: '#111',
+    textAlign: 'center',
+  },
+  digitalSignatureTimestamp: {
+    fontSize: 6.2,
+    color: '#737373',
+    textAlign: 'center',
+    marginTop: 2,
   },
   signatureVisual: {
     position: 'relative',
@@ -251,6 +287,7 @@ interface RemitoPageProps {
 
 export function RemitoPage({ data, columns, isContinuation = false }: RemitoPageProps) {
   const { document } = data;
+  const signedSummary = document.signedSummary;
 
   return (
     <Page size={A4_PAGE_SIZE} style={s.page} wrap={false}>
@@ -259,9 +296,9 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
           <View />
           <View style={s.headerRight}>
             <View style={s.headerRightContent}>
-               <Text style={s.remitoNumber}>
-                 {document.label} N° {document.number}
-               </Text>
+              <Text style={s.remitoNumber}>
+                {document.label} N° {document.number}
+              </Text>
             </View>
           </View>
         </View>
@@ -288,13 +325,13 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
                     <View style={s.infoCell}>
                       <View style={s.infoInline}>
                         <Text style={s.infoLabel}>FECHA DE RETIRO:</Text>
-                         <Text style={s.infoValue}>{document.pickupDate}</Text>
+                        <Text style={s.infoValue}>{document.pickupDate}</Text>
                       </View>
                     </View>
                     <View style={s.infoCell}>
                       <View style={s.infoInline}>
                         <Text style={s.infoLabel}>PRECIO ACORDADO:</Text>
-                         <Text style={s.infoValue}>{document.agreedPrice}</Text>
+                        <Text style={s.infoValue}>{document.agreedPrice}</Text>
                       </View>
                     </View>
                   </View>
@@ -303,7 +340,7 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
                     <View style={s.infoCell}>
                       <View style={s.infoInline}>
                         <Text style={s.infoLabel}>FECHA DE DEVOLUCIÓN:</Text>
-                         <Text style={s.infoValue}>{document.returnDate}</Text>
+                        <Text style={s.infoValue}>{document.returnDate}</Text>
                       </View>
                     </View>
                     <View style={s.infoCell}>
@@ -315,7 +352,7 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
                     <View style={s.infoCell}>
                       <View style={s.infoInline}>
                         <Text style={s.infoLabel}>CANTIDAD DE JORNADAS:</Text>
-                         <Text style={s.infoValue}>{document.jornadas}</Text>
+                        <Text style={s.infoValue}>{document.jornadas}</Text>
                       </View>
                     </View>
                     <View style={s.infoCell} />
@@ -344,12 +381,16 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
           </View>
 
           <View style={s.signatureRow}>
-            <View style={s.signatureBlock}>
-              <View style={s.signatureVisual}>
-                <View style={s.signatureLine} />
+            {signedSummary ? (
+              <ElectronicAcceptanceBlock summary={signedSummary} />
+            ) : (
+              <View style={s.signatureBlock}>
+                <View style={s.signatureVisual}>
+                  <View style={s.signatureLine} />
+                </View>
+                <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DE PRODUCCIÓN</Text>
               </View>
-              <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DE PRODUCCIÓN</Text>
-            </View>
+            )}
             {document.showRentalSignatureBlock && (
               <View style={s.signatureBlock}>
                 <View style={s.signatureVisual}>
@@ -376,6 +417,19 @@ export function RemitoPage({ data, columns, isContinuation = false }: RemitoPage
   );
 }
 
+function ElectronicAcceptanceBlock({ summary }: { summary: SignedContractSummary }) {
+  return (
+    <View style={s.digitalSignatureBlock}>
+      <View style={s.digitalSignatureInfo}>
+        <Text style={s.digitalSignatureName}>{summary.signerFullName}</Text>
+        <Text style={s.digitalSignatureDoc}>NIE: {summary.declaredDocumentNumber}</Text>
+        <Text style={s.digitalSignatureTimestamp}>{summary.signedAt}</Text>
+      </View>
+      <View style={s.digitalSignatureLine} />
+      <Text style={s.digitalSignatureLabel}>FIRMA DIGITAL DEL ARRENDATARIO</Text>
+    </View>
+  );
+}
 // ---------------------------------------------------------------------------
 // Equipment line sub-component
 // ---------------------------------------------------------------------------

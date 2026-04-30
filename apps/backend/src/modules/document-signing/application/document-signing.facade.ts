@@ -25,8 +25,10 @@ import {
   OrderNotFoundError,
   OrderSigningAllowedOnlyForConfirmedOrdersError,
 } from 'src/modules/order/domain/errors/order.errors';
+import { RenderSignedOrderAgreementQuery } from 'src/modules/order/public/queries/render-signed-order-agreement.query';
 import { PrepareOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-order-agreement-for-signing.query';
 import { OrderAgreementForSigningReadModel } from 'src/modules/order/public/read-models/order-agreement-for-signing.read-model';
+import { RenderedOrderAgreementReadModel } from 'src/modules/order/public/read-models/rendered-order-agreement.read-model';
 
 import { SigningArtifactMetadata } from '../domain/entities/signing-artifact-metadata.entity';
 import { SigningAuditEvent, SigningAuditPayload } from '../domain/entities/signing-audit-event.entity';
@@ -715,14 +717,34 @@ export class DocumentSigningFacade {
     agreementHash: string;
   }): Promise<{ documentNumber: string; rawToken: string; expiresAt: Date }> {
     const unsignedArtifact = this.requireUnsignedArtifact(input.session);
-    const unsignedPdfStream = await this.objectStorage.getObjectStream({ key: unsignedArtifact.storage.objectKey });
-    const signedPdfBytes = await streamToBuffer(unsignedPdfStream);
-    const signedFileName = buildSignedArtifactFileName(unsignedArtifact.displayFileName);
+    const signedAgreementResult = await this.queryBus.execute<
+      RenderSignedOrderAgreementQuery,
+      Result<
+        RenderedOrderAgreementReadModel,
+        ContractCustomerProfileMissingError | OrderNotFoundError | OrderSigningAllowedOnlyForConfirmedOrdersError
+      >
+    >(
+      new RenderSignedOrderAgreementQuery(
+        input.session.tenantId,
+        input.session.orderId,
+        input.session.currentDeclaredFullName ?? '',
+        input.session.currentDeclaredDocumentNumber ?? '',
+        input.session.currentRecipientEmail,
+        input.signedAt,
+        input.session.id,
+      ),
+    );
+    if (signedAgreementResult.isErr()) {
+      throw signedAgreementResult.error;
+    }
+
+    const signedPdfBytes = signedAgreementResult.value.buffer;
+    const signedFileName = ensurePdfFileName(signedAgreementResult.value.fileName);
     const signedFileNameBase = stripPdfExtension(signedFileName);
     const signedPdfHash = hashBuffer(signedPdfBytes);
 
     this.appendAuditEvent(input.session, SIGNED_PDF_GENERATED_EVENT, {
-      documentNumber: unsignedArtifact.documentNumber,
+      documentNumber: signedAgreementResult.value.documentNumber,
       fileName: signedFileName,
       sourceArtifactId: unsignedArtifact.id,
       sourceDocumentHash: unsignedArtifact.storage.sha256,
@@ -738,7 +760,7 @@ export class DocumentSigningFacade {
       orderId: input.session.orderId,
       sessionId: input.session.id,
       documentType: input.session.documentType,
-      documentNumber: unsignedArtifact.documentNumber,
+      documentNumber: signedAgreementResult.value.documentNumber,
       fileName: signedFileNameBase,
       pdfBytes: signedPdfBytes,
       signedDocumentHash: signedPdfHash,
@@ -750,7 +772,7 @@ export class DocumentSigningFacade {
     const artifact = SigningArtifactMetadata.create({
       sessionId: input.session.id,
       kind: SigningArtifactKind.SIGNED_PDF,
-      documentNumber: unsignedArtifact.documentNumber,
+      documentNumber: signedAgreementResult.value.documentNumber,
       displayFileName: signedFileName,
       storage,
     });
@@ -783,13 +805,13 @@ export class DocumentSigningFacade {
 
     this.appendAuditEvent(input.session, FINAL_COPY_EMAIL_REQUESTED_EVENT, {
       recipientEmail: input.session.currentRecipientEmail,
-      documentNumber: unsignedArtifact.documentNumber,
+      documentNumber: signedAgreementResult.value.documentNumber,
       expiresAt: finalCopyExpiresAt.toISOString(),
       sessionReference: input.session.id,
     });
 
     return {
-      documentNumber: unsignedArtifact.documentNumber,
+      documentNumber: signedAgreementResult.value.documentNumber,
       rawToken: finalCopyRawToken,
       expiresAt: finalCopyExpiresAt,
     };
@@ -1086,12 +1108,12 @@ function buildSignedArtifactObjectKey(props: {
   return `${props.tenantId}/orders/${props.orderId}/sessions/${props.sessionId}/signed/${props.fileName}.pdf`;
 }
 
-function buildSignedArtifactFileName(displayFileName: string): string {
-  return `${stripPdfExtension(displayFileName)}-signed.pdf`;
-}
-
 function stripPdfExtension(fileName: string): string {
   return fileName.toLowerCase().endsWith('.pdf') ? fileName.slice(0, -4) : fileName;
+}
+
+function ensurePdfFileName(fileName: string): string {
+  return fileName.toLowerCase().endsWith('.pdf') ? fileName : `${fileName}.pdf`;
 }
 
 function hashBuffer(buffer: Buffer): string {
@@ -1135,16 +1157,6 @@ function hashAgreementRecord(input: {
 
 function generateRawSigningToken(): string {
   return randomBytes(32).toString('hex');
-}
-
-async function streamToBuffer(stream: Readable): Promise<Buffer> {
-  const chunks: Buffer[] = [];
-
-  for await (const chunk of stream) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-
-  return Buffer.concat(chunks);
 }
 
 function normalizeRecipientEmail(value?: string | null): string | null {

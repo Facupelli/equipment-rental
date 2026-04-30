@@ -14,6 +14,7 @@ import {
   ContractCustomerProfileMissingError,
   OrderBudgetMustBeDraftError,
 } from 'src/modules/order/domain/errors/contract.errors';
+import { OrderSigningAllowedOnlyForConfirmedOrdersError } from 'src/modules/order/domain/errors/order.errors';
 import { OrderNotFoundException } from 'src/modules/order/domain/exceptions/order.exceptions';
 import { BookingSnapshot } from 'src/modules/order/domain/value-objects/booking-snapshot.value-object';
 import { PriceSnapshot } from 'src/modules/order/domain/value-objects/price-snapshot.value-object';
@@ -42,8 +43,17 @@ export interface RenderOrderDocumentInput {
   customerOverride?: OrderDocumentCustomerInput;
   requireLinkedCustomerDocumentNumber?: boolean;
   requireDraftOrder?: boolean;
+  requireConfirmedOrder?: boolean;
   showRentalSignatureBlock?: boolean;
-  signedSummary?: SignedContractSummary;
+  signedSummary?: RenderSignedContractSummaryInput | SignedContractSummary;
+}
+
+export interface RenderSignedContractSummaryInput {
+  signerFullName: string;
+  declaredDocumentNumber: string;
+  recipientEmail: string;
+  signedAt: Date;
+  sessionReference: string;
 }
 
 export interface RenderOrderDocumentResult {
@@ -55,7 +65,10 @@ export interface RenderOrderDocumentResult {
   downloadFileName: string;
 }
 
-type RenderOrderDocumentError = ContractCustomerProfileMissingError | OrderBudgetMustBeDraftError;
+type RenderOrderDocumentError =
+  | ContractCustomerProfileMissingError
+  | OrderBudgetMustBeDraftError
+  | OrderSigningAllowedOnlyForConfirmedOrdersError;
 
 @Injectable()
 export class OrderDocumentRendererService {
@@ -68,7 +81,9 @@ export class OrderDocumentRendererService {
   async renderContract(
     tenantId: string,
     orderId: string,
-  ): Promise<Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError>> {
+  ): Promise<
+    Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError | OrderSigningAllowedOnlyForConfirmedOrdersError>
+  > {
     return this.render({
       tenantId,
       orderId,
@@ -76,8 +91,33 @@ export class OrderDocumentRendererService {
       fileNamePrefix: 'remito',
       equipmentTitle: 'LISTA DE EQUIPOS RETIRADOS',
       requireLinkedCustomerDocumentNumber: true,
+      requireConfirmedOrder: true,
       showRentalSignatureBlock: true,
-    }) as Promise<Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError>>;
+    }) as Promise<
+      Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError | OrderSigningAllowedOnlyForConfirmedOrdersError>
+    >;
+  }
+
+  async renderSignedContract(
+    tenantId: string,
+    orderId: string,
+    signedSummary: RenderSignedContractSummaryInput,
+  ): Promise<
+    Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError | OrderSigningAllowedOnlyForConfirmedOrdersError>
+  > {
+    return this.render({
+      tenantId,
+      orderId,
+      documentLabel: 'REMITO',
+      fileNamePrefix: 'remito',
+      equipmentTitle: 'LISTA DE EQUIPOS RETIRADOS',
+      requireLinkedCustomerDocumentNumber: true,
+      requireConfirmedOrder: true,
+      showRentalSignatureBlock: true,
+      signedSummary,
+    }) as Promise<
+      Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError | OrderSigningAllowedOnlyForConfirmedOrdersError>
+    >;
   }
 
   async renderBudget(
@@ -166,6 +206,10 @@ export class OrderDocumentRendererService {
       return err(new OrderBudgetMustBeDraftError(order.id, order.status as OrderStatus));
     }
 
+    if (input.requireConfirmedOrder && order.status !== OrderStatus.CONFIRMED) {
+      return err(new OrderSigningAllowedOnlyForConfirmedOrdersError(order.id, order.status as OrderStatus));
+    }
+
     if (input.requireLinkedCustomerDocumentNumber && !order.customer?.profile?.documentNumber) {
       return err(new ContractCustomerProfileMissingError(order.customer?.id ?? input.orderId));
     }
@@ -241,7 +285,18 @@ export class OrderDocumentRendererService {
           phone: signerProfile?.phone ?? '',
         },
         tenant: resolvedCustomer,
-        signedSummary: input.signedSummary,
+        signedSummary: input.signedSummary
+          ? {
+              signerFullName: input.signedSummary.signerFullName,
+              declaredDocumentNumber: input.signedSummary.declaredDocumentNumber,
+              recipientEmail: input.signedSummary.recipientEmail,
+              signedAt:
+                input.signedSummary.signedAt instanceof Date
+                  ? formatSignedTimestamp(input.signedSummary.signedAt, locationContext.effectiveTimezone)
+                  : input.signedSummary.signedAt,
+              sessionReference: input.signedSummary.sessionReference,
+            }
+          : undefined,
       },
       equipmentLines,
     };
@@ -290,6 +345,23 @@ function buildLegacyBookingSnapshot(periodStart: Date, periodEnd: Date, timezone
 function formatLocalDateKey(dateKey: string): string {
   const [year, month, day] = dateKey.split('-').map(Number);
   return `${day}/${month}/${year}`;
+}
+
+function formatSignedTimestamp(date: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '00';
+
+  return `${get('day')}/${get('month')}/${get('year')} ${get('hour')}:${get('minute')}:${get('second')}`;
 }
 
 function toLocalDateKey(date: Date, timezone: string): string {

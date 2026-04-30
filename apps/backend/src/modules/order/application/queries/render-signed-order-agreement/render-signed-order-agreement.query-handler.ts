@@ -8,32 +8,35 @@ import {
   OrderSigningAllowedOnlyForConfirmedOrdersError,
 } from 'src/modules/order/domain/errors/order.errors';
 import { OrderNotFoundException } from 'src/modules/order/domain/exceptions/order.exceptions';
-import { PrepareOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-order-agreement-for-signing.query';
-import { OrderAgreementForSigningReadModel } from 'src/modules/order/public/read-models/order-agreement-for-signing.read-model';
+import { RenderSignedOrderAgreementQuery } from 'src/modules/order/public/queries/render-signed-order-agreement.query';
+import { RenderedOrderAgreementReadModel } from 'src/modules/order/public/read-models/rendered-order-agreement.read-model';
 
-type PrepareOrderAgreementForSigningResult = Result<
-  OrderAgreementForSigningReadModel,
+type RenderSignedOrderAgreementResult = Result<
+  RenderedOrderAgreementReadModel,
   ContractCustomerProfileMissingError | OrderNotFoundError | OrderSigningAllowedOnlyForConfirmedOrdersError
 >;
 
-@QueryHandler(PrepareOrderAgreementForSigningQuery)
-export class PrepareOrderAgreementForSigningQueryHandler implements IQueryHandler<
-  PrepareOrderAgreementForSigningQuery,
-  PrepareOrderAgreementForSigningResult
+@QueryHandler(RenderSignedOrderAgreementQuery)
+export class RenderSignedOrderAgreementQueryHandler implements IQueryHandler<
+  RenderSignedOrderAgreementQuery,
+  RenderSignedOrderAgreementResult
 > {
   constructor(private readonly orderDocumentRenderer: OrderDocumentRendererService) {}
 
-  async execute(query: PrepareOrderAgreementForSigningQuery): Promise<PrepareOrderAgreementForSigningResult> {
+  async execute(query: RenderSignedOrderAgreementQuery): Promise<RenderSignedOrderAgreementResult> {
     try {
-      const renderResult = await this.orderDocumentRenderer.renderContract(query.tenantId, query.orderId);
+      const renderResult = await this.orderDocumentRenderer.renderSignedContract(query.tenantId, query.orderId, {
+        signerFullName: query.signerFullName,
+        declaredDocumentNumber: query.declaredDocumentNumber,
+        recipientEmail: query.recipientEmail,
+        signedAt: query.signedAt,
+        sessionReference: query.sessionReference,
+      });
       if (renderResult.isErr()) {
         return err(renderResult.error);
       }
 
       return ok({
-        orderId: query.orderId,
-        customerId: renderResult.value.customerId,
-        customerEmail: renderResult.value.customerEmail,
         buffer: renderResult.value.buffer,
         documentNumber: renderResult.value.documentNumber,
         fileName: renderResult.value.fileName,

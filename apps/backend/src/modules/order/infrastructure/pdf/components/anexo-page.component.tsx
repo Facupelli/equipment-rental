@@ -17,7 +17,6 @@ const s = StyleSheet.create({
     fontSize: 8.5,
     fontFamily: 'Helvetica',
     color: '#1a1a1a',
-    lineHeight: 1.5,
   },
 
   headerRow: {
@@ -51,18 +50,15 @@ const s = StyleSheet.create({
     height: 690,
     border: '2pt solid #111111',
     borderRadius: 14,
-    paddingTop: 22,
+    paddingTop: 16,
     paddingHorizontal: 16,
-    paddingBottom: 18,
+    paddingBottom: 16,
   },
   frameContent: {
     flex: 1,
     justifyContent: 'space-between',
   },
 
-  bodyBlock: {
-    paddingHorizontal: 16,
-  },
   intro: {
     marginBottom: 8,
     fontSize: 8,
@@ -88,41 +84,50 @@ const s = StyleSheet.create({
     lineHeight: 1.2,
     marginBottom: 4,
   },
-  signedSummaryBlock: {
-    marginTop: 10,
-    marginBottom: 10,
-    border: '1pt solid #111111',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: '#f6f6f6',
-  },
-  signedSummaryTitle: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 8.5,
-    marginBottom: 4,
-  },
-  signedSummaryLine: {
-    fontSize: 7.2,
-    lineHeight: 1.3,
-    marginBottom: 2,
-  },
-  signedSummaryLabel: {
-    fontFamily: 'Helvetica-Bold',
-  },
-
   signatureRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
+    alignItems: 'flex-end',
+    marginTop: 20,
   },
   signatureBlock: {
     width: '38%',
   },
+  digitalSignatureBlock: {
+    width: '38%',
+  },
+  digitalSignatureInfo: {
+    marginBottom: 6,
+  },
+  digitalSignatureName: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 8,
+    textAlign: 'center',
+  },
+  digitalSignatureDoc: {
+    fontSize: 7,
+    color: '#444',
+    textAlign: 'center',
+  },
+  digitalSignatureLine: {
+    borderBottom: '1pt solid #111111',
+    marginBottom: 6,
+  },
+  digitalSignatureLabel: {
+    fontSize: 7.8,
+    color: '#111',
+    textAlign: 'center',
+  },
+  digitalSignatureTimestamp: {
+    fontSize: 6.2,
+    color: '#737373',
+    textAlign: 'center',
+    marginTop: 2,
+  },
   signatureVisual: {
     position: 'relative',
     height: 40,
-    marginBottom: 8,
+    marginBottom: 10,
     justifyContent: 'flex-end',
   },
   signatureLine: {
@@ -187,7 +192,7 @@ const GENERAL_CONDITIONS = [
   'GUARIDA RENTAL no proporcionará a la parte arrendataria ninguna información o formación sobre el funcionamiento de los equipos.',
   'Entrega y devolución del equipo: El arrendador entrega al arrendatario el equipo contratado en perfectas condiciones de estado e inventario, asimismo, el arrendatario se compromete a devolverlo en perfectas condiciones en la fecha y hora de devolución pactadas.',
   'Desperfectos en la devolución del material: En aquellos casos en los que no estén incluidos en el seguro, la parte arrendataria estará obligada a abonar íntegramente el importe del mismo material nuevo, según los precios de mercado dentro de los 15 días naturales posteriores a la fecha de devolución pactada.',
-  'Devolución del material en plazo: Los retrasos en la devolución del material alquilado que no hayan sido aceptados por escrito por GUARIDA RENTAL, deberán ser abonados en razón de tarifa de “1 día” por cada 24 horas de demora, a los que no será aplicable ningún tipo de descuento y que vienen reflejados en la página web: www.guaridarental.com. En aquellos casos en que la demora sea superior a 72 horas, GUARIDA RENTAL además de requerir el pago de la tarifa diaria enunciada anteriormente, procederá de inmediato a emprender las acciones legales oportunas.',
+  'Devolución del material en plazo: Los retrasos en la devolución del material alquilado que no hayan sido aceptados por escrito por GUARIDA RENTAL, deberán ser abonados en razón de tarifa de "1 día" por cada 24 horas de demora, a los que no será aplicable ningún tipo de descuento y que vienen reflejados en la página web: www.guaridarental.com. En aquellos casos en que la demora sea superior a 72 horas, GUARIDA RENTAL además de requerir el pago de la tarifa diaria enunciada anteriormente, procederá de inmediato a emprender las acciones legales oportunas.',
   'Avería dentro del período de alquiler: GUARIDA RENTAL no asume responsabilidad alguna de sustitución del equipo derivado de un mal uso del mismo. En caso de reconocerse derecho de sustitución, éste estará sujeto a disponibilidad de la empresa arrendadora.',
   'Modificaciones en el equipo: El cliente arrendatario no podrá modificar, desmontar o reparar el equipo objeto de alquiler ni vender, empeñar o desprenderse del equipo ni sus accesorios, bajo apercibimiento de las responsabilidades inherentes a tales actuaciones.',
   'Responsabilidad por daños ocasionados en el equipo: Aquellos daños ocasionados en el equipo, derivados de su mala utilización serán de responsabilidad exclusiva del cliente arrendatario.',
@@ -232,7 +237,7 @@ export function AnexoPage({
 
       <View style={s.frame}>
         <View style={s.frameContent}>
-          <View style={s.bodyBlock}>
+          <View>
             <Text style={s.intro}>
               Este anexo tiene como fin establecer las condiciones de alquiler de equipos solicitados por el cliente,
               dejando claras las responsabilidades de cada parte, y funcionando como contrato entre las partes abajo
@@ -254,18 +259,20 @@ export function AnexoPage({
             <Text style={s.sectionTitle}>Protección de datos</Text>
             <Text style={s.paragraph}>{DATA_PROTECTION_TEXT}</Text>
 
-            {signedSummary ? <SignedSummaryBlock summary={signedSummary} /> : null}
-
             <Text style={s.conformityLine}>SE FIRMA ESTE EJEMPLAR EXPRESANDO CONFORMIDAD DE AMBAS PARTES.</Text>
           </View>
 
           <View style={s.signatureRow}>
-            <View style={s.signatureBlock}>
-              <View style={s.signatureVisual}>
-                <View style={s.signatureLine} />
+            {signedSummary ? (
+              <ElectronicAcceptanceBlock summary={signedSummary} />
+            ) : (
+              <View style={s.signatureBlock}>
+                <View style={s.signatureVisual}>
+                  <View style={s.signatureLine} />
+                </View>
+                <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DE PRODUCCIÓN</Text>
               </View>
-              <Text style={s.signatureLabel}>FIRMA DEL RESPONSABLE DE PRODUCCIÓN</Text>
-            </View>
+            )}
             {showRentalSignatureBlock && (
               <View style={s.signatureBlock}>
                 <View style={s.signatureVisual}>
@@ -283,7 +290,7 @@ export function AnexoPage({
         </View>
       </View>
 
-      <View style={s.pageFooter}>
+      <View style={s.pageFooter} fixed>
         <Text style={s.footerText}>2026. GUARIDA RENTAL. MADRID, ESPAÑA.</Text>
         <Text style={s.footerText}>Telefono de contacto: 680 870 274</Text>
         <Text style={s.footerText}>www.guaridarental.com - guaridarental@gmail.com</Text>
@@ -292,30 +299,16 @@ export function AnexoPage({
   );
 }
 
-function SignedSummaryBlock({ summary }: { summary: SignedContractSummary }) {
+function ElectronicAcceptanceBlock({ summary }: { summary: SignedContractSummary }) {
   return (
-    <View style={s.signedSummaryBlock}>
-      <Text style={s.signedSummaryTitle}>RESUMEN DE FIRMA ELECTRONICA</Text>
-      <Text style={s.signedSummaryLine}>
-        <Text style={s.signedSummaryLabel}>Firmante: </Text>
-        {summary.signerFullName}
-      </Text>
-      <Text style={s.signedSummaryLine}>
-        <Text style={s.signedSummaryLabel}>Documento declarado: </Text>
-        {summary.declaredDocumentNumber}
-      </Text>
-      <Text style={s.signedSummaryLine}>
-        <Text style={s.signedSummaryLabel}>Email destinatario: </Text>
-        {summary.recipientEmail}
-      </Text>
-      <Text style={s.signedSummaryLine}>
-        <Text style={s.signedSummaryLabel}>Fecha de firma: </Text>
-        {summary.signedAt}
-      </Text>
-      <Text style={s.signedSummaryLine}>
-        <Text style={s.signedSummaryLabel}>Referencia de sesion: </Text>
-        {summary.sessionReference}
-      </Text>
+    <View style={s.digitalSignatureBlock}>
+      <View style={s.digitalSignatureInfo}>
+        <Text style={s.digitalSignatureName}>{summary.signerFullName}</Text>
+        <Text style={s.digitalSignatureDoc}>NIE: {summary.declaredDocumentNumber}</Text>
+        <Text style={s.digitalSignatureTimestamp}>{summary.signedAt}</Text>
+      </View>
+      <View style={s.digitalSignatureLine} />
+      <Text style={s.digitalSignatureLabel}>FIRMA DIGITAL DEL ARRENDATARIO</Text>
     </View>
   );
 }
