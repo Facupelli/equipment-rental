@@ -65,7 +65,7 @@ function SigningPage() {
 			<PublicSigningTerminalState
 				icon={FileCheck2}
 				title="Contrato aceptado correctamente"
-				description="Tu aceptacion quedo registrada. La copia final firmada se enviara por email mediante un enlace seguro."
+				description="Tu aceptación quedó registrada. La copia final firmada se enviará por email mediante un enlace seguro."
 				detail={`Aceptado el ${successResult.acceptedAt.format("DD/MM/YYYY HH:mm")}.`}
 			/>
 		);
@@ -105,10 +105,18 @@ function SigningPage() {
 
 	return (
 		<div className="min-h-svh bg-neutral-100">
-			<main className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-6 lg:py-8">
-				<div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-6 lg:space-y-0">
-					<div className="space-y-4">
-						<PublicSigningSessionPanel session={session} />
+			<main className="mx-auto max-w-6xl px-3 py-3 pb-24 sm:px-6 sm:py-6 sm:pb-6 lg:py-8 lg:pb-8">
+				<div className="space-y-3 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-6 lg:space-y-0">
+					<div className="space-y-3 sm:space-y-4">
+						<div className="rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 lg:hidden">
+							<p className="text-[10px] text-neutral-500 uppercase">
+								VENCE: {session.expiresAt.format("DD/MM/YYYY HH:mm")}
+							</p>
+						</div>
+
+						<div className="hidden lg:block">
+							<PublicSigningSessionPanel session={session} />
+						</div>
 						<PublicSigningPdfViewer
 							documentNumber={session.document.documentNumber}
 							src={getPublicSigningUnsignedPdfUrl(token)}
@@ -133,7 +141,7 @@ function SigningPage() {
 
 								if (status === 422) {
 									setSubmitError(
-										message ?? "No pudimos registrar tu aceptacion.",
+										message ?? "No pudimos registrar tu aceptación.",
 									);
 									return;
 								}

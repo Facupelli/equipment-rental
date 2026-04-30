@@ -9,7 +9,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+	Field,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
 	useOrderDetailContext,
@@ -40,19 +45,21 @@ export function OrderSigningInvitationDialog() {
 	function handleOpenChange(nextOpen: boolean) {
 		signing.setIsInvitationDialogOpen(nextOpen);
 		form.reset(createOrderSigningInvitationFormDefaults(defaultEmail));
-
 	}
 
 	const isResend = signing.dialogIntent === "resend";
 
 	return (
-		<Dialog open={signing.isInvitationDialogOpen} onOpenChange={handleOpenChange}>
+		<Dialog
+			open={signing.isInvitationDialogOpen}
+			onOpenChange={handleOpenChange}
+		>
 			<DialogContent className="sm:max-w-lg">
 				<DialogHeader>
 					<DialogTitle>
 						{isResend
-							? "Reenviar invitacion de firma"
-							: "Enviar invitacion de firma"}
+							? "Reenviar invitación de firma"
+							: "Enviar invitación de firma"}
 					</DialogTitle>
 					<DialogDescription>
 						Se enviara un enlace seguro por email para revisar y aceptar el
@@ -69,8 +76,8 @@ export function OrderSigningInvitationDialog() {
 								event.stopPropagation();
 								void form.handleSubmit();
 							}}
-						className="space-y-6"
-					>
+							className="space-y-6"
+						>
 							<FieldGroup>
 								{signing.submitError ? (
 									<Alert variant="destructive">
@@ -111,18 +118,14 @@ export function OrderSigningInvitationDialog() {
 							>
 								Cancelar
 							</Button>
-							<Button
-								type="submit"
-								form={formId}
-								disabled={signing.isPending}
-							>
+							<Button type="submit" form={formId} disabled={signing.isPending}>
 								{signing.isPending
 									? isResend
-										? "Reenviando invitacion..."
-										: "Enviando invitacion..."
+										? "Reenviando invitación..."
+										: "Enviando invitación..."
 									: isResend
-										? "Reenviar invitacion"
-										: "Enviar invitacion"}
+										? "Reenviar invitación"
+										: "Enviar invitación"}
 							</Button>
 						</DialogFooter>
 					</>

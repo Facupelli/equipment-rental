@@ -67,9 +67,9 @@ function useOrderActionGroups(): ActionGroup[] {
 		icon: FileSignature,
 		label:
 			order.signing.status === "NO_SESSION"
-				? "Enviar invitacion de firma"
-				: "Reenviar invitacion de firma",
-		loadingLabel: "Preparando invitacion...",
+				? "Enviar invitación de firma"
+				: "Reenviar invitación de firma",
+		loadingLabel: "Preparando invitación...",
 		onClick:
 			order.signing.status === "NO_SESSION"
 				? signing.openSendDialog
