@@ -18,8 +18,7 @@ export interface ContractPartyData {
 }
 
 export interface SignedContractSummary {
-  signerFullName: string;
-  declaredDocumentNumber: string;
+  signatureImageDataUrl: string;
   recipientEmail: string;
   signedAt: string;
   sessionReference: string;

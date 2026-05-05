@@ -52,7 +52,7 @@ model Order {
   coupon           Coupon?               @relation(fields: [couponId], references: [id])
   couponRedemption CouponRedemption?
   deliveryRequest  OrderDeliveryRequest?
-  signingSessions  SigningSession[]
+  signingRequests  DocumentSigningRequest[]
 
   @@unique([tenantId, orderNumber])
   @@index([tenantId, locationId, status, createdAt(sort: Desc)])

@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -7,25 +7,22 @@ import { TenantContext } from '@repo/schemas';
 import { Result, err, ok } from 'neverthrow';
 
 import { Env } from 'src/config/env.schema';
-import { SigningArtifactKind, SigningAuditEventType } from 'src/generated/prisma/client';
 import { PrepareOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-order-agreement-for-signing.query';
 import { OrderAgreementForSigningReadModel } from 'src/modules/order/public/read-models/order-agreement-for-signing.read-model';
 import { FindTenantByIdQuery } from 'src/modules/tenant/public/queries/find-tenant-by-id.query';
+import { DocumentSigningRequest } from 'src/modules/document-signing/domain/entities/document-signing-request.entity';
 import {
-  SigningInvitationEmailDeliveryFailedError,
   SigningInvitationCustomerProfileMissingError,
+  SigningInvitationEmailDeliveryFailedError,
   SigningInvitationOrderNotFoundError,
   SigningInvitationOrderNotReadyError,
   SigningInvitationRecipientEmailRequiredError,
 } from 'src/modules/document-signing/domain/errors/document-signing.errors';
-import { SigningArtifactMetadata } from 'src/modules/document-signing/domain/entities/signing-artifact-metadata.entity';
-import { SigningSession } from 'src/modules/document-signing/domain/entities/signing-session.entity';
-import { SigningSessionRepository } from 'src/modules/document-signing/infrastructure/persistence/repositories/signing-session.repository';
+import { DocumentSigningRequestRepository } from 'src/modules/document-signing/infrastructure/persistence/repositories/document-signing-request.repository';
 
-import { PublicSigningSessionLoader } from '../../public-signing-session.loader';
-import { SigningAuditAppender } from '../../signing-audit-appender.service';
-import { SigningArtifactStorageService } from '../../services/signing-artifact-storage.service';
 import { SigningNotificationService } from '../../services/signing-notification.service';
+import { SigningRequestPdfStorageService } from '../../services/signing-request-pdf-storage.service';
+import { hashSigningDocument } from '../../signing-document-hash';
 import { SendSigningInvitationCommand } from './send-signing-invitation.command';
 import { SendSigningInvitationInput, SendSigningInvitationResult } from './send-signing-invitation.contract';
 
@@ -44,18 +41,16 @@ export class SendSigningInvitationService implements ICommandHandler<
   SendSigningInvitationCommand,
   Result<SendSigningInvitationResult, SendSigningInvitationCommandError>
 > {
-  private readonly signingSessionTtlSeconds: number;
+  private readonly signingRequestTtlSeconds: number;
 
   constructor(
-    private readonly signingSessionRepository: SigningSessionRepository,
-    private readonly signingAuditAppender: SigningAuditAppender,
-    private readonly signingArtifactStorageService: SigningArtifactStorageService,
+    private readonly documentSigningRequestRepository: DocumentSigningRequestRepository,
     private readonly signingNotificationService: SigningNotificationService,
+    private readonly signingRequestPdfStorageService: SigningRequestPdfStorageService,
     private readonly queryBus: QueryBus,
     private readonly configService: ConfigService<Env, true>,
-    private readonly publicSigningSessionLoader: PublicSigningSessionLoader,
   ) {
-    this.signingSessionTtlSeconds = this.configService.get('DOCUMENT_SIGNING_SESSION_TTL_SECONDS');
+    this.signingRequestTtlSeconds = this.configService.get('DOCUMENT_SIGNING_SESSION_TTL_SECONDS');
   }
 
   async execute(
@@ -91,217 +86,118 @@ export class SendSigningInvitationService implements ICommandHandler<
     }
 
     const now = new Date();
-    const unsignedDocumentHash = hashBuffer(preparedOrder.value.buffer);
+    const expiresAt = new Date(now.getTime() + this.signingRequestTtlSeconds * 1000);
+    const documentHash = hashSigningDocument(preparedOrder.value.buffer);
     const rawToken = generateRawSigningToken();
     const tokenHash = hashString(rawToken);
+    const pdfFileName = `${preparedOrder.value.fileName}.pdf`;
 
-    const sessionResult = await this.signingSessionRepository.runWithActiveSessionLock(
+    const requestResult = await this.documentSigningRequestRepository.runWithActiveRequestLock(
       input.tenantId,
       input.orderId,
       input.documentType,
       async (tx) => {
-        const activeSession = await this.publicSigningSessionLoader.loadActiveReusableSession(
+        const pendingRequest = await this.documentSigningRequestRepository.findPendingForOrderDocument(
           input.tenantId,
           input.orderId,
           input.documentType,
-          now,
           tx,
         );
 
-        if (activeSession && activeSession.currentUnsignedDocumentHash === unsignedDocumentHash) {
-          activeSession.refreshInvitation({ recipientEmail, tokenHash }, now);
-          this.signingAuditAppender.append(activeSession, SigningAuditEventType.INVITATION_EMAIL_REQUESTED, {
-            recipientEmail,
-            documentType: input.documentType,
-            unsignedDocumentHash,
-            expiresAt: activeSession.expiresAt.toISOString(),
-            resend: true,
-            tokenRotated: true,
-          });
+        if (pendingRequest && pendingRequest.expiresOn.getTime() <= now.getTime()) {
+          const expireResult = pendingRequest.expire(now);
+          if (expireResult.isErr()) {
+            throw expireResult.error;
+          }
 
-          await this.signingSessionRepository.save(activeSession, tx);
+          await this.documentSigningRequestRepository.save(pendingRequest, tx);
+        } else if (pendingRequest && pendingRequest.documentHash === documentHash) {
+          const refreshResult = pendingRequest.refreshPendingInvitation({ recipientEmail, tokenHash, expiresAt }, now);
+          if (refreshResult.isErr()) {
+            throw refreshResult.error;
+          }
+
+          await this.documentSigningRequestRepository.save(pendingRequest, tx);
 
           return {
-            sessionId: activeSession.id,
-            expiresAt: activeSession.expiresAt,
+            requestId: pendingRequest.id,
+            expiresAt: pendingRequest.expiresOn,
             tokenHash,
-            unsignedDocumentHash,
-            reusedExistingSession: true,
+            reusedExistingRequest: true,
           };
-        }
-
-        if (activeSession) {
-          this.signingAuditAppender.append(activeSession, SigningAuditEventType.SESSION_VOIDED, {
-            reason: 'ORDER_DOCUMENT_CHANGED',
-            supersededByDocumentHash: unsignedDocumentHash,
-          });
-
-          const voidResult = activeSession.void(now);
+        } else if (pendingRequest) {
+          const voidResult = pendingRequest.void(now);
           if (voidResult.isErr()) {
             throw voidResult.error;
           }
 
-          await this.signingSessionRepository.save(activeSession, tx);
+          await this.documentSigningRequestRepository.save(pendingRequest, tx);
         }
 
-        const expiresAt = new Date(now.getTime() + this.signingSessionTtlSeconds * 1000);
-        const session = await this.createSessionForPreparedDocument({
+        const requestId = randomUUID();
+        const storedPdf = await this.signingRequestPdfStorageService.storeUnsignedPdf({
+          tenantId: input.tenantId,
+          orderId: input.orderId,
+          requestId,
+          documentType: input.documentType,
+          documentHash,
+          fileName: pdfFileName,
+          buffer: preparedOrder.value.buffer,
+        });
+
+        const request = DocumentSigningRequest.createPending({
+          id: requestId,
           tenantId: input.tenantId,
           orderId: input.orderId,
           customerId: preparedOrder.value.customerId,
           documentType: input.documentType,
-          recipientEmail,
-          rawToken,
-          expiresAt,
           documentNumber: preparedOrder.value.documentNumber,
-          fileName: preparedOrder.value.fileName,
-          pdfBytes: preparedOrder.value.buffer,
-        });
-
-        this.signingAuditAppender.append(session, SigningAuditEventType.INVITATION_EMAIL_REQUESTED, {
           recipientEmail,
-          documentType: input.documentType,
-          unsignedDocumentHash,
-          expiresAt: session.expiresAt.toISOString(),
-          resend: false,
-          tokenRotated: false,
+          tokenHash,
+          documentHash,
+          pdfStorageKey: storedPdf.storageKey,
+          pdfFileName: storedPdf.fileName,
+          pdfContentType: storedPdf.contentType,
+          pdfByteSize: storedPdf.byteSize,
+          expiresAt,
         });
 
-        await this.signingSessionRepository.save(session, tx);
+        await this.documentSigningRequestRepository.save(request, tx);
 
         return {
-          sessionId: session.id,
-          expiresAt: session.expiresAt,
+          requestId: request.id,
+          expiresAt: request.expiresOn,
           tokenHash,
-          unsignedDocumentHash,
-          reusedExistingSession: false,
+          reusedExistingRequest: false,
         };
       },
     );
 
     const deliveryResult = await this.signingNotificationService.sendInvitation({
       tenant,
-      sessionId: sessionResult.sessionId,
+      requestId: requestResult.requestId,
       orderId: input.orderId,
       documentType: input.documentType,
       documentNumber: preparedOrder.value.documentNumber,
       rawToken,
-      tokenHash: sessionResult.tokenHash,
+      tokenHash: requestResult.tokenHash,
       recipientEmail,
-      expiresAt: sessionResult.expiresAt,
-      resend: sessionResult.reusedExistingSession,
+      expiresAt: requestResult.expiresAt,
+      resend: requestResult.reusedExistingRequest,
     });
-
-    const session = await this.signingSessionRepository.load(sessionResult.sessionId, input.tenantId);
-
-    if (!session) {
-      throw new Error(`Signing session '${sessionResult.sessionId}' was not found after creation.`);
-    }
-
-    if (deliveryResult.delivered) {
-      this.signingAuditAppender.append(session, SigningAuditEventType.INVITATION_EMAIL_SENT, {
-        recipientEmail,
-        documentType: input.documentType,
-        signingUrl: deliveryResult.signingUrl,
-        expiresAt: sessionResult.expiresAt.toISOString(),
-        unsignedDocumentHash: sessionResult.unsignedDocumentHash,
-        resend: sessionResult.reusedExistingSession,
-      });
-    } else {
-      this.signingAuditAppender.append(session, SigningAuditEventType.INVITATION_EMAIL_FAILED, {
-        recipientEmail,
-        documentType: input.documentType,
-        signingUrl: deliveryResult.signingUrl,
-        expiresAt: sessionResult.expiresAt.toISOString(),
-        unsignedDocumentHash: sessionResult.unsignedDocumentHash,
-        resend: sessionResult.reusedExistingSession,
-        failureReason: deliveryResult.failureReason,
-        failureMessage: deliveryResult.failureMessage,
-      });
-    }
-
-    await this.signingSessionRepository.save(session);
 
     if (deliveryResult.deliveryError) {
       return err(deliveryResult.deliveryError);
     }
 
     return ok({
-      sessionId: session.id,
+      requestId: requestResult.requestId,
       documentNumber: preparedOrder.value.documentNumber,
       recipientEmail,
-      expiresAt: session.expiresAt,
-      unsignedDocumentHash: sessionResult.unsignedDocumentHash,
-      reusedExistingSession: sessionResult.reusedExistingSession,
+      expiresAt: requestResult.expiresAt,
+      documentHash,
+      reusedExistingRequest: requestResult.reusedExistingRequest,
     });
-  }
-
-  private async createSessionForPreparedDocument(input: {
-    tenantId: string;
-    orderId: string;
-    customerId: string | null;
-    documentType: SendSigningInvitationInput['documentType'];
-    recipientEmail: string;
-    rawToken: string;
-    expiresAt: Date;
-    documentNumber: string;
-    fileName: string;
-    pdfBytes: Buffer;
-  }): Promise<SigningSession> {
-    const unsignedDocumentHash = hashBuffer(input.pdfBytes);
-
-    const session = SigningSession.create({
-      tenantId: input.tenantId,
-      orderId: input.orderId,
-      customerId: input.customerId,
-      documentType: input.documentType,
-      recipientEmail: input.recipientEmail,
-      unsignedDocumentHash,
-      tokenHash: hashString(input.rawToken),
-      expiresAt: input.expiresAt,
-    });
-
-    const storage = await this.signingArtifactStorageService.storeUnsignedArtifact({
-      tenantId: input.tenantId,
-      orderId: input.orderId,
-      sessionId: session.id,
-      documentType: input.documentType,
-      documentNumber: input.documentNumber,
-      fileName: input.fileName,
-      pdfBytes: input.pdfBytes,
-      unsignedDocumentHash,
-    });
-
-    const artifact = SigningArtifactMetadata.create({
-      sessionId: session.id,
-      kind: SigningArtifactKind.UNSIGNED_PDF,
-      documentNumber: input.documentNumber,
-      displayFileName: `${input.fileName}.pdf`,
-      storage,
-    });
-    const addArtifactResult = session.addArtifact(artifact);
-    if (addArtifactResult.isErr()) {
-      throw addArtifactResult.error;
-    }
-
-    this.signingAuditAppender.append(session, SigningAuditEventType.SESSION_CREATED, {
-      documentType: input.documentType,
-      recipientEmail: input.recipientEmail,
-      expiresAt: input.expiresAt.toISOString(),
-      unsignedDocumentHash,
-    });
-    this.signingAuditAppender.append(session, SigningAuditEventType.ARTIFACT_RECORDED, {
-      kind: SigningArtifactKind.UNSIGNED_PDF,
-      documentNumber: input.documentNumber,
-      fileName: `${input.fileName}.pdf`,
-      bucket: storage.bucket,
-      objectKey: storage.objectKey,
-      contentType: storage.contentType,
-      byteSize: storage.byteSize,
-      sha256: storage.sha256,
-    });
-
-    return session;
   }
 }
 
@@ -319,10 +215,6 @@ function translatePrepareOrderAgreementForSigningError(
     default:
       throw error;
   }
-}
-
-function hashBuffer(buffer: Buffer): string {
-  return createHash('sha256').update(buffer).digest('hex');
 }
 
 function hashString(value: string): string {

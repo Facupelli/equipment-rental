@@ -49,8 +49,7 @@ export interface RenderOrderDocumentInput {
 }
 
 export interface RenderSignedContractSummaryInput {
-  signerFullName: string;
-  declaredDocumentNumber: string;
+  signatureImageDataUrl: string;
   recipientEmail: string;
   signedAt: Date;
   sessionReference: string;
@@ -82,7 +81,10 @@ export class OrderDocumentRendererService {
     tenantId: string,
     orderId: string,
   ): Promise<
-    Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError | OrderSigningAllowedOnlyForConfirmedOrdersError>
+    Result<
+      RenderOrderDocumentResult,
+      ContractCustomerProfileMissingError | OrderSigningAllowedOnlyForConfirmedOrdersError
+    >
   > {
     return this.render({
       tenantId,
@@ -94,7 +96,10 @@ export class OrderDocumentRendererService {
       requireConfirmedOrder: true,
       showRentalSignatureBlock: true,
     }) as Promise<
-      Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError | OrderSigningAllowedOnlyForConfirmedOrdersError>
+      Result<
+        RenderOrderDocumentResult,
+        ContractCustomerProfileMissingError | OrderSigningAllowedOnlyForConfirmedOrdersError
+      >
     >;
   }
 
@@ -102,9 +107,7 @@ export class OrderDocumentRendererService {
     tenantId: string,
     orderId: string,
     signedSummary: RenderSignedContractSummaryInput,
-  ): Promise<
-    Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError | OrderSigningAllowedOnlyForConfirmedOrdersError>
-  > {
+  ): Promise<Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError>> {
     return this.render({
       tenantId,
       orderId,
@@ -112,12 +115,9 @@ export class OrderDocumentRendererService {
       fileNamePrefix: 'remito',
       equipmentTitle: 'LISTA DE EQUIPOS RETIRADOS',
       requireLinkedCustomerDocumentNumber: true,
-      requireConfirmedOrder: true,
       showRentalSignatureBlock: true,
       signedSummary,
-    }) as Promise<
-      Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError | OrderSigningAllowedOnlyForConfirmedOrdersError>
-    >;
+    }) as Promise<Result<RenderOrderDocumentResult, ContractCustomerProfileMissingError>>;
   }
 
   async renderBudget(
@@ -287,8 +287,7 @@ export class OrderDocumentRendererService {
         tenant: resolvedCustomer,
         signedSummary: input.signedSummary
           ? {
-              signerFullName: input.signedSummary.signerFullName,
-              declaredDocumentNumber: input.signedSummary.declaredDocumentNumber,
+              signatureImageDataUrl: input.signedSummary.signatureImageDataUrl,
               recipientEmail: input.signedSummary.recipientEmail,
               signedAt:
                 input.signedSummary.signedAt instanceof Date

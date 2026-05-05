@@ -7,7 +7,10 @@ import { PublicSigningForm } from "@/features/document-signing/components/public
 import { PublicSigningPdfViewer } from "@/features/document-signing/components/public-signing-pdf-viewer";
 import { PublicSigningSessionPanel } from "@/features/document-signing/components/public-signing-session-panel";
 import { PublicSigningTerminalState } from "@/features/document-signing/components/public-signing-terminal-state";
-import { getPublicSigningUnsignedPdfUrl } from "@/features/document-signing/document-signing.api";
+import {
+	getPublicSigningSignedPdfUrl,
+	getPublicSigningUnsignedPdfUrl,
+} from "@/features/document-signing/document-signing.api";
 import {
 	type ParsedAcceptPublicSigningSessionResponseDto,
 	useAcceptPublicSigningSession,
@@ -65,8 +68,10 @@ function SigningPage() {
 			<PublicSigningTerminalState
 				icon={FileCheck2}
 				title="Contrato aceptado correctamente"
-				description="Tu aceptación quedó registrada. La copia final firmada se enviará por email mediante un enlace seguro."
-				detail={`Aceptado el ${successResult.acceptedAt.format("DD/MM/YYYY HH:mm")}.`}
+				description="Tu aceptación quedó registrada correctamente. El negocio ya puede continuar con la gestión del contrato."
+				detail={`Aceptado el ${successResult.signedAt.format("DD/MM/YYYY HH:mm")}.`}
+				actionLabel="Descargar PDF firmado"
+				actionHref={getPublicSigningSignedPdfUrl(token)}
 			/>
 		);
 	}
@@ -95,14 +100,6 @@ function SigningPage() {
 
 	const session = sessionQuery.data;
 
-	if (session.status === "SIGNED") {
-		return renderTerminalState(409, null);
-	}
-
-	if (session.status === "VOIDED") {
-		return renderTerminalState(409, null);
-	}
-
 	return (
 		<div className="min-h-svh bg-neutral-100">
 			<main className="mx-auto max-w-6xl px-3 py-3 pb-24 sm:px-6 sm:py-6 sm:pb-6 lg:py-8 lg:pb-8">
@@ -124,8 +121,7 @@ function SigningPage() {
 					</div>
 
 					<PublicSigningForm
-						key={session.sessionId}
-						session={session}
+						key={session.requestId}
 						submitError={submitError}
 						isPending={acceptMutation.isPending}
 						onSubmit={async (dto) => {

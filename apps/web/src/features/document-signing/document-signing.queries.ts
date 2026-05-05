@@ -36,17 +36,16 @@ export type ParsedOrderSigningSessionResponseDto = Omit<
 
 export type ParsedPublicSigningSessionResponseDto = Omit<
 	PublicSigningSessionResponseDto,
-	"expiresAt" | "openedAt"
+	"expiresAt"
 > & {
 	expiresAt: Dayjs;
-	openedAt: Dayjs | null;
 };
 
 export type ParsedAcceptPublicSigningSessionResponseDto = Omit<
 	AcceptPublicSigningSessionResponseDto,
-	"acceptedAt"
+	"signedAt"
 > & {
-	acceptedAt: Dayjs;
+	signedAt: Dayjs;
 };
 
 export const documentSigningKeys = {
@@ -224,7 +223,6 @@ function parsePublicSigningSessionResponse(
 	return {
 		...raw,
 		expiresAt: requireDayjs(parseTimestamp(raw.expiresAt), "expiresAt"),
-		openedAt: parseTimestamp(raw.openedAt),
 	};
 }
 
@@ -233,7 +231,7 @@ function parseAcceptPublicSigningSessionResponse(
 ): ParsedAcceptPublicSigningSessionResponseDto {
 	return {
 		...raw,
-		acceptedAt: requireDayjs(parseTimestamp(raw.acceptedAt), "acceptedAt"),
+		signedAt: requireDayjs(parseTimestamp(raw.signedAt), "signedAt"),
 	};
 }
 

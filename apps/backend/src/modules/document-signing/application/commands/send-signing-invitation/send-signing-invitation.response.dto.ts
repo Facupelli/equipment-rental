@@ -2,12 +2,12 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 export const SendSigningInvitationResponseSchema = z.object({
-  sessionId: z.string().uuid(),
+  requestId: z.string().uuid(),
   documentNumber: z.string().min(1),
   recipientEmail: z.string().email(),
   expiresAt: z.date(),
-  unsignedDocumentHash: z.string().min(1),
-  reusedExistingSession: z.boolean(),
+  documentHash: z.string().min(1),
+  reusedExistingRequest: z.boolean(),
 });
 
 export class SendSigningInvitationResponseDto extends createZodDto(SendSigningInvitationResponseSchema) {}

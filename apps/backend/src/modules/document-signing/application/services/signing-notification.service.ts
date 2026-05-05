@@ -9,7 +9,6 @@ import { NotificationChannel } from 'src/modules/notifications/domain/notificati
 import { NotificationType } from 'src/modules/notifications/domain/notification-type.enum';
 
 import { SigningInvitationEmailDeliveryFailedError } from '../../domain/errors/document-signing.errors';
-import { AcceptPublicSigningResult } from '../commands/accept-public-signing-session/accept-public-signing-session.contract';
 
 export type SigningInvitationDeliveryResult =
   | {
@@ -27,13 +26,6 @@ export type SigningInvitationDeliveryResult =
       deliveryError: SigningInvitationEmailDeliveryFailedError;
     };
 
-export type SigningFinalCopyDeliveryResult = {
-  downloadUrl: string;
-  status: AcceptPublicSigningResult['finalCopyDelivery']['status'];
-  failureReason: string | null;
-  failureMessage: string | null;
-};
-
 @Injectable()
 export class SigningNotificationService {
   private readonly rootDomain: string;
@@ -47,7 +39,7 @@ export class SigningNotificationService {
 
   async sendInvitation(input: {
     tenant: TenantContext;
-    sessionId: string;
+    requestId: string;
     orderId: string;
     documentType: SigningDocumentType;
     documentNumber: string;
@@ -72,10 +64,10 @@ export class SigningNotificationService {
       },
       metadata: {
         orderId: input.orderId,
-        sessionId: input.sessionId,
+        signingRequestId: input.requestId,
         documentType: input.documentType,
       },
-      idempotencyKey: `signing-invitation:${input.sessionId}:${input.tokenHash}`,
+      idempotencyKey: `signing-invitation:${input.requestId}:${input.tokenHash}`,
     });
 
     if (dispatchResult.deliveredChannels.includes(NotificationChannel.EMAIL)) {
@@ -104,64 +96,9 @@ export class SigningNotificationService {
     };
   }
 
-  async sendFinalCopy(input: {
-    tenant: TenantContext;
-    orderId: string;
-    sessionId: string;
-    documentType: SigningDocumentType;
-    documentNumber: string;
-    rawToken: string;
-    finalCopyTokenHash: string | null;
-    recipientEmail: string;
-    expiresAt: Date;
-  }): Promise<SigningFinalCopyDeliveryResult> {
-    const downloadUrl = this.buildFinalCopyDownloadUrl(input.tenant, input.rawToken);
-    const dispatchResult = await this.notificationOrchestrator.dispatch({
-      tenantId: input.tenant.id,
-      notificationType: NotificationType.DOCUMENT_SIGNING_FINAL_COPY,
-      emailRecipients: [{ email: input.recipientEmail }],
-      payload: {
-        tenantName: input.tenant.name,
-        documentLabel: this.getSigningDocumentLabel(input.documentType),
-        documentNumber: input.documentNumber,
-        downloadUrl,
-        expiresAt: input.expiresAt,
-      },
-      metadata: {
-        orderId: input.orderId,
-        sessionId: input.sessionId,
-        documentType: input.documentType,
-      },
-      idempotencyKey: `final-copy:${input.sessionId}:${input.finalCopyTokenHash}`,
-    });
-
-    if (dispatchResult.deliveredChannels.includes(NotificationChannel.EMAIL)) {
-      return {
-        downloadUrl,
-        status: 'SENT',
-        failureReason: null,
-        failureMessage: null,
-      };
-    }
-
-    const failure = dispatchResult.failedChannels[0];
-
-    return {
-      downloadUrl,
-      status: 'FAILED',
-      failureReason: failure?.reason ?? 'NO_CHANNEL_DELIVERED',
-      failureMessage: failure?.message ?? 'No notification channel delivered the final copy email.',
-    };
-  }
-
   private buildPortalSigningUrl(tenant: TenantContext, rawToken: string): string {
     const hostname = tenant.customDomain ?? `${tenant.slug}.${this.rootDomain}`;
     return `https://${hostname}/signing?token=${encodeURIComponent(rawToken)}`;
-  }
-
-  private buildFinalCopyDownloadUrl(tenant: TenantContext, rawToken: string): string {
-    const hostname = tenant.customDomain ?? `${tenant.slug}.${this.rootDomain}`;
-    return `https://${hostname}/document-signing/public/final-copy/download?token=${encodeURIComponent(rawToken)}`;
   }
 
   private getSigningDocumentLabel(documentType: SigningDocumentType): string {

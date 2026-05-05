@@ -4,6 +4,7 @@ import { Response } from 'express';
 
 import { Public } from 'src/core/decorators/public.decorator';
 import { extractBearerToken, mapDocumentSigningPublicHttpError } from '../../document-signing-public-http.helper';
+import { StreamPublicSignedDocumentService } from '../../services/stream-public-signed-document.service';
 import { StreamPublicUnsignedDocumentService } from '../../services/stream-public-unsigned-document.service';
 
 import { ResolvePublicSigningSessionQueryDto } from './get-public-signing-session.request.dto';
@@ -20,6 +21,7 @@ export class GetPublicSigningSessionHttpController {
   constructor(
     private readonly queryBus: QueryBus,
     private readonly streamPublicUnsignedDocumentService: StreamPublicUnsignedDocumentService,
+    private readonly streamPublicSignedDocumentService: StreamPublicSignedDocumentService,
   ) {}
 
   @Get('resolve')
@@ -28,7 +30,7 @@ export class GetPublicSigningSessionHttpController {
       return await this.queryBus.execute(new ResolvePublicSigningSessionQuery(query.token));
     } catch (error) {
       throw mapDocumentSigningPublicHttpError(error, {
-        signingSessionUnavailableAsProblemException: true,
+        signingRequestUnavailableAsProblemException: true,
       });
     }
   }
@@ -39,7 +41,7 @@ export class GetPublicSigningSessionHttpController {
       return await this.queryBus.execute(new GetPublicSigningSessionQuery(extractBearerToken(authorization)));
     } catch (error) {
       throw mapDocumentSigningPublicHttpError(error, {
-        signingSessionUnavailableAsProblemException: true,
+        signingRequestUnavailableAsProblemException: true,
       });
     }
   }
@@ -61,7 +63,29 @@ export class GetPublicSigningSessionHttpController {
       document.stream.pipe(res);
     } catch (error) {
       throw mapDocumentSigningPublicHttpError(error, {
-        signingSessionUnavailableAsProblemException: true,
+        signingRequestUnavailableAsProblemException: true,
+      });
+    }
+  }
+
+  @Get('me/signed-pdf')
+  async streamSignedPdf(
+    @Headers('authorization') authorization: string | undefined,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const document = await this.streamPublicSignedDocumentService.stream(extractBearerToken(authorization));
+
+      res.set({
+        'Content-Type': document.contentType,
+        'Content-Disposition': `attachment; filename="${document.fileName}"`,
+        'Content-Length': document.contentLength,
+      });
+
+      document.stream.pipe(res);
+    } catch (error) {
+      throw mapDocumentSigningPublicHttpError(error, {
+        signingRequestUnavailableAsProblemException: true,
       });
     }
   }

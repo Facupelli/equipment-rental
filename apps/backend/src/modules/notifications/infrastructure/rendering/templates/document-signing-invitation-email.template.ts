@@ -31,7 +31,6 @@ export function renderDocumentSigningInvitationEmailTemplate(
     html: [
       '<p>Hola,</p>',
       `<p>Te enviamos este correo para que revises y firmes tu ${escapeHtml(payload.documentLabel)}.</p>`,
-      `<p>Documento: <strong>${escapeHtml(payload.documentNumber)}</strong></p>`,
       `<p><a href="${escapeHtml(payload.signingUrl)}">Revisar y firmar el acuerdo</a></p>`,
       replacementLine ? `<p>${escapeHtml(replacementLine)}</p>` : null,
       `<p>${escapeHtml(expirationLine)}</p>`,

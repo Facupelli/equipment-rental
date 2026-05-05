@@ -62,16 +62,17 @@ function useOrderActionGroups(): ActionGroup[] {
 
 	const canManageSigning =
 		isConfirmedLifecycle && order.signing.status !== "SIGNED";
+	const isSignedContract = order.signing.status === "SIGNED";
 
 	const signingAction: ActionItem = {
 		icon: FileSignature,
 		label:
-			order.signing.status === "NO_SESSION"
+			order.signing.status === "NO_REQUEST"
 				? "Enviar invitación de firma"
 				: "Reenviar invitación de firma",
 		loadingLabel: "Preparando invitación...",
 		onClick:
-			order.signing.status === "NO_SESSION"
+			order.signing.status === "NO_REQUEST"
 				? signing.openSendDialog
 				: signing.openResendDialog,
 		disabled: signing.isPending,
@@ -101,14 +102,16 @@ function useOrderActionGroups(): ActionGroup[] {
 			? [
 					{
 						icon: FileText,
-						label: "Ver remito",
+						label: isSignedContract ? "Ver remito firmado" : "Ver remito",
 						loadingLabel: "Abriendo remito...",
 						onClick: documents.contract.open,
 						disabled: documents.contract.isOpening,
 					},
 					{
 						icon: FileText,
-						label: "Descargar remito",
+						label: isSignedContract
+							? "Descargar remito firmado"
+							: "Descargar remito",
 						loadingLabel: "Descargando remito...",
 						onClick: documents.contract.download,
 						disabled: documents.contract.isDownloading,

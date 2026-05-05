@@ -2,20 +2,14 @@ import { ConflictException, GoneException, HttpStatus, NotFoundException } from 
 
 import { ProblemException } from 'src/core/exceptions/problem.exception';
 import {
-  FinalCopyAccessTokenAlreadyUsedError,
-  FinalCopyAccessTokenExpiredError,
-  FinalCopyAccessTokenNotFoundError,
-  SignedOrderAgreementRenderingFailedError,
-  SignedSigningArtifactNotFoundError,
-  SigningSessionExpiredError,
-  SigningSessionStatusTransitionNotAllowedError,
-  SigningSessionTokenNotFoundError,
-  SigningSessionUnavailableError,
-  UnsignedSigningArtifactNotFoundError,
+  DocumentSigningRequestStatusTransitionNotAllowedError,
+  DocumentSigningRequestExpiredError,
+  DocumentSigningRequestTokenNotFoundError,
+  DocumentSigningRequestUnavailableError,
 } from 'src/modules/document-signing/domain/errors/document-signing.errors';
 
 type MapDocumentSigningPublicHttpErrorOptions = {
-  signingSessionUnavailableAsProblemException?: boolean;
+  signingRequestUnavailableAsProblemException?: boolean;
 };
 
 export function extractBearerToken(authorization?: string): string {
@@ -41,60 +35,29 @@ export function mapDocumentSigningPublicHttpError(
     return error;
   }
 
-  if (error instanceof SigningSessionTokenNotFoundError || error instanceof FinalCopyAccessTokenNotFoundError) {
+  if (error instanceof DocumentSigningRequestTokenNotFoundError) {
     return new NotFoundException(error.message);
   }
 
-  if (
-    error instanceof SigningSessionExpiredError ||
-    error instanceof FinalCopyAccessTokenExpiredError ||
-    error instanceof FinalCopyAccessTokenAlreadyUsedError
-  ) {
+  if (error instanceof DocumentSigningRequestExpiredError) {
     return new GoneException(error.message);
   }
 
-  if (error instanceof SigningSessionUnavailableError) {
-    if (options.signingSessionUnavailableAsProblemException) {
+  if (error instanceof DocumentSigningRequestUnavailableError) {
+    if (options.signingRequestUnavailableAsProblemException) {
       return new ProblemException(
         HttpStatus.CONFLICT,
-        'Signing Session Unavailable',
+        'Signing Request Unavailable',
         error.message,
-        'errors://signing-session-unavailable',
+        'errors://signing-request-unavailable',
       );
     }
 
     return new ConflictException(error.message);
   }
 
-  if (error instanceof SigningSessionStatusTransitionNotAllowedError) {
+  if (error instanceof DocumentSigningRequestStatusTransitionNotAllowedError) {
     return new ConflictException(error.message);
-  }
-
-  if (error instanceof UnsignedSigningArtifactNotFoundError) {
-    return new ProblemException(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      'Signing Artifact Missing',
-      error.message,
-      'errors://signing-artifact-missing',
-    );
-  }
-
-  if (error instanceof SignedSigningArtifactNotFoundError) {
-    return new ProblemException(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      'Signed Artifact Missing',
-      error.message,
-      'errors://signed-artifact-missing',
-    );
-  }
-
-  if (error instanceof SignedOrderAgreementRenderingFailedError) {
-    return new ProblemException(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      'Signed Agreement Rendering Failed',
-      error.message,
-      'errors://signed-agreement-rendering-failed',
-    );
   }
 
   return error as Error;

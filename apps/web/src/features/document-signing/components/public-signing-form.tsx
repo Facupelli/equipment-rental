@@ -16,7 +16,6 @@ import {
 	FieldGroup,
 	FieldLabel,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
 	Sheet,
@@ -26,18 +25,17 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
-import type { ParsedPublicSigningSessionResponseDto } from "../document-signing.queries";
 import {
 	createPublicSigningFormDefaults,
 	type PublicSigningFormValues,
 	publicSigningFormSchema,
 	toAcceptPublicSigningSessionDto,
 } from "../public-signing-form.schema";
+import { SignaturePadField } from "./signature-pad-field";
 
 const formId = "public-signing-form";
 
 type PublicSigningFormProps = {
-	session: ParsedPublicSigningSessionResponseDto;
 	submitError: string | null;
 	isPending: boolean;
 	onSubmit: (
@@ -46,7 +44,6 @@ type PublicSigningFormProps = {
 };
 
 export function PublicSigningForm({
-	session,
 	submitError,
 	isPending,
 	onSubmit,
@@ -54,7 +51,7 @@ export function PublicSigningForm({
 	const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
 	const isMobile = useIsMobile();
 	const form = useForm({
-		defaultValues: createPublicSigningFormDefaults(session),
+		defaultValues: createPublicSigningFormDefaults(),
 		validators: {
 			onSubmit: publicSigningFormSchema,
 		},
@@ -66,53 +63,19 @@ export function PublicSigningForm({
 
 	const renderFormFields = (idPrefix: string) => (
 		<FieldGroup>
-			<form.Field name="declaredFullName">
+			<form.Field name="signatureImageDataUrl">
 				{(field) => {
 					const isInvalid =
 						field.state.meta.isTouched && !field.state.meta.isValid;
 
 					return (
 						<Field data-invalid={isInvalid}>
-							<FieldLabel htmlFor={`${idPrefix}-${field.name}`}>
-								Nombre completo
-							</FieldLabel>
-							<Input
+							<SignaturePadField
 								id={`${idPrefix}-${field.name}`}
-								name={field.name}
-								type="text"
-								placeholder="Ej. Jane Doe"
 								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(event) => field.handleChange(event.target.value)}
-								aria-invalid={isInvalid}
-							/>
-							{isInvalid ? (
-								<FieldError errors={field.state.meta.errors} />
-							) : null}
-						</Field>
-					);
-				}}
-			</form.Field>
-
-			<form.Field name="declaredDocumentNumber">
-				{(field) => {
-					const isInvalid =
-						field.state.meta.isTouched && !field.state.meta.isValid;
-
-					return (
-						<Field data-invalid={isInvalid}>
-							<FieldLabel htmlFor={`${idPrefix}-${field.name}`}>
-								Numero de documento
-							</FieldLabel>
-							<Input
-								id={`${idPrefix}-${field.name}`}
-								name={field.name}
-								type="text"
-								placeholder="Ej. 12345678"
-								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(event) => field.handleChange(event.target.value)}
-								aria-invalid={isInvalid}
+								disabled={isPending}
+								isInvalid={isInvalid}
+								onChange={(value) => field.handleChange(value ?? "")}
 							/>
 							{isInvalid ? (
 								<FieldError errors={field.state.meta.errors} />
@@ -188,7 +151,7 @@ export function PublicSigningForm({
 						<div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-neutral-300" />
 						<SheetHeader className="gap-2 px-4 pb-3 pt-2 text-left">
 							<SheetTitle className="text-lg font-semibold text-neutral-950">
-								Confirma tus datos y acepta el contrato
+								Firma y acepta el contrato
 							</SheetTitle>
 						</SheetHeader>
 

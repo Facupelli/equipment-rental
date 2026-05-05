@@ -6,7 +6,6 @@ import { Public } from 'src/core/decorators/public.decorator';
 import {
   SigningAcceptanceConfirmationRequiredError,
   SigningAcceptanceIdentityRequiredError,
-  SigningSessionDocumentNotPresentedError,
 } from 'src/modules/document-signing/domain/errors/document-signing.errors';
 
 import { extractBearerToken, mapDocumentSigningPublicHttpError } from '../../document-signing-public-http.helper';
@@ -32,8 +31,7 @@ export class AcceptPublicSigningSessionHttpController {
     >(
       new AcceptPublicSigningSessionCommand(
         extractBearerToken(authorization),
-        body.declaredFullName,
-        body.declaredDocumentNumber,
+        body.signatureImageDataUrl,
         body.acceptanceTextVersion,
         body.accepted,
       ),
@@ -44,8 +42,7 @@ export class AcceptPublicSigningSessionHttpController {
 
       if (
         error instanceof SigningAcceptanceConfirmationRequiredError ||
-        error instanceof SigningAcceptanceIdentityRequiredError ||
-        error instanceof SigningSessionDocumentNotPresentedError
+        error instanceof SigningAcceptanceIdentityRequiredError
       ) {
         throw new UnprocessableEntityException(error.message);
       }

@@ -96,18 +96,11 @@ const s = StyleSheet.create({
   digitalSignatureBlock: {
     width: '38%',
   },
-  digitalSignatureInfo: {
+  digitalSignatureVisual: {
+    height: 40,
     marginBottom: 6,
-  },
-  digitalSignatureName: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 8,
-    textAlign: 'center',
-  },
-  digitalSignatureDoc: {
-    fontSize: 7,
-    color: '#444',
-    textAlign: 'center',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   digitalSignatureLine: {
     borderBottom: '1pt solid #111111',
@@ -118,11 +111,10 @@ const s = StyleSheet.create({
     color: '#111',
     textAlign: 'center',
   },
-  digitalSignatureTimestamp: {
-    fontSize: 6.2,
-    color: '#737373',
-    textAlign: 'center',
-    marginTop: 2,
+  digitalSignatureImage: {
+    width: 190,
+    height: 36,
+    objectFit: 'contain',
   },
   signatureVisual: {
     position: 'relative',
@@ -302,10 +294,8 @@ export function AnexoPage({
 function ElectronicAcceptanceBlock({ summary }: { summary: SignedContractSummary }) {
   return (
     <View style={s.digitalSignatureBlock}>
-      <View style={s.digitalSignatureInfo}>
-        <Text style={s.digitalSignatureName}>{summary.signerFullName}</Text>
-        <Text style={s.digitalSignatureDoc}>NIE: {summary.declaredDocumentNumber}</Text>
-        <Text style={s.digitalSignatureTimestamp}>{summary.signedAt}</Text>
+      <View style={s.digitalSignatureVisual}>
+        <Image src={summary.signatureImageDataUrl} style={s.digitalSignatureImage} />
       </View>
       <View style={s.digitalSignatureLine} />
       <Text style={s.digitalSignatureLabel}>FIRMA DIGITAL DEL ARRENDATARIO</Text>

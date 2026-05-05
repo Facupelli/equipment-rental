@@ -45,7 +45,7 @@ model Customer {
   profile           CustomerProfile?
   tenant            Tenant             @relation(fields: [tenantId], references: [id])
   orders            Order[]
-  signingSessions   SigningSession[]
+  signingRequests   DocumentSigningRequest[]
   restrictedCoupons Coupon[]
   couponRedemptions CouponRedemption[]
   externalIdentities ExternalIdentity[]

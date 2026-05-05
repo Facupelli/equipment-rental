@@ -8,10 +8,10 @@ export interface SendSigningInvitationInput {
 }
 
 export interface SendSigningInvitationResult {
-  sessionId: string;
+  requestId: string;
   documentNumber: string;
   recipientEmail: string;
   expiresAt: Date;
-  unsignedDocumentHash: string;
-  reusedExistingSession: boolean;
+  documentHash: string;
+  reusedExistingRequest: boolean;
 }

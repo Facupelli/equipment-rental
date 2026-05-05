@@ -28,12 +28,12 @@ export type SendOrderSigningInvitationDto = z.infer<
 >;
 
 export const orderSigningSessionResponseSchema = z.object({
-	sessionId: z.uuid(),
+	requestId: z.uuid(),
 	documentNumber: z.string(),
 	recipientEmail: z.string().trim().email(),
 	expiresAt: z.string().datetime({ offset: true }),
-	unsignedDocumentHash: z.string(),
-	reusedExistingSession: z.boolean(),
+	documentHash: z.string(),
+	reusedExistingRequest: z.boolean(),
 });
 
 export type OrderSigningSessionResponseDto = z.infer<
@@ -41,7 +41,7 @@ export type OrderSigningSessionResponseDto = z.infer<
 >;
 
 export const publicSigningSessionResolveResponseSchema = z.object({
-	sessionId: z.uuid(),
+	requestId: z.uuid(),
 });
 
 export type PublicSigningSessionResolveResponseDto = z.infer<
@@ -49,8 +49,6 @@ export type PublicSigningSessionResolveResponseDto = z.infer<
 >;
 
 export const publicSigningDocumentSchema = z.object({
-	artifactId: z.uuid(),
-	kind: z.literal("UNSIGNED_PDF"),
 	documentNumber: z.string(),
 	displayFileName: z.string(),
 	contentType: z.literal("application/pdf"),
@@ -65,17 +63,15 @@ export const publicSigningPrefilledSignerSchema = z.object({
 
 export const publicSigningSessionStatusSchema = z.enum([
 	"PENDING",
-	"OPENED",
 	"SIGNED",
 	"VOIDED",
 ]);
 
 export const publicSigningSessionResponseSchema = z.object({
-	sessionId: z.uuid(),
+	requestId: z.uuid(),
 	documentType: z.literal("RENTAL_AGREEMENT"),
 	status: publicSigningSessionStatusSchema,
 	expiresAt: z.string().datetime({ offset: true }),
-	openedAt: z.string().datetime({ offset: true }).nullable(),
 	document: publicSigningDocumentSchema,
 	prefilledSigner: publicSigningPrefilledSignerSchema,
 });
@@ -85,8 +81,12 @@ export type PublicSigningSessionResponseDto = z.infer<
 >;
 
 export const acceptPublicSigningSessionSchema = z.object({
-	declaredFullName: z.string().trim().min(1),
-	declaredDocumentNumber: z.string().trim().min(1),
+	signatureImageDataUrl: z
+		.string()
+		.trim()
+		.min(1)
+		.max(350_000)
+		.regex(/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/),
 	acceptanceTextVersion: z.string().trim().min(1),
 	accepted: z.literal(true),
 });
@@ -96,11 +96,9 @@ export type AcceptPublicSigningSessionDto = z.infer<
 >;
 
 export const acceptPublicSigningSessionResponseSchema = z.object({
-	sessionId: z.uuid(),
+	requestId: z.uuid(),
 	status: z.literal("SIGNED"),
-	acceptedAt: z.string().datetime({ offset: true }),
-	agreementHash: z.string(),
-	channel: z.literal("email_link"),
+	signedAt: z.string().datetime({ offset: true }),
 });
 
 export type AcceptPublicSigningSessionResponseDto = z.infer<

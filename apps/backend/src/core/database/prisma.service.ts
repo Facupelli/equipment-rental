@@ -28,9 +28,6 @@ const TENANT_EXCLUDED_MODELS = new Set([
   'PromotionExclusion', // scoped through Promotion
   'OrderDeliveryRequest',
   'CustomerProfile',
-  'SigningArtifact', // scoped through SigningSession
-  'SigningAuditEvent', // scoped through SigningSession
-  'SigningAnchor', // global signing ledger record, no tenant scope
 ]);
 
 // Operations that only need WHERE injection

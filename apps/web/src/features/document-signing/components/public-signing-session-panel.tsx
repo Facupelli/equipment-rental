@@ -40,11 +40,6 @@ function getStatusMeta(
 	status: ParsedPublicSigningSessionResponseDto["status"],
 ) {
 	switch (status) {
-		case "OPENED":
-			return {
-				label: "En revision",
-				className: "border-sky-200 bg-sky-50 text-sky-700",
-			};
 		case "SIGNED":
 			return {
 				label: "Firmado",

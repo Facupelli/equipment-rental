@@ -1,14 +1,11 @@
-import { SigningDocumentType, SigningSessionStatus } from 'src/generated/prisma/client';
+import { DocumentSigningRequestStatus, SigningDocumentType } from 'src/generated/prisma/client';
 
 export interface PublicSigningSessionReadModel {
-  sessionId: string;
+  requestId: string;
   documentType: SigningDocumentType;
-  status: SigningSessionStatus;
+  status: DocumentSigningRequestStatus;
   expiresAt: Date;
-  openedAt: Date | null;
   document: {
-    artifactId: string;
-    kind: 'UNSIGNED_PDF';
     documentNumber: string;
     displayFileName: string;
     contentType: string;

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { fetchPublicSigningFinalCopyResponse } from "@/features/document-signing/document-signing.api";
+import { fetchPublicSigningSignedPdfResponse } from "@/features/document-signing/document-signing.api";
 import { ProblemDetailsError } from "@/shared/errors";
 
 const searchSchema = z.object({
@@ -12,7 +12,7 @@ function jsonError(message: string, status: number) {
 }
 
 export const Route = createFileRoute(
-	"/document-signing/public/final-copy/download",
+	"/api/document-signing/public/signed-pdf",
 )({
 	server: {
 		handlers: {
@@ -23,17 +23,18 @@ export const Route = createFileRoute(
 				});
 
 				if (!parsedSearch.success) {
-					return jsonError("Token de descarga invalido.", 400);
+					return jsonError("Token de firma invalido.", 400);
 				}
 
 				try {
-					const response = await fetchPublicSigningFinalCopyResponse(
+					const response = await fetchPublicSigningSignedPdfResponse(
 						parsedSearch.data.token,
 					);
 					const headers = new Headers();
 					const contentType = response.headers.get("Content-Type");
-					const contentDisposition = response.headers.get("Content-Disposition");
-					const contentLength = response.headers.get("Content-Length");
+					const contentDisposition = response.headers.get(
+						"Content-Disposition",
+					);
 
 					if (contentType) {
 						headers.set("Content-Type", contentType);
@@ -41,10 +42,6 @@ export const Route = createFileRoute(
 
 					if (contentDisposition) {
 						headers.set("Content-Disposition", contentDisposition);
-					}
-
-					if (contentLength) {
-						headers.set("Content-Length", contentLength);
 					}
 
 					headers.set("Cache-Control", "private, no-store");
@@ -62,7 +59,7 @@ export const Route = createFileRoute(
 						);
 					}
 
-					return jsonError("No pudimos descargar la copia final firmada.", 500);
+					return jsonError("No pudimos descargar el PDF firmado.", 500);
 				}
 			},
 		},

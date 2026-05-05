@@ -3,34 +3,32 @@ import { Result, err, ok } from 'neverthrow';
 
 import { OrderDocumentRendererService } from 'src/modules/order/application/pdf/order-document-renderer.service';
 import { ContractCustomerProfileMissingError } from 'src/modules/order/domain/errors/contract.errors';
-import {
-  OrderNotFoundError,
-  OrderSigningAllowedOnlyForConfirmedOrdersError,
-} from 'src/modules/order/domain/errors/order.errors';
+import { OrderNotFoundError } from 'src/modules/order/domain/errors/order.errors';
 import { OrderNotFoundException } from 'src/modules/order/domain/exceptions/order.exceptions';
-import { RenderSignedOrderAgreementQuery } from 'src/modules/order/public/queries/render-signed-order-agreement.query';
+import { PrepareSignedOrderAgreementForSigningQuery } from 'src/modules/order/public/queries/prepare-signed-order-agreement-for-signing.query';
 import { RenderedOrderAgreementReadModel } from 'src/modules/order/public/read-models/rendered-order-agreement.read-model';
 
-type RenderSignedOrderAgreementResult = Result<
+type PrepareSignedOrderAgreementForSigningResult = Result<
   RenderedOrderAgreementReadModel,
-  ContractCustomerProfileMissingError | OrderNotFoundError | OrderSigningAllowedOnlyForConfirmedOrdersError
+  ContractCustomerProfileMissingError | OrderNotFoundError
 >;
 
-@QueryHandler(RenderSignedOrderAgreementQuery)
-export class RenderSignedOrderAgreementQueryHandler implements IQueryHandler<
-  RenderSignedOrderAgreementQuery,
-  RenderSignedOrderAgreementResult
+@QueryHandler(PrepareSignedOrderAgreementForSigningQuery)
+export class PrepareSignedOrderAgreementForSigningQueryHandler implements IQueryHandler<
+  PrepareSignedOrderAgreementForSigningQuery,
+  PrepareSignedOrderAgreementForSigningResult
 > {
   constructor(private readonly orderDocumentRenderer: OrderDocumentRendererService) {}
 
-  async execute(query: RenderSignedOrderAgreementQuery): Promise<RenderSignedOrderAgreementResult> {
+  async execute(
+    query: PrepareSignedOrderAgreementForSigningQuery,
+  ): Promise<PrepareSignedOrderAgreementForSigningResult> {
     try {
       const renderResult = await this.orderDocumentRenderer.renderSignedContract(query.tenantId, query.orderId, {
-        signerFullName: query.signerFullName,
-        declaredDocumentNumber: query.declaredDocumentNumber,
+        signatureImageDataUrl: query.signatureImageDataUrl,
         recipientEmail: query.recipientEmail,
         signedAt: query.signedAt,
-        sessionReference: query.sessionReference,
+        sessionReference: query.requestId,
       });
       if (renderResult.isErr()) {
         return err(renderResult.error);

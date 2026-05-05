@@ -12,3 +12,9 @@ export class OrderBudgetMustBeDraftError extends DomainError {
     super(`Order "${orderId}" is in status "${status}". A presupuesto can only be generated for draft orders.`);
   }
 }
+
+export class SignedOrderContractNotFoundError extends DomainError {
+  constructor(orderId: string) {
+    super(`Order "${orderId}" does not have a signed contract available.`);
+  }
+}

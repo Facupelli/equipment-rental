@@ -117,6 +117,10 @@ export function getPublicSigningUnsignedPdfUrl(token: string) {
 	return `/api/document-signing/public/unsigned-pdf?token=${encodeURIComponent(token)}`;
 }
 
+export function getPublicSigningSignedPdfUrl(token: string) {
+	return `/api/document-signing/public/signed-pdf?token=${encodeURIComponent(token)}`;
+}
+
 function createPdfProxyProblem(status: number, fallbackMessage: string) {
 	return new ProblemDetailsError({
 		type: "about:blank",
@@ -171,16 +175,19 @@ export async function fetchPublicSigningUnsignedPdfResponse(token: string) {
 	return response;
 }
 
-export async function fetchPublicSigningFinalCopyResponse(token: string) {
+export async function fetchPublicSigningSignedPdfResponse(token: string) {
 	const parsedToken = documentSigningTokenSchema.parse({ token });
 
 	let response: Response;
 
 	try {
 		response = await fetch(
-			`${process.env.BACKEND_URL}${documentSigningApiUrl}/public/final-copy/download?token=${encodeURIComponent(parsedToken.token)}`,
+			`${process.env.BACKEND_URL}${documentSigningApiUrl}/public/sessions/me/signed-pdf`,
 			{
 				method: "GET",
+				headers: {
+					Authorization: `Bearer ${parsedToken.token}`,
+				},
 			},
 		);
 	} catch (error) {
@@ -188,7 +195,7 @@ export async function fetchPublicSigningFinalCopyResponse(token: string) {
 			0,
 			error instanceof Error
 				? error.message
-				: "No pudimos descargar la copia final firmada.",
+				: "No pudimos descargar el PDF firmado.",
 		);
 	}
 
@@ -205,7 +212,7 @@ export async function fetchPublicSigningFinalCopyResponse(token: string) {
 						"message" in raw &&
 						typeof raw.message === "string"
 					? raw.message
-					: "No pudimos descargar la copia final firmada.";
+					: "No pudimos descargar el PDF firmado.";
 
 		throw createPdfProxyProblem(response.status, detail);
 	}

@@ -2,7 +2,6 @@ import { FulfillmentMethod } from "@repo/types";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-	BadgeCheck,
 	CheckCircle2,
 	ChevronDown,
 	Clock,
@@ -665,12 +664,10 @@ function OrderSigningCard() {
 		return null;
 	}
 
-	const invitation = order.signing.latestInvitationDelivery;
-	const finalCopy = order.signing.latestFinalCopyDelivery;
 	const statusMeta = getSigningStatusMeta(order.signing.status);
 	const isSigned = order.signing.status === "SIGNED";
 	const summaryTimestamp =
-		order.signing.signedAt ?? order.signing.openedAt ?? order.signing.expiresAt;
+		order.signing.signedAt ?? order.signing.expiresAt ?? order.signing.createdAt;
 
 	return (
 		<section className="bg-white border border-neutral-200 rounded-lg p-5">
@@ -713,7 +710,7 @@ function OrderSigningCard() {
 				<SidebarField
 					icon={<Mail className="w-3.5 h-3.5" />}
 					value={
-						invitation.recipientEmail ??
+						order.signing.recipientEmail ??
 						order.customer?.email ??
 						"Sin email cargado"
 					}
@@ -721,7 +718,6 @@ function OrderSigningCard() {
 
 				{!isSigned ? (
 					<SigningSummaryDetails
-						invitationStatus={invitation.status}
 						summaryTimestamp={summaryTimestamp}
 						expiresAt={order.signing.expiresAt}
 					/>
@@ -732,7 +728,6 @@ function OrderSigningCard() {
 				<div className="mt-4 space-y-4 border-t border-neutral-100 pt-4">
 					{isSigned ? (
 						<SigningSummaryDetails
-							invitationStatus={invitation.status}
 							summaryTimestamp={summaryTimestamp}
 							expiresAt={order.signing.expiresAt}
 						/>
@@ -743,20 +738,8 @@ function OrderSigningCard() {
 						value={formatOptionalSigningDate(order.signing.createdAt)}
 					/>
 					<SigningDetailRow
-						label="Abierta"
-						value={formatOptionalSigningDate(order.signing.openedAt)}
-					/>
-					<SigningDetailRow
 						label="Firmada"
 						value={formatOptionalSigningDate(order.signing.signedAt)}
-					/>
-					<SigningDeliveryBlock
-						title="Última entrega de invitación"
-						delivery={invitation}
-					/>
-					<SigningDeliveryBlock
-						title="Última entrega de copia final"
-						delivery={finalCopy}
 					/>
 				</div>
 			) : null}
@@ -1160,27 +1143,22 @@ function SigningDetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function SigningSummaryDetails({
-	invitationStatus,
 	summaryTimestamp,
 	expiresAt,
 }: {
-	invitationStatus: ParsedOrderDetailResponseDto["signing"]["latestInvitationDelivery"]["status"];
 	summaryTimestamp:
 		| ParsedOrderDetailResponseDto["signing"]["signedAt"]
-		| ParsedOrderDetailResponseDto["signing"]["openedAt"]
-		| ParsedOrderDetailResponseDto["signing"]["expiresAt"];
+		| ParsedOrderDetailResponseDto["signing"]["expiresAt"]
+		| ParsedOrderDetailResponseDto["signing"]["createdAt"];
 	expiresAt: ParsedOrderDetailResponseDto["signing"]["expiresAt"];
 }) {
 	return (
 		<div className="space-y-3">
 			<div className="rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2.5">
 				<p className="font-mono text-[9px] tracking-widest uppercase text-neutral-400 mb-1">
-					Invitacion
+					Actividad
 				</p>
 				<p className="text-sm font-semibold text-neutral-950">
-					{getSigningDeliveryLabel(invitationStatus)}
-				</p>
-				<p className="mt-0.5 text-xs text-neutral-500">
 					{summaryTimestamp
 						? formatSigningDate(summaryTimestamp)
 						: "Sin actividad registrada"}
@@ -1197,40 +1175,6 @@ function SigningSummaryDetails({
 					</p>
 				</div>
 			) : null}
-		</div>
-	);
-}
-
-function SigningDeliveryBlock({
-	title,
-	delivery,
-}: {
-	title: string;
-	delivery: ParsedOrderDetailResponseDto["signing"]["latestInvitationDelivery"];
-}) {
-	return (
-		<div className="rounded-md border border-neutral-100 bg-neutral-50 px-3 py-3">
-			<div className="flex items-center gap-2 text-sm font-semibold text-neutral-950">
-				<BadgeCheck className="size-4 text-neutral-400" />
-				{title}
-			</div>
-			<div className="mt-3 space-y-2">
-				<SigningDetailRow
-					label="Estado"
-					value={getSigningDeliveryLabel(delivery.status)}
-				/>
-				<SigningDetailRow
-					label="Fecha"
-					value={formatOptionalSigningDate(delivery.occurredAt)}
-				/>
-				<SigningDetailRow
-					label="Email"
-					value={delivery.recipientEmail ?? "Sin email"}
-				/>
-				{delivery.failureMessage ? (
-					<p className="text-sm text-red-700">{delivery.failureMessage}</p>
-				) : null}
-			</div>
 		</div>
 	);
 }
@@ -1254,26 +1198,19 @@ function getSigningStatusMeta(
 	status: ParsedOrderDetailResponseDto["signing"]["status"],
 ) {
 	switch (status) {
-		case "NO_SESSION":
+		case "NO_REQUEST":
 			return {
-				label: "Sin invitacion activa",
-				description: "Aun no se envio una invitación para firmar.",
+				label: "Sin solicitud activa",
+				description: "Aun no se creo una solicitud para firmar.",
 				iconWrapClassName: "bg-neutral-100 text-neutral-600",
 				iconClassName: "text-neutral-600",
 			};
 		case "PENDING":
 			return {
-				label: "Pendiente de apertura",
-				description: "La invitación fue enviada y espera revision del cliente.",
+				label: "Pendiente de firma",
+				description: "La solicitud fue creada y espera la firma del cliente.",
 				iconWrapClassName: "bg-amber-100 text-amber-700",
 				iconClassName: "text-amber-700",
-			};
-		case "OPENED":
-			return {
-				label: "Abierta por el cliente",
-				description: "El documento ya fue abierto, pero todavía no se firmo.",
-				iconWrapClassName: "bg-sky-100 text-sky-700",
-				iconClassName: "text-sky-700",
 			};
 		case "SIGNED":
 			return {
@@ -1284,33 +1221,18 @@ function getSigningStatusMeta(
 			};
 		case "EXPIRED":
 			return {
-				label: "Invitacion vencida",
-				description: "La sesión expiró y requiere un nuevo envio.",
+				label: "Solicitud vencida",
+				description: "La solicitud expiró y requiere un nuevo envio.",
 				iconWrapClassName: "bg-red-100 text-red-700",
 				iconClassName: "text-red-700",
 			};
 		case "VOIDED":
 			return {
-				label: "Sesion anulada",
-				description: "La invitación anterior ya no esta disponible.",
+				label: "Solicitud anulada",
+				description: "La solicitud anterior ya no esta disponible.",
 				iconWrapClassName: "bg-neutral-200 text-neutral-600",
 				iconClassName: "text-neutral-600",
 			};
-	}
-}
-
-function getSigningDeliveryLabel(
-	status: ParsedOrderDetailResponseDto["signing"]["latestInvitationDelivery"]["status"],
-) {
-	switch (status) {
-		case "NOT_SENT":
-			return "No enviada";
-		case "REQUESTED":
-			return "Solicitada";
-		case "SENT":
-			return "Enviada";
-		case "FAILED":
-			return "Fallida";
 	}
 }
 
@@ -1323,10 +1245,8 @@ function formatSigningDate(
 function formatOptionalSigningDate(
 	value:
 		| ParsedOrderDetailResponseDto["signing"]["createdAt"]
-		| ParsedOrderDetailResponseDto["signing"]["openedAt"]
 		| ParsedOrderDetailResponseDto["signing"]["signedAt"]
-		| ParsedOrderDetailResponseDto["signing"]["expiresAt"]
-		| ParsedOrderDetailResponseDto["signing"]["latestInvitationDelivery"]["occurredAt"],
+		| ParsedOrderDetailResponseDto["signing"]["expiresAt"],
 ) {
 	return value ? formatSigningDate(value) : "Sin registro";
 }

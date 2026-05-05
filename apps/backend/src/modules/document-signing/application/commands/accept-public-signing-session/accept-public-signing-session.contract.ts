@@ -1,45 +1,30 @@
+import { DocumentSigningRequestStatus } from 'src/generated/prisma/client';
 import {
-  SignedOrderAgreementRenderingFailedError,
+  DocumentSigningRequestStatusTransitionNotAllowedError,
+  DocumentSigningRequestExpiredError,
+  DocumentSigningRequestTokenNotFoundError,
+  DocumentSigningRequestUnavailableError,
   SigningAcceptanceConfirmationRequiredError,
   SigningAcceptanceIdentityRequiredError,
-  SigningSessionDocumentNotPresentedError,
-  SigningSessionExpiredError,
-  SigningSessionStatusTransitionNotAllowedError,
-  SigningSessionTokenNotFoundError,
-  SigningSessionUnavailableError,
-  UnsignedSigningArtifactNotFoundError,
 } from 'src/modules/document-signing/domain/errors/document-signing.errors';
-
-const SIGNING_ACCEPTANCE_CHANNEL = 'email_link' as const;
 
 export interface AcceptPublicSigningInput {
   rawToken: string;
-  declaredFullName: string;
-  declaredDocumentNumber: string;
+  signatureImageDataUrl: string;
   acceptanceTextVersion: string;
   accepted: boolean;
 }
 
 export interface AcceptPublicSigningResult {
-  sessionId: string;
-  status: 'SIGNED';
-  acceptedAt: Date;
-  agreementHash: string;
-  channel: typeof SIGNING_ACCEPTANCE_CHANNEL;
-  finalCopyDelivery: {
-    status: 'SENT' | 'FAILED';
-    failureReason: string | null;
-    failureMessage: string | null;
-  };
+  requestId: string;
+  status: typeof DocumentSigningRequestStatus.SIGNED;
+  signedAt: Date;
 }
 
 export type AcceptPublicSigningError =
+  | DocumentSigningRequestStatusTransitionNotAllowedError
   | SigningAcceptanceConfirmationRequiredError
   | SigningAcceptanceIdentityRequiredError
-  | SigningSessionDocumentNotPresentedError
-  | SigningSessionExpiredError
-  | SigningSessionStatusTransitionNotAllowedError
-  | SigningSessionTokenNotFoundError
-  | SigningSessionUnavailableError
-  | SignedOrderAgreementRenderingFailedError
-  | UnsignedSigningArtifactNotFoundError;
+  | DocumentSigningRequestExpiredError
+  | DocumentSigningRequestTokenNotFoundError
+  | DocumentSigningRequestUnavailableError;

@@ -2,12 +2,10 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 export const PublicSigningSessionResolveResponseSchema = z.object({
-  sessionId: z.string().uuid(),
+  requestId: z.string().uuid(),
 });
 
 const PublicSigningDocumentSchema = z.object({
-  artifactId: z.string().uuid(),
-  kind: z.literal('UNSIGNED_PDF'),
   documentNumber: z.string().min(1),
   displayFileName: z.string().min(1),
   contentType: z.string().min(1),
@@ -21,11 +19,10 @@ const PublicSigningPrefilledSignerSchema = z.object({
 });
 
 export const PublicSigningSessionResponseSchema = z.object({
-  sessionId: z.string().uuid(),
+  requestId: z.string().uuid(),
   documentType: z.string().min(1),
   status: z.string().min(1),
   expiresAt: z.date(),
-  openedAt: z.date().nullable(),
   document: PublicSigningDocumentSchema,
   prefilledSigner: PublicSigningPrefilledSignerSchema,
 });

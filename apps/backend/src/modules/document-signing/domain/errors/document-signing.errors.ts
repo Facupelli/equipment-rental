@@ -2,21 +2,9 @@ import { DomainError } from 'src/core/exceptions/domain.error';
 
 export class DocumentSigningError extends DomainError {}
 
-export class SigningSessionStatusTransitionNotAllowedError extends DocumentSigningError {
-  constructor(sessionId: string, from: string, to: string) {
-    super(`Signing session '${sessionId}' cannot transition from '${from}' to '${to}'.`);
-  }
-}
-
-export class DuplicateSigningArtifactKindError extends DocumentSigningError {
-  constructor(sessionId: string, kind: string) {
-    super(`Signing session '${sessionId}' already has an artifact with kind '${kind}'.`);
-  }
-}
-
-export class DuplicateSigningAuditSequenceError extends DocumentSigningError {
-  constructor(sessionId: string, sequence: number) {
-    super(`Signing session '${sessionId}' already has an audit event with sequence '${sequence}'.`);
+export class DocumentSigningRequestStatusTransitionNotAllowedError extends DocumentSigningError {
+  constructor(requestId: string, from: string, to: string) {
+    super(`Document signing request '${requestId}' cannot transition from '${from}' to '${to}'.`);
   }
 }
 
@@ -50,39 +38,21 @@ export class SigningInvitationEmailDeliveryFailedError extends DocumentSigningEr
   }
 }
 
-export class SignedOrderAgreementRenderingFailedError extends DocumentSigningError {
-  constructor(orderId: string) {
-    super(`Unable to generate the final signed agreement for order "${orderId}".`);
-  }
-}
-
-export class SigningSessionTokenNotFoundError extends DocumentSigningError {
+export class DocumentSigningRequestTokenNotFoundError extends DocumentSigningError {
   constructor() {
-    super('Signing session was not found for the provided token.');
+    super('Document signing request was not found for the provided token.');
   }
 }
 
-export class SigningSessionExpiredError extends DocumentSigningError {
-  constructor(sessionId: string) {
-    super(`Signing session '${sessionId}' has expired.`);
+export class DocumentSigningRequestExpiredError extends DocumentSigningError {
+  constructor(requestId: string) {
+    super(`Document signing request '${requestId}' has expired.`);
   }
 }
 
-export class SigningSessionUnavailableError extends DocumentSigningError {
-  constructor(sessionId: string, status: string) {
-    super(`Signing session '${sessionId}' is not available for public signing because it is '${status}'.`);
-  }
-}
-
-export class UnsignedSigningArtifactNotFoundError extends DocumentSigningError {
-  constructor(sessionId: string) {
-    super(`Signing session '${sessionId}' does not have a frozen unsigned PDF artifact.`);
-  }
-}
-
-export class SignedSigningArtifactNotFoundError extends DocumentSigningError {
-  constructor(sessionId: string) {
-    super(`Signing session '${sessionId}' does not have a final signed PDF artifact.`);
+export class DocumentSigningRequestUnavailableError extends DocumentSigningError {
+  constructor(requestId: string, status: string) {
+    super(`Document signing request '${requestId}' is not available for public signing because it is '${status}'.`);
   }
 }
 
@@ -93,31 +63,7 @@ export class SigningAcceptanceConfirmationRequiredError extends DocumentSigningE
 }
 
 export class SigningAcceptanceIdentityRequiredError extends DocumentSigningError {
-  constructor(field: 'declaredFullName' | 'declaredDocumentNumber' | 'acceptanceTextVersion') {
+  constructor(field: 'signatureImageDataUrl' | 'acceptanceTextVersion') {
     super(`Signing acceptance requires a non-empty '${field}'.`);
-  }
-}
-
-export class SigningSessionDocumentNotPresentedError extends DocumentSigningError {
-  constructor(sessionId: string) {
-    super(`Signing session '${sessionId}' cannot be accepted before the frozen unsigned document is presented.`);
-  }
-}
-
-export class FinalCopyAccessTokenNotFoundError extends DocumentSigningError {
-  constructor() {
-    super('Final copy access token was not found for the provided token.');
-  }
-}
-
-export class FinalCopyAccessTokenExpiredError extends DocumentSigningError {
-  constructor(sessionId: string) {
-    super(`Final copy access token for signing session '${sessionId}' has expired.`);
-  }
-}
-
-export class FinalCopyAccessTokenAlreadyUsedError extends DocumentSigningError {
-  constructor(sessionId: string) {
-    super(`Final copy access token for signing session '${sessionId}' has already been used.`);
   }
 }

@@ -7,7 +7,10 @@ import { StaffRoute } from 'src/core/decorators/staff-route.decorator';
 import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/public/authenticated-user';
 import { ContractCustomerProfileMissingError } from 'src/modules/order/domain/errors/contract.errors';
+import { SignedOrderContractNotFoundError } from 'src/modules/order/domain/errors/contract.errors';
 import { OrderNotFoundException } from 'src/modules/order/domain/exceptions/order.exceptions';
+import { GenerateSignedOrderContractQuery } from '../generate-signed-order-contract/generate-signed-order-contract.query';
+import { GenerateSignedOrderContractResult } from '../generate-signed-order-contract/generate-signed-order-contract.query';
 import { GenerateOrderContractQuery } from './generate-order-contract.query';
 import { GenerateOrderContractResult } from './generate-order-contract.query';
 
@@ -32,6 +35,24 @@ export class GenerateOrderContractHttpController {
     @Res() res: Response,
   ): Promise<void> {
     await this.sendContractResponse({ orderId, tenantId: user.tenantId, res, disposition: 'attachment' });
+  }
+
+  @Get(':orderId/contract/signed')
+  async previewSignedContract(
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() res: Response,
+  ): Promise<void> {
+    await this.sendSignedContractResponse({ orderId, tenantId: user.tenantId, res, disposition: 'inline' });
+  }
+
+  @Get(':orderId/contract/signed/download')
+  async downloadSignedContract(
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() res: Response,
+  ): Promise<void> {
+    await this.sendSignedContractResponse({ orderId, tenantId: user.tenantId, res, disposition: 'attachment' });
   }
 
   private async sendContractResponse({
@@ -62,6 +83,57 @@ export class GenerateOrderContractHttpController {
 
       if (error instanceof ContractCustomerProfileMissingError) {
         throw new UnprocessableEntityException(error.message);
+      }
+
+      throw error;
+    }
+
+    const { buffer, downloadFileName } = result.value;
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `${disposition}; filename="${downloadFileName}.pdf"`,
+      'Content-Length': buffer.length,
+    });
+
+    res.end(buffer);
+  }
+
+  private async sendSignedContractResponse({
+    orderId,
+    tenantId,
+    res,
+    disposition,
+  }: {
+    orderId: string;
+    tenantId: string;
+    res: Response;
+    disposition: 'inline' | 'attachment';
+  }): Promise<void> {
+    let result: Result<
+      GenerateSignedOrderContractResult,
+      ContractCustomerProfileMissingError | SignedOrderContractNotFoundError
+    >;
+
+    try {
+      result = await this.queryBus.execute(new GenerateSignedOrderContractQuery(tenantId, orderId));
+    } catch (error) {
+      if (error instanceof OrderNotFoundException) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+
+    if (result.isErr()) {
+      const error = result.error;
+
+      if (error instanceof ContractCustomerProfileMissingError) {
+        throw new UnprocessableEntityException(error.message);
+      }
+
+      if (error instanceof SignedOrderContractNotFoundError) {
+        throw new NotFoundException(error.message);
       }
 
       throw error;

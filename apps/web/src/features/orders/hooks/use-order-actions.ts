@@ -13,6 +13,7 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 	const documentState = useOrderDocumentState();
 	const contractActions = useOrderContractActions({
 		orderId: order.id,
+		isSigned: order.signing.status === "SIGNED",
 		setContractError: documentState.setContractError,
 		setContractBusinessErrorMessage:
 			documentState.setContractBusinessErrorMessage,

@@ -6,12 +6,12 @@ import { ResolvePublicSigningSessionQuery } from './resolve-public-signing-sessi
 @QueryHandler(ResolvePublicSigningSessionQuery)
 export class ResolvePublicSigningSessionQueryHandler implements IQueryHandler<
   ResolvePublicSigningSessionQuery,
-  { sessionId: string }
+  { requestId: string }
 > {
   constructor(private readonly publicSigningSessionLoader: PublicSigningSessionLoader) {}
 
-  async execute(query: ResolvePublicSigningSessionQuery): Promise<{ sessionId: string }> {
-    const session = await this.publicSigningSessionLoader.loadRequiredPublicSession(query.rawToken);
-    return { sessionId: session.id };
+  async execute(query: ResolvePublicSigningSessionQuery): Promise<{ requestId: string }> {
+    const request = await this.publicSigningSessionLoader.loadRequiredPublicSession(query.rawToken);
+    return { requestId: request.id };
   }
 }

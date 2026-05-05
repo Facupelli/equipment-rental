@@ -7,6 +7,7 @@ import {
 
 type UseOrderContractActionsParams = {
 	orderId: string;
+	isSigned: boolean;
 	setContractError: (value: ContractErrorState) => void;
 	setContractBusinessErrorMessage: (value: string | null) => void;
 	setIsContractBusinessErrorOpen: (value: boolean) => void;
@@ -14,6 +15,7 @@ type UseOrderContractActionsParams = {
 
 export function useOrderContractActions({
 	orderId,
+	isSigned,
 	setContractError,
 	setContractBusinessErrorMessage,
 	setIsContractBusinessErrorOpen,
@@ -27,7 +29,9 @@ export function useOrderContractActions({
 		setIsOpeningContract(true);
 		setContractError(null);
 
-		const contractUrl = `/api/orders/${orderId}/contract/`;
+		const contractUrl = isSigned
+			? `/api/orders/${orderId}/contract/signed`
+			: `/api/orders/${orderId}/contract/`;
 		const canProceed = await preflightContractRequest({
 			url: contractUrl,
 			onBusinessError: (message) => {
@@ -59,7 +63,9 @@ export function useOrderContractActions({
 		setIsDownloadingContract(true);
 		setContractError(null);
 
-		const downloadUrl = `/api/orders/${orderId}/contract/download`;
+		const downloadUrl = isSigned
+			? `/api/orders/${orderId}/contract/signed/download`
+			: `/api/orders/${orderId}/contract/download`;
 		const canProceed = await preflightContractRequest({
 			url: downloadUrl,
 			onBusinessError: (message) => {
