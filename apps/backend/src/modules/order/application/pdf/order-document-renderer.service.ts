@@ -69,6 +69,10 @@ type RenderOrderDocumentError =
   | OrderBudgetMustBeDraftError
   | OrderSigningAllowedOnlyForConfirmedOrdersError;
 
+type GroupableEquipmentLine = EquipmentLine & {
+  productTypeId: string | null;
+};
+
 @Injectable()
 export class OrderDocumentRendererService {
   constructor(
@@ -238,27 +242,31 @@ export class OrderDocumentRendererService {
       tenantConfig.pricing.locale,
     );
 
-    const equipmentLines: EquipmentLine[] = order.items.flatMap((item) => {
-      if (item.type === OrderItemType.PRODUCT && item.productType) {
-        return [
-          {
-            name: item.productType.name,
-            quantity: 1,
-            includedItems: parseIncludedItems(item.productType.includedItems),
-          },
-        ];
-      }
+    const equipmentLines = groupEquipmentLines(
+      order.items.flatMap((item): GroupableEquipmentLine[] => {
+        if (item.type === OrderItemType.PRODUCT && item.productType) {
+          return [
+            {
+              productTypeId: item.productTypeId,
+              name: item.productType.name,
+              quantity: 1,
+              includedItems: parseIncludedItems(item.productType.includedItems),
+            },
+          ];
+        }
 
-      if (item.type === OrderItemType.BUNDLE && item.bundleSnapshot) {
-        return item.bundleSnapshot.components.map((component) => ({
-          name: component.productType.name,
-          quantity: component.quantity,
-          includedItems: parseIncludedItems(component.productType.includedItems),
-        }));
-      }
+        if (item.type === OrderItemType.BUNDLE && item.bundleSnapshot) {
+          return item.bundleSnapshot.components.map((component) => ({
+            productTypeId: component.productTypeId,
+            name: component.productType.name,
+            quantity: component.quantity,
+            includedItems: parseIncludedItems(component.productType.includedItems),
+          }));
+        }
 
-      return [];
-    });
+        return [];
+      }),
+    );
 
     const paddedOrderNumber = String(order.orderNumber).padStart(4, '0');
     const documentNumber = `${tenant.name}-${paddedOrderNumber}`;
@@ -417,6 +425,28 @@ function parseIncludedItems(value: unknown): IncludedItem[] {
       },
     ];
   });
+}
+
+function groupEquipmentLines(lines: GroupableEquipmentLine[]): EquipmentLine[] {
+  const grouped = new Map<string, EquipmentLine>();
+
+  for (const line of lines) {
+    const key = line.productTypeId ?? line.name;
+    const existing = grouped.get(key);
+
+    if (existing) {
+      existing.quantity += line.quantity;
+      continue;
+    }
+
+    grouped.set(key, {
+      name: line.name,
+      quantity: line.quantity,
+      includedItems: line.includedItems,
+    });
+  }
+
+  return Array.from(grouped.values());
 }
 
 function formatCurrency(amount: number, currency: string, locale: string): string {
