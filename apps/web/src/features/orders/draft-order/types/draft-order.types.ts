@@ -1,7 +1,4 @@
-import type {
-	DeliveryRequestDto,
-	DraftOrderDiscountLine,
-} from "@repo/schemas";
+import type { DeliveryRequestDto } from "@repo/schemas";
 import { FulfillmentMethod } from "@repo/types";
 
 export type DraftOrderCustomerRef = {
@@ -22,24 +19,6 @@ export type DraftOrderDeliveryRequestDraft = Omit<
 > & {
 	addressLine2: string;
 	instructions: string;
-};
-
-export type DraftOrderPricingSnapshot = {
-	currency: string;
-	basePrice: string;
-	finalPrice: string;
-	discountTotal: string;
-	discountLines: DraftOrderDiscountLine[];
-};
-
-export type DraftOrderItemBudgetPreview = {
-	draftItemId: string;
-	label: string;
-	currency: string;
-	basePrice: string;
-	currentFinalPrice: string;
-	proposedFinalPrice: string;
-	proposedDiscountAmount: string;
 };
 
 export type DraftOrderSelectedProductItem = {
@@ -63,16 +42,10 @@ export type DraftOrderSelectedItem =
 export type DraftOrderItem = {
 	draftItemId: string;
 	selection: DraftOrderSelectedItem;
-	pricingSnapshot: DraftOrderPricingSnapshot;
-	budgetPreview: DraftOrderItemBudgetPreview | null;
 };
 
 export type DraftOrderBudgetState = {
-	currency: string;
-	currentItemsSubtotal: string;
 	targetTotal: string;
-	proposedDiscountTotal: string;
-	items: DraftOrderItemBudgetPreview[];
 };
 
 export type DraftOrderState = {
@@ -92,14 +65,15 @@ export const EMPTY_DRAFT_ORDER_RENTAL_PERIOD: DraftOrderRentalPeriod = {
 	returnTime: null,
 };
 
-export const EMPTY_DRAFT_ORDER_DELIVERY_REQUEST: DraftOrderDeliveryRequestDraft = {
-	recipientName: "",
-	phone: "",
-	addressLine1: "",
-	addressLine2: "",
-	city: "",
-	stateRegion: "",
-	postalCode: "",
-	country: "",
-	instructions: "",
-};
+export const EMPTY_DRAFT_ORDER_DELIVERY_REQUEST: DraftOrderDeliveryRequestDraft =
+	{
+		recipientName: "",
+		phone: "",
+		addressLine1: "",
+		addressLine2: "",
+		city: "",
+		stateRegion: "",
+		postalCode: "",
+		country: "",
+		instructions: "",
+	};

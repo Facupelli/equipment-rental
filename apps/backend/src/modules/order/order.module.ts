@@ -13,6 +13,7 @@ import { MarkEquipmentAsReturnedService } from './application/commands/mark-equi
 import { ExpireOrderService } from './application/commands/expire-order/expire-order.service';
 import { UpdateDraftOrderPricingService } from './application/commands/update-draft-order-pricing/update-draft-order-pricing.service';
 import { UpdateDraftOrderService } from './application/commands/update-draft-order/update-draft-order.service';
+import { EditOrderService } from './application/commands/edit-order/edit-order.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { GetOrdersScheduleQueryHandler } from './application/queries/get-orders-schedule/get-orders-schedule.query-handler';
 import { GetOrderByIdQueryHandler } from './application/queries/get-order-by-id/get-order-by-id.query-handler';
@@ -21,6 +22,7 @@ import { GetOrdersCalendarQueryHandler } from './application/queries/get-orders-
 import { GetPendingReviewOrdersQueryHandler } from './application/queries/get-pending-review-orders/get-pending-review-orders.query-handler';
 import { GetOrdersQueryHandler } from './application/queries/get-orders/get-orders.query-handler';
 import { GetDraftOrderPricingProposalQueryHandler } from './application/queries/get-draft-order-pricing-proposal/get-draft-order-pricing-proposal.query-handler';
+import { PreviewOrderPricingQueryHandler } from './application/queries/preview-order-pricing/preview-order-pricing.query-handler';
 import { PrepareOrderAgreementForSigningQueryHandler } from './application/queries/prepare-order-agreement-for-signing/prepare-order-agreement-for-signing.query-handler';
 import { PrepareSignedOrderAgreementForSigningQueryHandler } from './application/queries/prepare-signed-order-agreement-for-signing/prepare-signed-order-agreement-for-signing.query-handler';
 import { TenantModule } from '../tenant/tenant.module';
@@ -31,6 +33,7 @@ import { CreateDraftOrderHttpController } from './application/commands/create-dr
 import { ConfirmOrderHttpController } from './application/commands/confirm-order/confirm-order.http.controller';
 import { UpdateDraftOrderPricingHttpController } from './application/commands/update-draft-order-pricing/update-draft-order-pricing.http.controller';
 import { UpdateDraftOrderHttpController } from './application/commands/update-draft-order/update-draft-order.http.controller';
+import { EditOrderHttpController } from './application/commands/edit-order/edit-order.http.controller';
 import { RejectOrderHttpController } from './application/commands/reject-order/reject-order.http.controller';
 import { CancelOrderHttpController } from './application/commands/cancel-order/cancel-order.http.controller';
 import { MarkEquipmentAsRetiredHttpController } from './application/commands/mark-equipment-as-retired/mark-equipment-as-retired.http.controller';
@@ -44,6 +47,7 @@ import { GetOrdersHttpController } from './application/queries/get-orders/get-or
 import { GenerateOrderContractHttpController } from './application/queries/generate-order-contract/generate-order-contract.http.controller';
 import { GenerateOrderBudgetHttpController } from './application/queries/generate-order-budget/generate-order-budget.http.controller';
 import { GetDraftOrderPricingProposalHttpController } from './application/queries/get-draft-order-pricing-proposal/get-draft-order-pricing-proposal.http.controller';
+import { PreviewOrderPricingHttpController } from './application/queries/preview-order-pricing/preview-order-pricing.http.controller';
 import { GenerateOrderContractService } from './application/queries/generate-order-contract/generate-order-contract.service';
 import { GenerateSignedOrderContractService } from './application/queries/generate-signed-order-contract/generate-signed-order-contract.service';
 import { GenerateOrderBudgetService } from './application/queries/generate-order-budget/generate-order-budget.service';
@@ -59,6 +63,7 @@ import { OrderDocumentRendererService } from './application/pdf/order-document-r
     CreateDraftOrderHttpController,
     ConfirmOrderHttpController,
     UpdateDraftOrderHttpController,
+    EditOrderHttpController,
     UpdateDraftOrderPricingHttpController,
     RejectOrderHttpController,
     CancelOrderHttpController,
@@ -71,6 +76,7 @@ import { OrderDocumentRendererService } from './application/pdf/order-document-r
     GetOrdersCalendarHttpController,
     GetOrderByIdHttpController,
     GetDraftOrderPricingProposalHttpController,
+    PreviewOrderPricingHttpController,
     GenerateOrderContractHttpController,
     GenerateOrderBudgetHttpController,
   ],
@@ -85,6 +91,7 @@ import { OrderDocumentRendererService } from './application/pdf/order-document-r
     ConfirmPendingReviewOrderFlow,
     ConfirmOrderService,
     UpdateDraftOrderService,
+    EditOrderService,
     UpdateDraftOrderPricingService,
     RejectOrderService,
     CancelOrderService,
@@ -96,6 +103,7 @@ import { OrderDocumentRendererService } from './application/pdf/order-document-r
     GetOrdersCalendarQueryHandler,
     GetOrderByIdQueryHandler,
     GetDraftOrderPricingProposalQueryHandler,
+    PreviewOrderPricingQueryHandler,
     GetPendingReviewOrdersQueryHandler,
     GetOrdersQueryHandler,
     PrepareOrderAgreementForSigningQueryHandler,

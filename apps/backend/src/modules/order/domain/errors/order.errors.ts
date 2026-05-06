@@ -81,6 +81,24 @@ export class OrderDraftEditNotAllowedError extends OrderError {
   }
 }
 
+export class OrderEditNotAllowedError extends OrderError {
+  constructor(status: OrderStatus) {
+    super(`Cannot edit an order while it is in '${status}' status.`);
+  }
+}
+
+export class OrderEditAfterPickupNotAllowedError extends OrderError {
+  constructor(orderId: string) {
+    super(`Cannot edit order "${orderId}" after pickup has started.`);
+  }
+}
+
+export class OrderSignedEditNotAllowedError extends OrderError {
+  constructor(orderId: string) {
+    super(`Cannot edit order "${orderId}" because its rental agreement is already signed.`);
+  }
+}
+
 export class OrderPricingItemNotFoundError extends OrderError {
   constructor(orderItemId: string) {
     super(`Order item '${orderItemId}' was not found for pricing adjustment.`);

@@ -7,16 +7,22 @@ import type {
 	DraftOrderItem,
 	DraftOrderState,
 } from "@/features/orders/draft-order/types/draft-order.types";
+import type { OrderEditorMode } from "@/features/orders/order-editor/types/order-editor.types";
+import { getOrderEditorCopy } from "@/features/orders/order-editor/utils/order-editor-copy";
 
 export function validateDraftOrderForSave({
 	state,
 	locationId,
+	mode = "edit-draft",
 }: {
 	state: DraftOrderState;
 	locationId: string | null;
+	mode?: OrderEditorMode;
 }): string | null {
+	const copy = getOrderEditorCopy(mode);
+
 	if (!locationId) {
-		return "Seleccioná una locación antes de guardar el borrador.";
+		return copy.locationRequiredText;
 	}
 
 	if (
@@ -25,18 +31,18 @@ export function validateDraftOrderForSave({
 		state.rentalPeriod.pickupTime === null ||
 		state.rentalPeriod.returnTime === null
 	) {
-		return "Completá el periodo compartido antes de guardar el borrador.";
+		return copy.periodRequiredText;
 	}
 
 	if (state.items.length === 0) {
-		return "Agregá al menos un item antes de guardar el borrador.";
+		return copy.itemsRequiredText;
 	}
 
 	if (
 		state.fulfillmentMethod === FulfillmentMethod.DELIVERY &&
 		!isDeliveryRequestComplete(state.deliveryRequest)
 	) {
-		return "Completá el delivery request antes de guardar un borrador con entrega.";
+		return copy.deliveryRequiredText;
 	}
 
 	return null;
@@ -87,7 +93,7 @@ function toCreateDraftOrderItem(item: DraftOrderItem): CreateDraftOrderDto["item
 function buildInitialPricingAdjustment(
 	state: DraftOrderState,
 ): CreateDraftOrderDto["initialPricingAdjustment"] {
-	if (!state.budget || state.budget.targetTotal === state.budget.currentItemsSubtotal) {
+	if (!state.budget) {
 		return null;
 	}
 

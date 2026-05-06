@@ -1,22 +1,34 @@
-import { OrderStatus } from "@repo/types";
+import type { OrderDetailResponseDto } from "@repo/schemas";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
-import { DraftOrderComposerPage } from "@/features/orders/draft-order/components/draft-order-composer-page";
-import { DraftOrderProvider } from "@/features/orders/draft-order/draft-order.context";
-import { orderToDraftOrderState } from "@/features/orders/draft-order/utils/order-to-draft-state";
-import { createOrderDetailQueryOptions } from "@/features/orders/queries/get-order-by-id";
+import { OrderEditorComposerPage } from "@/features/orders/order-editor/components/order-editor-composer-page";
+import { OrderEditorProvider } from "@/features/orders/order-editor/order-editor.context";
+import { getOrderEditAvailability } from "@/features/orders/order-editor/utils/order-edit-availability";
+import { getOrderEditorCopy } from "@/features/orders/order-editor/utils/order-editor-copy";
+import { orderToEditorState } from "@/features/orders/order-editor/utils/order-to-editor-state";
+import {
+	createOrderDetailQueryOptions,
+	parseOrderDetailResponse,
+} from "@/features/orders/queries/get-order-by-id";
+import { nowUtc } from "@/lib/dates/parse";
 
 export const Route = createFileRoute("/_admin/dashboard/orders/$orderId/edit")({
 	beforeLoad: async ({ context: { queryClient }, params: { orderId } }) => {
-		const order = await queryClient.ensureQueryData(
+		const rawOrder = await queryClient.ensureQueryData(
 			createOrderDetailQueryOptions({ orderId }),
 		);
+		const order = parseOrderDetailResponse(
+			rawOrder as unknown as OrderDetailResponseDto,
+		);
 
-		if (order.status !== OrderStatus.DRAFT) {
+		const availability = getOrderEditAvailability(order, nowUtc());
+
+		if (!availability.canEdit) {
 			throw redirect({
 				to: "/dashboard/orders/$orderId",
 				params: { orderId },
+				search: { statuses: "all" },
 			});
 		}
 	},
@@ -26,32 +38,35 @@ export const Route = createFileRoute("/_admin/dashboard/orders/$orderId/edit")({
 			createOrderDetailQueryOptions({ orderId }),
 		);
 	},
-	component: EditDraftOrderPage,
+	component: EditOrderPage,
 	preload: false,
 });
 
-function EditDraftOrderPage() {
+function EditOrderPage() {
 	const { orderId } = Route.useParams();
-	const { data: draftOrder } = useSuspenseQuery(
+	const { data: order } = useSuspenseQuery(
 		createOrderDetailQueryOptions({ orderId }),
 	);
+	const availability = getOrderEditAvailability(order, nowUtc());
+	const mode = availability.canEdit ? availability.mode : "edit-draft";
+	const copy = getOrderEditorCopy(mode);
 
 	return (
 		<div className="px-6 pb-10">
 			<PageBreadcrumb
 				parent={{ label: "Pedidos", to: "/dashboard/orders" }}
-				current="Editar borrador"
+				current={copy.breadcrumbCurrent}
 			/>
 
 			<div className="space-y-1 pb-4">
 				<h1 className="text-2xl font-semibold tracking-tight">
-					Editar borrador
+					{copy.pageTitle}
 				</h1>
 			</div>
 
-			<DraftOrderProvider initialOrder={orderToDraftOrderState(draftOrder)}>
-				<DraftOrderComposerPage orderId={orderId} />
-			</DraftOrderProvider>
+			<OrderEditorProvider initialOrder={orderToEditorState(order)}>
+				<OrderEditorComposerPage mode={mode} orderId={orderId} />
+			</OrderEditorProvider>
 		</div>
 	);
 }

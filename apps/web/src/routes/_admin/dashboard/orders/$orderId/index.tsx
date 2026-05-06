@@ -35,6 +35,7 @@ import {
 	OrderDetailProvider,
 	useOrderDetailContext,
 } from "@/features/orders/contexts/order-detail.context";
+import { getOrderEditAvailability } from "@/features/orders/order-editor/utils/order-edit-availability";
 import {
 	formatMoney,
 	formatOrderNumber,
@@ -250,8 +251,9 @@ function OrderHeaderBannerActions() {
 		banner.primaryAction,
 		actions,
 	);
+	const editAvailability = getOrderEditAvailability(order, nowUtc());
 
-	if (!primaryAction && !banner.secondaryAction) {
+	if (!primaryAction && !editAvailability.canEdit) {
 		return null;
 	}
 
@@ -269,7 +271,7 @@ function OrderHeaderBannerActions() {
 				</Button>
 			) : null}
 
-			{banner.secondaryAction === "edit" ? (
+			{editAvailability.canEdit ? (
 				<Button variant="outline" onClick={actions.edit.open}>
 					Editar pedido
 				</Button>

@@ -25,6 +25,10 @@ import {
 	getOrdersQuerySchema,
 	type OrderDetailResponseDto,
 	type OrderListItem,
+	type OrderPricingPreviewRequestDto,
+	type OrderPricingPreviewResponseDto,
+	orderPricingPreviewRequestSchema,
+	orderPricingPreviewResponseSchema,
 	type ProblemDetails,
 	type UpdateDraftOrderPricingRequestDto,
 	updateDraftOrderPricingRequestSchema,
@@ -190,6 +194,34 @@ export const getDraftOrderPricingProposal = createServerFn({ method: "POST" })
 		},
 	);
 
+export const getOrderPricingPreview = createServerFn({ method: "POST" })
+	.inputValidator((data: OrderPricingPreviewRequestDto) =>
+		orderPricingPreviewRequestSchema.parse(data),
+	)
+	.handler(
+		async ({
+			data,
+		}): Promise<OrderPricingPreviewResponseDto | { error: ProblemDetails }> => {
+			try {
+				const result = await apiFetch<OrderPricingPreviewResponseDto>(
+					`${apiUrl}/pricing/preview`,
+					{
+						method: "POST",
+						body: data,
+					},
+				);
+
+				return orderPricingPreviewResponseSchema.parse(result);
+			} catch (error) {
+				if (error instanceof ProblemDetailsError) {
+					return { error: error.problemDetails };
+				}
+
+				throw error;
+			}
+		},
+	);
+
 const updateDraftOrderPricingInputSchema = z.object({
 	params: getDraftOrderPricingParamSchema,
 	dto: updateDraftOrderPricingRequestSchema,
@@ -294,14 +326,40 @@ export const markEquipmentAsRetired = createServerFn({ method: "POST" })
 
 export const updateDraftOrder = createServerFn({ method: "POST" })
 	.inputValidator((data: { orderId: string; dto: CreateDraftOrderDto }) =>
-		z.object({
-			orderId: z.string().uuid(),
-			dto: createDraftOrderSchema,
-		}).parse(data),
+		z
+			.object({
+				orderId: z.string().uuid(),
+				dto: createDraftOrderSchema,
+			})
+			.parse(data),
 	)
 	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
 		try {
 			await apiFetch<void>(`${apiUrl}/drafts/${data.orderId}`, {
+				method: "PUT",
+				body: data.dto,
+			});
+		} catch (error) {
+			if (error instanceof ProblemDetailsError) {
+				return { error: error.problemDetails };
+			}
+
+			throw error;
+		}
+	});
+
+export const editOrder = createServerFn({ method: "POST" })
+	.inputValidator((data: { orderId: string; dto: CreateDraftOrderDto }) =>
+		z
+			.object({
+				orderId: z.string().uuid(),
+				dto: createDraftOrderSchema,
+			})
+			.parse(data),
+	)
+	.handler(async ({ data }): Promise<void | { error: ProblemDetails }> => {
+		try {
+			await apiFetch<void>(`${apiUrl}/${data.orderId}/edit`, {
 				method: "PUT",
 				body: data.dto,
 			});

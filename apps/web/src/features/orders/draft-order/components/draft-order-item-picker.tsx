@@ -1,46 +1,40 @@
-import type {
-	BundleItemResponse,
-	CartPriceLineItem,
-	RentalProductResponse,
-} from "@repo/schemas";
+import type { BundleItemResponse, RentalProductResponse } from "@repo/schemas";
 import { Loader2, PackageSearch, Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-	type AddPricedBundleItemInput,
-	type AddPricedProductItemInput,
-	useDraftOrderCustomer,
 	useDraftOrderItems,
 	useDraftOrderPricing,
 	useDraftOrderRentalPeriod,
 } from "@/features/orders/draft-order/draft-order.context";
-import { getAdminDraftOrderCartPricePreview } from "@/features/orders/draft-order/draft-order-composer.api";
 import {
 	useDraftOrderRentalBundles,
 	useDraftOrderRentalProducts,
 } from "@/features/orders/draft-order/draft-order-composer.queries";
-import { fromMoneyCents } from "@/features/orders/draft-order/utils/draft-order-pricing";
 import { formatMoney } from "@/features/orders/order.utils";
+import type { OrderEditorMode } from "@/features/orders/order-editor/types/order-editor.types";
+import { getOrderEditorCopy } from "@/features/orders/order-editor/utils/order-editor-copy";
 import { useCurrentTenant } from "@/features/tenant/tenant.queries";
 import { useLocationId } from "@/shared/contexts/location/location.hooks";
 import useDebounce from "@/shared/hooks/use-debounce";
 
 type ItemTab = "ALL" | "PRODUCT" | "BUNDLE";
 
-export function DraftOrderItemPicker() {
+export function DraftOrderItemPicker({
+	mode = "edit-draft",
+}: {
+	mode?: OrderEditorMode;
+}) {
+	const copy = getOrderEditorCopy(mode);
 	const locationId = useLocationId();
 	const { data: tenant } = useCurrentTenant();
-	const { customer } = useDraftOrderCustomer();
 	const { currency } = useDraftOrderPricing();
 	const { rentalPeriod } = useDraftOrderRentalPeriod();
-	const { items, addPricedProductItem, addPricedBundleItem } =
-		useDraftOrderItems();
+	const { items, addProductItem, addBundleItem } = useDraftOrderItems();
 	const [search, setSearch] = useState("");
 	const [activeTab, setActiveTab] = useState<ItemTab>("ALL");
-	const [pendingAddKey, setPendingAddKey] = useState<string | null>(null);
-	const [addError, setAddError] = useState<string | null>(null);
 
 	const debouncedSearch = useDebounce(search, 300);
 	const normalizedSearch = debouncedSearch.trim();
@@ -86,165 +80,43 @@ export function DraftOrderItemPicker() {
 			: true,
 	);
 
-	async function handleAddProduct(
-		product: RentalProductResponse,
-		quantity: number,
-	) {
-		if (
-			!tenant?.id ||
-			!locationId ||
-			!isPeriodReady ||
-			!rentalPeriod.pickupDate ||
-			!rentalPeriod.returnDate ||
-			!rentalPeriod.pickupTime ||
-			!rentalPeriod.returnTime
-		) {
+	function handleAddProduct(product: RentalProductResponse, quantity: number) {
+		if (!tenant?.id || !locationId || !isPeriodReady) {
 			return;
 		}
 
-		setPendingAddKey(`product:${product.id}`);
-		setAddError(null);
+		const existingItem = items.find(
+			(item) =>
+				item.selection.type === "PRODUCT" &&
+				item.selection.productTypeId === product.id,
+		);
+		const mergedQuantity =
+			(existingItem?.selection.type === "PRODUCT"
+				? existingItem.selection.quantity
+				: 0) + quantity;
 
-		try {
-			const existingItem = items.find(
-				(item) =>
-					item.selection.type === "PRODUCT" &&
-					item.selection.productTypeId === product.id,
-			);
-			const mergedQuantity =
-				(existingItem?.selection.type === "PRODUCT"
-					? existingItem.selection.quantity
-					: 0) + quantity;
-
-			const preview = await getAdminDraftOrderCartPricePreview({
-				data: {
-					tenantId: tenant.id,
-					request: {
-						locationId,
-						currency: tenantCurrency,
-						pickupDate: rentalPeriod.pickupDate,
-						returnDate: rentalPeriod.returnDate,
-						pickupTime: rentalPeriod.pickupTime,
-						returnTime: rentalPeriod.returnTime,
-						insuranceSelected: false,
-						customerId: customer?.id || undefined,
-						items: [
-							{
-								type: "PRODUCT",
-								productTypeId: product.id,
-								quantity: mergedQuantity,
-							},
-						],
-					},
-				},
-			});
-
-			const lineItem = preview.lineItems.find(
-				(line) => line.type === "PRODUCT" && line.id === product.id,
-			);
-
-			if (!lineItem) {
-				throw new Error("No pudimos calcular el precio inicial del producto.");
-			}
-
-			const itemInput: AddPricedProductItemInput = {
-				selection: {
-					type: "PRODUCT",
-					productTypeId: product.id,
-					quantity: mergedQuantity,
-					label: product.name,
-				},
-				pricingSnapshot: createPricingSnapshot(lineItem, tenantCurrency),
-			};
-
-			addPricedProductItem(itemInput);
-		} catch (error) {
-			setAddError(
-				error instanceof Error
-					? error.message
-					: "No pudimos agregar el producto al borrador.",
-			);
-		} finally {
-			setPendingAddKey(null);
-		}
+		addProductItem({
+			type: "PRODUCT",
+			productTypeId: product.id,
+			quantity: mergedQuantity,
+			label: product.name,
+		});
 	}
 
-	async function handleAddBundle(bundle: BundleItemResponse) {
-		if (
-			!tenant?.id ||
-			!locationId ||
-			!isPeriodReady ||
-			!rentalPeriod.pickupDate ||
-			!rentalPeriod.returnDate ||
-			!rentalPeriod.pickupTime ||
-			!rentalPeriod.returnTime
-		) {
+	function handleAddBundle(bundle: BundleItemResponse) {
+		if (!tenant?.id || !locationId || !isPeriodReady) {
 			return;
 		}
 
-		setPendingAddKey(`bundle:${bundle.id}`);
-		setAddError(null);
-
-		try {
-			const preview = await getAdminDraftOrderCartPricePreview({
-				data: {
-					tenantId: tenant.id,
-					request: {
-						locationId,
-						currency: tenantCurrency,
-						pickupDate: rentalPeriod.pickupDate,
-						returnDate: rentalPeriod.returnDate,
-						pickupTime: rentalPeriod.pickupTime,
-						returnTime: rentalPeriod.returnTime,
-						insuranceSelected: false,
-						customerId: customer?.id || undefined,
-						items: [
-							{
-								type: "BUNDLE",
-								bundleId: bundle.id,
-								quantity: 1,
-							},
-						],
-					},
-				},
-			});
-
-			const lineItem = preview.lineItems.find(
-				(line) => line.type === "BUNDLE" && line.id === bundle.id,
-			);
-
-			if (!lineItem) {
-				throw new Error("No pudimos calcular el precio inicial del combo.");
-			}
-
-			const itemInput: AddPricedBundleItemInput = {
-				selection: {
-					type: "BUNDLE",
-					bundleId: bundle.id,
-					label: bundle.name,
-				},
-				pricingSnapshot: createPricingSnapshot(lineItem, tenantCurrency),
-			};
-
-			addPricedBundleItem(itemInput);
-		} catch (error) {
-			setAddError(
-				error instanceof Error
-					? error.message
-					: "No pudimos agregar el combo al borrador.",
-			);
-		} finally {
-			setPendingAddKey(null);
-		}
+		addBundleItem({
+			type: "BUNDLE",
+			bundleId: bundle.id,
+			label: bundle.name,
+		});
 	}
 
 	if (!locationId) {
-		return (
-			<PickerNotice>
-				Seleccioná una locación en el sidebar antes de buscar items para el
-				borrador.
-			</PickerNotice>
-		);
+		return <PickerNotice>{copy.pickerLocationRequiredText}</PickerNotice>;
 	}
 
 	if (!isPeriodReady) {
@@ -289,12 +161,6 @@ export function DraftOrderItemPicker() {
 				/>
 			</div>
 
-			{addError ? (
-				<div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-					{addError}
-				</div>
-			) : null}
-
 			<div className="space-y-4">
 				{activeTab !== "BUNDLE" ? (
 					<ProductResultsSection
@@ -303,7 +169,6 @@ export function DraftOrderItemPicker() {
 						isLoading={productQuery.isFetching}
 						isError={productQuery.isError}
 						search={normalizedSearch}
-						pendingAddKey={pendingAddKey}
 						onAdd={handleAddProduct}
 					/>
 				) : null}
@@ -315,7 +180,6 @@ export function DraftOrderItemPicker() {
 						isLoading={bundleQuery.isFetching}
 						isError={bundleQuery.isError}
 						search={normalizedSearch}
-						pendingAddKey={pendingAddKey}
 						onAdd={handleAddBundle}
 					/>
 				) : null}
@@ -330,7 +194,6 @@ function ProductResultsSection({
 	isLoading,
 	isError,
 	search,
-	pendingAddKey,
 	onAdd,
 }: {
 	products: RentalProductResponse[];
@@ -338,8 +201,7 @@ function ProductResultsSection({
 	isLoading: boolean;
 	isError: boolean;
 	search: string;
-	pendingAddKey: string | null;
-	onAdd: (product: RentalProductResponse, quantity: number) => Promise<void>;
+	onAdd: (product: RentalProductResponse, quantity: number) => void;
 }) {
 	return (
 		<div className="space-y-3">
@@ -367,7 +229,6 @@ function ProductResultsSection({
 							key={product.id}
 							product={product}
 							currency={currency}
-							isAdding={pendingAddKey === `product:${product.id}`}
 							onAdd={onAdd}
 						/>
 					))}
@@ -383,7 +244,6 @@ function BundleResultsSection({
 	isLoading,
 	isError,
 	search,
-	pendingAddKey,
 	onAdd,
 }: {
 	bundles: BundleItemResponse[];
@@ -391,8 +251,7 @@ function BundleResultsSection({
 	isLoading: boolean;
 	isError: boolean;
 	search: string;
-	pendingAddKey: string | null;
-	onAdd: (bundle: BundleItemResponse) => Promise<void>;
+	onAdd: (bundle: BundleItemResponse) => void;
 }) {
 	return (
 		<div className="space-y-3">
@@ -418,7 +277,6 @@ function BundleResultsSection({
 							key={bundle.id}
 							bundle={bundle}
 							currency={currency}
-							isAdding={pendingAddKey === `bundle:${bundle.id}`}
 							onAdd={onAdd}
 						/>
 					))}
@@ -431,13 +289,11 @@ function BundleResultsSection({
 function ProductResultRow({
 	product,
 	currency,
-	isAdding,
 	onAdd,
 }: {
 	product: RentalProductResponse;
 	currency: string;
-	isAdding: boolean;
-	onAdd: (product: RentalProductResponse, quantity: number) => Promise<void>;
+	onAdd: (product: RentalProductResponse, quantity: number) => void;
 }) {
 	const [quantity, setQuantity] = useState("1");
 	const maxQuantity = product.availableCount;
@@ -475,19 +331,15 @@ function ProductResultRow({
 					value={quantity}
 					onChange={(event) => setQuantity(event.target.value)}
 					className="w-20"
-					disabled={isUnavailable || isAdding}
+					disabled={isUnavailable}
 				/>
 				<Button
 					type="button"
 					size="sm"
 					onClick={() => onAdd(product, safeQuantity)}
-					disabled={isUnavailable || isAdding}
+					disabled={isUnavailable}
 				>
-					{isAdding ? (
-						<Loader2 className="size-4 animate-spin" />
-					) : (
-						<Plus className="size-4" />
-					)}
+					<Plus className="size-4" />
 					Agregar
 				</Button>
 			</div>
@@ -498,13 +350,11 @@ function ProductResultRow({
 function BundleResultRow({
 	bundle,
 	currency,
-	isAdding,
 	onAdd,
 }: {
 	bundle: BundleItemResponse;
 	currency: string;
-	isAdding: boolean;
-	onAdd: (bundle: BundleItemResponse) => Promise<void>;
+	onAdd: (bundle: BundleItemResponse) => void;
 }) {
 	const pricePerUnit = bundle.pricingPreview?.pricePerUnit ?? null;
 
@@ -528,13 +378,9 @@ function BundleResultRow({
 					type="button"
 					size="sm"
 					onClick={() => onAdd(bundle)}
-					disabled={!bundle.isAvailable || isAdding}
+					disabled={!bundle.isAvailable}
 				>
-					{isAdding ? (
-						<Loader2 className="size-4 animate-spin" />
-					) : (
-						<Plus className="size-4" />
-					)}
+					<Plus className="size-4" />
 					Agregar
 				</Button>
 			</div>
@@ -565,30 +411,6 @@ function hasCompleteRentalPeriod(rentalPeriod: {
 	);
 }
 
-function createPricingSnapshot(lineItem: CartPriceLineItem, currency: string) {
-	const discountTotal = lineItem.discounts.reduce(
-		(sum, discount) => sum + discount.discountAmount,
-		0,
-	);
-
-	return {
-		currency,
-		basePrice: formatNumberAmount(lineItem.subtotal),
-		finalPrice: formatNumberAmount(lineItem.subtotal - discountTotal),
-		discountTotal: formatNumberAmount(discountTotal),
-		discountLines: lineItem.discounts.map((discount) => ({
-			sourceKind: "PROMOTION" as const,
-			sourceId: discount.sourceId,
-			label: discount.label,
-			promotionId: discount.promotionId,
-			promotionLabel: discount.promotionLabel,
-			type: discount.type,
-			value: discount.value,
-			discountAmount: formatNumberAmount(discount.discountAmount),
-		})),
-	};
-}
-
 function formatNumberAmount(value: number): string {
-	return fromMoneyCents(Math.round(value * 100));
+	return value.toFixed(2);
 }

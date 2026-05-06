@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { InventoryPublicApi } from 'src/modules/inventory/inventory.public-api';
 
 import { ConflictGroup, UnavailableItem } from '../../../domain/errors/order.errors';
@@ -9,7 +10,7 @@ import { DemandUnit, ResolveDemandResult } from './create-order.types';
 export class CreateOrderAssetResolver {
   constructor(private readonly inventoryApi: InventoryPublicApi) {}
 
-  async resolveDemand(demandUnits: DemandUnit[]): Promise<ResolveDemandResult> {
+  async resolveDemand(demandUnits: DemandUnit[], tx?: PrismaTransactionClient): Promise<ResolveDemandResult> {
     const groups = new Map<string, DemandUnit[]>();
 
     for (const unit of demandUnits) {
@@ -28,13 +29,16 @@ export class CreateOrderAssetResolver {
       const resolvedPinnedIds: string[] = [];
 
       for (const unit of pinnedUnits) {
-        const ids = await this.inventoryApi.findAvailableAssetIds({
-          productTypeId,
-          locationId,
-          period,
-          quantity: 1,
-          assetId: unit.pinnedAssetId,
-        });
+        const ids = await this.inventoryApi.findAvailableAssetIds(
+          {
+            productTypeId,
+            locationId,
+            period,
+            quantity: 1,
+            assetId: unit.pinnedAssetId,
+          },
+          tx,
+        );
 
         if (ids.length === 0) {
           absoluteProvenances.push(unit.provenance);
@@ -49,13 +53,16 @@ export class CreateOrderAssetResolver {
         continue;
       }
 
-      const ids = await this.inventoryApi.findAvailableAssetIds({
-        productTypeId,
-        locationId,
-        period,
-        quantity: freeUnits.length,
-        excludeAssetIds: resolvedPinnedIds,
-      });
+      const ids = await this.inventoryApi.findAvailableAssetIds(
+        {
+          productTypeId,
+          locationId,
+          period,
+          quantity: freeUnits.length,
+          excludeAssetIds: resolvedPinnedIds,
+        },
+        tx,
+      );
 
       if (ids.length < freeUnits.length) {
         const affectedProvenances = freeUnits.map((unit) => unit.provenance);

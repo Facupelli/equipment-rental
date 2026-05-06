@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
+import { PrismaTransactionClient } from 'src/core/database/prisma-unit-of-work';
 import { formatPostgresRange } from 'src/core/utils/postgres-range.util';
 import { Prisma } from 'src/generated/prisma/client';
 import { FindAvailableParams, GetAvailableAssetCountsParams } from '../../inventory.contracts';
@@ -30,9 +31,10 @@ export class AssetAvailabilityService {
    * a location belongs to exactly one tenant, making cross-tenant
    * asset access structurally impossible.
    */
-  async findAvailableAssetIds(params: FindAvailableParams): Promise<string[]> {
+  async findAvailableAssetIds(params: FindAvailableParams, tx?: PrismaTransactionClient): Promise<string[]> {
     const quantity = params.quantity ?? 1;
     const tstzrange = formatPostgresRange(params.period);
+    const db = tx ?? this.prisma.client;
 
     const assetFilter = params.assetId && quantity === 1 ? Prisma.sql`AND a.id = ${params.assetId}` : Prisma.empty;
 
@@ -41,7 +43,7 @@ export class AssetAvailabilityService {
         ? Prisma.sql`AND a.id != ALL(${params.excludeAssetIds})`
         : Prisma.empty;
 
-    const rows = await this.prisma.client.$queryRaw<{ id: string }[]>`
+    const rows = await db.$queryRaw<{ id: string }[]>`
       SELECT a.id
       FROM assets a
       WHERE a.product_type_id = ${params.productTypeId}
@@ -90,8 +92,8 @@ export class AssetAvailabilityService {
 
   // Keep the single-asset convenience method as a thin wrapper so existing
   // callers (bundle component reservation, etc.) remain unchanged.
-  async findAvailableAssetId(params: FindAvailableParams): Promise<string | null> {
-    const ids = await this.findAvailableAssetIds({ ...params, quantity: 1 });
+  async findAvailableAssetId(params: FindAvailableParams, tx?: PrismaTransactionClient): Promise<string | null> {
+    const ids = await this.findAvailableAssetIds({ ...params, quantity: 1 }, tx);
     return ids[0] ?? null;
   }
 }

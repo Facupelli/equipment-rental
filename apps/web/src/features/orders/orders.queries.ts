@@ -15,6 +15,8 @@ import type {
 	GetOrdersScheduleResponse,
 	OrderCalendarItem,
 	OrderListItem,
+	OrderPricingPreviewRequestDto,
+	OrderPricingPreviewResponseDto,
 	OrderSummary,
 	ProblemDetails,
 	ScheduleEvent,
@@ -36,8 +38,10 @@ import {
 	confirmOrder,
 	createDraftOrder,
 	createOrder,
+	editOrder,
 	getCalendarDots,
 	getDraftOrderPricingProposal,
+	getOrderPricingPreview,
 	getOrders,
 	getOrdersCalendar,
 	getOrdersSchedule,
@@ -126,9 +130,13 @@ export const orderKeys = {
 		params: GetDraftOrderPricingParamDto,
 		dto: DraftOrderPricingProposalRequestDto,
 	) => [...orderKeys.draftPricingProposals(), params, dto] as const,
-	draftPricingUpdates: () => [...orderKeys.all(), "draft-pricing-updates"] as const,
+	draftPricingUpdates: () =>
+		[...orderKeys.all(), "draft-pricing-updates"] as const,
 	draftPricingUpdate: (params: GetDraftOrderPricingParamDto) =>
 		[...orderKeys.draftPricingUpdates(), params] as const,
+	pricingPreviews: () => [...orderKeys.all(), "pricing-previews"] as const,
+	pricingPreview: (dto: OrderPricingPreviewRequestDto) =>
+		[...orderKeys.pricingPreviews(), dto] as const,
 };
 
 export const orderQueries = {
@@ -189,6 +197,15 @@ type DraftOrderMutationOptions = Omit<
 	"mutationFn"
 >;
 
+type OrderCompositionMutationOptions = Omit<
+	UseMutationOptions<
+		void,
+		ProblemDetailsError,
+		{ orderId: string; data: CreateDraftOrderDto }
+	>,
+	"mutationFn"
+>;
+
 type DraftOrderPricingProposalMutationOptions = Omit<
 	UseMutationOptions<
 		DraftOrderPricingProposalResponseDto,
@@ -212,6 +229,12 @@ type UpdateDraftOrderPricingMutationOptions = Omit<
 	>,
 	"mutationFn"
 >;
+
+type OrderPricingPreviewQueryOptions<TData = OrderPricingPreviewResponseDto> =
+	Omit<
+		UseQueryOptions<OrderPricingPreviewResponseDto, ProblemDetailsError, TData>,
+		"queryKey" | "queryFn"
+	>;
 
 // -----------------------------------------------------
 // Helpers
@@ -358,11 +381,35 @@ export function useCreateDraftOrder(options?: DraftOrderMutationOptions) {
 	});
 }
 
-export function useUpdateDraftOrder(options?: DraftOrderMutationOptions) {
-	return useMutation<void, ProblemDetailsError, { orderId: string; data: CreateDraftOrderDto }>({
+export function useUpdateDraftOrder(options?: OrderCompositionMutationOptions) {
+	return useMutation<
+		void,
+		ProblemDetailsError,
+		{ orderId: string; data: CreateDraftOrderDto }
+	>({
 		...options,
 		mutationFn: async ({ orderId, data }) => {
 			const result = await updateDraftOrder({ data: { orderId, dto: data } });
+			if (typeof result === "object" && "error" in result) {
+				throw new ProblemDetailsError(result.error);
+			}
+			return result;
+		},
+		meta: {
+			invalidates: orderKeys.all(),
+		},
+	});
+}
+
+export function useEditOrder(options?: OrderCompositionMutationOptions) {
+	return useMutation<
+		void,
+		ProblemDetailsError,
+		{ orderId: string; data: CreateDraftOrderDto }
+	>({
+		...options,
+		mutationFn: async ({ orderId, data }) => {
+			const result = await editOrder({ data: { orderId, dto: data } });
 			if (typeof result === "object" && "error" in result) {
 				throw new ProblemDetailsError(result.error);
 			}
@@ -397,6 +444,25 @@ export function useDraftOrderPricingProposal(
 			invalidates: (variables) =>
 				orderKeys.draftPricingProposal(variables.params, variables.dto),
 		},
+	});
+}
+
+export function useOrderPricingPreview<TData = OrderPricingPreviewResponseDto>(
+	dto: OrderPricingPreviewRequestDto,
+	options?: OrderPricingPreviewQueryOptions<TData>,
+) {
+	return useQuery({
+		...options,
+		queryKey: orderKeys.pricingPreview(dto),
+		queryFn: async () => {
+			const result = await getOrderPricingPreview({ data: dto });
+			if (hasMutationError(result)) {
+				throw new ProblemDetailsError(result.error);
+			}
+
+			return result;
+		},
+		placeholderData: keepPreviousData,
 	});
 }
 
@@ -492,7 +558,9 @@ export function useMarkEquipmentAsRetired(
 	});
 }
 
-function hasMutationError(result: unknown): result is { error: ProblemDetails } {
+function hasMutationError(
+	result: unknown,
+): result is { error: ProblemDetails } {
 	return typeof result === "object" && result !== null && "error" in result;
 }
 

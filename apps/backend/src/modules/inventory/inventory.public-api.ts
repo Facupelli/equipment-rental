@@ -16,8 +16,8 @@ export type SaveOrderAssignmentDto = {
 };
 
 export abstract class InventoryPublicApi {
-  abstract findAvailableAssetId(dto: FindAvailableParams): Promise<string | null>;
-  abstract findAvailableAssetIds(dto: FindAvailableParams): Promise<string[]>;
+  abstract findAvailableAssetId(dto: FindAvailableParams, tx?: PrismaTransactionClient): Promise<string | null>;
+  abstract findAvailableAssetIds(dto: FindAvailableParams, tx?: PrismaTransactionClient): Promise<string[]>;
   abstract findAssetById(tenantId: string, assetId: string): Promise<{ id: string; ownerId: string | null } | null>;
   abstract saveOrderAssignment(
     dto: SaveOrderAssignmentDto,

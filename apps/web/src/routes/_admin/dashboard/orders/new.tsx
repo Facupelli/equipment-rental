@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageBreadcrumb } from "@/components/detail-id-breadcrumb";
-import { DraftOrderComposerPage } from "@/features/orders/draft-order/components/draft-order-composer-page";
-import { DraftOrderProvider } from "@/features/orders/draft-order/draft-order.context";
+import { OrderEditorComposerPage } from "@/features/orders/order-editor/components/order-editor-composer-page";
+import { OrderEditorProvider } from "@/features/orders/order-editor/order-editor.context";
 
 export const Route = createFileRoute("/_admin/dashboard/orders/new")({
 	component: NewDraftOrderPage,
@@ -21,9 +21,9 @@ function NewDraftOrderPage() {
 				</h1>
 			</div>
 
-			<DraftOrderProvider>
-				<DraftOrderComposerPage />
-			</DraftOrderProvider>
+			<OrderEditorProvider>
+				<OrderEditorComposerPage mode="create-draft" />
+			</OrderEditorProvider>
 		</div>
 	);
 }

@@ -4,7 +4,6 @@ import type {
 	DraftOrderBudgetState,
 	DraftOrderCustomerRef,
 	DraftOrderItem,
-	DraftOrderPricingSnapshot,
 	DraftOrderSelectedBundleItem,
 	DraftOrderSelectedProductItem,
 	DraftOrderState,
@@ -13,15 +12,7 @@ import {
 	EMPTY_DRAFT_ORDER_DELIVERY_REQUEST,
 	EMPTY_DRAFT_ORDER_RENTAL_PERIOD,
 } from "@/features/orders/draft-order/types/draft-order.types";
-import {
-	buildDraftOrderBudget,
-	fromMoneyCents,
-	getBudgetAdjustmentAmount,
-	getBudgetAdjustmentDirection,
-	getBudgetPreviewFinalPrice,
-	normalizeMoneyAmount,
-	toMoneyCents,
-} from "@/features/orders/draft-order/utils/draft-order-pricing";
+import { normalizeMoneyAmount } from "@/features/orders/draft-order/utils/draft-order-pricing";
 
 type DraftOrderAction =
 	| { type: "set_customer"; customer: DraftOrderCustomerRef | null }
@@ -52,6 +43,11 @@ type DraftOrderAction =
 			type: "upsert_product_item";
 			item: DraftOrderItem;
 	  }
+	| {
+			type: "set_product_quantity";
+			draftItemId: string;
+			quantity: number;
+	  }
 	| { type: "remove_item"; draftItemId: string }
 	| {
 			type: "set_budget_target_total";
@@ -69,23 +65,6 @@ export function createInitialDraftOrderState(): DraftOrderState {
 		deliveryRequest: null,
 		items: [],
 		budget: null,
-	};
-}
-
-function recalculateBudget(state: DraftOrderState): DraftOrderState {
-	const targetTotal = state.budget?.targetTotal ?? null;
-	const budget = buildDraftOrderBudget(state.items, targetTotal);
-
-	return {
-		...state,
-		budget,
-		items: state.items.map((item) => ({
-			...item,
-			budgetPreview:
-				budget?.items.find(
-					(preview) => preview.draftItemId === item.draftItemId,
-				) ?? null,
-		})),
 	};
 }
 
@@ -140,11 +119,10 @@ function draftOrderReducer(
 			};
 
 		case "add_item":
-			return recalculateBudget({
+			return {
 				...state,
-				currency: action.item.pricingSnapshot.currency,
 				items: [...state.items, action.item],
-			});
+			};
 
 		case "upsert_product_item": {
 			const existingIndex = state.items.findIndex(
@@ -155,16 +133,14 @@ function draftOrderReducer(
 			);
 
 			if (existingIndex === -1) {
-				return recalculateBudget({
+				return {
 					...state,
-					currency: action.item.pricingSnapshot.currency,
 					items: [...state.items, action.item],
-				});
+				};
 			}
 
-			return recalculateBudget({
+			return {
 				...state,
-				currency: action.item.pricingSnapshot.currency,
 				items: state.items.map((item, index) =>
 					index === existingIndex
 						? {
@@ -173,16 +149,33 @@ function draftOrderReducer(
 							}
 						: item,
 				),
-			});
+			};
 		}
 
+		case "set_product_quantity":
+			return {
+				...state,
+				items: state.items.map((item) =>
+					item.draftItemId === action.draftItemId &&
+					item.selection.type === "PRODUCT"
+						? {
+								...item,
+								selection: {
+									...item.selection,
+									quantity: action.quantity,
+								},
+							}
+						: item,
+				),
+			};
+
 		case "remove_item":
-			return recalculateBudget({
+			return {
 				...state,
 				items: state.items.filter(
 					(item) => item.draftItemId !== action.draftItemId,
 				),
-			});
+			};
 
 		case "set_budget_target_total": {
 			const normalizedTargetTotal =
@@ -194,13 +187,13 @@ function draftOrderReducer(
 				return state;
 			}
 
-			return recalculateBudget({
+			return {
 				...state,
 				budget:
 					normalizedTargetTotal === null
 						? null
 						: ({ targetTotal: normalizedTargetTotal } as DraftOrderBudgetState),
-			});
+			};
 		}
 
 		case "reset":
@@ -216,13 +209,10 @@ function draftOrderReducer(
 
 function createDraftItem(
 	selection: DraftOrderSelectedProductItem | DraftOrderSelectedBundleItem,
-	pricing: DraftOrderPricingSnapshot,
 ): DraftOrderItem {
 	return {
 		draftItemId: crypto.randomUUID(),
 		selection,
-		pricingSnapshot: pricing,
-		budgetPreview: null,
 	};
 }
 
@@ -232,44 +222,9 @@ export function useDraftOrder(initialOrder?: DraftOrderState | null) {
 		initialOrder ?? undefined,
 		initialOrder ? () => initialOrder : createInitialDraftOrderState,
 	);
-	const calculatedSubtotalCents = state.items.reduce((sum, item) => {
-		return sum + (toMoneyCents(item.pricingSnapshot.finalPrice) ?? 0);
-	}, 0);
-	const budgetSubtotalCents = state.items.reduce((sum, item) => {
-		return sum + (toMoneyCents(getBudgetPreviewFinalPrice(item)) ?? 0);
-	}, 0);
-	const budgetAdjustmentDeltaCents =
-		budgetSubtotalCents - calculatedSubtotalCents;
-
 	return {
 		state,
 		derived: {
-			totals: {
-				calculatedSubtotal: fromMoneyCents(calculatedSubtotalCents),
-				budgetSubtotal: fromMoneyCents(budgetSubtotalCents),
-				targetTotal: state.budget?.targetTotal ?? null,
-				budgetAdjustmentTotal: fromMoneyCents(
-					Math.abs(budgetAdjustmentDeltaCents),
-				),
-				budgetAdjustmentDirection:
-					budgetAdjustmentDeltaCents < 0
-						? "DISCOUNT"
-						: budgetAdjustmentDeltaCents > 0
-							? "SURCHARGE"
-							: ("NONE" as "DISCOUNT" | "SURCHARGE" | "NONE"),
-				hasBudget: Boolean(state.budget),
-			},
-			pricingByItemId: Object.fromEntries(
-				state.items.map((item) => [
-					item.draftItemId,
-					{
-						budgetPreviewFinalPrice: getBudgetPreviewFinalPrice(item),
-						budgetAdjustmentAmount: getBudgetAdjustmentAmount(item),
-						budgetAdjustmentDirection: getBudgetAdjustmentDirection(item),
-						hasBudgetPreview: item.budgetPreview !== null,
-					},
-				]),
-			),
 			hasCustomer: Boolean(state.customer),
 			hasRentalPeriod: Boolean(
 				state.rentalPeriod.pickupDate &&
@@ -279,7 +234,7 @@ export function useDraftOrder(initialOrder?: DraftOrderState | null) {
 			),
 			hasItems: state.items.length > 0,
 		},
-		actions: {
+			actions: {
 			setCustomer: (customer: DraftOrderCustomerRef | null) =>
 				dispatch({ type: "set_customer", customer }),
 			setCustomerField: (field: keyof DraftOrderCustomerRef, value: string) =>
@@ -297,28 +252,18 @@ export function useDraftOrder(initialOrder?: DraftOrderState | null) {
 				field: keyof NonNullable<DraftOrderState["deliveryRequest"]>,
 				value: string,
 			) => dispatch({ type: "set_delivery_request_field", field, value }),
-			addPricedProductItem: ({
-				selection,
-				pricingSnapshot,
-			}: {
-				selection: DraftOrderSelectedProductItem;
-				pricingSnapshot: DraftOrderPricingSnapshot;
-			}) =>
+			addProductItem: (selection: DraftOrderSelectedProductItem) =>
 				dispatch({
 					type: "upsert_product_item",
-					item: createDraftItem(selection, pricingSnapshot),
+					item: createDraftItem(selection),
 				}),
-			addPricedBundleItem: ({
-				selection,
-				pricingSnapshot,
-			}: {
-				selection: DraftOrderSelectedBundleItem;
-				pricingSnapshot: DraftOrderPricingSnapshot;
-			}) =>
+			addBundleItem: (selection: DraftOrderSelectedBundleItem) =>
 				dispatch({
 					type: "add_item",
-					item: createDraftItem(selection, pricingSnapshot),
+					item: createDraftItem(selection),
 				}),
+			setProductQuantity: (draftItemId: string, quantity: number) =>
+				dispatch({ type: "set_product_quantity", draftItemId, quantity }),
 			removeItem: (draftItemId: string) =>
 				dispatch({ type: "remove_item", draftItemId }),
 			setBudgetTargetTotal: (targetTotal: string | null) =>

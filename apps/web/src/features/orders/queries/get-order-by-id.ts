@@ -77,7 +77,7 @@ type GetOrderByIdQueryOptions<TData = OrderDetailResponseDto> = Omit<
 
 // -----------------------------------------------------
 
-function parseOrderDetailResponse(
+export function parseOrderDetailResponse(
 	raw: OrderDetailResponseDto,
 ): ParsedOrderDetailResponseDto {
 	return {

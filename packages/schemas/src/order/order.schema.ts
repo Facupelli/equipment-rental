@@ -47,7 +47,7 @@ export const deliveryRequestSchema = z.object({
   instructions: z.string().trim().optional().nullable(),
 });
 
-const createOrderSchemaBase = z.object({
+export const createOrderSchemaBase = z.object({
   locationId: z.uuid(),
   pickupDate: localDateSchema,
   returnDate: localDateSchema,

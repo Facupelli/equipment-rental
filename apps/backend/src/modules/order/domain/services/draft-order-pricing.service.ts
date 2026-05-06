@@ -32,6 +32,11 @@ export type DraftOrderPricingItemUpdate = {
   finalPrice: string;
 };
 
+export type DraftOrderPricingAllocationItem = {
+  orderItemId: string;
+  currentFinalPrice: Decimal;
+};
+
 type DraftPricingItem = {
   orderItemId: string;
   label: string;
@@ -72,6 +77,23 @@ export class DraftOrderPricingService {
     const proposal = this.proposeTargetTotal(order, targetTotal);
 
     return new Map(proposal.items.map((item) => [item.orderItemId, item.proposedFinalPrice]));
+  }
+
+  buildFinalPriceMapFromTargetTotalItems(
+    items: DraftOrderPricingAllocationItem[],
+    targetTotal: Decimal,
+  ): Map<string, Decimal> {
+    this.assertValidTargetTotal(targetTotal);
+
+    const allocationItems = items.map((item) => ({
+      orderItemId: item.orderItemId,
+      label: item.orderItemId,
+      basePrice: item.currentFinalPrice,
+      currentFinalPrice: item.currentFinalPrice,
+    }));
+    const proposedFinals = allocateTargetTotal(allocationItems, targetTotal);
+
+    return new Map(allocationItems.map((item, index) => [item.orderItemId, proposedFinals[index]]));
   }
 
   buildFinalPriceMapFromItems(order: Order, updates: DraftOrderPricingItemUpdate[]): Map<string, Decimal> {

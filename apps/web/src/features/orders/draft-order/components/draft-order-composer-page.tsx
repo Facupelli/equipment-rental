@@ -1,4 +1,8 @@
-import type { CustomerResponseDto } from "@repo/schemas";
+import type {
+	CustomerResponseDto,
+	OrderPricingPreviewRequestDto,
+	OrderPricingPreviewResponseDto,
+} from "@repo/schemas";
 import { FulfillmentMethod } from "@repo/types";
 import { es } from "date-fns/locale";
 import { CalendarIcon, Loader2, Search, UserRound, X } from "lucide-react";
@@ -13,6 +17,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
 	Popover,
@@ -39,47 +51,164 @@ import {
 	useDraftOrderPricing,
 	useDraftOrderRentalPeriod,
 } from "@/features/orders/draft-order/draft-order.context";
-import { useSaveDraftOrder } from "@/features/orders/draft-order/hooks/use-save-draft-order";
 import {
 	isValidNonNegativeMoneyAmount,
 	normalizeMoneyAmount,
 } from "@/features/orders/draft-order/utils/draft-order-pricing";
+import { useSaveOrderEditor } from "@/features/orders/order-editor/hooks/use-save-order-editor";
 import { formatMoney } from "@/features/orders/order.utils";
+import { useOrderPricingPreview } from "@/features/orders/orders.queries";
+import type { OrderEditorMode } from "@/features/orders/order-editor/types/order-editor.types";
+import { getOrderEditorCopy } from "@/features/orders/order-editor/utils/order-editor-copy";
+import { useCurrentTenant } from "@/features/tenant/tenant.queries";
 import dayjs from "@/lib/dates/dayjs";
 import { dateParamToLocalDate, localDateToDateParam } from "@/lib/dates/parse";
+import { useLocationId } from "@/shared/contexts/location/location.hooks";
 import useDebounce from "@/shared/hooks/use-debounce";
 
-export function DraftOrderComposerPage({ orderId }: { orderId?: string }) {
+const EMPTY_PRICING_PREVIEW_PRODUCT_ID = "00000000-0000-0000-0000-000000000000";
+
+export function DraftOrderComposerPage({
+	mode = "edit-draft",
+	orderId,
+}: {
+	mode?: OrderEditorMode;
+	orderId?: string;
+}) {
+	const pricingPreview = useDraftOrderPricingPreview();
+
 	return (
 		<div className="grid gap-6 lg:grid-cols-[1fr_380px]">
 			<div className="space-y-4">
-				<DraftSetupSection />
-				<ItemsSection />
+				<OrderEditorImpactBanner mode={mode} />
+				<DraftSetupSection mode={mode} />
+				<ItemsSection mode={mode} pricingPreview={pricingPreview} />
 			</div>
 
 			<div className="xl:sticky xl:top-6 xl:self-start">
-				<DraftSidebarSection orderId={orderId} />
+				<DraftSidebarSection
+					mode={mode}
+					orderId={orderId}
+					pricingPreview={pricingPreview}
+				/>
 			</div>
 		</div>
 	);
 }
 
-function DraftSetupSection() {
+type DraftOrderPricingPreviewState = {
+	data: OrderPricingPreviewResponseDto | undefined;
+	isFetching: boolean;
+	isError: boolean;
+	isReady: boolean;
+};
+
+function useDraftOrderPricingPreview(): DraftOrderPricingPreviewState {
+	const locationId = useLocationId();
+	const { data: tenant } = useCurrentTenant();
+	const { customer } = useDraftOrderCustomer();
+	const { rentalPeriod } = useDraftOrderRentalPeriod();
+	const { fulfillmentMethod } = useDraftOrderFulfillment();
+	const { items } = useDraftOrderItems();
+	const { currency, budget } = useDraftOrderPricing();
+	const previewCurrency = tenant?.config.pricing.currency ?? currency;
+	const isReady = Boolean(
+		locationId &&
+			rentalPeriod.pickupDate &&
+			rentalPeriod.returnDate &&
+			rentalPeriod.pickupTime !== null &&
+			rentalPeriod.returnTime !== null &&
+			items.length > 0,
+	);
+	const request: OrderPricingPreviewRequestDto = {
+		customerId: customer?.id ?? null,
+		locationId: locationId ?? EMPTY_PRICING_PREVIEW_PRODUCT_ID,
+		pickupDate: rentalPeriod.pickupDate ?? "1970-01-01",
+		returnDate: rentalPeriod.returnDate ?? "1970-01-01",
+		pickupTime: rentalPeriod.pickupTime ?? 0,
+		returnTime: rentalPeriod.returnTime ?? 0,
+		currency: previewCurrency,
+		insuranceSelected: false,
+		fulfillmentMethod,
+		deliveryRequest: null,
+		items:
+			items.length > 0
+				? items.map((item) => ({
+						draftItemId: item.draftItemId,
+						label: item.selection.label,
+						...(item.selection.type === "PRODUCT"
+							? {
+									type: "PRODUCT" as const,
+									productTypeId: item.selection.productTypeId,
+									assetId: item.selection.assetId,
+									quantity: item.selection.quantity,
+								}
+							: {
+									type: "BUNDLE" as const,
+									bundleId: item.selection.bundleId,
+								}),
+					}))
+				: [
+					{
+						draftItemId: "empty",
+						label: "Empty",
+						type: "PRODUCT",
+						productTypeId: EMPTY_PRICING_PREVIEW_PRODUCT_ID,
+						quantity: 1,
+					},
+				],
+		pricingAdjustment: budget
+			? {
+					mode: "TARGET_TOTAL",
+					targetTotal: budget.targetTotal,
+				}
+			: null,
+	};
+	const { data, isFetching, isError } = useOrderPricingPreview(request, {
+		enabled: isReady,
+	});
+
+	return { data, isFetching, isError, isReady };
+}
+
+function OrderEditorImpactBanner({ mode }: { mode: OrderEditorMode }) {
+	const copy = getOrderEditorCopy(mode);
+
+	if (!copy.impactTitle || !copy.impactDescription) {
+		return null;
+	}
+
+	return (
+		<Card className="border-amber-200 bg-amber-50/60">
+			<CardHeader>
+				<CardTitle className="text-amber-950">{copy.impactTitle}</CardTitle>
+				<CardDescription className="text-amber-800">
+					{copy.impactDescription}
+				</CardDescription>
+			</CardHeader>
+		</Card>
+	);
+}
+
+function DraftSetupSection({ mode }: { mode: OrderEditorMode }) {
+	const copy = getOrderEditorCopy(mode);
+
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Configuración del borrador</CardTitle>
+				<CardTitle>{copy.setupTitle}</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-6">
-				<CustomerLinkSection />
+				<CustomerLinkSection mode={mode} />
 				<RentalPeriodSection />
-				<FulfillmentSection />
+				<FulfillmentSection mode={mode} />
 			</CardContent>
 		</Card>
 	);
 }
 
-function CustomerLinkSection() {
+function CustomerLinkSection({ mode }: { mode: OrderEditorMode }) {
+	const copy = getOrderEditorCopy(mode);
 	const { customer, setCustomer, clearCustomer } = useDraftOrderCustomer();
 	const [search, setSearch] = useState("");
 	const debouncedSearch = useDebounce(search, 300);
@@ -145,7 +274,11 @@ function CustomerLinkSection() {
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-1 flex items-center gap-2">
 					<h2 className="text-base font-semibold">Cliente</h2>
-					<p className="text-xs text-muted-foreground">(Opcional)</p>
+					{copy.setupCustomerOptionalLabel ? (
+						<p className="text-xs text-muted-foreground">
+							{copy.setupCustomerOptionalLabel}
+						</p>
+					) : null}
 				</div>
 				<div className="flex flex-wrap gap-2">
 					{customer ? (
@@ -252,7 +385,8 @@ function RentalPeriodSection() {
 	);
 }
 
-function FulfillmentSection() {
+function FulfillmentSection({ mode }: { mode: OrderEditorMode }) {
+	const copy = getOrderEditorCopy(mode);
 	const {
 		fulfillmentMethod,
 		deliveryRequest,
@@ -265,8 +399,7 @@ function FulfillmentSection() {
 			<div className="space-y-1">
 				<h2 className="text-base font-semibold">Logística</h2>
 				<p className="text-sm text-muted-foreground">
-					Si elegís entrega, el borrador necesita una solicitud de entrega
-					completa.
+					{copy.logisticsDescription}
 				</p>
 			</div>
 
@@ -349,22 +482,43 @@ function FulfillmentSection() {
 	);
 }
 
-function ItemsSection() {
-	const { items, removeItem } = useDraftOrderItems();
-	const { pricingByItemId } = useDraftOrderPricing();
+function ItemsSection({
+	mode,
+	pricingPreview,
+}: {
+	mode: OrderEditorMode;
+	pricingPreview: DraftOrderPricingPreviewState;
+}) {
+	const copy = getOrderEditorCopy(mode);
+	const { items, removeItem, setProductQuantity } = useDraftOrderItems();
+	const pricingByItemId = Object.fromEntries(
+		(pricingPreview.data?.lineItems ?? []).map((line) => [
+			line.draftItemId,
+			line,
+		]),
+	);
 
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>Ítems</CardTitle>
-				<CardDescription>Agregá ítems al borrador.</CardDescription>
+				<CardDescription>
+					{copy.itemsDescription}
+					{pricingPreview.isFetching ? " Recalculando precios..." : ""}
+				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				<DraftOrderItemPicker />
+				<DraftOrderItemPicker mode={mode} />
+
+				{pricingPreview.isError ? (
+					<div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+						No pudimos recalcular los precios con el período e ítems actuales.
+					</div>
+				) : null}
 
 				{items.length === 0 ? (
 					<div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
-						Todavía no hay ítems en el borrador local.
+						{copy.emptyItemsText}
 					</div>
 				) : (
 					<div className="rounded-lg border border-border">
@@ -388,11 +542,11 @@ function ItemsSection() {
 											<TableCell>
 												<div className="space-y-1">
 													<p className="font-medium">{item.selection.label}</p>
-													<p className="text-xs text-muted-foreground">
-														{pricing?.hasBudgetPreview
-															? "Vista previa proporcional"
-															: "Precio calculado"}
-													</p>
+												<p className="text-xs text-muted-foreground">
+													{pricing?.hasAdjustment
+														? "Vista previa proporcional"
+														: "Precio calculado"}
+												</p>
 												</div>
 											</TableCell>
 											<TableCell>
@@ -401,28 +555,33 @@ function ItemsSection() {
 													: "Combo"}
 											</TableCell>
 											<TableCell>
-												{item.selection.type === "PRODUCT"
-													? String(item.selection.quantity)
-													: "-"}
-											</TableCell>
-											<TableCell>
-												<ItemPricingSummary item={item} />
-											</TableCell>
-											<TableCell>
-												<ItemBudgetPreview
-													item={item}
-													budgetPreviewFinalPrice={
-														pricing?.budgetPreviewFinalPrice ??
-														item.pricingSnapshot.finalPrice
-													}
-													budgetAdjustmentAmount={
-														pricing?.budgetAdjustmentAmount ?? "0.00"
-													}
-													budgetAdjustmentDirection={
-														pricing?.budgetAdjustmentDirection ?? "NONE"
-													}
-													hasBudgetPreview={pricing?.hasBudgetPreview ?? false}
+											{item.selection.type === "PRODUCT" ? (
+												<Input
+													type="number"
+													min={1}
+													value={item.selection.quantity}
+													onChange={(event) => {
+														const quantity = Number(event.target.value);
+														if (Number.isFinite(quantity) && quantity > 0) {
+															setProductQuantity(
+																item.draftItemId,
+																Math.trunc(quantity),
+															);
+														}
+													}}
+													className="w-20"
 												/>
+											) : (
+												"-"
+											)}
+										</TableCell>
+										<TableCell>
+											<ItemPricingSummary pricing={pricing} />
+										</TableCell>
+										<TableCell>
+											<ItemBudgetPreview
+												pricing={pricing}
+											/>
 											</TableCell>
 											<TableCell className="text-right">
 												<Button
@@ -445,49 +604,76 @@ function ItemsSection() {
 	);
 }
 
-function DraftSidebarSection({ orderId }: { orderId?: string }) {
+function DraftSidebarSection({
+	mode,
+	orderId,
+	pricingPreview,
+}: {
+	mode: OrderEditorMode;
+	orderId?: string;
+	pricingPreview: DraftOrderPricingPreviewState;
+}) {
+	const copy = getOrderEditorCopy(mode);
 	const { isReadyForSave, itemCount, resetDraft } = useDraftOrderActions();
 	const { customer } = useDraftOrderCustomer();
 	const { rentalPeriod } = useDraftOrderRentalPeriod();
 	const { fulfillmentMethod } = useDraftOrderFulfillment();
-	const { currency, totals, budget, setBudgetTargetTotal } =
-		useDraftOrderPricing();
-	const { handleSaveDraft, saveError, isSaving } = useSaveDraftOrder(orderId);
+	const { currency, budget, setBudgetTargetTotal } = useDraftOrderPricing();
+	const preview = pricingPreview.data;
+	const previewCurrency = preview?.currency ?? currency;
+	const { handleSaveOrderEditor, saveError, isSaving } = useSaveOrderEditor(
+		orderId,
+		mode,
+	);
+	const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
+
+	function handlePrimarySaveClick() {
+		if (mode === "edit-confirmed") {
+			setIsConfirmSaveOpen(true);
+			return;
+		}
+
+		void handleSaveOrderEditor();
+	}
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Resumen del borrador</CardTitle>
-				<CardDescription>
-					Total visible mientras ajustás precios e ítems.
-				</CardDescription>
+				<CardTitle>{copy.sidebarTitle}</CardTitle>
+				<CardDescription>{copy.sidebarDescription}</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-6">
 				<div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
 					<SummaryRow
 						label="Subtotal calculado"
-						value={formatMoney(totals.calculatedSubtotal, currency)}
+						value={formatMoney(preview?.calculatedSubtotal ?? "0.00", previewCurrency)}
 					/>
 					<SummaryRow
 						label="Total presupuesto"
-						value={formatMoney(totals.budgetSubtotal, currency)}
+						value={formatMoney(preview?.effectiveSubtotal ?? "0.00", previewCurrency)}
 					/>
 					<SummaryRow
 						label="Objetivo"
 						value={formatMoney(
-							totals.targetTotal ?? totals.calculatedSubtotal,
-							currency,
+							preview?.targetTotal ?? preview?.calculatedSubtotal ?? "0.00",
+							previewCurrency,
 						)}
 					/>
 					<SummaryRow
 						label="Ajuste"
 						value={formatSignedMoney(
-							totals.budgetAdjustmentTotal,
-							totals.budgetAdjustmentDirection,
-							currency,
+							preview?.adjustmentTotal ?? "0.00",
+							preview?.adjustmentDirection ?? "NONE",
+							previewCurrency,
 						)}
 					/>
 				</div>
+
+				{pricingPreview.isError ? (
+					<p className="text-sm text-destructive">
+						No pudimos recalcular el presupuesto actual.
+					</p>
+				) : null}
 
 				<BudgetSection
 					key={budget?.targetTotal ?? "empty-budget"}
@@ -522,11 +708,11 @@ function DraftSidebarSection({ orderId }: { orderId?: string }) {
 				<div className="flex flex-col gap-2">
 					<Button
 						type="button"
-						onClick={() => void handleSaveDraft()}
+						onClick={handlePrimarySaveClick}
 						disabled={isSaving}
 						className="w-full"
 					>
-						{isSaving ? "Guardando..." : "Guardar borrador"}
+						{isSaving ? copy.savingLabel : copy.saveLabel}
 					</Button>
 					<Button
 						type="button"
@@ -535,16 +721,45 @@ function DraftSidebarSection({ orderId }: { orderId?: string }) {
 						disabled={isSaving}
 						className="w-full"
 					>
-						Reiniciar borrador local
+						{copy.resetLabel}
 					</Button>
 				</div>
 
 				{!isReadyForSave && (
-					<p className="text-sm text-muted-foreground">
-						Falta completar el período o los ítems antes de guardar.
-					</p>
+					<p className="text-sm text-muted-foreground">{copy.incompleteText}</p>
 				)}
 			</CardContent>
+			<Dialog open={isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Guardar cambios en pedido confirmado</DialogTitle>
+						<DialogDescription>
+							Este pedido ya está confirmado. Guardar cambios puede recalcular
+							precio, disponibilidad, logística y documentos. El pedido seguirá
+							confirmado.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setIsConfirmSaveOpen(false)}
+							disabled={isSaving}
+						>
+							Cancelar
+						</Button>
+						<Button
+							type="button"
+							onClick={() => {
+								void handleSaveOrderEditor();
+							}}
+							disabled={isSaving}
+						>
+							{isSaving ? copy.savingLabel : copy.saveLabel}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</Card>
 	);
 }
@@ -712,23 +927,26 @@ function LabeledInput({
 }
 
 function ItemPricingSummary({
-	item,
+	pricing,
 }: {
-	item: ReturnType<typeof useDraftOrderItems>["items"][number];
+	pricing: OrderPricingPreviewResponseDto["lineItems"][number] | undefined;
 }) {
-	const currency = item.pricingSnapshot.currency;
-	const hasCalculatedDiscount = item.pricingSnapshot.discountTotal !== "0.00";
+	if (!pricing) {
+		return <span className="text-sm text-muted-foreground">Calculando...</span>;
+	}
+
+	const hasCalculatedDiscount = pricing.discountTotal !== "0.00";
 
 	return (
 		<div className="space-y-1 text-sm">
 			<PricingLine
 				label="Base"
-				value={formatMoney(item.pricingSnapshot.basePrice, currency)}
+				value={formatMoney(pricing.basePrice, pricing.currency)}
 			/>
 			{hasCalculatedDiscount ? (
 				<PricingLine
 					label="Descuento"
-					value={`-${formatMoney(item.pricingSnapshot.discountTotal, currency)}`}
+					value={`-${formatMoney(pricing.discountTotal, pricing.currency)}`}
 					tone="success"
 				/>
 			) : null}
@@ -737,40 +955,33 @@ function ItemPricingSummary({
 }
 
 function ItemBudgetPreview({
-	item,
-	budgetPreviewFinalPrice,
-	budgetAdjustmentAmount,
-	budgetAdjustmentDirection,
-	hasBudgetPreview,
+	pricing,
 }: {
-	item: ReturnType<typeof useDraftOrderItems>["items"][number];
-	budgetPreviewFinalPrice: string;
-	budgetAdjustmentAmount: string;
-	budgetAdjustmentDirection: "DISCOUNT" | "SURCHARGE" | "NONE";
-	hasBudgetPreview: boolean;
+	pricing: OrderPricingPreviewResponseDto["lineItems"][number] | undefined;
 }) {
+	if (!pricing) {
+		return <span className="text-sm text-muted-foreground">Calculando...</span>;
+	}
+
 	return (
 		<div className="space-y-1 text-sm">
 			<PricingLine
 				label="Objetivo"
-				value={formatMoney(
-					budgetPreviewFinalPrice,
-					item.pricingSnapshot.currency,
-				)}
-				valueClassName={hasBudgetPreview ? "font-semibold" : "font-medium"}
+				value={formatMoney(pricing.effectiveFinalPrice, pricing.currency)}
+				valueClassName={pricing.hasAdjustment ? "font-semibold" : "font-medium"}
 			/>
-			{hasBudgetPreview && budgetAdjustmentDirection !== "NONE" ? (
+			{pricing.hasAdjustment && pricing.adjustmentDirection !== "NONE" ? (
 				<PricingLine
 					label={
-						budgetAdjustmentDirection === "DISCOUNT" ? "Ajuste" : "Recargo"
+						pricing.adjustmentDirection === "DISCOUNT" ? "Ajuste" : "Recargo"
 					}
 					value={formatSignedMoney(
-						budgetAdjustmentAmount,
-						budgetAdjustmentDirection,
-						item.pricingSnapshot.currency,
+						pricing.adjustmentAmount,
+						pricing.adjustmentDirection,
+						pricing.currency,
 					)}
 					valueClassName={
-						budgetAdjustmentDirection === "DISCOUNT"
+						pricing.adjustmentDirection === "DISCOUNT"
 							? "font-medium text-emerald-700"
 							: "font-medium text-amber-700"
 					}

@@ -7,27 +7,36 @@ import {
 } from "@/features/orders/draft-order/utils/draft-order-save";
 import {
 	useCreateDraftOrder,
+	useEditOrder,
 	useUpdateDraftOrder,
 } from "@/features/orders/orders.queries";
+import type { OrderEditorMode } from "@/features/orders/order-editor/types/order-editor.types";
+import { getOrderEditorCopy } from "@/features/orders/order-editor/utils/order-editor-copy";
 import { useLocationId } from "@/shared/contexts/location/location.hooks";
 import { ProblemDetailsError } from "@/shared/errors";
 
-export function useSaveDraftOrder(orderId?: string) {
+export function useSaveOrderEditor(
+	orderId?: string,
+	mode: OrderEditorMode = "edit-draft",
+) {
 	const navigate = useNavigate();
 	const locationId = useLocationId();
+	const copy = getOrderEditorCopy(mode);
 	const { state } = useDraftOrderContext();
 	const { mutateAsync: createDraftOrder, isPending: isCreatePending } =
 		useCreateDraftOrder();
 	const { mutateAsync: updateDraftOrder, isPending: isUpdatePending } =
 		useUpdateDraftOrder();
+	const { mutateAsync: editOrder, isPending: isEditPending } = useEditOrder();
 	const [saveError, setSaveError] = useState<string | null>(null);
 
-	async function handleSaveDraft() {
+	async function handleSaveOrderEditor() {
 		setSaveError(null);
 
 		const validationError = validateDraftOrderForSave({
 			state,
 			locationId,
+			mode,
 		});
 
 		if (validationError) {
@@ -36,7 +45,7 @@ export function useSaveDraftOrder(orderId?: string) {
 		}
 
 		if (!locationId) {
-			setSaveError("Seleccioná una locación antes de guardar el borrador.");
+			setSaveError(copy.locationRequiredText);
 			return;
 		}
 
@@ -46,8 +55,17 @@ export function useSaveDraftOrder(orderId?: string) {
 		});
 
 		try {
-			if (orderId) {
+			if (orderId && mode === "edit-draft") {
 				await updateDraftOrder({ orderId, data: payload });
+				await navigate({
+					to: "/dashboard/orders/$orderId",
+					params: { orderId },
+				});
+			} else if (
+				orderId &&
+				(mode === "edit-pending-review" || mode === "edit-confirmed")
+			) {
+				await editOrder({ orderId, data: payload });
 				await navigate({
 					to: "/dashboard/orders/$orderId",
 					params: { orderId },
@@ -60,30 +78,31 @@ export function useSaveDraftOrder(orderId?: string) {
 				});
 			}
 		} catch (error) {
-			setSaveError(getSaveErrorMessage(error));
+			setSaveError(getSaveErrorMessage(error, mode));
 		}
 	}
 
 	return {
-		handleSaveDraft,
+		handleSaveOrderEditor,
 		saveError,
-		isSaving: isCreatePending || isUpdatePending,
+		isSaving: isCreatePending || isUpdatePending || isEditPending,
 		hasBudget: state.budget !== null,
 	};
 }
 
-function getSaveErrorMessage(error: unknown): string {
+function getSaveErrorMessage(error: unknown, mode: OrderEditorMode): string {
+	const fallback =
+		mode === "create-draft" || mode === "edit-draft"
+			? "No pudimos guardar el borrador."
+			: "No pudimos guardar los cambios del pedido.";
+
 	if (error instanceof ProblemDetailsError) {
-		return (
-			error.problemDetails.detail ??
-			error.problemDetails.title ??
-			"No pudimos guardar el borrador."
-		);
+		return error.problemDetails.detail ?? error.problemDetails.title ?? fallback;
 	}
 
 	if (error instanceof Error) {
 		return error.message;
 	}
 
-	return "No pudimos guardar el borrador.";
+	return fallback;
 }

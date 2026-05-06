@@ -21,12 +21,12 @@ export class InventoryFacade implements InventoryPublicApi {
     private readonly availabilityService: AssetAvailabilityService,
   ) {}
 
-  async findAvailableAssetId(dto: FindAvailableParams): Promise<string | null> {
-    return this.availabilityService.findAvailableAssetId(dto);
+  async findAvailableAssetId(dto: FindAvailableParams, tx?: PrismaTransactionClient): Promise<string | null> {
+    return this.availabilityService.findAvailableAssetId(dto, tx);
   }
 
-  async findAvailableAssetIds(dto: FindAvailableParams): Promise<string[]> {
-    return this.availabilityService.findAvailableAssetIds(dto);
+  async findAvailableAssetIds(dto: FindAvailableParams, tx?: PrismaTransactionClient): Promise<string[]> {
+    return this.availabilityService.findAvailableAssetIds(dto, tx);
   }
 
   async findAssetById(tenantId: string, assetId: string): Promise<{ id: string; ownerId: string | null } | null> {

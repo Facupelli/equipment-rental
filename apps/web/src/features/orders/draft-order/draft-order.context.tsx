@@ -3,7 +3,6 @@ import { createContext, useContext } from "react";
 import { useDraftOrder } from "@/features/orders/draft-order/hooks/use-draft-order";
 import type {
 	DraftOrderCustomerRef,
-	DraftOrderPricingSnapshot,
 	DraftOrderSelectedBundleItem,
 	DraftOrderSelectedProductItem,
 	DraftOrderState,
@@ -95,33 +94,25 @@ export function useDraftOrderItems() {
 
 	return {
 		items: state.items,
-		addPricedProductItem: actions.addPricedProductItem,
-		addPricedBundleItem: actions.addPricedBundleItem,
+		addProductItem: actions.addProductItem,
+		addBundleItem: actions.addBundleItem,
+		setProductQuantity: actions.setProductQuantity,
 		removeItem: actions.removeItem,
 	};
 }
 
-export type AddPricedProductItemInput = {
-	selection: DraftOrderSelectedProductItem;
-	pricingSnapshot: DraftOrderPricingSnapshot;
-};
-
-export type AddPricedBundleItemInput = {
-	selection: DraftOrderSelectedBundleItem;
-	pricingSnapshot: DraftOrderPricingSnapshot;
-};
-
 export function useDraftOrderPricing() {
-	const { state, actions, derived } = useDraftOrderContext();
+	const { state, actions } = useDraftOrderContext();
 
 	return {
 		currency: state.currency,
 		budget: state.budget,
-		pricingByItemId: derived.pricingByItemId,
-		totals: derived.totals,
 		setBudgetTargetTotal: actions.setBudgetTargetTotal,
 	};
 }
+
+export type AddProductItemInput = DraftOrderSelectedProductItem;
+export type AddBundleItemInput = DraftOrderSelectedBundleItem;
 
 export function useDraftOrderActions() {
 	const { actions, derived, state } = useDraftOrderContext();
