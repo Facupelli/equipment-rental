@@ -128,8 +128,8 @@ export class GetOrdersQueryHandler implements IQueryHandler<GetOrdersQuery, GetO
       filters.push(Prisma.sql`o.customer_id = ${query.customerId}`);
     }
 
-    if (query.status) {
-      filters.push(Prisma.sql`o.status = ${query.status}`);
+    if (query.statuses?.length) {
+      filters.push(Prisma.sql`o.status IN (${Prisma.join(query.statuses)})`);
     }
 
     if (query.orderNumber) {

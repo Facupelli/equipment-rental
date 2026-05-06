@@ -29,7 +29,7 @@ export class GetOrdersHttpController {
         dto.limit,
         dto.locationId,
         dto.customerId,
-        dto.status,
+        dto.statuses,
         dto.orderNumber,
         dto.dateLens,
         dto.sortBy,

@@ -35,7 +35,7 @@ function OrdersPage() {
 		search.dateLens ||
 			search.locationId ||
 			search.customerId ||
-			search.status ||
+			search.statuses?.length ||
 			search.orderNumber ||
 			hasExplicitOrdersSort(search),
 	);
@@ -83,8 +83,10 @@ function OrdersPage() {
 						return hasExplicitOrdersSort(prev) ? next : clearExplicitSort(next);
 					})
 				}
-				onStatusChange={(status) =>
-					updateSearch((prev) => resetToFirstPage({ ...prev, status }))
+				onStatusesChange={(statuses) =>
+					updateSearch((prev) =>
+						resetToFirstPage({ ...prev, statuses }),
+					)
 				}
 				onLocationChange={(locationId) =>
 					updateSearch((prev) => resetToFirstPage({ ...prev, locationId }))
@@ -99,7 +101,7 @@ function OrdersPage() {
 						limit: prev.limit,
 						locationId: undefined,
 						customerId: undefined,
-						status: undefined,
+						statuses: undefined,
 						orderNumber: undefined,
 						dateLens: undefined,
 						sortBy: undefined,

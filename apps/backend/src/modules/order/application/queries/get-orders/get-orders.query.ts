@@ -8,7 +8,7 @@ export class GetOrdersQuery {
     public readonly limit: number,
     public readonly locationId?: string,
     public readonly customerId?: string,
-    public readonly status?: OrderStatus,
+    public readonly statuses?: OrderStatus[],
     public readonly orderNumber?: number,
     public readonly dateLens?: OrderListDateLens,
     public readonly sortBy?: OrderListSortBy,

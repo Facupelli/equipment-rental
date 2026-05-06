@@ -2,6 +2,19 @@ import { FulfillmentMethod, OrderStatus } from "@repo/types";
 import { paginatedSchema } from "../api/api.schema";
 import { z } from "zod";
 
+const orderStatusSchema = z.enum(OrderStatus);
+
+const orderStatusesQuerySchema = z.preprocess((value) => {
+	if (typeof value === "string") {
+		return value
+			.split(",")
+			.map((status) => status.trim())
+			.filter(Boolean);
+	}
+
+	return value;
+}, z.array(orderStatusSchema).min(1).optional());
+
 export const orderListDateLensSchema = z.enum([
 	"TODAY",
 	"UPCOMING",
@@ -31,7 +44,7 @@ const OrderListLocationSummarySchema = z.object({
 export const orderListItemSchema = z.object({
 	id: z.uuid(),
 	number: z.number().int(),
-	status: z.enum(OrderStatus),
+	status: orderStatusSchema,
 	fulfillmentMethod: z.enum(FulfillmentMethod),
 	createdAt: z.date(),
 	pickupAt: z.date(),
@@ -43,7 +56,7 @@ export const orderListItemSchema = z.object({
 export const getOrdersQuerySchema = z.object({
 	locationId: z.uuid().optional(),
 	customerId: z.uuid().optional(),
-	status: z.enum(OrderStatus).optional(),
+	statuses: orderStatusesQuerySchema,
 	orderNumber: z.coerce.number().int().min(1).optional(),
 	dateLens: orderListDateLensSchema.optional(),
 	sortBy: orderListSortBySchema.optional(),
