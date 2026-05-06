@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 type SignaturePadFieldProps = {
 	id?: string;
 	label?: string;
-	description?: string;
+	description?: string | null;
+	clearLabel?: string;
 	value: string | null | undefined;
 	disabled?: boolean;
 	isInvalid?: boolean;
@@ -19,6 +20,7 @@ export function SignaturePadField({
 	id,
 	label = "Firma",
 	description = "Dibuja tu firma dentro del recuadro.",
+	clearLabel = "Limpiar",
 	value,
 	disabled = false,
 	isInvalid = false,
@@ -146,11 +148,13 @@ export function SignaturePadField({
 				<div className="space-y-1">
 					<label
 						htmlFor={canvasId}
-						className="text-sm font-medium text-neutral-950 leading-none"
+						className="font-semibold text-xl text-neutral-950 leading-none sm:text-2xl"
 					>
 						{label}
 					</label>
-					<p className="text-xs leading-5 text-neutral-500">{description}</p>
+					{description ? (
+						<p className="text-xs leading-5 text-neutral-500">{description}</p>
+					) : null}
 				</div>
 
 				<Button
@@ -159,16 +163,17 @@ export function SignaturePadField({
 					size="sm"
 					onClick={handleClear}
 					disabled={disabled}
+					className="rounded-none border border-neutral-950 bg-white"
 				>
 					<RotateCcw className="size-3.5" aria-hidden="true" />
-					Limpiar
+					{clearLabel}
 				</Button>
 			</div>
 
 			<div
 				className={cn(
-					"overflow-hidden rounded-xl border bg-white shadow-inner transition-colors",
-					isInvalid ? "border-destructive" : "border-neutral-200",
+					"overflow-hidden rounded-xl border-2 bg-white transition-colors",
+					isInvalid ? "border-destructive" : "border-neutral-950",
 					disabled && "opacity-60",
 				)}
 			>
@@ -176,7 +181,7 @@ export function SignaturePadField({
 					id={canvasId}
 					ref={canvasRef}
 					aria-invalid={isInvalid}
-					className="block h-40 w-full touch-none bg-white sm:h-44"
+					className="block h-36 w-full touch-none bg-white sm:h-44"
 				/>
 			</div>
 		</div>

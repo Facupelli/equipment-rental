@@ -1,30 +1,9 @@
 import { useForm } from "@tanstack/react-form";
-import { useState } from "react";
+import { Maximize2, PenLine, X } from "lucide-react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-	Field,
-	FieldError,
-	FieldGroup,
-	FieldLabel,
-} from "@/components/ui/field";
-import { Separator } from "@/components/ui/separator";
-import {
-	Sheet,
-	SheetContent,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
-import { useIsMobile } from "@/shared/hooks/use-mobile";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import {
 	createPublicSigningFormDefaults,
 	type PublicSigningFormValues,
@@ -48,8 +27,10 @@ export function PublicSigningForm({
 	isPending,
 	onSubmit,
 }: PublicSigningFormProps) {
-	const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
-	const isMobile = useIsMobile();
+	const [isSigningPanelOpen, setIsSigningPanelOpen] = useState(false);
+	const [signatureValue, setSignatureValue] = useState("");
+	const [acceptedValue, setAcceptedValue] = useState(false);
+
 	const form = useForm({
 		defaultValues: createPublicSigningFormDefaults(),
 		validators: {
@@ -57,172 +38,139 @@ export function PublicSigningForm({
 		},
 		onSubmit: async ({ value }: { value: PublicSigningFormValues }) => {
 			await onSubmit(toAcceptPublicSigningSessionDto(value));
-			setIsMobileSheetOpen(false);
+			setIsSigningPanelOpen(false);
 		},
 	});
 
-	const renderFormFields = (idPrefix: string) => (
-		<FieldGroup>
-			<form.Field name="signatureImageDataUrl">
-				{(field) => {
-					const isInvalid =
-						field.state.meta.isTouched && !field.state.meta.isValid;
+	const canSubmit = Boolean(signatureValue) && acceptedValue && !isPending;
 
-					return (
-						<Field data-invalid={isInvalid}>
-							<SignaturePadField
-								id={`${idPrefix}-${field.name}`}
-								value={field.state.value}
-								disabled={isPending}
-								isInvalid={isInvalid}
-								onChange={(value) => field.handleChange(value ?? "")}
-							/>
-							{isInvalid ? (
-								<FieldError errors={field.state.meta.errors} />
-							) : null}
-						</Field>
-					);
-				}}
-			</form.Field>
+	const docusealAcceptedId = useId();
 
-			<form.Field name="accepted">
-				{(field) => {
-					const isInvalid =
-						field.state.meta.isTouched && !field.state.meta.isValid;
-
-					return (
-						<Field data-invalid={isInvalid}>
-							<div className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 sm:px-4">
-								<Checkbox
-									id={`${idPrefix}-${field.name}`}
-									checked={field.state.value}
-									onCheckedChange={(checked) => {
-										field.handleChange(checked === true);
-									}}
-									className="mt-0.5 bg-white"
-								/>
-								<div className="space-y-1">
-									<FieldLabel
-										htmlFor={`${idPrefix}-${field.name}`}
-										className="leading-5"
-									>
-										Confirmo que revisé el documento y acepto este contrato de
-										alquiler.
-									</FieldLabel>
-									<p className="text-xs leading-5 text-neutral-500">
-										Tu aceptación quedará registrada con la fecha y hora de este
-										paso.
-									</p>
-								</div>
-							</div>
-							{isInvalid ? (
-								<FieldError errors={field.state.meta.errors} />
-							) : null}
-						</Field>
-					);
-				}}
-			</form.Field>
-
-			{submitError ? <FieldError>{submitError}</FieldError> : null}
-		</FieldGroup>
-	);
-
-	if (isMobile) {
-		return (
-			<>
-				<div className="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white/95 px-3 py-3 backdrop-blur-sm">
-					<div className="flex">
+	return (
+		<>
+			{isSigningPanelOpen ? null : (
+				<div className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4 sm:px-6 sm:pb-5">
+					<div className="mx-auto flex w-full max-w-2xl">
 						<Button
 							type="button"
-							onClick={() => setIsMobileSheetOpen(true)}
+							onClick={() => setIsSigningPanelOpen(true)}
 							disabled={isPending}
-							className="w-full"
+							className="h-12 w-full rounded-2xl uppercase px-4"
 						>
-							Continuar para firmar
+							<span className="flex-1" />
+							<span className="flex items-center gap-2">
+								<PenLine className="size-5" aria-hidden="true" />
+								Firmar ahora
+							</span>
+							<span className="flex flex-1 justify-end">
+								<Maximize2 className="size-4" aria-hidden="true" />
+							</span>
 						</Button>
 					</div>
 				</div>
+			)}
 
-				<Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
-					<SheetContent
-						side="bottom"
-						className="max-h-[92svh] rounded-t-3xl border-neutral-200 px-0 pb-0"
-					>
-						<div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-neutral-300" />
-						<SheetHeader className="gap-2 px-4 pb-3 pt-2 text-left">
-							<SheetTitle className="text-lg font-semibold text-neutral-950">
-								Firma y acepta el contrato
-							</SheetTitle>
-						</SheetHeader>
-
-						<div className="overflow-y-auto px-4 pb-4">
-							<Separator className="my-4" />
-
-							<form
-								id={`${formId}-mobile`}
-								onSubmit={(event) => {
-									event.preventDefault();
-									event.stopPropagation();
-									void form.handleSubmit();
-								}}
-								className="space-y-3"
-								noValidate
-							>
-								{renderFormFields("mobile")}
-							</form>
-						</div>
-
-						<SheetFooter className="border-t border-neutral-200 bg-white px-4 py-3">
+			{isSigningPanelOpen ? (
+				<div className="fixed inset-x-0 bottom-0 z-30 px-0 sm:px-6 sm:pb-6">
+					<div className="mx-auto max-h-[82svh] w-full max-w-2xl overflow-y-auto rounded-t-2xl border shadow md:rounded-sm border-neutral-400 bg-white p-2 md:p-6">
+						<div className="mb-2 flex justify-end sm:mb-0">
 							<Button
-								type="submit"
-								form={`${formId}-mobile`}
-								disabled={isPending}
-								className="w-full"
+								type="button"
+								variant="ghost"
+								size="icon"
+								onClick={() => setIsSigningPanelOpen(false)}
+								className="size-8 rounded-none text-neutral-950 hover:bg-neutral-100"
+								aria-label="Cerrar panel de firma"
 							>
-								{isPending ? "Registrando..." : "Aceptar y firmar contrato"}
+								<X className="size-5" />
 							</Button>
-						</SheetFooter>
-					</SheetContent>
-				</Sheet>
-			</>
-		);
-	}
+						</div>
+						<form
+							id={formId}
+							onSubmit={(event) => {
+								event.preventDefault();
+								event.stopPropagation();
+								void form.handleSubmit();
+							}}
+							className="space-y-4"
+							noValidate
+						>
+							<form.Field name="signatureImageDataUrl">
+								{(field) => {
+									const isInvalid =
+										field.state.meta.isTouched && !field.state.meta.isValid;
 
-	return (
-		<Card className="gap-2 border-neutral-200 bg-white lg:sticky lg:top-6">
-			<CardHeader className="pb-2">
-				<CardTitle className="text-lg font-semibold text-neutral-950">
-					Confirma tu identidad
-				</CardTitle>
-				<CardDescription className="text-sm leading-6 text-neutral-600">
-					Completa tus datos despues de revisar el contrato para registrar tu
-					aceptación.
-				</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<form
-					id={formId}
-					onSubmit={(event) => {
-						event.preventDefault();
-						event.stopPropagation();
-						void form.handleSubmit();
-					}}
-					className="space-y-3"
-					noValidate
-				>
-					{renderFormFields("desktop")}
-				</form>
-			</CardContent>
-			<CardFooter className="flex-col items-stretch gap-3 pt-2">
-				<Button
-					type="submit"
-					form={formId}
-					disabled={isPending}
-					className="w-full"
-				>
-					{isPending ? "Registrando..." : "Aceptar y firmar contrato"}
-				</Button>
-			</CardFooter>
-		</Card>
+									return (
+										<Field data-invalid={isInvalid}>
+											<SignaturePadField
+												id={`docuseal-${field.name}`}
+												description={null}
+												clearLabel="Redibujar"
+												value={field.state.value}
+												disabled={isPending}
+												isInvalid={isInvalid}
+												onChange={(value) => {
+													const nextValue = value ?? "";
+													field.handleChange(nextValue);
+													setSignatureValue(nextValue);
+												}}
+											/>
+											{isInvalid ? (
+												<FieldError errors={field.state.meta.errors} />
+											) : null}
+										</Field>
+									);
+								}}
+							</form.Field>
+
+							<form.Field name="accepted">
+								{(field) => {
+									const isInvalid =
+										field.state.meta.isTouched && !field.state.meta.isValid;
+
+									return (
+										<Field data-invalid={isInvalid}>
+											<div className="flex items-start gap-2 px-2">
+												<Checkbox
+													id={docusealAcceptedId}
+													checked={field.state.value}
+													onCheckedChange={(checked) => {
+														const nextValue = checked === true;
+														field.handleChange(nextValue);
+														setAcceptedValue(nextValue);
+													}}
+													className="mt-0.5 size-4 rounded-none border-neutral-950 bg-white"
+												/>
+												<FieldLabel
+													htmlFor={docusealAcceptedId}
+													className="text-xs text-neutral-800 sm:text-sm"
+												>
+													Confirmo que revisé el documento y acepto este
+													contrato de alquiler.
+												</FieldLabel>
+											</div>
+											{isInvalid ? (
+												<FieldError errors={field.state.meta.errors} />
+											) : null}
+										</Field>
+									);
+								}}
+							</form.Field>
+
+							{submitError ? <FieldError>{submitError}</FieldError> : null}
+						</form>
+
+						<Button
+							type="submit"
+							form={formId}
+							disabled={!canSubmit}
+							className="mt-4 h-12 w-full border-2 rounded-2xl border-neutral-950 bg-neutral-950 text-sm font-semibold uppercase tracking-wide text-white hover:bg-neutral-800 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-500 disabled:shadow-none sm:text-base"
+						>
+							{isPending ? "Registrando..." : "Firmar y completar"}
+						</Button>
+					</div>
+				</div>
+			) : null}
+		</>
 	);
 }
