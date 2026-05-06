@@ -3,7 +3,6 @@ import type { GenerateOrderBudgetRequestDto } from "@repo/schemas";
 export type ContractErrorState = {
 	status: number;
 	message: string;
-	action: "open" | "download";
 } | null;
 
 export function openPreviewWindow() {
@@ -22,18 +21,15 @@ export async function preflightContractRequest({
 	onRequestError,
 	fallbackMessage,
 	notFoundMessage,
-	action,
 }: {
 	url: string;
 	onBusinessError: (message: string) => void;
 	onRequestError: (error: {
 		status: number;
 		message: string;
-		action: "open" | "download";
 	}) => void;
 	fallbackMessage: string;
 	notFoundMessage: string;
-	action: "open" | "download";
 }): Promise<boolean> {
 	try {
 		const response = await fetch(url, {
@@ -56,7 +52,6 @@ export async function preflightContractRequest({
 
 		onRequestError({
 			status: response.status,
-			action,
 			message:
 				payload?.message ??
 				(response.status === 404 ? notFoundMessage : fallbackMessage),
@@ -66,7 +61,6 @@ export async function preflightContractRequest({
 		onRequestError({
 			status: 500,
 			message: fallbackMessage,
-			action,
 		});
 		return false;
 	}
@@ -85,7 +79,7 @@ export async function fetchDocumentBlob({
 	fallbackMessage: string;
 	notFoundMessage: string;
 }): Promise<
-	| { ok: true; blob: Blob; fileName: string | null }
+	| { ok: true; blob: Blob }
 	| { ok: false; status: number; message: string; isBusinessError: boolean }
 > {
 	try {
@@ -102,9 +96,6 @@ export async function fetchDocumentBlob({
 			return {
 				ok: true,
 				blob: await response.blob(),
-				fileName: getFileNameFromContentDisposition(
-					response.headers.get("Content-Disposition"),
-				),
 			};
 		}
 
@@ -129,21 +120,4 @@ export async function fetchDocumentBlob({
 			isBusinessError: false,
 		};
 	}
-}
-
-function getFileNameFromContentDisposition(
-	contentDisposition: string | null,
-): string | null {
-	if (!contentDisposition) {
-		return null;
-	}
-
-	const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-
-	if (utf8Match?.[1]) {
-		return decodeURIComponent(utf8Match[1]);
-	}
-
-	const asciiMatch = contentDisposition.match(/filename="?([^\"]+)"?/i);
-	return asciiMatch?.[1] ?? null;
 }

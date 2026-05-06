@@ -10,7 +10,6 @@ export function OrderDetailBudgetDialogs() {
 			onOpenChange={budget.customerDialog.onOpenChange}
 			onSubmit={budget.customerDialog.submit}
 			isOpeningBudget={budget.isOpening}
-			isDownloadingBudget={budget.isDownloading}
 		/>
 	);
 }

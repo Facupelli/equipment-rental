@@ -67,7 +67,7 @@ export function OrderDetailDocumentErrorDialogs() {
 						<AlertDialogTitle>
 							{documents.error.contractError?.status === 404
 								? "Pedido no encontrado"
-								: `No se pudo ${documents.error.contractError?.action === "download" ? "descargar" : "abrir"} el ${documentLabel}`}
+								: `No se pudo abrir el ${documentLabel}`}
 						</AlertDialogTitle>
 						<AlertDialogDescription>
 							{documents.error.contractError?.message}

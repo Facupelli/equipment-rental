@@ -88,13 +88,6 @@ function useOrderActionGroups(): ActionGroup[] {
 						onClick: budget.open,
 						disabled: budget.isOpening,
 					},
-					{
-						icon: FileText,
-						label: "Descargar presupuesto",
-						loadingLabel: "Descargando presupuesto...",
-						onClick: budget.download,
-						disabled: budget.isDownloading,
-					},
 				]
 			: [],
 
@@ -106,15 +99,6 @@ function useOrderActionGroups(): ActionGroup[] {
 						loadingLabel: "Abriendo remito...",
 						onClick: documents.contract.open,
 						disabled: documents.contract.isOpening,
-					},
-					{
-						icon: FileText,
-						label: isSignedContract
-							? "Descargar remito firmado"
-							: "Descargar remito",
-						loadingLabel: "Descargando remito...",
-						onClick: documents.contract.download,
-						disabled: documents.contract.isDownloading,
 					},
 				]
 			: [],

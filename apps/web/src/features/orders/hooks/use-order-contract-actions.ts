@@ -21,7 +21,6 @@ export function useOrderContractActions({
 	setIsContractBusinessErrorOpen,
 }: UseOrderContractActionsParams) {
 	const [isOpeningContract, setIsOpeningContract] = useState(false);
-	const [isDownloadingContract, setIsDownloadingContract] = useState(false);
 
 	const handleOpenContract = async () => {
 		const previewWindow = openPreviewWindow();
@@ -39,13 +38,12 @@ export function useOrderContractActions({
 				setContractBusinessErrorMessage(message);
 				setIsContractBusinessErrorOpen(true);
 			},
-			onRequestError: ({ status, message, action }) => {
+			onRequestError: ({ status, message }) => {
 				previewWindow?.close();
-				setContractError({ status, message, action });
+				setContractError({ status, message });
 			},
 			fallbackMessage: "No pudimos abrir el remito. Intenta nuevamente.",
 			notFoundMessage: "No pudimos encontrar el pedido para generar el remito.",
-			action: "open",
 		});
 
 		if (canProceed) {
@@ -59,38 +57,8 @@ export function useOrderContractActions({
 		setIsOpeningContract(false);
 	};
 
-	const handleDownloadContract = async () => {
-		setIsDownloadingContract(true);
-		setContractError(null);
-
-		const downloadUrl = isSigned
-			? `/api/orders/${orderId}/contract/signed/download`
-			: `/api/orders/${orderId}/contract/download`;
-		const canProceed = await preflightContractRequest({
-			url: downloadUrl,
-			onBusinessError: (message) => {
-				setContractBusinessErrorMessage(message);
-				setIsContractBusinessErrorOpen(true);
-			},
-			onRequestError: ({ status, message, action }) => {
-				setContractError({ status, message, action });
-			},
-			fallbackMessage: "No pudimos descargar el remito. Intenta nuevamente.",
-			notFoundMessage: "No pudimos encontrar el pedido para generar el remito.",
-			action: "download",
-		});
-
-		if (canProceed) {
-			window.location.assign(downloadUrl);
-		}
-
-		setIsDownloadingContract(false);
-	};
-
 	return {
 		isOpeningContract,
-		isDownloadingContract,
 		handleOpenContract,
-		handleDownloadContract,
 	};
 }

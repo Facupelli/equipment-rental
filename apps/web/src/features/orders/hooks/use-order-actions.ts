@@ -52,9 +52,7 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		documents: {
 			contract: {
 				isOpening: contractActions.isOpeningContract,
-				isDownloading: contractActions.isDownloadingContract,
 				open: contractActions.handleOpenContract,
-				download: contractActions.handleDownloadContract,
 			},
 			error: {
 				contractError: documentState.contractError,
@@ -67,11 +65,8 @@ export function useOrderActions(order: ParsedOrderDetailResponseDto) {
 		},
 		budget: {
 			isOpening: budgetActions.isOpeningBudget,
-			isDownloading: budgetActions.isDownloadingBudget,
 			open: budgetActions.handleOpenBudget,
-			download: budgetActions.handleDownloadBudget,
 			customerDialog: {
-				intent: budgetActions.budgetDocumentIntent,
 				open: budgetActions.isBudgetCustomerDialogOpen,
 				onOpenChange: budgetActions.handleBudgetCustomerDialogOpenChange,
 				submit: budgetActions.handleSubmitBudgetCustomer,

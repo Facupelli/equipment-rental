@@ -7,8 +7,6 @@ import {
 	openPreviewWindow,
 } from "../order-document.utils";
 
-type BudgetDocumentIntent = "open" | "download" | null;
-
 type UseOrderBudgetActionsParams = {
 	order: ParsedOrderDetailResponseDto;
 	setContractError: (value: ContractErrorState) => void;
@@ -23,11 +21,8 @@ export function useOrderBudgetActions({
 	setIsContractBusinessErrorOpen,
 }: UseOrderBudgetActionsParams) {
 	const [isOpeningBudget, setIsOpeningBudget] = useState(false);
-	const [isDownloadingBudget, setIsDownloadingBudget] = useState(false);
 	const [isBudgetCustomerDialogOpen, setIsBudgetCustomerDialogOpen] =
 		useState(false);
-	const [budgetDocumentIntent, setBudgetDocumentIntent] =
-		useState<BudgetDocumentIntent>(null);
 
 	const executeOpenBudget = async (
 		body: GenerateOrderBudgetRequestDto,
@@ -69,57 +64,10 @@ export function useOrderBudgetActions({
 			setContractError({
 				status: result.status,
 				message: result.message,
-				action: "open",
 			});
 		}
 
 		setIsOpeningBudget(false);
-		return false;
-	};
-
-	const executeDownloadBudget = async (
-		body: GenerateOrderBudgetRequestDto,
-	): Promise<boolean> => {
-		setIsDownloadingBudget(true);
-		setContractError(null);
-
-		const result = await fetchDocumentBlob({
-			url: `/api/orders/${order.id}/budget/download`,
-			method: "POST",
-			body,
-			fallbackMessage:
-				"No pudimos descargar el presupuesto. Intenta nuevamente.",
-			notFoundMessage:
-				"No pudimos encontrar el pedido para generar el presupuesto.",
-		});
-
-		if (result.ok) {
-			const objectUrl = URL.createObjectURL(result.blob);
-			const link = document.createElement("a");
-			link.href = objectUrl;
-			link.download =
-				result.fileName ??
-				`presupuesto-${String(order.number).padStart(4, "0")}.pdf`;
-			document.body.append(link);
-			link.click();
-			link.remove();
-			URL.revokeObjectURL(objectUrl);
-			setIsDownloadingBudget(false);
-			return true;
-		}
-
-		if (result.isBusinessError) {
-			setContractBusinessErrorMessage(result.message);
-			setIsContractBusinessErrorOpen(true);
-		} else {
-			setContractError({
-				status: result.status,
-				message: result.message,
-				action: "download",
-			});
-		}
-
-		setIsDownloadingBudget(false);
 		return false;
 	};
 
@@ -129,57 +77,28 @@ export function useOrderBudgetActions({
 			return;
 		}
 
-		setBudgetDocumentIntent("open");
-		setIsBudgetCustomerDialogOpen(true);
-	};
-
-	const handleDownloadBudget = async () => {
-		if (order.customer) {
-			await executeDownloadBudget({});
-			return;
-		}
-
-		setBudgetDocumentIntent("download");
 		setIsBudgetCustomerDialogOpen(true);
 	};
 
 	const handleBudgetCustomerDialogOpenChange = (open: boolean) => {
 		setIsBudgetCustomerDialogOpen(open);
-
-		if (!open) {
-			setBudgetDocumentIntent(null);
-		}
 	};
 
 	const handleSubmitBudgetCustomer = async (
-		intent: Exclude<BudgetDocumentIntent, null>,
 		body: GenerateOrderBudgetRequestDto,
 	) => {
-		if (intent === "open") {
-			const didOpen = await executeOpenBudget(body);
+		const didOpen = await executeOpenBudget(body);
 
-			if (didOpen) {
-				handleBudgetCustomerDialogOpenChange(false);
-			}
-
-			return;
-		}
-
-		const didDownload = await executeDownloadBudget(body);
-
-		if (didDownload) {
+		if (didOpen) {
 			handleBudgetCustomerDialogOpenChange(false);
 		}
 	};
 
 	return {
-		budgetDocumentIntent,
 		isBudgetCustomerDialogOpen,
 		isOpeningBudget,
-		isDownloadingBudget,
 		handleBudgetCustomerDialogOpenChange,
 		handleOpenBudget,
-		handleDownloadBudget,
 		handleSubmitBudgetCustomer,
 	};
 }

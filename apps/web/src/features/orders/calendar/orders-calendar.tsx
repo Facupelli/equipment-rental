@@ -292,8 +292,6 @@ export function OrdersCalendar({
 
 	const events = orders.map(toOrdersCalendarEvent);
 
-	console.log({ events });
-
 	return (
 		<div className="space-y-5">
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

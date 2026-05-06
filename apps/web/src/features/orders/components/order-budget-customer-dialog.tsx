@@ -1,5 +1,4 @@
 import { useForm } from "@tanstack/react-form";
-import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -24,32 +23,24 @@ import {
 
 const formId = "order-budget-customer";
 
-type BudgetDialogIntent = "open" | "download";
-
 export function OrderBudgetCustomerDialog({
 	open,
 	onOpenChange,
 	onSubmit,
 	isOpeningBudget,
-	isDownloadingBudget,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onSubmit: (
-		intent: BudgetDialogIntent,
-		values: ReturnType<typeof toOrderBudgetRequestDto>,
-	) => Promise<void>;
+	onSubmit: (values: ReturnType<typeof toOrderBudgetRequestDto>) => Promise<void>;
 	isOpeningBudget: boolean;
-	isDownloadingBudget: boolean;
 }) {
-	const submitIntentRef = useRef<BudgetDialogIntent>("open");
 	const form = useForm({
 		defaultValues: orderBudgetCustomerFormDefaults,
 		validators: {
 			onSubmit: orderBudgetCustomerFormSchema,
 		},
 		onSubmit: async ({ value }) => {
-			await onSubmit(submitIntentRef.current, toOrderBudgetRequestDto(value));
+			await onSubmit(toOrderBudgetRequestDto(value));
 		},
 	});
 
@@ -58,13 +49,7 @@ export function OrderBudgetCustomerDialog({
 
 		if (!nextOpen) {
 			form.reset();
-			submitIntentRef.current = "open";
 		}
-	}
-
-	function submit(intent: BudgetDialogIntent) {
-		submitIntentRef.current = intent;
-		void form.handleSubmit();
 	}
 
 	return (
@@ -176,28 +161,18 @@ export function OrderBudgetCustomerDialog({
 								type="button"
 								variant="outline"
 								onClick={() => handleOpenChange(false)}
-								disabled={isOpeningBudget || isDownloadingBudget}
+								disabled={isOpeningBudget}
 							>
 								Cancelar
 							</Button>
 							<Button
 								type="button"
-								variant="outline"
-								onClick={() => submit("open")}
-								disabled={isOpeningBudget || isDownloadingBudget}
+								onClick={() => void form.handleSubmit()}
+								disabled={isOpeningBudget}
 							>
 								{isOpeningBudget
 									? "Abriendo presupuesto..."
 									: "Ver presupuesto"}
-							</Button>
-							<Button
-								type="button"
-								onClick={() => submit("download")}
-								disabled={isOpeningBudget || isDownloadingBudget}
-							>
-								{isDownloadingBudget
-									? "Descargando presupuesto..."
-									: "Descargar presupuesto"}
 							</Button>
 						</DialogFooter>
 					</>
