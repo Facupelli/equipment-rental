@@ -28,7 +28,6 @@ export const Route = createFileRoute("/_admin/dashboard/orders/$orderId/edit")({
 			throw redirect({
 				to: "/dashboard/orders/$orderId",
 				params: { orderId },
-				search: { statuses: "all" },
 			});
 		}
 	},

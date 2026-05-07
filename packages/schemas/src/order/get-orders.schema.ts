@@ -4,16 +4,20 @@ import { z } from "zod";
 
 const orderStatusSchema = z.enum(OrderStatus);
 
-const orderStatusesQuerySchema = z.preprocess((value) => {
-	if (typeof value === "string") {
-		return value
-			.split(",")
-			.map((status) => status.trim())
-			.filter(Boolean);
-	}
-
-	return value;
-}, z.array(orderStatusSchema).min(1).optional());
+const orderStatusesQuerySchema = z
+	.union([
+		z.array(orderStatusSchema).min(1),
+		z
+			.string()
+			.transform((value) =>
+				value
+					.split(",")
+					.map((status) => status.trim())
+					.filter(Boolean),
+			)
+			.pipe(z.array(orderStatusSchema).min(1)),
+	])
+	.optional();
 
 export const orderListDateLensSchema = z.enum([
 	"TODAY",
