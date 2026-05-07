@@ -28,6 +28,7 @@ export function DateRangePickerContent({
 		<Calendar
 			locale={es}
 			mode="range"
+			min={1}
 			defaultMonth={value.from}
 			selected={value}
 			onSelect={onChange}
