@@ -76,7 +76,7 @@ const uploadRouter: Router = {
 	},
 };
 
-export const Route = createFileRoute("/api/branding-upload" as never)({
+export const Route = createFileRoute("/api/branding-upload")({
 	server: {
 		handlers: {
 			POST: async ({ request }) => {
