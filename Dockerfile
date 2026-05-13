@@ -42,7 +42,7 @@ COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
-RUN --mount=type=cache,id=s/pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=s/534fd412-2c53-4a77-b9bc-08d35379ad52-pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile
 
 COPY --from=builder /app/out/full/ .
 
