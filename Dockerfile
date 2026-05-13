@@ -8,7 +8,7 @@
 # =============================================================================
 # Stage 1 — base
 # =============================================================================
-FROM node:22.22.2-bookworm-slim@sha256:99ffed458747321024eb2d8926e4d3d7a799a6d13ea193913f54cec60009bf09 AS base
+FROM --platform=linux/amd64 node:22.22.2-bookworm-slim AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -55,7 +55,7 @@ RUN turbo run build --filter=@repo/backend --no-cache
 # =============================================================================
 # Stage 4 — runner
 # =============================================================================
-FROM node:22.22.2-bookworm-slim@sha256:99ffed458747321024eb2d8926e4d3d7a799a6d13ea193913f54cec60009bf09 AS runner
+FROM --platform=linux/amd64 node:22.22.2-bookworm-slim AS runner
 
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends openssl && \
