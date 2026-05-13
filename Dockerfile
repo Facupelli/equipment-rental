@@ -1,24 +1,27 @@
 # Based on: https://www.bstefanski.com/blog/turborepo-nestjs-prisma-dockerfile
-# Adapted for @repo/backend with pnpm@10.30.3, Prisma v7, prisma.config.ts
+# Adapted for @repo/backend with pnpm@11, Prisma v7, prisma.config.ts
+#
+# Using node:22.22.2-bookworm-slim (Debian slim) instead of Alpine:
+# - glibc compatibility avoids native dep rebuild issues (bcrypt, prisma binaries)
+# - no musl libc workarounds needed (libc6-compat, openssl patches)
 
 # =============================================================================
 # Stage 1 — base
-# Install pnpm and turbo globally via corepack + npm.
-# Using ENV for pnpm home as recommended for corepack + global installs.
 # =============================================================================
-FROM node:20-alpine AS base
+FROM node:22.22.2-bookworm-slim@sha256:99ffed458747321024eb2d8926e4d3d7a799a6d13ea193913f54cec60009bf09 AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-RUN apk add --no-cache libc6-compat openssl && \
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends openssl && \
+    rm -rf /var/lib/apt/lists/* && \
     corepack enable && \
-    corepack prepare pnpm@10.30.3 --activate && \
+    corepack prepare pnpm@11.0.9 --activate && \
     npm install -g turbo
 
 # =============================================================================
 # Stage 2 — builder
-# Runs turbo prune to produce a minimal pruned workspace for @repo/backend.
 # =============================================================================
 FROM base AS builder
 
@@ -30,10 +33,6 @@ RUN turbo prune @repo/backend --docker
 
 # =============================================================================
 # Stage 3 — installer
-# Two-step copy pattern for optimal Docker layer caching:
-#   1. Copy package.json files only → install deps (cached until deps change)
-#   2. Copy full source → build (cached until source changes)
-# Prisma client is generated BEFORE nest build so TS types are available.
 # =============================================================================
 FROM base AS installer
 
@@ -43,29 +42,24 @@ COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 COPY --from=builder /app/out/full/ .
 
-# Generate Prisma client BEFORE nest build — TypeScript needs types at compile time.
-# Using prisma.config.ts which lives at apps/backend/prisma.config.ts
-RUN cd apps/backend && pnpm exec prisma generate
+WORKDIR /app/apps/backend
+RUN pnpm exec prisma generate
 
+WORKDIR /app
 RUN turbo run build --filter=@repo/backend --no-cache
 
 # =============================================================================
 # Stage 4 — runner
-# Minimal production image. Copies only what is needed to run the app:
-#   - root node_modules (shared deps)
-#   - app dist/ (compiled output)
-#   - app node_modules (app-specific deps)
-#   - prisma/ schema + migrations (needed by migrate deploy at runtime)
-#   - packages/ (shared workspace packages)
-# Runs as a non-root user for security.
 # =============================================================================
-FROM node:20-alpine AS runner
+FROM node:22.22.2-bookworm-slim@sha256:99ffed458747321024eb2d8926e4d3d7a799a6d13ea193913f54cec60009bf09 AS runner
 
-RUN apk add --no-cache libc6-compat openssl && \
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends openssl && \
+    rm -rf /var/lib/apt/lists/* && \
     addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 
@@ -82,7 +76,6 @@ COPY --from=installer --chown=nodejs:nodejs /app/packages ./packages
 
 USER nodejs
 
-# Railway injects PORT at runtime; fallback to 3000 for local docker runs
 EXPOSE 3000
 
 CMD ["node", "apps/backend/dist/src/main.js"]
